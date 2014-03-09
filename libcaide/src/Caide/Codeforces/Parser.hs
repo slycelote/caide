@@ -29,10 +29,10 @@ codeforcesParser url = do
         Right cont -> do
             let dummyFileName = "problem.html"
                 parseResult = htmlParse' dummyFileName (stripUnicodeBOM $ T.unpack cont)
-                
+
                 Right doc = parseResult
                 rootElem = docContent (posInNewCxt dummyFileName Nothing) doc
-                
+
                 problemStatementFilter = deep $ tagWithAttrValue "div" "class" "problem-statement"
                 titleFilter = problemStatementFilter /> 
                               tagWithAttrValue "div" "class" "header" /> 
@@ -59,11 +59,11 @@ codeforcesParser url = do
                 stripUnicodeBOM :: String -> String
                 stripUnicodeBOM ('\xef':'\xbb':'\xbf':s) = s
                 stripUnicodeBOM s = s
-               
+
             case parseResult of
                 Left err -> return . Left $ err
                 _ ->  case titles of
-                    [title] -> return . Right $ (Problem (T.pack title) undefined, testCases)
+                    [title] -> return . Right $ (Problem (T.pack title) ("Problem" ++ take 1 title), testCases)
                     []      -> return . Left $ "No title found"
                     _       -> return . Left $ "More than one title found"
 

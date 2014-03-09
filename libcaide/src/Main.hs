@@ -3,7 +3,7 @@ module Main where
 import qualified Data.Text as T
 
 import Caide.Codeforces.Parser (codeforcesParser)
-import Caide.Types (problemName)
+import Caide.Types()
 
 main :: IO()
 main = do
@@ -11,5 +11,5 @@ main = do
     case parseResult of
         Left err -> putStrLn err
         Right (problem, testCases) -> do
-            putStrLn . T.unpack $ problemName problem
+            print problem
             print testCases

@@ -5,7 +5,6 @@ module Caide.Types(
     URL
 ) where
 
-import Data.ByteString(ByteString)
 import Data.Text(Text)
 
 data TestCase = TestCase
@@ -15,9 +14,9 @@ data TestCase = TestCase
 
 -- | Structure representing a problem
 data Problem = Problem
-    { problemName :: Text       -- ^ Human readable identifier, used for displaying in GUI
-    , problemId   :: ByteString -- ^ ID used for folder names, code generation etc.
-    }
+    { problemName :: Text   -- ^ Human readable identifier, used for displaying in GUI
+    , problemId   :: String -- ^ ID used for folder names, code generation etc.
+    } deriving (Show)
 
 type URL = Text
 
