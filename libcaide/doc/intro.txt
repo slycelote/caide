@@ -1,0 +1,39 @@
+The application implements the following functions:
+
+1. Parsing problem statement.
+  Input: Some kind of problem ID (URL and possibly something else)
+  Output:
+    a) Problem name
+    b) Class name / problem ID (for code generation)
+    c) Test cases: each test case is a pair of files caseName.in/caseName.out
+    d) Maybe memory and time limits
+> caide problem <id> [<lang>]
+
+2. Generation of code scaffold.
+  Input:
+    * Class name / problem ID from item 1b)
+    * Programming language / template file in this language
+  Output: scaffold of problem solution in the programming language
+> caide lang <lang>
+
+3. Inlining of library code.
+  Input: 
+    * Problem solution from item 2
+    * Library of prewritten code
+  Output: a single file to be sent to judging system
+> caide make
+
+4. Running the tests.
+  Input:
+    * Problem solution from item 3
+    * Test cases from item 1c)
+    * Maybe memory and time limits from item 1d)
+  Output: report for each test case
+> caide test
+
+
+Other commands:
+> caide checkout <problem id> - make problem active (other commands will work on this problem)
+> caide status - prints active problem id, language
+> caide archive [<problem id>] - moves problem to archive
+> caide restore <problem id> - restores problem from archive
