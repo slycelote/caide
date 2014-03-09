@@ -9,9 +9,9 @@ import Data.ByteString(ByteString)
 import Data.Text(Text)
 
 data TestCase = TestCase
-    { testCaseInput  :: ByteString
-    , testCaseOutput :: ByteString
-    }
+    { testCaseInput  :: String
+    , testCaseOutput :: String
+    } deriving (Show)
 
 -- | Structure representing a problem
 data Problem = Problem

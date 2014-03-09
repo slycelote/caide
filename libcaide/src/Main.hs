@@ -10,4 +10,6 @@ main = do
     parseResult <- codeforcesParser $ T.pack "http://codeforces.com/contest/400/problem/B"
     case parseResult of
         Left err -> putStrLn err
-        Right (problem, _) -> putStrLn . T.unpack $ problemName problem
+        Right (problem, testCases) -> do
+            putStrLn . T.unpack $ problemName problem
+            print testCases
