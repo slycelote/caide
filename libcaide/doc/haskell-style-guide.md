@@ -1,18 +1,20 @@
+<!-- vim: set tw=70 formatoptions+=t filetype=markdown : -->
+
 Haskell Style Guide
 ===================
 
 This is a short document describing the preferred coding style for
 this project. The style is copied from Johan Tibell's [style guide]
-(https://github.com/tibbe/haskell-style-guide). When something
-isn't covered by this guide you should stay consistent with the code
-in the other modules.
+(https://github.com/tibbe/haskell-style-guide) with minor
+modifications. When something isn't covered by this guide you should
+stay consistent with the code in the other modules.
 
 Formatting
 ----------
 
 ### Line Length
 
-Maximum line length is *80 characters*.
+Maximum line length is *100 characters*.
 
 ### Indentation
 
