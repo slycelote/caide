@@ -1,4 +1,6 @@
 cabal-dev
 dist
 .dist-buildwrapper
+*.swp
+*~
 
