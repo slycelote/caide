@@ -1,4 +1,7 @@
-The application implements the following functions:
+This document describes functions implemented by the application.
+If caide is used as a library/utility by an IDE, some of these functions
+might be implemented by the IDE instead.
+
 
 1. Parsing problem statement.
   Input: Some kind of problem ID (URL and possibly something else)
@@ -12,20 +15,59 @@ The application implements the following functions:
 2. Generation of code scaffold.
   Input:
     * Class name / problem ID from item 1b)
-    * Programming language / template file in this language
+    * Target programming language / template file in this language
   Output: scaffold of problem solution in the programming language
 > caide lang <lang>
 
-3. Inlining of library code.
+3. Generating test program.
+  It's a program in target language that goes over test cases one by one
+  and checks the results. It can be used for debugging in the IDE.
+  Input:
+    * Problem solution from item 2
+    * Test cases from item 1c)
+    * Local configuration (like the list of cases failed at the previous run).
+  Output:
+    * (non-inlined) source code of test program
+    * testList.txt file containing description of test cases to be run.
+> caide make
+
+4. Compiling and running test program.
+  This is most likely done by an IDE.
+  Input:
+    * (non-inlined) source code of test program from item 3
+    * testList.txt file containing description of test cases to be run from item 3
+  Output: for each test case that was run, either *.out file containing program output on this case
+    or *.failed file meaning that the program crashed.
+> caide test
+
+5. Generating test report.
+  Input:
+    * test cases from item 1c)
+    * .out and .failed files from item 4
+    * Maybe memory and time limits from item 1d)
+  Output: a text report containing description of each failed test case.
+> caide test
+
+6. Inlining of library code.
   Input: 
     * Problem solution from item 2
     * Library of prewritten code
-  Output: a single file to be sent to judging system
+  Output: a single file to be sent to judging system [May coincide with problem solution
+       if we don't support inlining for the language]
 > caide make
 
-4. Running the tests.
+The following items are required only for sanity check: it may happen that due to a bug in
+inliner the resulting program doesn't compile or runs incorrectly; in this case we don't want the
+user to send it to the judge.
+
+7. Compilation of inlined program.
+  Input: inlined code from item 6
+  Output: compiled binary [may coincide with input for interpreted languages]
+> caide test
+
+8. Running the tests on the inlined program.
   Input:
-    * Problem solution from item 3
+    * Compiled binary from item 4
     * Test cases from item 1c)
     * Maybe memory and time limits from item 1d)
   Output: report for each test case

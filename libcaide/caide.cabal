@@ -13,11 +13,14 @@ executable caide
                    network >= 2.4.2.2,
                    HTTP >= 4000.2.11,
                    HaXml >= 1.24,
-                   regex-compat-tdfa >= 0.95.1.4
+                   regex-compat-tdfa >= 0.95.1.4,
+                   system-fileio >= 0.3.12,
+                   system-filepath >= 0.4.9
   hs-source-dirs:  src
   ghc-options:     -Wall -rtsopts
   main-is:         Main.hs
   other-modules:   
                    Caide.Types,
                    Caide.Codeforces.Parser,
-                   Caide.Util
+                   Caide.Util,
+                   Caide.CPP.CPPSimple

@@ -1,20 +1,24 @@
 {- | Common utilities
 -}
 module Caide.Util(
-    downloadDocument
+      downloadDocument
+    , getProblemID
 ) where
 
-import Caide.Types(URL)
-
-import Data.Maybe(fromJust)
+import Data.Maybe (fromJust)
 import qualified Data.Text as T
+import qualified Filesystem.Path as F
+import Filesystem.Path (dirname)
+import Filesystem.Path.CurrentOS (encodeString)
 import Network.HTTP
-import Network.URI(parseURI)
-import System.IO.Error(catchIOError, ioeGetErrorString)
+import Network.URI (parseURI)
+import System.IO.Error (catchIOError, ioeGetErrorString)
+
+import Caide.Types (ProblemID, URL)
 
 
-{- | Download a URL.  (Left errorMessage) if an error,
-(Right doc) if success.
+{- | Download a URL. Return (Left errorMessage) in case of an error,
+(Right doc) in case of success.
 Based on code snippet from 'Real World Haskell'.
 -}
 -- TODO: retry download if anything wrong
@@ -42,3 +46,6 @@ downloadDocument url
                         -- FIXME: avoid infinite recursion
                         Just url' -> downloadDocument $ T.pack url'
                 _ -> mkLiftedError $ show r
+
+getProblemID :: F.FilePath -> ProblemID
+getProblemID problemDir = encodeString . dirname $ problemDir

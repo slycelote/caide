@@ -2,9 +2,6 @@ module Caide.Codeforces.Parser(
     codeforcesParser
 ) where
 
-import Caide.Types
-import Caide.Util (downloadDocument)
-
 import qualified Data.Text as T
 
 import Text.Regex (mkRegex, subRegex)
@@ -14,6 +11,10 @@ import Text.XML.HaXml.Html.Parse (htmlParse')
 import Text.XML.HaXml
 import Text.XML.HaXml.Posn (posInNewCxt)
 import Text.XML.HaXml.Util (docContent, tagTextContent)
+
+import Caide.Types
+import Caide.Util (downloadDocument)
+
 
 -- | Filter searching for specific tag with specific attribute having specific value
 tagWithAttrValue :: String -> String -> String -> CFilter i

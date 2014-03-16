@@ -143,8 +143,7 @@ foo = alloca 10 $ \a ->
 Format export lists as follows:
 
 ```haskell
-module Data.Set
-    (
+module Data.Set(
       -- * The @Set@ type
       Set
     , empty
@@ -152,7 +151,7 @@ module Data.Set
 
       -- * Querying
     , member
-    ) where
+) where
 ```
 
 ### If-then-else clauses
