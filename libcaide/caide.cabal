@@ -23,4 +23,5 @@ executable caide
                    Caide.Types,
                    Caide.Codeforces.Parser,
                    Caide.Util,
-                   Caide.CPP.CPPSimple
+                   Caide.CPP.CPPSimple,
+                   Caide.TestResultsProcessor
