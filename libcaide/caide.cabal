@@ -24,4 +24,5 @@ executable caide
                    Caide.Codeforces.Parser,
                    Caide.Util,
                    Caide.CPP.CPPSimple,
-                   Caide.TestResultsProcessor
+                   Caide.TestResultsProcessor,
+                   Caide.Commands.Init

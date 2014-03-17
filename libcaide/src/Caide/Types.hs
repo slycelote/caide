@@ -5,6 +5,7 @@ module Caide.Types(
     , ProgrammingLanguage (..)
     , TestCase (..)
     , URL
+    , CommandHandler (..)
 ) where
 
 import Data.Text (Text)
@@ -36,4 +37,12 @@ data ProgrammingLanguage = ProgrammingLanguage
     { generateScaffold    :: F.FilePath -> IO ()
     , generateTestProgram :: F.FilePath -> IO ()
     , inlineCode          :: F.FilePath -> IO ()
+    }
+
+
+data CommandHandler = CommandHandler
+    { command     :: String
+    , description :: String
+    , usage       :: String
+    , action      :: F.FilePath -> [String] -> IO ()
     }
