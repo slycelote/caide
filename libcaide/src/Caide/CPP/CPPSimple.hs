@@ -2,9 +2,7 @@ module Caide.CPP.CPPSimple(
       language
 ) where
 
-import qualified Data.Text as T
-
-import Filesystem (appendTextFile, copyFile)
+import Filesystem (appendTextFile, copyFile, readTextFile)
 import qualified Filesystem.Path as F
 import Filesystem.Path ((</>),)
 import Filesystem.Path.CurrentOS (decodeString)
@@ -30,9 +28,11 @@ inlineCPPCode :: F.FilePath -> IO ()
 inlineCPPCode problemDir = do
     let probID = getProblemID problemDir
         solutionPath = problemDir </> decodeString (probID ++ ".cpp")
+        inlinedTemplatePath = F.parent problemDir </> decodeString "main_template.cpp"
         inlinedCodePath = problemDir </> decodeString "main.cpp"
     copyFile solutionPath inlinedCodePath
-    appendTextFile inlinedCodePath $ T.pack "\r\n\r\nint main() {solve(std::cin, std::cout);return 0;}\r\n"
+    mainCode <- readTextFile inlinedTemplatePath
+    appendTextFile inlinedCodePath mainCode
 
 language :: ProgrammingLanguage
 language = ProgrammingLanguage
