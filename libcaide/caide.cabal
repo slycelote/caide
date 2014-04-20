@@ -12,10 +12,11 @@ executable caide
                    text >= 1.1.0.1,
                    network >= 2.4.2.2,
                    HTTP >= 4000.2.11,
-                   HaXml >= 1.24,
+                   --HaXml >= 1.24,
                    regex-compat-tdfa >= 0.95.1.4,
                    system-fileio >= 0.3.12,
-                   system-filepath >= 0.4.9
+                   system-filepath >= 0.4.9,
+                   tagsoup >= 0.13
   hs-source-dirs:  src
   ghc-options:     -Wall -rtsopts
   main-is:         Main.hs
@@ -25,4 +26,5 @@ executable caide
                    Caide.Util,
                    Caide.CPP.CPPSimple,
                    Caide.TestResultsProcessor,
-                   Caide.Commands.Init
+                   Caide.Commands.Init,
+                   Caide.Commands.ParseProblem

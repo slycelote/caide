@@ -1,7 +1,7 @@
 module Caide.Types(
       Problem (..)
     , ProblemID
-    , ProblemParser
+    , ProblemParser (..)
     , ProgrammingLanguage (..)
     , TestCase (..)
     , URL
@@ -12,8 +12,8 @@ import Data.Text (Text)
 import qualified Filesystem.Path as F
 
 data TestCase = TestCase
-    { testCaseInput  :: String
-    , testCaseOutput :: String
+    { testCaseInput  :: Text
+    , testCaseOutput :: Text
     } deriving (Show)
 
 type ProblemID = String
@@ -27,7 +27,10 @@ data Problem = Problem
 type URL = Text
 
 -- | Downloads problem data
-type ProblemParser = URL -> IO (Either String (Problem, [TestCase]))
+data ProblemParser = ProblemParser
+    { matches :: URL -> Bool
+    , parse   :: URL -> IO (Either String (Problem, [TestCase]))
+    }
 
 
 -- | The type encapsulating functions required to support particular target

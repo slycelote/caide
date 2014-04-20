@@ -3,6 +3,7 @@
 module Caide.Util(
       downloadDocument
     , getProblemID
+    , (~>)
 ) where
 
 import Data.Maybe (fromJust)
@@ -49,3 +50,6 @@ downloadDocument url
 
 getProblemID :: F.FilePath -> ProblemID
 getProblemID problemDir = encodeString . dirname $ problemDir
+
+(~>) :: (a -> b) -> (b -> c) -> a -> c
+(~>) = flip (.)

@@ -4,67 +4,45 @@ module Caide.Codeforces.Parser(
 
 import qualified Data.Text as T
 
-import Text.Regex (mkRegex, subRegex)
+import Network.URI (parseURI, uriAuthority, uriRegName)
 
-import Text.XML.HaXml.Combinators
-import Text.XML.HaXml.Html.Parse (htmlParse')
-import Text.XML.HaXml
-import Text.XML.HaXml.Posn (posInNewCxt)
-import Text.XML.HaXml.Util (docContent, tagTextContent)
+import Text.HTML.TagSoup (fromTagText, innerText, isTagOpenName, isTagCloseName,
+                          parseTags, sections, Tag(TagText), (~==), (~/=))
 
 import Caide.Types
 import Caide.Util (downloadDocument)
 
 
--- | Filter searching for specific tag with specific attribute having specific value
-tagWithAttrValue :: String -> String -> String -> CFilter i
-tagWithAttrValue tagName attrName attrValue = tag tagName `o` attrval (attName, attValue)
-    where attName = N attrName
-          attValue = AttValue [Left attrValue]
-
 codeforcesParser :: ProblemParser
-codeforcesParser url = do
+codeforcesParser = ProblemParser
+    { matches = isCodeForcesUrl
+    , parse = doParseTagSoup
+    }
+
+isCodeForcesUrl :: URL -> Bool
+isCodeForcesUrl url = case parseURI (T.unpack url) >>= uriAuthority of
+    Nothing   -> False
+    Just auth -> uriRegName auth `elem` ["codeforces.com", "www.codeforces.com"]
+
+doParseTagSoup :: URL -> IO (Either String (Problem, [TestCase]))
+doParseTagSoup url = do
     doc' <- downloadDocument url
     case doc' of
         Left err -> return $ Left err
         Right cont -> do
-            let dummyFileName = "problem.html"
-                parseResult = htmlParse' dummyFileName (stripUnicodeBOM $ T.unpack cont)
+            let tags = parseTags cont
+                statement = dropWhile (~/= "<div class=problem-statement>") tags
+                titleDiv = head . drop 1 . dropWhile (~/= "<div class=title>") $ statement
+                title = fromTagText titleDiv
+                inputDivs = sections (~== "<div class=input>") statement
+                outputDivs = sections (~== "<div class=output>") statement
+                replaceBr = concatMap f
+                    where f x | isTagOpenName (T.pack "br") x = []
+                              | isTagCloseName (T.pack "br") x = [TagText $ T.pack "\r\n"]
+                              | otherwise = [x]
 
-                Right doc = parseResult
-                rootElem = docContent (posInNewCxt dummyFileName Nothing) doc
-
-                problemStatementFilter = deep $ tagWithAttrValue "div" "class" "problem-statement"
-                titleFilter = problemStatementFilter /> 
-                              tagWithAttrValue "div" "class" "header" /> 
-                              tagWithAttrValue "div" "class" "title"
-
-
-                titles = map tagTextContent $ titleFilter rootElem
-
-                inputFilter  = deep (tagWithAttrValue "div" "class" "sample-test") />
-                               tagWithAttrValue "div" "class" "input" />
-                               tag "pre" 
-                outputFilter = deep (tagWithAttrValue "div" "class" "sample-test") />
-                               tagWithAttrValue "div" "class" "output" />
-                               tag "pre"
-
-                postprocess s = subRegex (mkRegex "<br\\s*/?>") s "\r\n"
-                inputs  = map (postprocess . tagTextContent) $ inputFilter rootElem
-                outputs = map (postprocess . tagTextContent) $ outputFilter rootElem                               
-
+                extractText = innerText . replaceBr . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>")
+                inputs = map extractText inputDivs
+                outputs = map extractText outputDivs
                 testCases = zipWith TestCase inputs outputs                  
-
-                {- | Some Unicode documents begin with a binary sequence;
-                   strip it off before processing. -}
-                stripUnicodeBOM :: String -> String
-                stripUnicodeBOM ('\xef':'\xbb':'\xbf':s) = s
-                stripUnicodeBOM s = s
-
-            case parseResult of
-                Left err -> return . Left $ err
-                _ ->  case titles of
-                    [title] -> return . Right $ (Problem (T.pack title) ("Problem" ++ take 1 title), testCases)
-                    []      -> return . Left $ "No title found"
-                    _       -> return . Left $ "More than one title found"
-
+            return . Right $ (Problem title ("problem" ++ [T.head title]), testCases)

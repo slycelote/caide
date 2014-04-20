@@ -11,7 +11,8 @@ import System.Environment (getArgs)
 
 import Caide.Codeforces.Parser (codeforcesParser)
 import qualified Caide.Commands.Init as Init
-import Caide.Types (CommandHandler(..))
+import Caide.Types (CommandHandler(..), parse)
+import qualified Caide.Commands.ParseProblem as ParseProblem
 
 
 
@@ -25,7 +26,7 @@ findRootCaideDir curDir = do
         else findRootCaideDir $ parent curDir 
 
 commands :: [CommandHandler]
-commands = [Init.cmd]
+commands = [Init.cmd, ParseProblem.cmd]
 
 findCommand :: String -> Maybe CommandHandler
 findCommand cmdName = find ((== cmdName) . command) commands
@@ -50,13 +51,13 @@ main = do
                     caideDir <- findRootCaideDir workDir
                     case () of
                       _ | cmd /= "init" && isNothing caideDir -> putStrLn $ encodeString workDir ++ " is not a valid caide directory"
-                        | cmd == "init" && isJust caideDir    -> undefined
+                        | cmd == "init" && isJust caideDir    -> putStrLn "Caide directory already initialized"
                         -- special case for init command: pass working directory as the first parameter
                         | otherwise -> action c (fromMaybe workDir caideDir) commandArgs
 
 test :: IO ()
 test = do
-    parseResult <- codeforcesParser $ T.pack "http://codeforces.com/contest/400/problem/B"
+    parseResult <- codeforcesParser `parse` T.pack "http://codeforces.com/contest/400/problem/B"
     case parseResult of
         Left err -> putStrLn err
         Right (problem, testCases) -> do
