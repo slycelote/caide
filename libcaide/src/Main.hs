@@ -10,9 +10,10 @@ import Filesystem.Path.CurrentOS (decodeString, encodeString, parent, (</>))
 import System.Environment (getArgs)
 
 import Caide.Codeforces.Parser (codeforcesParser)
-import qualified Caide.Commands.Init as Init
 import Caide.Types (CommandHandler(..), parse)
+import qualified Caide.Commands.Init as Init
 import qualified Caide.Commands.ParseProblem as ParseProblem
+import qualified Caide.Commands.BuildScaffold as BuildScaffold
 
 
 
@@ -25,8 +26,9 @@ findRootCaideDir curDir = do
         then return $ Just curDir
         else findRootCaideDir $ parent curDir 
 
+
 commands :: [CommandHandler]
-commands = [Init.cmd, ParseProblem.cmd]
+commands = [Init.cmd, ParseProblem.cmd, BuildScaffold.cmd]
 
 findCommand :: String -> Maybe CommandHandler
 findCommand cmdName = find ((== cmdName) . command) commands

@@ -3,6 +3,7 @@
 module Caide.Util(
       downloadDocument
     , getProblemID
+    , forceEither
     , (~>)
 ) where
 
@@ -51,5 +52,8 @@ downloadDocument url
 getProblemID :: F.FilePath -> ProblemID
 getProblemID problemDir = encodeString . dirname $ problemDir
 
-(~>) :: (a -> b) -> (b -> c) -> a -> c
-(~>) = flip (.)
+(~>) :: b -> (b -> c) -> c
+(~>) = flip ($)
+
+forceEither :: Either a c -> c
+forceEither = either (error "Left") id

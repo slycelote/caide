@@ -12,6 +12,7 @@ import Filesystem.Path.CurrentOS (decodeString, (</>))
 
 import Caide.Types
 import Caide.Codeforces.Parser (codeforcesParser)
+import Caide.Configuration (readRootConf, saveRootConf, setActiveProblem)
 
 cmd :: CommandHandler
 cmd = CommandHandler
@@ -37,9 +38,11 @@ parseProblem caideRoot args = do
                 Right (problem, samples) -> do
                     let problemDir = caideRoot </> decodeString (problemId problem)
                     createDirectory False problemDir
+                    conf <- readRootConf caideRoot
                     forM_ (zip samples [1::Int ..]) $ \(sample, i) -> do
                         let inFile  = problemDir </> decodeString ("case" ++ show i ++ ".in")
                             outFile = problemDir </> decodeString ("case" ++ show i ++ ".out")
                         writeTextFile inFile  $ testCaseInput sample
                         writeTextFile outFile $ testCaseOutput sample
+                    saveRootConf caideRoot $ setActiveProblem conf $ problemId problem
                     putStrLn $ "Problem successfully parsed into folder " ++ problemId problem
