@@ -26,3 +26,5 @@ generateScaffoldSolution caideRoot [lang] = case findLanguage lang of
         if null problem
             then putStrLn "No active problem. Generate one with `caide problem`"
             else language `generateScaffold` (caideRoot </> decodeString problem)
+
+generateScaffoldSolution _ _ = putStrLn $ "Usage " ++ usage cmd 

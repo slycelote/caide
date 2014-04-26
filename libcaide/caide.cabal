@@ -1,6 +1,6 @@
 name:           caide
 version:        0.1
-cabal-version:  >=1.2
+cabal-version:  >=1.10
 build-type:     Simple
 author:         slycelote
 license:        BSD3
@@ -10,15 +10,16 @@ executable caide
                    base >= 4,
                    bytestring >= 0.10.4.0,
                    ConfigFile >= 1.1,
-                   text >= 1.1.0.1,
                    network >= 2.4.2.2,
                    HTTP >= 4000.2.11,
                    regex-compat-tdfa >= 0.95.1.4,
                    system-fileio >= 0.3.12,
                    system-filepath >= 0.4.9,
-                   tagsoup >= 0.13
+                   tagsoup >= 0.13,
+                   text >= 1.1.0
   hs-source-dirs:  src
   ghc-options:     -Wall -rtsopts
+  default-language: Haskell2010
   main-is:         Main.hs
   other-modules:   
                    Caide.Types,
@@ -30,4 +31,5 @@ executable caide
                    Caide.Commands.ParseProblem,
                    Caide.Configuration,
                    Caide.Commands.BuildScaffold,
-                   Caide.Registry
+                   Caide.Registry,
+                   Caide.Commands.Checkout

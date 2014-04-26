@@ -11,9 +11,11 @@ import System.Environment (getArgs)
 
 import Caide.Codeforces.Parser (codeforcesParser)
 import Caide.Types (CommandHandler(..), parse)
+
+import qualified Caide.Commands.BuildScaffold as BuildScaffold
+import qualified Caide.Commands.Checkout as Checkout
 import qualified Caide.Commands.Init as Init
 import qualified Caide.Commands.ParseProblem as ParseProblem
-import qualified Caide.Commands.BuildScaffold as BuildScaffold
 
 
 
@@ -28,7 +30,7 @@ findRootCaideDir curDir = do
 
 
 commands :: [CommandHandler]
-commands = [Init.cmd, ParseProblem.cmd, BuildScaffold.cmd]
+commands = [Init.cmd, ParseProblem.cmd, BuildScaffold.cmd, Checkout.cmd]
 
 findCommand :: String -> Maybe CommandHandler
 findCommand cmdName = find ((== cmdName) . command) commands

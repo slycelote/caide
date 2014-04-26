@@ -11,6 +11,8 @@ module Caide.Configuration(
     , setActiveProblem
 ) where
 
+import Prelude hiding (readFile)
+
 import Control.Applicative ((<$>))
 import Data.ConfigFile
 import qualified Data.Text as T
@@ -18,13 +20,16 @@ import Filesystem (writeTextFile, createTree, isFile)
 import qualified Filesystem.Path as F
 import Filesystem.Path.CurrentOS (encodeString, decodeString, (</>))
 
+import Data.Text.IO (readFile)
+
 import Caide.Types (ProblemID)
 import Caide.Util (forceEither)
 
 type Config = ConfigParser
 
 readConfig :: F.FilePath -> IO Config
-readConfig file = either (const defaultConf) id <$> readfile defaultConf (encodeString file)
+readConfig file = either (const defaultConf) id . readstring defaultConf . T.unpack <$>
+    readFile (encodeString file)
 
 readRootConf :: F.FilePath -> IO Config
 readRootConf dir = do
@@ -56,12 +61,11 @@ getActiveProblem :: Config -> String
 getActiveProblem conf = getOption conf "core" "problem"
 
 setActiveProblem :: Config -> ProblemID -> Config
-setActiveProblem conf problemId = setOption conf "core" "problem" problemId
+setActiveProblem conf = setOption conf "core" "problem"
 
 defaultConf :: Config
 defaultConf = forceEither $ do
-    let cp = emptyCP
-    cp <- add_section cp "core"
-    cp <- set cp "core" "language" "SimpleCPP"
-    cp <- set cp "core" "problem" ""
-    return cp
+   let cp = emptyCP
+   cp <- add_section cp "core"
+   cp <- set cp "core" "language" "SimpleCPP"
+   set cp "core" "problem" ""
