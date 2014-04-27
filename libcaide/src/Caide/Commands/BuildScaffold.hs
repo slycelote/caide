@@ -7,7 +7,7 @@ import Caide.Types
 import qualified Filesystem.Path as F
 import Filesystem.Path.CurrentOS (decodeString, (</>))
 import Caide.Registry (findLanguage)
-import Caide.Configuration (readRootConf, getActiveProblem)
+import Caide.Configuration (readRootConf, getActiveProblem, readProblemConf, setOption, saveProblemConf)
 
 cmd :: CommandHandler
 cmd = CommandHandler
@@ -25,6 +25,10 @@ generateScaffoldSolution caideRoot [lang] = case findLanguage lang of
         let problem = getActiveProblem conf
         if null problem
             then putStrLn "No active problem. Generate one with `caide problem`"
-            else language `generateScaffold` (caideRoot </> decodeString problem)
+            else do
+                let problemDir = caideRoot </> decodeString problem
+                language `generateScaffold` problemDir
+                problemConf <- readProblemConf problemDir
+                saveProblemConf problemDir $ setOption problemConf "problem" "language" lang
 
 generateScaffoldSolution _ _ = putStrLn $ "Usage " ++ usage cmd 

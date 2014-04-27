@@ -17,7 +17,7 @@ import Caide.Configuration (readRootConf, saveRootConf, setActiveProblem)
 cmd :: CommandHandler
 cmd = CommandHandler
     { command = "problem"
-    , description = "Parses problem description and creates scaffold solution"
+    , description = "Parse problem description"
     , usage = ""
     , action = parseProblem
     }
@@ -37,12 +37,18 @@ parseProblem caideRoot args = do
                 Left err -> putStrLn $ "Encountered a problem while parsing:\n" ++ err
                 Right (problem, samples) -> do
                     let problemDir = caideRoot </> decodeString (problemId problem)
+
+                    -- Prepare problem directory
                     createDirectory False problemDir
                     conf <- readRootConf caideRoot
+
+                    -- Write test cases
                     forM_ (zip samples [1::Int ..]) $ \(sample, i) -> do
                         let inFile  = problemDir </> decodeString ("case" ++ show i ++ ".in")
                             outFile = problemDir </> decodeString ("case" ++ show i ++ ".out")
                         writeTextFile inFile  $ testCaseInput sample
                         writeTextFile outFile $ testCaseOutput sample
+
+                    -- Set active problem
                     saveRootConf caideRoot $ setActiveProblem conf $ problemId problem
                     putStrLn $ "Problem successfully parsed into folder " ++ problemId problem

@@ -3,9 +3,8 @@ module Caide.Commands.Checkout (
 ) where
 
 import Filesystem (isDirectory)
-
-import Filesystem.Path.CurrentOS (decodeString)
-import Filesystem.Path as F
+import Filesystem.Path.CurrentOS (decodeString, (</>))
+import qualified Filesystem.Path as F
 
 import Caide.Configuration (readRootConf, saveRootConf, setActiveProblem)
 import Caide.Types

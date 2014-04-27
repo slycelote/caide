@@ -4,13 +4,12 @@ module Caide.Util(
       downloadDocument
     , getProblemID
     , forceEither
-    , (~>)
 ) where
 
 import Data.Maybe (fromJust)
 import qualified Data.Text as T
 import qualified Filesystem.Path as F
-import Filesystem.Path (dirname)
+import Filesystem.Path (basename)
 import Filesystem.Path.CurrentOS (encodeString)
 import Network.HTTP
 import Network.URI (parseURI)
@@ -50,10 +49,7 @@ downloadDocument url
                 _ -> mkLiftedError $ show r
 
 getProblemID :: F.FilePath -> ProblemID
-getProblemID problemDir = encodeString . dirname $ problemDir
-
-(~>) :: b -> (b -> c) -> c
-(~>) = flip ($)
+getProblemID problemDir = encodeString . basename $ problemDir
 
 forceEither :: Either a c -> c
 forceEither = either (error "Left") id

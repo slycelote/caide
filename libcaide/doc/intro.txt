@@ -45,7 +45,9 @@ might be implemented by the IDE instead.
     * test cases from item 1c)
     * .out and .failed files from item 4
     * Maybe memory and time limits from item 1d)
-  Output: a text report containing description of each failed test case.
+  Output:
+    * a text report containing description of each failed test case.
+    * new testList.txt file
 > caide test
 
 6. Inlining of library code.

@@ -32,4 +32,5 @@ executable caide
                    Caide.Configuration,
                    Caide.Commands.BuildScaffold,
                    Caide.Registry,
-                   Caide.Commands.Checkout
+                   Caide.Commands.Checkout,
+                   Caide.Commands.Make
