@@ -10,6 +10,7 @@ module Caide.Configuration(
     , getActiveProblem
     , setActiveProblem
     , getDefaultLanguage
+    , getBuilder
 
     -- * Problem Configuration
     , readProblemConf
@@ -82,6 +83,9 @@ getActiveProblem conf = getOption conf "core" "problem"
 setActiveProblem :: Config -> ProblemID -> Config
 setActiveProblem conf = setOption conf "core" "problem"
 
+getBuilder :: Config -> String
+getBuilder conf = getOption conf "core" "builder"
+
 getDefaultLanguage :: Config -> String
 getDefaultLanguage conf = getOption conf "core" "language"
 
@@ -90,6 +94,7 @@ defaultConf = forceEither $ do
    let cp = emptyCP
    cp <- add_section cp "core"
    cp <- set cp "core" "language" "simplecpp"
+   cp <- set cp "core" "builder" "none"
    set cp "core" "problem" ""
 
 defaultProblemConf :: Config

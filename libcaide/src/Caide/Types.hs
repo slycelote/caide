@@ -6,6 +6,7 @@ module Caide.Types(
     , TestCase (..)
     , URL
     , CommandHandler (..)
+    , Builder
 ) where
 
 import Data.Text (Text)
@@ -49,3 +50,9 @@ data CommandHandler = CommandHandler
     , usage       :: String
     , action      :: F.FilePath -> [String] -> IO ()
     }
+
+-- | Builder is responsible for building the code and running
+--   test program
+type Builder =  F.FilePath -- ^ Root caide directory
+             -> String     -- ^ Problem ID
+             -> IO Bool    -- ^ Returns True if the build was successful

@@ -17,6 +17,7 @@ import qualified Caide.Commands.Checkout as Checkout
 import qualified Caide.Commands.Init as Init
 import qualified Caide.Commands.Make as Make
 import qualified Caide.Commands.ParseProblem as ParseProblem
+import qualified Caide.Commands.RunTests as RunTests
 
 
 
@@ -31,7 +32,7 @@ findRootCaideDir curDir = do
 
 
 commands :: [CommandHandler]
-commands = [Init.cmd, ParseProblem.cmd, BuildScaffold.cmd, Checkout.cmd, Make.cmd]
+commands = [Init.cmd, ParseProblem.cmd, BuildScaffold.cmd, Checkout.cmd, Make.cmd, RunTests.cmd]
 
 findCommand :: String -> Maybe CommandHandler
 findCommand cmdName = find ((== cmdName) . command) commands

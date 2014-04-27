@@ -14,26 +14,26 @@ int main() {
     ifstream testList("testList.txt");
 
     string testState, testName;
-    while (testList >> testState >> testName) {
+    while (testList >> testName >> testState ) {
 
         if (testState == "skip") {
             cerr << "Skipping test " << testName << endl;
-            ofstream resFile(testName + ".skipped");
+            ofstream resFile((testName + ".skipped").c_str());
         } else if (testState == "run") {
             ostringstream out;
-            ifstream in(testName + ".in");
+            ifstream in((testName + ".in").c_str());
             try {
                 solve(in, out);
             } catch (...) {
                 cerr << "Test " << testName << "threw an exception" << endl;
-                ofstream resFile(testName + ".failed");
+                ofstream resFile((testName + ".failed").c_str());
                 continue;
             }
             string result = out.str();
-            ofstream resFile(testName + ".out");
+            ofstream resFile((testName + ".out").c_str());
             resFile << result;
         } else {
-            ofstream resFile(testName + ".error");
+            ofstream resFile((testName + ".error").c_str());
         }
     }
 

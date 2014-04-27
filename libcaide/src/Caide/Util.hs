@@ -4,12 +4,14 @@ module Caide.Util(
       downloadDocument
     , getProblemID
     , forceEither
+    , copyFileToDir
 ) where
 
 import Data.Maybe (fromJust)
 import qualified Data.Text as T
+import Filesystem (copyFile)
 import qualified Filesystem.Path as F
-import Filesystem.Path (basename)
+import Filesystem.Path (basename, filename, (</>))
 import Filesystem.Path.CurrentOS (encodeString)
 import Network.HTTP
 import Network.URI (parseURI)
@@ -53,3 +55,7 @@ getProblemID problemDir = encodeString . basename $ problemDir
 
 forceEither :: Either a c -> c
 forceEither = either (error "Left") id
+
+copyFileToDir :: F.FilePath -> F.FilePath -> IO ()
+copyFileToDir srcFile dstDir = copyFile srcFile dstFile
+    where dstFile = dstDir </> filename srcFile

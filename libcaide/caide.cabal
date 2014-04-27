@@ -16,7 +16,8 @@ executable caide
                    system-fileio >= 0.3.12,
                    system-filepath >= 0.4.9,
                    tagsoup >= 0.13,
-                   text >= 1.1.0
+                   text >= 1.1.0,
+                   process >=1.2.0
   hs-source-dirs:  src
   ghc-options:     -Wall -rtsopts
   default-language: Haskell2010
@@ -26,11 +27,13 @@ executable caide
                    Caide.Codeforces.Parser,
                    Caide.Util,
                    Caide.CPP.CPPSimple,
-                   Caide.TestResultsProcessor,
                    Caide.Commands.Init,
                    Caide.Commands.ParseProblem,
                    Caide.Configuration,
                    Caide.Commands.BuildScaffold,
                    Caide.Registry,
                    Caide.Commands.Checkout,
-                   Caide.Commands.Make
+                   Caide.Commands.Make,
+                   Caide.Commands.RunTests,
+                   Caide.Builders.None,
+                   Caide.Builders.Custom
