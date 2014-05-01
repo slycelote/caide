@@ -7,6 +7,7 @@ module Caide.Types(
     , URL
     , CommandHandler (..)
     , Builder
+    , Feature (..)
 ) where
 
 import Data.Text (Text)
@@ -19,7 +20,6 @@ data TestCase = TestCase
 
 type ProblemID = String
 
--- | Structure representing a problem
 data Problem = Problem
     { problemName :: Text      -- ^ Human readable identifier, used for displaying in GUI
     , problemId   :: ProblemID -- ^ ID used for folder names, code generation etc.
@@ -44,6 +44,7 @@ data ProgrammingLanguage = ProgrammingLanguage
     }
 
 
+-- | Describes caide command requested by the user, such as 'init' or 'test'
 data CommandHandler = CommandHandler
     { command     :: String
     , description :: String
@@ -55,4 +56,12 @@ data CommandHandler = CommandHandler
 --   test program
 type Builder =  F.FilePath -- ^ Root caide directory
              -> String     -- ^ Problem ID
-             -> IO Bool    -- ^ Returns True if the build was successful
+             -> IO Bool    -- ^ Returns True if the build was successful and test runner didn't crash
+
+-- | A feature is a piece of optional functionality that may be run
+--   at certain points, depending on the configuration. A feature doesn't
+--   run by itself, but only in response to certain events.
+data Feature = Feature
+    { onProblemCreated :: F.FilePath -> String -> IO ()     -- ^ Run after `caide problem`
+    , onProblemCodeCreated :: F.FilePath -> String -> IO () -- ^ Run after `caide lang`
+    }

@@ -18,7 +18,7 @@ cmd :: CommandHandler
 cmd = CommandHandler
     { command = "problem"
     , description = "Parse problem description"
-    , usage = ""
+    , usage = "caide problem <URL>"
     , action = parseProblem
     }
 
@@ -26,13 +26,12 @@ parsers :: [ProblemParser]
 parsers = [codeforcesParser]
 
 parseProblem :: F.FilePath -> [String] -> IO ()
-parseProblem caideRoot args = do
-    let url = head $ map T.pack args
-        parser = find (`matches` url) parsers
+parseProblem caideRoot [url] = do
+    let parser = find (`matches` T.pack url) parsers
     case parser of
         Nothing -> putStrLn "This online judge is not supported"
         Just p  -> do
-            parseResult <- p `parse` url
+            parseResult <- p `parse` T.pack url
             case parseResult of
                 Left err -> putStrLn $ "Encountered a problem while parsing:\n" ++ err
                 Right (problem, samples) -> do
@@ -52,3 +51,5 @@ parseProblem caideRoot args = do
                     -- Set active problem
                     saveRootConf caideRoot $ setActiveProblem conf $ problemId problem
                     putStrLn $ "Problem successfully parsed into folder " ++ problemId problem
+
+parseProblem _ _ = putStrLn $ "Usage: " ++ usage cmd

@@ -54,8 +54,7 @@ might be implemented by the IDE instead.
   Input: 
     * Problem solution from item 2
     * Library of prewritten code
-  Output: a single file to be sent to judging system [May coincide with problem solution
-       if we don't support inlining for the language]
+  Output: a single file to be sent to judging system.
 > caide make
 
 The following items are required only for sanity check: it may happen that due to a bug in
