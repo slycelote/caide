@@ -1,6 +1,7 @@
 module Caide.Types(
       Problem (..)
     , ProblemID
+    , CaideProject (..)
     , ProblemParser (..)
     , ProgrammingLanguage (..)
     , TestCase (..)
@@ -8,6 +9,7 @@ module Caide.Types(
     , CommandHandler (..)
     , Builder
     , Feature (..)
+    , CaideEnvironment
 ) where
 
 import Data.Text (Text)
@@ -44,24 +46,34 @@ data ProgrammingLanguage = ProgrammingLanguage
     }
 
 
+data CaideProject = CaideProject
+    { getUserOption     :: String -> String -> IO String
+    , getInternalOption :: String -> String -> IO String
+    , setInternalOption :: String -> String -> String -> IO ()
+    , getRootDirectory  :: F.FilePath
+    , saveProject       :: IO ()
+    }
+
+type CaideEnvironment = CaideProject
+
 -- | Describes caide command requested by the user, such as 'init' or 'test'
 data CommandHandler = CommandHandler
-    { command     :: String
-    , description :: String
-    , usage       :: String
-    , action      :: F.FilePath -> [String] -> IO ()
+    { command      :: String
+    , description  :: String
+    , usage        :: String
+    , action       :: CaideEnvironment -> [String] -> IO ()
     }
 
 -- | Builder is responsible for building the code and running
 --   test program
-type Builder =  F.FilePath -- ^ Root caide directory
-             -> String     -- ^ Problem ID
-             -> IO Bool    -- ^ Returns True if the build was successful and test runner didn't crash
+type Builder =  CaideEnvironment -- ^ Caide environment
+             -> String           -- ^ Problem ID
+             -> IO Bool          -- ^ Returns True if the build was successful and test runner didn't crash
 
 -- | A feature is a piece of optional functionality that may be run
 --   at certain points, depending on the configuration. A feature doesn't
 --   run by itself, but only in response to certain events.
 data Feature = Feature
-    { onProblemCreated :: F.FilePath -> String -> IO ()     -- ^ Run after `caide problem`
-    , onProblemCodeCreated :: F.FilePath -> String -> IO () -- ^ Run after `caide lang`
+    { onProblemCreated     :: CaideEnvironment -> String -> IO ()   -- ^ Run after `caide problem`
+    , onProblemCodeCreated :: CaideEnvironment -> String -> IO ()   -- ^ Run after `caide lang`
     }

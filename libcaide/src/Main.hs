@@ -10,7 +10,7 @@ import Filesystem.Path.CurrentOS (decodeString, encodeString, parent, (</>))
 import System.Environment (getArgs)
 
 import Caide.Codeforces.Parser (codeforcesParser)
-import Caide.Types (CommandHandler(..), parse)
+import Caide.Types (CommandHandler(..), parse, saveProject)
 
 import qualified Caide.Commands.BuildScaffold as BuildScaffold
 import qualified Caide.Commands.Checkout as Checkout
@@ -18,6 +18,7 @@ import qualified Caide.Commands.Init as Init
 import qualified Caide.Commands.Make as Make
 import qualified Caide.Commands.ParseProblem as ParseProblem
 import qualified Caide.Commands.RunTests as RunTests
+import Caide.Configuration (readCaideProject)
 
 
 
@@ -59,7 +60,14 @@ main = do
                       _ | cmd /= "init" && isNothing caideDir -> putStrLn $ encodeString workDir ++ " is not a valid caide directory"
                         | cmd == "init" && isJust caideDir    -> putStrLn "Caide directory already initialized"
                         -- special case for init command: pass working directory as the first parameter
-                        | otherwise -> action c (fromMaybe workDir caideDir) commandArgs
+                        | otherwise -> runAction c (fromMaybe workDir caideDir) commandArgs
+
+runAction :: CommandHandler -> F.FilePath -> [String] -> IO ()
+runAction cmd caideRoot args = do
+    project <- readCaideProject caideRoot
+    let env = project
+    action cmd env args
+    saveProject project
 
 test :: IO ()
 test = do

@@ -12,7 +12,7 @@ import Filesystem (isDirectory, listDirectory, createTree,
 import Filesystem.Path.CurrentOS (FilePath, decodeString, encodeString, hasExtension, replaceExtension,
                                   basename, filename, (</>))
 
-import Caide.Configuration (readRootConf, getActiveProblem, readProblemConf, getOption)
+import Caide.Configuration (getActiveProblem, readProblemConfig, getProblemOption, getProblemConfigFileInDir)
 import Caide.Registry (findLanguage)
 import Caide.Types
 import Caide.Util (copyFileToDir)
@@ -26,14 +26,13 @@ cmd = CommandHandler
     , action = make
     }
 
-make :: FilePath -> [String] -> IO ()
-make caideRoot _ = do
-    conf <- readRootConf caideRoot
-    let probId = getActiveProblem conf
+make :: CaideEnvironment -> [String] -> IO ()
+make env _ = do
+    probId <- getActiveProblem env
     if null probId
         then putStrLn "No active problem. Generate one with `caide problem`"
         else do
-            let problemDir = caideRoot </> decodeString probId
+            let problemDir = getRootDirectory env </> decodeString probId
             problemExists <- isDirectory problemDir
             if problemExists
                 then makeProblem problemDir
@@ -42,8 +41,8 @@ make caideRoot _ = do
 
 makeProblem :: FilePath -> IO ()
 makeProblem problemDir = do
-    conf <- readProblemConf problemDir
-    case findLanguage $ getOption conf "problem" "language" of
+    conf <- readProblemConfig $ getProblemConfigFileInDir problemDir
+    case findLanguage $ getProblemOption conf "problem" "language" of
         Nothing -> putStrLn "Couldn't determine language for the problem"
         Just lang -> do
             lang `generateTestProgram` problemDir

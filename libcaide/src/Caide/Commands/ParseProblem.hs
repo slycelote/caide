@@ -7,12 +7,11 @@ import Data.List (find)
 import qualified Data.Text as T
 
 import Filesystem (createDirectory, writeTextFile)
-import qualified Filesystem.Path as F
 import Filesystem.Path.CurrentOS (decodeString, (</>))
 
 import Caide.Types
 import Caide.Codeforces.Parser (codeforcesParser)
-import Caide.Configuration (readRootConf, saveRootConf, setActiveProblem)
+import Caide.Configuration (setActiveProblem)
 
 cmd :: CommandHandler
 cmd = CommandHandler
@@ -25,8 +24,8 @@ cmd = CommandHandler
 parsers :: [ProblemParser]
 parsers = [codeforcesParser]
 
-parseProblem :: F.FilePath -> [String] -> IO ()
-parseProblem caideRoot [url] = do
+parseProblem :: CaideEnvironment -> [String] -> IO ()
+parseProblem env [url] = do
     let parser = find (`matches` T.pack url) parsers
     case parser of
         Nothing -> putStrLn "This online judge is not supported"
@@ -35,11 +34,10 @@ parseProblem caideRoot [url] = do
             case parseResult of
                 Left err -> putStrLn $ "Encountered a problem while parsing:\n" ++ err
                 Right (problem, samples) -> do
-                    let problemDir = caideRoot </> decodeString (problemId problem)
+                    let problemDir = getRootDirectory env </> decodeString (problemId problem)
 
                     -- Prepare problem directory
                     createDirectory False problemDir
-                    conf <- readRootConf caideRoot
 
                     -- Write test cases
                     forM_ (zip samples [1::Int ..]) $ \(sample, i) -> do
@@ -49,7 +47,7 @@ parseProblem caideRoot [url] = do
                         writeTextFile outFile $ testCaseOutput sample
 
                     -- Set active problem
-                    saveRootConf caideRoot $ setActiveProblem conf $ problemId problem
+                    setActiveProblem env $ problemId problem
                     putStrLn $ "Problem successfully parsed into folder " ++ problemId problem
 
 parseProblem _ _ = putStrLn $ "Usage: " ++ usage cmd

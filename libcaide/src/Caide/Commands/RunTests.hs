@@ -13,7 +13,7 @@ import Filesystem (listDirectory, readTextFile, writeTextFile)
 import Filesystem.Path (FilePath, (</>),  replaceExtension, hasExtension, basename)
 import Filesystem.Path.CurrentOS (decodeString, encodeString)
 
-import Caide.Configuration (getActiveProblem, getBuilder, readRootConf)
+import Caide.Configuration (getActiveProblem, getBuilder)
 import Caide.Registry (findBuilder)
 import Caide.Types
 
@@ -25,15 +25,15 @@ cmd =  CommandHandler
     , action = runTests
     }
 
-runTests :: FilePath -> [String] -> IO ()
-runTests caideRoot _ = do
-    conf <- readRootConf caideRoot
-    let builderName = getBuilder conf
+runTests :: CaideEnvironment -> [String] -> IO ()
+runTests env _ = do
+    probId <- getActiveProblem env
+    builderName <- getBuilder env
+    let caideRoot = getRootDirectory env
         builder = findBuilder builderName
-        probId = getActiveProblem conf
         testsDir = caideRoot </> decodeString probId </> decodeString ".caideproblem" </> decodeString "test"
         reportFile = testsDir </> decodeString "report.txt"
-    buildOk <- builder caideRoot probId
+    buildOk <- builder env probId
     if buildOk
     then do
         report <- generateReport testsDir

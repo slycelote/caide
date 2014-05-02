@@ -4,10 +4,9 @@ module Caide.Commands.BuildScaffold (
 
 import Caide.Types
 
-import qualified Filesystem.Path as F
 import Filesystem.Path.CurrentOS (decodeString, (</>))
 import Caide.Registry (findLanguage)
-import Caide.Configuration (readRootConf, getActiveProblem, readProblemConf, setOption, saveProblemConf)
+import Caide.Configuration (getActiveProblem, getProblemConfigFile, readProblemConfig, saveProblemConfig, setProblemOption)
 
 cmd :: CommandHandler
 cmd = CommandHandler
@@ -17,18 +16,18 @@ cmd = CommandHandler
     , action = generateScaffoldSolution
     }
 
-generateScaffoldSolution :: F.FilePath -> [String] -> IO ()
-generateScaffoldSolution caideRoot [lang] = case findLanguage lang of
+generateScaffoldSolution :: CaideEnvironment -> [String] -> IO ()
+generateScaffoldSolution env [lang] = case findLanguage lang of
     Nothing -> putStrLn $ "Unknown or unsupported language: " ++ lang
     Just language -> do
-        conf <- readRootConf caideRoot
-        let problem = getActiveProblem conf
+        problem <- getActiveProblem env
         if null problem
             then putStrLn "No active problem. Generate one with `caide problem`"
             else do
-                let problemDir = caideRoot </> decodeString problem
+                let problemDir = getRootDirectory env </> decodeString problem
+                    problemConfigFile = getProblemConfigFile env problem
                 language `generateScaffold` problemDir
-                problemConf <- readProblemConf problemDir
-                saveProblemConf problemDir $ setOption problemConf "problem" "language" lang
+                problemConf <- readProblemConfig problemConfigFile
+                saveProblemConfig (setProblemOption problemConf "problem" "language" lang) problemConfigFile
 
 generateScaffoldSolution _ _ = putStrLn $ "Usage " ++ usage cmd 

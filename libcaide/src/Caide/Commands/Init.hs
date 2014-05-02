@@ -4,9 +4,8 @@ module Caide.Commands.Init(
 
 import Control.Monad (forM_)
 import qualified Data.Text as T
-import Filesystem (createDirectory, writeTextFile)
+import Filesystem (writeTextFile)
 
-import qualified Filesystem.Path as F
 import Filesystem.Path.CurrentOS (decodeString, encodeString, (</>))
 
 import Caide.Types
@@ -19,10 +18,9 @@ cmd = CommandHandler
     , action = initialize
     }
 
-initialize :: F.FilePath -> [String] -> IO ()
-initialize curDir _ = do
-    let caideDir = curDir </> decodeString ".caide"
-    createDirectory False caideDir
+initialize :: CaideEnvironment -> [String] -> IO ()
+initialize env _ = do
+    let curDir = getRootDirectory env
     forM_ defaultTemplates $ \(fileName, fileContents) ->
         writeTextFile (curDir </> decodeString fileName) (T.pack fileContents)
     putStrLn $ "Initialized caide directory at " ++ encodeString curDir
