@@ -6,6 +6,7 @@ module Caide.Configuration (
     , setActiveProblem
     , getDefaultLanguage
     , getBuilder
+    , getFeatures
 
     -- * Problem Configuration
     , ProblemConfig
@@ -21,6 +22,7 @@ import Prelude hiding (readFile, FilePath)
 
 import Control.Applicative ((<$>))
 import Data.ConfigFile
+import Data.IORef (IORef, newIORef, modifyIORef, readIORef)
 import qualified Data.Text as T
 import Data.Text.IO (readFile)
 import Filesystem (writeTextFile, createTree, isFile)
@@ -29,8 +31,7 @@ import Filesystem.Path (FilePath, (</>), directory)
 
 
 import Caide.Types (ProblemID, CaideProject (..), getInternalOption, setInternalOption, getUserOption)
-import Caide.Util (forceEither)
-import Data.IORef (IORef, newIORef, modifyIORef, readIORef)
+import Caide.Util (forceEither, splitString)
 
 
 {------------------------ Problem specific state -----------------------}
@@ -82,7 +83,7 @@ readCaideProject caideRoot = do
         , getInternalOption = getOpt internalConf
         , setInternalOption = setOpt internalConf
         , getRootDirectory  = caideRoot
-        , saveProject       = saveConf rootConf rootConfigFile >> saveConf internalConf internalConfigFile  
+        , saveProject       = saveConf rootConf rootConfigFile >> saveConf internalConf internalConfigFile
         }
 
 
@@ -98,7 +99,8 @@ getBuilder conf = getUserOption conf "core" "builder"
 getDefaultLanguage :: CaideProject -> IO String
 getDefaultLanguage conf = getUserOption conf "core" "language"
 
-
+getFeatures :: CaideProject -> IO [String]
+getFeatures conf = splitString ", " <$> getUserOption conf "core" "features"
 
 {--------------------------- Internals -------------------------------}
 
@@ -127,6 +129,7 @@ defaultRootConf = forceEither $ do
    let cp = emptyCP
    cp <- add_section cp "core"
    cp <- set cp "core" "language" "simplecpp"
+   cp <- set cp "core" "features" ""
    set cp "core" "builder" "none"
 
 defaultInternalConf :: ConfigParser

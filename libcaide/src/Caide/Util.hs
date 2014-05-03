@@ -5,6 +5,7 @@ module Caide.Util(
     , getProblemID
     , forceEither
     , copyFileToDir
+    , splitString
 ) where
 
 import Data.Maybe (fromJust)
@@ -59,3 +60,10 @@ forceEither = either (error "Left") id
 copyFileToDir :: F.FilePath -> F.FilePath -> IO ()
 copyFileToDir srcFile dstDir = copyFile srcFile dstFile
     where dstFile = dstDir </> filename srcFile
+
+splitString :: String -> String -> [String]
+splitString separators s = reverse (go s []) where
+    go [] parts = parts
+    go str parts = let (_, rest)     = span (`elem` separators) str
+                       (word, rest') = break (`elem` separators) rest
+                   in go rest' (if null word then parts else word:parts)

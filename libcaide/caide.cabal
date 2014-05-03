@@ -10,14 +10,15 @@ executable caide
                    base >= 4,
                    bytestring >= 0.10.4.0,
                    ConfigFile >= 1.1,
-                   network >= 2.4.2.2,
                    HTTP >= 4000.2.11,
-                   regex-compat-tdfa >= 0.95.1.4,
+                   mtl >= 2.1,
+                   network >= 2.4.2.2,
+                   process >=1.2.0,
                    system-fileio >= 0.3.12,
                    system-filepath >= 0.4.9,
                    tagsoup >= 0.13,
                    text >= 1.1.0,
-                   process >=1.2.0
+                   xml >= 1.3
   hs-source-dirs:  src
   ghc-options:     -Wall -rtsopts
   default-language: Haskell2010
@@ -36,4 +37,6 @@ executable caide
                    Caide.Commands.Make,
                    Caide.Commands.RunTests,
                    Caide.Builders.None,
-                   Caide.Builders.Custom
+                   Caide.Builders.Custom,
+                   Caide.Features.Codelite,
+                   Caide.Xml

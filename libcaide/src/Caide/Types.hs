@@ -76,4 +76,5 @@ type Builder =  CaideEnvironment -- ^ Caide environment
 data Feature = Feature
     { onProblemCreated     :: CaideEnvironment -> String -> IO ()   -- ^ Run after `caide problem`
     , onProblemCodeCreated :: CaideEnvironment -> String -> IO ()   -- ^ Run after `caide lang`
+    , onProblemCheckedOut  :: CaideEnvironment -> String -> IO ()   -- ^ Run after `caide checkout`
     }
