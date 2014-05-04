@@ -15,11 +15,11 @@ int main() {
 
     string testState, testName;
     while (testList >> testName >> testState ) {
-
-        if (testState == "skip") {
+        if (testState == "Skip") {
             cerr << "Skipping test " << testName << endl;
             ofstream resFile((testName + ".skipped").c_str());
-        } else if (testState == "run") {
+        } else if (testState == "Run") {
+            cerr << "Running test " << testName << endl;
             ostringstream out;
             ifstream in((testName + ".in").c_str());
             try {

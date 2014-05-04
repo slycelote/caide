@@ -33,7 +33,7 @@ findBuilder name = case find ((== map toLower name) . fst) builders of
     Nothing           -> Custom.builder name
 
 features :: [(String, Feature)]
-features = [("Codelite", Codelite.feature)]
+features = [("codelite", Codelite.feature)]
 
 findFeature :: String -> Maybe Feature
 findFeature name = snd <$> find ((== map toLower name). fst) features

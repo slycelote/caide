@@ -4,11 +4,13 @@ module Caide.Commands.Make (
 
 import Control.Applicative ((<$>))
 import Control.Monad (forM_)
+import Data.List (sortBy)
+import Data.Ord (comparing)
+
 import qualified Data.Text as T
 
 import Prelude hiding (FilePath)
-import Filesystem (isDirectory, listDirectory, createTree,
-                   isFile, readTextFile, writeTextFile, removeFile, copyFile)
+import Filesystem (isDirectory, listDirectory, createTree, removeFile, copyFile)
 import Filesystem.Path.CurrentOS (FilePath, decodeString, encodeString, hasExtension, replaceExtension,
                                   basename, filename, (</>))
 
@@ -16,6 +18,7 @@ import Caide.Configuration (getActiveProblem, readProblemConfig, getProblemOptio
 import Caide.Registry (findLanguage)
 import Caide.Types
 import Caide.Util (copyFileToDir)
+import Caide.TestCases.Types
 
 
 cmd :: CommandHandler
@@ -56,7 +59,7 @@ copyTestInputs problemDir = do
     createTree tempTestDir
 
     -- Cleanup output from previous test run; leave only testList.txt file
-    filesToClear <- filter ((/= "testList.txt") . encodeString . filename) <$> listDirectory tempTestDir
+    filesToClear <- filter ((`notElem` ["testList.txt", "report.txt"]) . encodeString . filename) <$> listDirectory tempTestDir
     forM_ filesToClear removeFile
 
     fileList <- listDirectory problemDir
@@ -71,6 +74,7 @@ copyTestInputs problemDir = do
 
 
 
+
 -- | Updates testList.txt file:
 --    * removes missing tests
 --    * adds new tests
@@ -78,23 +82,17 @@ copyTestInputs problemDir = do
 updateTestList :: FilePath -> IO ()
 updateTestList testsDir = do
     let testListFile = testsDir </> decodeString "testList.txt"
-    fileExists <- isFile testListFile
-    tests <- if fileExists then readTests testListFile else return []
+        previousRunFile = testsDir </> decodeString "report.txt"
+    tests <- readTests testListFile
     inFileNames <- map (encodeString . basename) .
                    filter (`hasExtension` T.pack "in") <$>
                    listDirectory testsDir
-    let newTests = filter (`notElem` map fst tests) inFileNames
+    report <- readTestReport previousRunFile
+    let newTestNames = filter (`notElem` map fst tests) inFileNames
         updatedTests = filter (\(name, _) -> name `elem` inFileNames) tests
-                       ++ zip newTests (repeat "run")
-    writeTests updatedTests testListFile
-
-readTests :: FilePath -> IO [(String, String)]
-readTests testListFile = do
-    testLines <- map (words . T.unpack) . T.lines <$> readTextFile testListFile
-    let toTest [name, state] = (name, state)
-        toTest _ = error "Corrupted testList file"
-    return $ map toTest testLines
-
-writeTests :: [(String, String)] -> FilePath -> IO ()
-writeTests tests testListFile = writeTextFile testListFile text
-    where text = T.pack . unlines . map (\(name, state) -> name ++ " " ++ state) $ tests
+                       ++ zip newTestNames (repeat Run)
+        succeededAndName (testName, _) = case lookup testName report of
+            Just (Error ()) -> (False, testName)
+            _               -> (True, testName)
+        sortedTests = sortBy (comparing succeededAndName) updatedTests
+    writeTests sortedTests testListFile

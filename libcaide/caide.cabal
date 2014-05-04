@@ -39,4 +39,5 @@ executable caide
                    Caide.Builders.None,
                    Caide.Builders.Custom,
                    Caide.Features.Codelite,
-                   Caide.Xml
+                   Caide.Xml,
+                   Caide.TestCases.Types
