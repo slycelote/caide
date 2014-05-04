@@ -82,23 +82,31 @@ getCodeliteProblems env = do
     projectExists <- mapM haveCodelite problemIds
     return [probId | (probId, True) <- zip problemIds projectExists]
 
+
+errorIfFailed :: Monad m => String -> m Bool -> m ()
+errorIfFailed message mf = do
+    ok <- mf
+    unless ok $ error message
+
 generateWorkspaceXml :: [String] -> String -> State Cursor ()
 generateWorkspaceXml problems activeProblem = do
     let makeProjectElem probId = mkElem "Project" (makeAttribs probId)
         makeAttribs probId = [("Name", probId),("Path", probId ++ "/" ++ probId ++ ".project")]
                              ++ [("Active", "Yes") | probId == activeProblem]
+
     modifyFromJust $ findRight (isTag "Codelite_Workspace")
     removeChildren (isTag "project")
-    ok <- goToChild ["BuildMatrix"]
-    unless ok $ error "BuildMatrix not found"
+
+    errorIfFailed "BuildMatrix not found" $ goToChild ["BuildMatrix"]
     forM_ problems $ \probId -> modify (insertLeft $ Elem $ makeProjectElem probId)
+
     removeChildren (isTag "WorkspaceConfiguration")
     forM_ ["Debug", "Release"] $ \conf -> do
-        ok <- insertLastChild $ Elem $ mkElem "WorkspaceConfiguration" [("Name", conf), ("Selected", "yes")]
-        unless ok $ error "Coudln't insert WorkspaceConfiguration"
+        errorIfFailed "Coudln't insert WorkspaceConfiguration" $
+            insertLastChild $ Elem $ mkElem "WorkspaceConfiguration" [("Name", conf), ("Selected", "yes")]
         forM_ problems $ \probId -> do
-            ok <- insertLastChild $ Elem $ mkElem "Project" [("Name", probId), ("ConfigName", conf)]
-            unless ok $ error "Coudln't insert Project"
+            errorIfFailed "Coudln't insert Project" $
+                insertLastChild $ Elem $ mkElem "Project" [("Name", probId), ("ConfigName", conf)]
             modifyFromJust parent -- go to WorkspaceConfiguration
         modifyFromJust parent -- go to BuildMatrix
     goToDocRoot

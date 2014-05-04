@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Caide.Configuration (
       readCaideProject
 
@@ -21,6 +22,7 @@ module Caide.Configuration (
 import Prelude hiding (readFile, FilePath)
 
 import Control.Applicative ((<$>))
+import Control.Monad.Error (MonadError)
 import Data.ConfigFile
 import Data.IORef (IORef, newIORef, modifyIORef, readIORef)
 import qualified Data.Text as T
@@ -123,23 +125,25 @@ getOption conf section key = forceEither $ get conf section key
 setOption :: ConfigParser -> String -> String -> String -> ConfigParser
 setOption conf section key val = forceEither $ set conf section key val
 
+addSection :: MonadError CPError m => SectionSpec -> ConfigParser -> m ConfigParser
+addSection section conf = add_section conf section
+
+setValue :: MonadError CPError m => SectionSpec -> OptionSpec -> String -> ConfigParser -> m ConfigParser
+setValue section key value conf = set conf section key value
 
 defaultRootConf :: ConfigParser
-defaultRootConf = forceEither $ do
-   let cp = emptyCP
-   cp <- add_section cp "core"
-   cp <- set cp "core" "language" "simplecpp"
-   cp <- set cp "core" "features" ""
-   set cp "core" "builder" "none"
+defaultRootConf = forceEither $
+   addSection "core" emptyCP >>=
+   setValue "core" "language" "simplecpp" >>=
+   setValue "core" "features" "" >>=
+   setValue "core" "builder" "none"
 
 defaultInternalConf :: ConfigParser
-defaultInternalConf = forceEither $ do
-    let cp = emptyCP
-    cp <- add_section cp "core"
-    set cp "core" "problem" ""
+defaultInternalConf = forceEither $
+    addSection "core" emptyCP >>=
+    setValue "core" "problem" ""
 
 defaultProblemConf :: ConfigParser
-defaultProblemConf = forceEither $ do
-    let cp = emptyCP
-    cp <- add_section cp "problem"
-    set cp "problem" "language" "simplecpp"
+defaultProblemConf = forceEither $
+    addSection "problem" emptyCP >>=
+    setValue "problem" "language" "simplecpp"

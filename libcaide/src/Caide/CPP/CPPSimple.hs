@@ -26,6 +26,7 @@ generateCPPTestProgram problemDir = do
         testProgramPath = problemDir </> decodeString (probID ++ "_test.cpp")
         testTemplatePath = F.parent problemDir </> decodeString "templates" </> decodeString "test_template.cpp"
     fileExists <- isFile testProgramPath
+    -- TODO: Replace CAIDE_EXE token with full path to caide executable in test template
     unless fileExists $ copyFile testTemplatePath testProgramPath
 
 inlineCPPCode :: F.FilePath -> IO ()
