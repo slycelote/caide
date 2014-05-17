@@ -55,7 +55,7 @@ getProblemID :: F.FilePath -> ProblemID
 getProblemID problemDir = encodeString . basename $ problemDir
 
 forceEither :: Either a c -> c
-forceEither = either (error "Left") id
+forceEither = either (error "Left in forceEither") id
 
 copyFileToDir :: F.FilePath -> F.FilePath -> IO ()
 copyFileToDir srcFile dstDir = copyFile srcFile dstFile

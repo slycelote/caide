@@ -1,0 +1,6 @@
+[submodule "libcaide/cbits/llvm"]
+	path = libcaide/cbits/llvm
+	url = http://llvm.org/git/llvm.git
+[submodule "libcaide/cbits/clang"]
+	path = libcaide/cbits/clang
+	url = http://llvm.org/git/clang.git

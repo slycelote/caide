@@ -41,8 +41,7 @@ tryDo action = do
 
 -- | Checks whether current position points at specific tag name
 isTag :: String -> Cursor -> Bool
-isTag name (Cur (Elem e) _ _ _)
-    | map toLower(qName(elName e)) == map toLower name  = True
+isTag name (Cur (Elem e) _ _ _) = map toLower(qName(elName e)) == map toLower name
 isTag _ _ = False
 
 hasAttr :: String -> String -> Cursor -> Bool

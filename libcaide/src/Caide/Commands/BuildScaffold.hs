@@ -29,9 +29,10 @@ generateScaffoldSolution env [lang] = case findLanguage lang of
         if null problem
             then putStrLn "No active problem. Generate one with `caide problem`"
             else do
-                let problemDir = getRootDirectory env </> decodeString problem
+                let caideRoot = getRootDirectory env
+                    problemDir = caideRoot </> decodeString problem
                     problemConfigFile = getProblemConfigFile env problem
-                language `generateScaffold` problemDir
+                generateScaffold language env problemDir
                 problemConf <- readProblemConfig problemConfigFile
                 saveProblemConfig (setProblemOption problemConf "problem" "language" lang) problemConfigFile
                 features <- mapMaybe findFeature <$> getFeatures env

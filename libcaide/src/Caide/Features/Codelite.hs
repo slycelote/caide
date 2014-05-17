@@ -30,9 +30,9 @@ feature = Feature
 
 generateProject :: CaideEnvironment -> ProblemID -> IO ()
 generateProject env probId = do
-    putStrLn "Generating codelite project"
     conf <- readProblemConfig $ getProblemConfigFile env probId
-    when (getProblemOption conf "problem" "language" `elem` ["simplecpp"]) $ do
+    when (getProblemOption conf "problem" "language" `elem` ["simplecpp", "cpp", "c++"]) $ do
+        putStrLn "Generating codelite project"
         let projectFile = getRootDirectory env </> decodeString probId </> decodeString (probId ++ ".project")
         projectExists <- isFile projectFile
         if projectExists

@@ -38,18 +38,18 @@ make env _ = do
             let problemDir = getRootDirectory env </> decodeString probId
             problemExists <- isDirectory problemDir
             if problemExists
-                then makeProblem problemDir
+                then makeProblem env problemDir
                 else putStrLn $ "Problem " ++ probId ++ " doesn't exist"
 
 
-makeProblem :: FilePath -> IO ()
-makeProblem problemDir = do
+makeProblem :: CaideEnvironment -> FilePath -> IO ()
+makeProblem env problemDir = do
     conf <- readProblemConfig $ getProblemConfigFileInDir problemDir
     case findLanguage $ getProblemOption conf "problem" "language" of
         Nothing -> putStrLn "Couldn't determine language for the problem"
         Just lang -> do
-            lang `generateTestProgram` problemDir
-            lang `inlineCode` problemDir
+            generateTestProgram lang env problemDir
+            inlineCode lang env problemDir
             copyTestInputs problemDir
             updateTestList $ problemDir </> decodeString ".caideproblem" </> decodeString "test"
 

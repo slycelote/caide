@@ -1,12 +1,20 @@
 name:           caide
 version:        0.1
-cabal-version:  >=1.10
-build-type:     Simple
+cabal-version:  >= 1.14
+build-type:     Custom
 author:         slycelote
 license:        BSD3
 
+Flag preferlibcpp
+  description: Prefer building with libc++
+  default: False
+
+Flag preferlibstdcpp
+  description: Prefer building with libstdc++ (takes precedence over PreferLibCPP)
+  default: False
+
 executable caide
-  build-depends:   
+  build-depends:
                    base >= 4,
                    bytestring >= 0.10.4.0,
                    ConfigFile >= 1.1,
@@ -14,19 +22,22 @@ executable caide
                    mtl >= 2.1,
                    network >= 2.4.2.2,
                    process >=1.2.0,
-                   system-fileio >= 0.3.12,
+                   system-fileio == 0.3.12,
                    system-filepath >= 0.4.9,
                    tagsoup >= 0.13,
                    text >= 1.1.0,
                    xml >= 1.3
   hs-source-dirs:  src
-  ghc-options:     -Wall -rtsopts
+  ghc-options:     -Wall -rtsopts -static
+  include-dirs:    cbits
+  extra-lib-dirs:  cbits/build, cbits/clangbuild/out/lib
   default-language: Haskell2010
   main-is:         Main.hs
-  other-modules:   
+  other-modules:
                    Caide.Types,
                    Caide.Codeforces.Parser,
                    Caide.Util,
+                   Caide.CPP.CBinding,
                    Caide.CPP.CPPSimple,
                    Caide.Commands.Init,
                    Caide.Commands.ParseProblem,
@@ -40,4 +51,6 @@ executable caide
                    Caide.Builders.Custom,
                    Caide.Features.Codelite,
                    Caide.Xml,
-                   Caide.TestCases.Types
+                   Caide.TestCases.Types,
+                   Caide.CPP.CPP,
+                   Caide.Commands.GetOpt

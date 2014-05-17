@@ -12,6 +12,7 @@ import Data.List (find)
 
 import Caide.Types
 import qualified Caide.CPP.CPPSimple as CPPSimple
+import qualified Caide.CPP.CPP as CPP
 import qualified Caide.Builders.None as None
 import qualified Caide.Builders.Custom as Custom
 
@@ -19,7 +20,8 @@ import qualified Caide.Features.Codelite as Codelite
 
 
 languages :: [([String], ProgrammingLanguage)]
-languages = [(["simplecpp", "simplec++"], CPPSimple.language)]
+languages = [(["simplecpp", "simplec++"], CPPSimple.language),
+             (["cpp", "c++"], CPP.language)]
 
 findLanguage :: String -> Maybe ProgrammingLanguage
 findLanguage name = snd <$> find (\(names, _) -> map toLower name `elem` names) languages

@@ -40,9 +40,9 @@ data ProblemParser = ProblemParser
 -- programming language. The first argument to all functions is the path to directory
 -- where the problem is located.
 data ProgrammingLanguage = ProgrammingLanguage
-    { generateScaffold    :: F.FilePath -> IO ()
-    , generateTestProgram :: F.FilePath -> IO ()
-    , inlineCode          :: F.FilePath -> IO ()
+    { generateScaffold    :: CaideEnvironment -> F.FilePath -> IO ()
+    , generateTestProgram :: CaideEnvironment -> F.FilePath -> IO ()
+    , inlineCode          :: CaideEnvironment -> F.FilePath -> IO ()
     }
 
 

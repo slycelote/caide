@@ -120,7 +120,9 @@ saveConfig conf file = do
     writeTextFile file $ T.pack $ to_string conf
 
 getOption :: Get_C a => ConfigParser -> String -> String -> a
-getOption conf section key = forceEither $ get conf section key
+getOption conf section key = case get conf section key of
+    Left err  -> error $ show err
+    Right val -> val
 
 setOption :: ConfigParser -> String -> String -> String -> ConfigParser
 setOption conf section key val = forceEither $ set conf section key val
