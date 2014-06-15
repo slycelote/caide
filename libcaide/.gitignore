@@ -2,6 +2,7 @@ cabal-dev
 dist
 .dist-buildwrapper
 .cabal-sandbox
+cabal.sandbox.config
 *.swp
 *~
 /cbits/build
