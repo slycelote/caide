@@ -1,10 +1,12 @@
+{-# LANGUAGE CPP #-}
+
 module Caide.Commands.Init(
       cmd
 ) where
 
 import Control.Monad (forM_)
 import qualified Data.Text as T
-import Filesystem (writeTextFile)
+import Filesystem (writeTextFile, createDirectory)
 
 import Filesystem.Path.CurrentOS (decodeString, encodeString, (</>))
 
@@ -21,21 +23,13 @@ cmd = CommandHandler
 initialize :: CaideEnvironment -> [String] -> IO ()
 initialize env _ = do
     let curDir = getRootDirectory env
+        templatesDir = curDir </> decodeString "templates"
+    createDirectory True templatesDir
     forM_ defaultTemplates $ \(fileName, fileContents) ->
-        writeTextFile (curDir </> decodeString fileName) (T.pack fileContents)
+        writeTextFile (templatesDir </> decodeString fileName) (T.pack fileContents)
     putStrLn $ "Initialized caide directory at " ++ encodeString curDir
 
--- TODO: hardcode text of templates here when finalized
 defaultTemplates :: [(FilePath, String)]
 defaultTemplates = [
-    ("solution_template.cpp",
-
-    ""),
-
-    ("main_template.cpp",
-    ""),
-
-    ("test_template.cpp",
-    "")
-
+#include "defaultTemplates.inc"
     ]

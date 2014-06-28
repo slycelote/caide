@@ -4,7 +4,7 @@ import Control.Exception
 import Control.Monad
 import Control.Applicative
 import Data.Char(isSpace)
-import Data.List (isPrefixOf)
+import Data.List (isPrefixOf, intersperse)
 import Distribution.PackageDescription
 import Distribution.Verbosity
 import Distribution.Simple
@@ -44,6 +44,13 @@ main = do
 libclangSharedLibraries :: [String]
 libclangSharedLibraries = ["clang", "LLVM-3.4"]
 
+
+getTemplateFiles :: FilePath -> IO [(String, String)]
+getTemplateFiles dir = do
+    files <- getDirectoryContents dir
+    forM [f | f <- files, head f /= '.'] $ \fileName -> do
+        contents <- readFile $ dir </> fileName
+        return (fileName, contents)
 
 canonicalizePath :: FilePath -> IO FilePath
 canonicalizePath path = do
@@ -130,10 +137,16 @@ libClangConfHook (pkg, pbi) flags = do
 libClangBuildHook :: PackageDescription -> LocalBuildInfo -> UserHooks -> BuildFlags -> IO ()
 libClangBuildHook pkg lbi usrHooks flags = do
   let verbosity = fromFlag (buildVerbosity flags)
+  curDir <- getCurrentDirectory
+
+  -- Build list of file templates
+  defaultTemplates <- getTemplateFiles (curDir </> "templates")
+  let defaultTemplatesInc = curDir </> "src" </> "Caide" </> "Commands" </> "defaultTemplates.inc"
+  writeFile defaultTemplatesInc $ unlines $ map ("  " ++) . intersperse ", " $ map show defaultTemplates
+
+  -- Build C++ library, if necessary
   case lookup (FlagName "cppinliner") (configConfigurationsFlags $ configFlags lbi) of
     Just True -> do
-        curDir <- getCurrentDirectory
-
         -- Infer which standard library to use.
         cppStdLib <- preferredStdLib (withPrograms lbi) (configFlags lbi)
         let linkCPPStdLib = case cppStdLib of
