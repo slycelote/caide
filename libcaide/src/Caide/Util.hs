@@ -38,7 +38,7 @@ downloadDocument url
                                rqMethod = GET,
                                rqHeaders = [],
                                rqBody = ""}
-          
+
         resp <- simpleHTTP request
         case resp of
             Left x  -> mkLiftedError $ "Error connecting: " ++ show x

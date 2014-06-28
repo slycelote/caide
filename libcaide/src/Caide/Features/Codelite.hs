@@ -18,7 +18,7 @@ import Text.XML.Light.Cursor
 
 import Caide.Types
 import Caide.Xml (goToChild, removeChildren, isTag, insertLastChild, mkElem, modifyFromJust,
-                  changeAttr, hasAttr, goToDocRoot, showXml)
+                  changeAttr, hasAttrEqualTo, goToDocRoot, showXml)
 import Caide.Configuration (readProblemConfig, getProblemOption, getProblemConfigFile, getActiveProblem)
 
 feature :: Feature
@@ -50,7 +50,7 @@ generateProjectXML :: ProblemID -> State Cursor ()
 generateProjectXML probId = do
     modifyFromJust $ findRight (isTag "Codelite_Project")
     changeAttr "Name" probId
-    modifyFromJust $ findChild $ \c -> isTag "VirtualDirectory" c && hasAttr "Name" "src" c
+    modifyFromJust $ findChild $ \c -> isTag "VirtualDirectory" c && hasAttrEqualTo "Name" "src" c
     removeChildren (isTag "File")
     forM_ [probId ++ ".cpp", probId ++ "_test.cpp"] $ \file -> do
          ok <- insertLastChild $ Elem $ mkElem "File" [("Name", file)]
