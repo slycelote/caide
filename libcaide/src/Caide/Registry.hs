@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Caide.Registry (
       languages
     , findLanguage
@@ -12,7 +14,9 @@ import Data.List (find)
 
 import Caide.Types
 import qualified Caide.CPP.CPPSimple as CPPSimple
+#ifdef CLANG_INLINER
 import qualified Caide.CPP.CPP as CPP
+#endif
 import qualified Caide.Builders.None as None
 import qualified Caide.Builders.Custom as Custom
 
@@ -21,8 +25,11 @@ import qualified Caide.Features.VisualStudio as VS
 
 
 languages :: [([String], ProgrammingLanguage)]
-languages = [(["simplecpp", "simplec++"], CPPSimple.language),
-             (["cpp", "c++"], CPP.language)]
+languages = [ (["simplecpp", "simplec++"], CPPSimple.language)
+#ifdef CLANG_INLINER
+            , (["cpp", "c++"], CPP.language)
+#endif
+            ]
 
 findLanguage :: String -> Maybe ProgrammingLanguage
 findLanguage name = snd <$> find (\(names, _) -> map toLower name `elem` names) languages

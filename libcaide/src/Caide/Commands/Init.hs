@@ -30,12 +30,7 @@ defaultTemplates :: [(FilePath, String)]
 defaultTemplates = [
     ("solution_template.cpp",
 
-    "#include <iostream>\n\
-    \\n\
-    \void solve(std::istream& in, std::ostream& out)\n\
-    \{\n\
-    \}\n\
-    \"),
+    ""),
 
     ("main_template.cpp",
     ""),

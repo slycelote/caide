@@ -13,6 +13,10 @@ Flag preferlibstdcpp
   description: Prefer building with libstdc++ (takes precedence over PreferLibCPP)
   default: False
 
+Flag cppinliner
+  description: Include support for inlining C++ code via libclang
+  default: True
+
 executable caide
   build-depends:
                    base >= 4,
@@ -29,8 +33,15 @@ executable caide
                    text >= 1.1.0,
                    uuid >= 1.3,
                    xml >= 1.3
+  other-extensions: CPP
   hs-source-dirs:  src
   ghc-options:     -Wall -rtsopts -static
+  if flag(cppinliner) {
+    cpp-options:   -DCLANG_INLINER
+    other-modules:
+                   Caide.CPP.CBinding,
+                   Caide.CPP.CPP
+  }
   include-dirs:    cbits
   extra-lib-dirs:  cbits/build, cbits/clangbuild/out/lib
   default-language: Haskell2010
@@ -39,7 +50,6 @@ executable caide
                    Caide.Types,
                    Caide.Codeforces.Parser,
                    Caide.Util,
-                   Caide.CPP.CBinding,
                    Caide.CPP.CPPSimple,
                    Caide.Commands.Init,
                    Caide.Commands.ParseProblem,
@@ -55,5 +65,4 @@ executable caide
                    Caide.Features.VisualStudio,
                    Caide.Xml,
                    Caide.TestCases.Types,
-                   Caide.CPP.CPP,
                    Caide.Commands.GetOpt
