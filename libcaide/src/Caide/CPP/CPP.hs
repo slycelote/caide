@@ -37,7 +37,7 @@ inlineCPPCode env problemDir = do
 
     systemHeaderDirs <- map decodeString . splitString "\r\n," <$> getUserOption env "cpp" "system_header_dirs"
 
-    inlineLibraryCode (solutionPath:inlinedTemplatePath:libraryCPPFiles) systemHeaderDirs inlinedCodePath
+    inlineLibraryCode (solutionPath:inlinedTemplatePath:libraryCPPFiles) systemHeaderDirs [libraryDirectory] inlinedCodePath
     removeUnusedCode inlinedCodePath systemHeaderDirs finalCodePath
 
 listDirectoryRecursively :: FilePath -> IO [FilePath]

@@ -14,7 +14,8 @@ std::vector<std::string> fromCharArrays(const char** a, int n) {
 
 
 FL_EXPORT_C(void, inline_code)(const char** cppFiles, int numCppFiles,
-       const char** systemHeaders, int numSystemHeaders, const char* outputFile)
+       const char** systemHeaders, int numSystemHeaders,
+       const char** userHeaders, int numUserHeaders, const char* outputFile)
 {
     std::cout << "Hello FFI!\n";
     for (int i = 0; i < numCppFiles; ++i)
@@ -22,7 +23,8 @@ FL_EXPORT_C(void, inline_code)(const char** cppFiles, int numCppFiles,
     for (int i = 0; i < numSystemHeaders; ++i)
         std::cout << i << ": " << systemHeaders[i] << std::endl;
     const std::vector<std::string> systemHeaders_ = fromCharArrays(systemHeaders, numSystemHeaders);
-    Inliner inliner(systemHeaders_);
+    const std::vector<std::string> userHeaders_ = fromCharArrays(userHeaders, numUserHeaders);
+    Inliner inliner(systemHeaders_, userHeaders_);
     std::ofstream out(outputFile);
     for (int i = 0; i < numCppFiles; ++i)
         out << inliner.doInline(cppFiles[i]) << "\n";

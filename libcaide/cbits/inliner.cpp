@@ -256,8 +256,10 @@ static const char* systemPaths[] = {
 };
 // </Warning!!> -- End of Platform Specific Code
 
-Inliner::Inliner(const std::vector<std::string>& systemHeadersDirectories):
-    systemHeadersDirectories(systemHeadersDirectories)
+Inliner::Inliner(const std::vector<std::string>& systemHeadersDirectories,
+                 const std::vector<std::string>& userHeadersDirectories)
+    : systemHeadersDirectories(systemHeadersDirectories)
+    , userHeadersDirectories(userHeadersDirectories)
 {}
 
 std::string Inliner::doInline(const std::string& cppFile) {
@@ -291,6 +293,8 @@ std::string Inliner::doInline(const std::string& cppFile) {
                               compiler.getLangOpts(), TI);
     for (size_t i = 0; i < systemHeadersDirectories.size(); ++i)
         hso->AddPath(systemHeadersDirectories[i], clang::frontend::System, false, false);
+    for (size_t i = 0; i < userHeadersDirectories.size(); ++i)
+        hso->AddPath(userHeadersDirectories[i], clang::frontend::Quoted, false, false);
 
     clang::InitializePreprocessor(compiler.getPreprocessor(), compiler.getPreprocessorOpts(),
                                   *hso, compiler.getFrontendOpts());

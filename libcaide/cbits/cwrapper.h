@@ -26,7 +26,9 @@
 EXPORT {
 #endif
   FL_EXPORT_C(void, inline_code)(const char** cppFiles, int numCppFiles,
-       const char** systemHeaders, int numSystemHeaders, const char* outputFile);
+       const char** systemHeaders, int numSystemHeaders,
+       const char** userHeaders, int numUserHeaders,
+       const char* outputFile);
   FL_EXPORT_C(void, remove_unused_code)(const char* cppFile,
        const char** systemHeaders, int numSystemHeaders, const char* outputFile);
 #ifdef __cplusplus

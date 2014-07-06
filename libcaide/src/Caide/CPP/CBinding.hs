@@ -15,14 +15,15 @@ import Filesystem.Path.CurrentOS (encodeString)
 
 
 foreign import ccall unsafe "cwrapper.h inline_code"
-    c_inline_code  :: Ptr CString -> CInt -> Ptr CString -> CInt -> CString -> IO ()
+    c_inline_code  :: Ptr CString -> CInt -> Ptr CString -> CInt -> Ptr CString -> CInt -> CString -> IO ()
 
-inlineLibraryCode :: [FilePath] -> [FilePath] -> FilePath -> IO ()
-inlineLibraryCode cppFiles systemHeaderDirs outputFile =
+inlineLibraryCode :: [FilePath] -> [FilePath] -> [FilePath] -> FilePath -> IO ()
+inlineLibraryCode cppFiles systemHeaderDirs userHeaderDirs outputFile =
     withArrayOfStrings (map encodeString cppFiles) $ \cpp ->
         withArrayOfStrings (map encodeString systemHeaderDirs) $ \systemHeaders ->
-            withCString (encodeString outputFile) $ \out ->
-                c_inline_code cpp (fromIntegral $ length cppFiles) systemHeaders (fromIntegral $ length systemHeaderDirs) out
+            withArrayOfStrings (map encodeString userHeaderDirs) $ \userHeaders ->
+                withCString (encodeString outputFile) $ \out ->
+                    c_inline_code cpp (fromIntegral $ length cppFiles) systemHeaders (fromIntegral $ length systemHeaderDirs) userHeaders (fromIntegral $ length userHeaderDirs) out
 
 foreign import ccall unsafe "cwrapper.h remove_unused_code"
     c_remove_unused_code  :: CString -> Ptr CString -> CInt -> CString -> IO ()
