@@ -53,17 +53,17 @@ private:
             return;
         from = from->getCanonicalDecl();
         to = to->getCanonicalDecl();
-        if (to->getDeclContext()->isFunctionOrMethod()) {
-            // reference to local variable
-            return;
-        }
         if (!isUserFile(to->getLocation())) {
             // reference to standard library
             return;
         }
         uses[from].insert(to);
-        std::cerr << "Reference from <" << toString(from->getSourceRange()) << ">"
-                  << " to <" << toString(to->getSourceRange())
+        std::cerr << "Reference from <"
+                  //<< toString(from->getSourceRange())
+                  << declToString(from).substr(0, 50)
+                  << "> to <"
+                  //<< toString(to->getSourceRange())
+                  << declToString(to).substr(0, 50)
                   << std::endl;
     }
 
@@ -91,6 +91,13 @@ public:
     bool VisitDeclRefExpr(DeclRefExpr* ref) {
         //std::cerr << "Visiting declref at " << toString(ref->getSourceRange()) << std::endl;
         insertReference(currentDecl, ref->getDecl());
+        return true;
+    }
+
+    bool VisitValueDecl(ValueDecl* valueDecl) {
+        const Type* valueType = valueDecl->getType().getTypePtrOrNull();
+        if (valueType)
+            insertReference(valueDecl, valueType->getAsCXXRecordDecl());
         return true;
     }
 
@@ -122,6 +129,10 @@ public:
         return true;
     }
 
+    bool VisitCXXRecordDecl(CXXRecordDecl* recordDecl) {
+        // TODO dependencies on base classes?
+
+    }
 };
 
 
@@ -143,21 +154,36 @@ public:
         FunctionDecl* canonicalDecl = functionDecl->getCanonicalDecl();
         const bool funcIsUnused = used.find(canonicalDecl) == used.end();
         const bool thisIsRedeclaration = !functionDecl->doesThisDeclarationHaveABody() && declared.find(canonicalDecl) != declared.end();
-        if (funcIsUnused || thisIsRedeclaration) {
-            Rewriter::RewriteOptions opts;
-            SourceLocation start = functionDecl->getLocStart();
-            SourceLocation end = functionDecl->getLocEnd();
-            SourceLocation semicolonAfterDefinition = findLocationAfterSemi(end, functionDecl->getASTContext());
-            if (semicolonAfterDefinition.isValid())
-                end = semicolonAfterDefinition;
-            rewriter.RemoveText(SourceRange(start, end), opts);
-        }
+        if (funcIsUnused || thisIsRedeclaration)
+            removeDecl(functionDecl);
         declared.insert(canonicalDecl);
         return false;
     }
-    // TODO unused class declaration
+
+    bool VisitCXXRecordDecl(CXXRecordDecl* recordDecl) {
+        CXXRecordDecl* canonicalDecl = recordDecl->getCanonicalDecl();
+        const bool classIsUnused = used.find(canonicalDecl) == used.end();
+        const bool thisIsRedeclaration = !recordDecl->isCompleteDefinition() && declared.find(canonicalDecl) != declared.end();
+
+        if (classIsUnused || thisIsRedeclaration)
+            removeDecl(recordDecl);
+        declared.insert(canonicalDecl);
+        return true;
+    }
+
     // TODO remove #pragma once
     // TODO global variables
+
+private:
+    void removeDecl(Decl* decl) {
+        SourceLocation start = decl->getLocStart();
+        SourceLocation end = decl->getLocEnd();
+        SourceLocation semicolonAfterDefinition = findLocationAfterSemi(end, decl->getASTContext());
+        if (semicolonAfterDefinition.isValid())
+            end = semicolonAfterDefinition;
+        Rewriter::RewriteOptions opts;
+        rewriter.RemoveText(SourceRange(start, end), opts);
+    }
 };
 
 class OptimizerConsumer: public ASTConsumer {
