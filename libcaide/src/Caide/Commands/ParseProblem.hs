@@ -12,12 +12,13 @@ import Filesystem.Path.CurrentOS (decodeString, (</>))
 import Caide.Types
 import Caide.Codeforces.Parser (codeforcesParser)
 import Caide.Configuration (setActiveProblem)
+import Data.Char (isAlphaNum, isAscii)
 
 cmd :: CommandHandler
 cmd = CommandHandler
     { command = "problem"
-    , description = "Parse problem description"
-    , usage = "caide problem <URL>"
+    , description = "Parse problem description or create a new problem"
+    , usage = "caide problem <URL or problem ID>"
     , action = parseProblem
     }
 
@@ -28,7 +29,18 @@ parseProblem :: CaideEnvironment -> [String] -> IO ()
 parseProblem env [url] = do
     let parser = find (`matches` T.pack url) parsers
     case parser of
-        Nothing -> putStrLn "This online judge is not supported"
+        Nothing -> do -- Create a new problem
+            let probId = url
+            if any (\c -> not (isAscii c) || not (isAlphaNum c)) probId
+            then putStrLn "Problem ID must be a string of alphanumeric characters"
+            else do
+                let problemDir = getRootDirectory env </> decodeString probId
+                -- Prepare problem directory
+                createDirectory False problemDir
+                -- Set active problem
+                setActiveProblem env probId
+                putStrLn $ "Problem successfully created in folder " ++ probId
+
         Just p  -> do
             parseResult <- p `parse` T.pack url
             case parseResult of
