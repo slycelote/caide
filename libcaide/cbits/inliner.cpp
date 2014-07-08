@@ -78,7 +78,7 @@ public:
                              SrcMgr::CharacteristicKind FileType,
                              FileID PrevFID/* = FileID()*/)
     {
-//        llvm::errs() << "File changed to " << srcManager.getFilename(Loc) << "\n";
+        //llvm::errs() << "File changed to " << srcManager.getFilename(Loc) << "\n";
         const FileEntry* curEntry = srcManager.getFileEntryForID(PrevFID);
         if (Reason == PPCallbacks::ExitFile && curEntry) {
             // Don't track system headers including each other
@@ -101,6 +101,7 @@ public:
             } else if (isSystemHeader(PrevFID)) {
                 // - This is a new system header. Leave include directive as is,
                 //   i. e. do nothing.
+                //llvm::errs() << currentFile << " hasn't been seen " << srcManager.getFilename(Loc) << "\n";
             } else {
                 // - This is a new user header. Apply all replacements from current file.
                 replacementStack[includedFrom].replaceWith = calcReplacements(includedFrom, PrevFID);
@@ -122,19 +123,23 @@ public:
         }
     }
 
-    virtual void FileSkipped(const FileEntry &ParentFile,
-                             const Token &FilenameTok,
-                             SrcMgr::CharacteristicKind FileType) {
+    // Documentation seems to be wrong: the first parameter is included file rather than parent
+    // TODO: move detection of double inclusion to optimizer step
+    virtual void FileSkipped(const FileEntry &IncludedFile, const Token &FilenameTok,
+                             SrcMgr::CharacteristicKind FileType)
+    {
         // Don't track system headers including each other
-        if (!isSystemHeader(&ParentFile)) {
+        if (!srcManager.isInSystemHeader(FilenameTok.getLocation())) {
             // File skipped as part of normal header guard optimization / #pragma once
             replacementStack.back().replaceWith = "";
+            includedHeaders.insert(IncludedFile.getName());
+            //llvm::errs() << "Skip include of " << IncludedFile.getName() << " from " << srcManager.getFilename(FilenameTok.getLocation())<< "#" << srcManager.getSpellingLineNumber(FilenameTok.getLocation()) << " " << replacementStack.back().fileName << "\n";
         }
     }
 
     std::string getResult() const {
         if (replacementStack.size() != 1)
-            return "Error";
+            return "Caide error";
         else
             return replacementStack[0].replaceWith;
     }
@@ -224,7 +229,7 @@ private:
         return !srcManager.isInSystemHeader(loc) && loc.isValid();
     }
 
-    bool wasSeen(const std::string filename) const {
+    bool wasSeen(const std::string& filename) const {
         return includedHeaders.find(filename) != includedHeaders.end();
     }
 
