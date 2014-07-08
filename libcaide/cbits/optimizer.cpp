@@ -49,6 +49,8 @@ private:
     }
 
     void insertReference(Decl* from, Decl* to) {
+        if (!from || !to)
+            return;
         from = from->getCanonicalDecl();
         to = to->getCanonicalDecl();
         if (to->getDeclContext()->isFunctionOrMethod()) {
@@ -87,7 +89,7 @@ public:
     }
 
     bool VisitDeclRefExpr(DeclRefExpr* ref) {
-        std::cerr << "Visiting declref at " << toString(ref->getSourceRange()) << std::endl;
+        //std::cerr << "Visiting declref at " << toString(ref->getSourceRange()) << std::endl;
         insertReference(currentDecl, ref->getDecl());
         return true;
     }
@@ -153,6 +155,9 @@ public:
         declared.insert(canonicalDecl);
         return false;
     }
+    // TODO unused class declaration
+    // TODO remove #pragma once
+    // TODO global variables
 };
 
 class OptimizerConsumer: public ASTConsumer {

@@ -33,6 +33,9 @@ FL_EXPORT_C(void, inline_code)(const char** cppFiles, int numCppFiles,
 FL_EXPORT_C(void, remove_unused_code)(const char* cppFile,
        const char** systemHeaders, int numSystemHeaders, const char* outputFile)
 {
+    for (int i = 0; i < numSystemHeaders; ++i)
+        std::cout << i << ": " << systemHeaders[i] << std::endl;
+    std::cout << cppFile << std::endl;
     const std::vector<std::string> systemHeaders_ = fromCharArrays(systemHeaders, numSystemHeaders);
     Optimizer optimizer(systemHeaders_);
     std::ofstream out(outputFile);
