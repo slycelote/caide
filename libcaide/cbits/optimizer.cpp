@@ -38,7 +38,11 @@ private:
 
 private:
     std::string toString(SourceLocation loc) const {
-        return loc.printToString(sourceManager);
+        //return loc.printToString(sourceManager);
+        std::ostringstream os;
+        os << sourceManager.getSpellingLineNumber(loc) << ":" <<
+              sourceManager.getSpellingColumnNumber(loc);
+        return os.str();
     }
     std::string toString(SourceRange range) const {
         return toString(range.getBegin()) + " -- " + toString(range.getEnd());
@@ -59,12 +63,10 @@ private:
         }
         uses[from].insert(to);
         std::cerr << "Reference from <"
-                  //<< toString(from->getSourceRange())
-                  << declToString(from).substr(0, 50)
-                  << "> to <"
-                  //<< toString(to->getSourceRange())
-                  << declToString(to).substr(0, 50)
-                  << std::endl;
+                  << declToString(from).substr(0, 20)
+                  << ">" << toString(from->getSourceRange()) << " to <"
+                  << declToString(to).substr(0, 20)
+                  << ">" << toString(to->getSourceRange()) << "\n";
     }
 
 public:
@@ -72,6 +74,7 @@ public:
         : sourceManager(srcMgr)
         , uses(uses)
     {}
+    bool shouldVisitImplicitCode() const { return true; }
 
     bool VisitCallExpr(CallExpr* callExpr) {
         Expr* callee = callExpr->getCallee();
@@ -83,6 +86,8 @@ public:
 
     bool VisitCXXConstructExpr(CXXConstructExpr* constructorExpr) {
         insertReference(currentDecl, constructorExpr->getConstructor());
+        // implicit constructor may no be visited; make sure we add dependency on its class
+        insertReference(currentDecl, constructorExpr->getConstructor()->getParent());
         return true;
     }
 
@@ -101,6 +106,7 @@ public:
 
     bool VisitCXXConstructorDecl(CXXConstructorDecl* constructorDecl) {
         // TODO
+        cerr << "Visit constructor: " << declToString(constructorDecl) << endl;
         return true;
     }
 
@@ -117,11 +123,6 @@ public:
     bool VisitFunctionDecl(FunctionDecl* f) {
         if (f->hasBody()) {
             currentDecl = f;
-            Stmt* FuncBody = f->getBody();
-
-            // Type name as string
-            QualType QT = f->getResultType();
-            string TypeStr = QT.getAsString();
 
             // Function name
             DeclarationName DeclName = f->getNameInfo().getName();
@@ -180,6 +181,8 @@ public:
     }
 
     // TODO remove #pragma once
+    // TODO duplicate using directives
+    // TODO remove member fields/methods in classes that are not used as template parameters of STL
 
 private:
     void removeDecl(Decl* decl) {
