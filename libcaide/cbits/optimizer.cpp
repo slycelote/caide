@@ -76,10 +76,8 @@ public:
     bool VisitCallExpr(CallExpr* callExpr) {
         Expr* callee = callExpr->getCallee();
         Decl* calleeDecl = callExpr->getCalleeDecl();
-        if (!isUserFile(calleeDecl->getCanonicalDecl()->getSourceRange().getBegin())) {
-            return true;
-        }
-        insertReference(currentDecl, calleeDecl);
+        if (isUserFile(calleeDecl->getCanonicalDecl()->getSourceRange().getBegin()))
+            insertReference(currentDecl, calleeDecl);
         return true;
     }
 
@@ -106,8 +104,13 @@ public:
         return true;
     }
 
-    bool VisitMemberExprDecl(MemberExpr* memberExpr) {
+    bool VisitMemberExpr(MemberExpr* memberExpr) {
         insertReference(currentDecl, memberExpr->getMemberDecl());
+        return true;
+    }
+
+    bool VisitFieldDecl(FieldDecl* field) {
+        insertReference(field, field->getParent());
         return true;
     }
 
@@ -129,9 +132,14 @@ public:
         return true;
     }
 
+    bool VisitCXXMethodDecl(CXXMethodDecl* method) {
+        insertReference(method, method->getParent());
+        return true;
+    }
+
     bool VisitCXXRecordDecl(CXXRecordDecl* recordDecl) {
         // TODO dependencies on base classes?
-
+        return true;
     }
 };
 
@@ -168,21 +176,29 @@ public:
         if (classIsUnused || thisIsRedeclaration)
             removeDecl(recordDecl);
         declared.insert(canonicalDecl);
-        return true;
+        return false;
     }
 
     // TODO remove #pragma once
-    // TODO global variables
 
 private:
     void removeDecl(Decl* decl) {
         SourceLocation start = decl->getLocStart();
         SourceLocation end = decl->getLocEnd();
-        SourceLocation semicolonAfterDefinition = findLocationAfterSemi(end, decl->getASTContext());
+        SourceLocation semicolonAfterDefinition = findSemiAfterLocation(end, decl->getASTContext());
+        std::cerr << "REMOVE: " << toString(start) << " " << toString(end)
+           << " " << toString(semicolonAfterDefinition) << std::endl;
         if (semicolonAfterDefinition.isValid())
             end = semicolonAfterDefinition;
         Rewriter::RewriteOptions opts;
+        opts.RemoveLineIfEmpty = true;
         rewriter.RemoveText(SourceRange(start, end), opts);
+    }
+    bool isDeclUsed(Decl* decl) const {
+        return used.find(decl->getCanonicalDecl()) != used.end();
+    }
+    std::string toString(const SourceLocation& loc) const {
+        return loc.printToString(sourceManager);
     }
 };
 
@@ -252,25 +268,6 @@ private:
     References uses;
     std::vector<Decl*> topLevelDecls;
 };
-
-// <Warning!!> -- Platform Specific Code lives here
-// This depends on A) that you're running linux and
-// B) that you have the same GCC LIBs installed that
-// I do.
-// Search through Clang itself for something like this,
-// go on, you won't find it. The reason why is Clang
-// has its own versions of std* which are installed under
-// /usr/local/lib/clang/<version>/include/
-// See somewhere around Driver.cpp:77 to see Clang adding
-// its version of the headers to its include path.
-static const char* systemPaths[] = {
-    "/usr/include",
-    "/usr/include/i386-linux-gnu",
-    "/usr/lib/gcc/i686-linux-gnu/4.6/include",
-    "/usr/include/c++/4.6",
-    "/usr/include/c++/4.6/i686-linux-gnu",
-};
-// </Warning!!> -- End of Platform Specific Code
 
 Optimizer::Optimizer(const std::vector<std::string>& systemHeadersDirectories):
     systemHeadersDirectories(systemHeadersDirectories)
