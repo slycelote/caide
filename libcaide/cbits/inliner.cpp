@@ -94,7 +94,8 @@ public:
             while (replacementStack[includedFrom].fileName == currentFile)
                 --includedFrom;
 
-            if (wasSeen(currentFile)) {
+            // - Mark this header as visited for future CPP files.
+            if (!includedHeaders.insert(currentFile).second) {
                 // - If current header should be skipped, set empty replacement
                 //llvm::errs() << currentFile << " was seen\n";
                 replacementStack[includedFrom].replaceWith = "";
@@ -110,9 +111,6 @@ public:
             //llvm::errs() << currentFile << "  --->  " << (includedFrom + 1) << "\n";
             // - Actually rewind.
             replacementStack.resize(includedFrom + 1);
-
-            // - Mark this header as visited for future CPP files.
-            includedHeaders.insert(currentFile);
         }
     }
 
@@ -124,15 +122,19 @@ public:
     }
 
     // Documentation seems to be wrong: the first parameter is included file rather than parent
-    // TODO: move detection of double inclusion to optimizer step
+    // TODO: move detection of double inclusion to optimizer step?
     virtual void FileSkipped(const FileEntry &IncludedFile, const Token &FilenameTok,
                              SrcMgr::CharacteristicKind FileType)
     {
         // Don't track system headers including each other
         if (!srcManager.isInSystemHeader(FilenameTok.getLocation())) {
             // File skipped as part of normal header guard optimization / #pragma once
-            replacementStack.back().replaceWith = "";
-            includedHeaders.insert(IncludedFile.getName());
+            //
+            // It's important to do a manual check here because in other versions of STL
+            // the header may not have been included. In other words, we need to explicitly
+            // include every file that we use.
+            if (!includedHeaders.insert(IncludedFile.getName()).second)
+                replacementStack.back().replaceWith = "";
             //llvm::errs() << "Skip include of " << IncludedFile.getName() << " from " << srcManager.getFilename(FilenameTok.getLocation())<< "#" << srcManager.getSpellingLineNumber(FilenameTok.getLocation()) << " " << replacementStack.back().fileName << "\n";
         }
     }
