@@ -27,6 +27,16 @@
 using namespace clang;
 using namespace std;
 
+
+class null_stream: public ostream {
+    template<typename T> ostream& operator<<(const T&) { return *this; }
+};
+
+ostream& dbg() {
+    //static null_stream null; return null;
+    return std::cerr;
+}
+
 typedef std::map<Decl*, std::set<Decl*> > References;
 
 class DependenciesCollector : public RecursiveASTVisitor<DependenciesCollector> {
@@ -77,6 +87,7 @@ public:
     bool shouldVisitImplicitCode() const { return true; }
 
     bool VisitCallExpr(CallExpr* callExpr) {
+        std::cerr << __FUNCTION__ << std::endl;
         Expr* callee = callExpr->getCallee();
         Decl* calleeDecl = callExpr->getCalleeDecl();
         if (isUserFile(calleeDecl->getCanonicalDecl()->getSourceRange().getBegin()))
@@ -85,6 +96,7 @@ public:
     }
 
     bool VisitCXXConstructExpr(CXXConstructExpr* constructorExpr) {
+        std::cerr << __FUNCTION__ << std::endl;
         insertReference(currentDecl, constructorExpr->getConstructor());
         // implicit constructor may no be visited; make sure we add dependency on its class
         insertReference(currentDecl, constructorExpr->getConstructor()->getParent());
@@ -92,12 +104,14 @@ public:
     }
 
     bool VisitDeclRefExpr(DeclRefExpr* ref) {
-        //std::cerr << "Visiting declref at " << toString(ref->getSourceRange()) << std::endl;
+        std::cerr << __FUNCTION__ << std::endl;
+        std::cerr << "Visiting declref at " << toString(ref->getSourceRange()) << std::endl;
         insertReference(currentDecl, ref->getDecl());
         return true;
     }
 
     bool VisitValueDecl(ValueDecl* valueDecl) {
+        std::cerr << __FUNCTION__ << std::endl;
         const Type* valueType = valueDecl->getType().getTypePtrOrNull();
         if (valueType)
             insertReference(valueDecl, valueType->getAsCXXRecordDecl());
@@ -105,22 +119,33 @@ public:
     }
 
     bool VisitCXXConstructorDecl(CXXConstructorDecl* constructorDecl) {
+        std::cerr << __FUNCTION__ << std::endl;
         // TODO
         cerr << "Visit constructor: " << declToString(constructorDecl) << endl;
         return true;
     }
 
     bool VisitMemberExpr(MemberExpr* memberExpr) {
+        std::cerr << __FUNCTION__ << std::endl;
         insertReference(currentDecl, memberExpr->getMemberDecl());
         return true;
     }
 
     bool VisitFieldDecl(FieldDecl* field) {
+        std::cerr << __FUNCTION__ << std::endl;
         insertReference(field, field->getParent());
         return true;
     }
 
     bool VisitFunctionDecl(FunctionDecl* f) {
+        if (f->getTemplatedKind() == FunctionDecl::TK_FunctionTemplate) {
+            // skip non-instantiated template function
+            return false;
+        }
+        std::cerr << __FUNCTION__ << std::endl;
+        FunctionTemplateSpecializationInfo* specInfo = f->getTemplateSpecializationInfo();
+        if (specInfo)
+            insertReference(f, specInfo->getTemplate());
         if (f->hasBody()) {
             currentDecl = f;
 
@@ -134,6 +159,7 @@ public:
     }
 
     bool VisitCXXMethodDecl(CXXMethodDecl* method) {
+        std::cerr << __FUNCTION__ << std::endl;
         insertReference(method, method->getParent());
         return true;
     }
@@ -161,12 +187,24 @@ public:
 
     bool VisitFunctionDecl(FunctionDecl* functionDecl) {
         FunctionDecl* canonicalDecl = functionDecl->getCanonicalDecl();
+        if (canonicalDecl->getTemplatedKind() != FunctionDecl::TK_NonTemplate) {
+            // Will be processed as FunctionTemplateDecl
+            return false;
+        }
         const bool funcIsUnused = used.find(canonicalDecl) == used.end();
         const bool thisIsRedeclaration = !functionDecl->doesThisDeclarationHaveABody() && declared.find(canonicalDecl) != declared.end();
-        if (funcIsUnused || thisIsRedeclaration)
+        if (funcIsUnused || thisIsRedeclaration) {
+            std::cerr << __FUNCTION__ << std::endl;
             removeDecl(functionDecl);
+        }
         declared.insert(canonicalDecl);
         return false;
+    }
+
+    bool VisitFunctionTemplateDecl(FunctionTemplateDecl* functionDecl) {
+        std::cerr << __FUNCTION__ << std::endl;
+        if (used.find(functionDecl) == used.end())
+            removeDecl(functionDecl);
     }
 
     bool VisitCXXRecordDecl(CXXRecordDecl* recordDecl) {
