@@ -85,10 +85,13 @@ public:
         , uses(uses)
     {}
     bool shouldVisitImplicitCode() const { return true; }
+    bool shouldVisitTemplateInstantiations() const { return true; }
 
     bool VisitCallExpr(CallExpr* callExpr) {
         std::cerr << __FUNCTION__ << std::endl;
         Expr* callee = callExpr->getCallee();
+        if (isa<UnresolvedMemberExpr>(callee) || isa<CXXDependentScopeMemberExpr>(callee))
+            return false;
         Decl* calleeDecl = callExpr->getCalleeDecl();
         if (isUserFile(calleeDecl->getCanonicalDecl()->getSourceRange().getBegin()))
             insertReference(currentDecl, calleeDecl);
@@ -98,14 +101,15 @@ public:
     bool VisitCXXConstructExpr(CXXConstructExpr* constructorExpr) {
         std::cerr << __FUNCTION__ << std::endl;
         insertReference(currentDecl, constructorExpr->getConstructor());
-        // implicit constructor may no be visited; make sure we add dependency on its class
-        insertReference(currentDecl, constructorExpr->getConstructor()->getParent());
+        // implicit constructor may not be visited; make sure we add dependency on its class
+        // TODO: ???
+        //insertReference(currentDecl, constructorExpr->getConstructor()->getParent());
         return true;
     }
 
     bool VisitDeclRefExpr(DeclRefExpr* ref) {
-        std::cerr << __FUNCTION__ << std::endl;
-        std::cerr << "Visiting declref at " << toString(ref->getSourceRange()) << std::endl;
+        //std::cerr << __FUNCTION__ << std::endl;
+        //std::cerr << "Visiting declref at " << toString(ref->getSourceRange()) << std::endl;
         insertReference(currentDecl, ref->getDecl());
         return true;
     }
@@ -137,12 +141,29 @@ public:
         return true;
     }
 
+    bool VisitClassTemplateDecl(ClassTemplateDecl* templateDecl) {
+        std::cerr << __FUNCTION__ << std::endl;
+        for (ClassTemplateDecl::spec_iterator i = templateDecl->spec_begin();
+                i != templateDecl->spec_end(); ++i)
+        {
+            //insertReference(*i, templateDecl);
+        }
+        insertReference(templateDecl, templateDecl->getTemplatedDecl());
+        return false;
+    }
+
+    bool VisitClassTemplateSpecializationDecl(ClassTemplateSpecializationDecl* specDecl) {
+        std::cerr << __FUNCTION__ << std::endl;
+        insertReference(specDecl, specDecl->getSpecializedTemplate());
+        return true;
+    }
+
     bool VisitFunctionDecl(FunctionDecl* f) {
         if (f->getTemplatedKind() == FunctionDecl::TK_FunctionTemplate) {
             // skip non-instantiated template function
             return false;
         }
-        std::cerr << __FUNCTION__ << std::endl;
+        //std::cerr << __FUNCTION__ << std::endl;
         FunctionTemplateSpecializationInfo* specInfo = f->getTemplateSpecializationInfo();
         if (specInfo)
             insertReference(f, specInfo->getTemplate());
@@ -165,7 +186,9 @@ public:
     }
 
     bool VisitCXXRecordDecl(CXXRecordDecl* recordDecl) {
+        std::cerr << __FUNCTION__ << " " << recordDecl->getTemplateSpecializationKind() << std::endl;
         // TODO dependencies on base classes?
+        insertReference(recordDecl, recordDecl->getDescribedClassTemplate());
         return true;
     }
 };
@@ -201,25 +224,45 @@ public:
         return false;
     }
 
+    // TODO: unused explicit function template specializations are not removed
     bool VisitFunctionTemplateDecl(FunctionTemplateDecl* functionDecl) {
         std::cerr << __FUNCTION__ << std::endl;
         if (used.find(functionDecl) == used.end())
             removeDecl(functionDecl);
     }
 
+    // TODO: unused exlicit class template specializations are removed twice
     bool VisitCXXRecordDecl(CXXRecordDecl* recordDecl) {
+        bool isTemplated = recordDecl->getDescribedClassTemplate();
+        TemplateSpecializationKind specKind = recordDecl->getTemplateSpecializationKind();
+        std::cerr << __FUNCTION__ << specKind << " " << std::endl;
+        if (isTemplated && (specKind == TSK_ImplicitInstantiation || specKind == TSK_Undeclared))
+            return false;
         CXXRecordDecl* canonicalDecl = recordDecl->getCanonicalDecl();
         const bool classIsUnused = used.find(canonicalDecl) == used.end();
         const bool thisIsRedeclaration = !recordDecl->isCompleteDefinition() && declared.find(canonicalDecl) != declared.end();
 
-        if (classIsUnused || thisIsRedeclaration)
+        if (classIsUnused || thisIsRedeclaration) {
             removeDecl(recordDecl);
+        }
         declared.insert(canonicalDecl);
         return false;
     }
 
+    bool VisitClassTemplateDecl(ClassTemplateDecl* templateDecl) {
+        std::cerr << __FUNCTION__ << std::endl;
+        ClassTemplateDecl* canonicalDecl = templateDecl->getCanonicalDecl();
+        const bool classIsUnused = used.find(canonicalDecl) == used.end();
+        const bool thisIsRedeclaration = !templateDecl->isThisDeclarationADefinition() && declared.find(canonicalDecl) != declared.end();
+
+        if (classIsUnused || thisIsRedeclaration) {
+            removeDecl(templateDecl);
+        }
+        declared.insert(canonicalDecl);
+    }
+
     // TODO remove #pragma once
-    // TODO duplicate using directives
+    // TODO remove duplicate using directives
     // TODO remove member fields/methods in classes that are not used as template parameters of STL
 
 private:
@@ -251,6 +294,7 @@ public:
     {}
 
     virtual bool HandleTopLevelDecl(DeclGroupRef DR) {
+        std::cerr << __FUNCTION__ << std::endl;
         for (DeclGroupRef::iterator b = DR.begin(), e = DR.end(); b != e; ++b) {
             Decl* decl = *b;
             if (sourceManager.isInMainFile(decl->getLocStart())) {
@@ -260,6 +304,19 @@ public:
             }
         }
         return true;
+    }
+
+    virtual void HandleTagDeclDefinition(TagDecl* decl) {
+        std::cerr << __FUNCTION__ << std::endl;
+        if (ClassTemplateSpecializationDecl* specDecl = dyn_cast<ClassTemplateSpecializationDecl>(decl))
+        {
+            if (sourceManager.isInMainFile(decl->getLocStart())) {
+                topLevelDecls.push_back(specDecl);
+                DependenciesCollector visitor(sourceManager, uses);
+                visitor.TraverseDecl(specDecl);
+            }
+
+        }
     }
 
     virtual void HandleTranslationUnit(ASTContext& Ctx) {
