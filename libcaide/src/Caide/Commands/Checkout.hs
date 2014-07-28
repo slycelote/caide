@@ -2,10 +2,15 @@ module Caide.Commands.Checkout (
       cmd
 ) where
 
+import Control.Applicative ((<$>))
+import Control.Monad (forM_)
+import Data.Maybe (mapMaybe)
+
 import Filesystem (isDirectory)
 import Filesystem.Path.CurrentOS (decodeString, (</>))
 
-import Caide.Configuration (setActiveProblem)
+import Caide.Configuration (setActiveProblem, getFeatures)
+import Caide.Registry (findFeature)
 import Caide.Types
 
 cmd :: CommandHandler
@@ -25,6 +30,9 @@ checkoutProblem env [probId] = do
         then do
             setActiveProblem env probId
             putStrLn $ "Checked out problem " ++ probId
+            features <- mapMaybe findFeature <$> getFeatures env
+            forM_ features $ \feature -> onProblemCheckedOut feature env probId
         else putStrLn $ "Problem " ++ probId ++ " doesn't exist"
 
 checkoutProblem _ _ = putStrLn $ "Usage: " ++ usage cmd
+
