@@ -93,7 +93,7 @@ public:
         if (isa<UnresolvedMemberExpr>(callee) || isa<CXXDependentScopeMemberExpr>(callee))
             return false;
         Decl* calleeDecl = callExpr->getCalleeDecl();
-        if (isUserFile(calleeDecl->getCanonicalDecl()->getSourceRange().getBegin()))
+        if (isUserFile(Z(calleeDecl)->getCanonicalDecl()->getSourceRange().getBegin()))
             insertReference(currentDecl, calleeDecl);
         return true;
     }
@@ -267,6 +267,7 @@ public:
 
 private:
     void removeDecl(Decl* decl) {
+        Z(decl);
         SourceLocation start = decl->getLocStart();
         SourceLocation end = decl->getLocEnd();
         SourceLocation semicolonAfterDefinition = findSemiAfterLocation(end, decl->getASTContext());
@@ -279,7 +280,7 @@ private:
         rewriter.RemoveText(SourceRange(start, end), opts);
     }
     bool isDeclUsed(Decl* decl) const {
-        return used.find(decl->getCanonicalDecl()) != used.end();
+        return used.find(Z(decl)->getCanonicalDecl()) != used.end();
     }
     std::string toString(const SourceLocation& loc) const {
         return loc.printToString(sourceManager);
@@ -297,7 +298,7 @@ public:
         std::cerr << __FUNCTION__ << std::endl;
         for (DeclGroupRef::iterator b = DR.begin(), e = DR.end(); b != e; ++b) {
             Decl* decl = *b;
-            if (sourceManager.isInMainFile(decl->getLocStart())) {
+            if (sourceManager.isInMainFile(Z(decl)->getLocStart())) {
                 topLevelDecls.push_back(decl);
                 DependenciesCollector visitor(sourceManager, uses);
                 visitor.TraverseDecl(decl);
@@ -310,7 +311,7 @@ public:
         std::cerr << __FUNCTION__ << std::endl;
         if (ClassTemplateSpecializationDecl* specDecl = dyn_cast<ClassTemplateSpecializationDecl>(decl))
         {
-            if (sourceManager.isInMainFile(decl->getLocStart())) {
+            if (sourceManager.isInMainFile(Z(specDecl)->getLocStart())) {
                 topLevelDecls.push_back(specDecl);
                 DependenciesCollector visitor(sourceManager, uses);
                 visitor.TraverseDecl(specDecl);

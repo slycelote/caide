@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -u
 
 cur_dir=$(readlink -e $(dirname $0))
 [ -d $cur_dir ] || exit 42

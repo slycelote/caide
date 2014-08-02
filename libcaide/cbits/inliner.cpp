@@ -70,7 +70,7 @@ public:
         IncludeReplacement rep;
         rep.includeDirectiveRange = SourceRange(HashLoc, end);
         rep.fileName = srcManager.getFilename(HashLoc).data();
-        rep.replaceWith = string(s, e) + "\n";
+        rep.replaceWith = string(Z(s), Z(e)) + "\n";
         replacementStack.push_back(rep);
     }
 
@@ -208,7 +208,7 @@ private:
                 bool invalid;
                 const char* b = srcManager.getCharacterData(blockStart, &invalid);
                 const char* e = srcManager.getCharacterData(blockEnd, &invalid);
-                result << std::string(b, e) << "\n";
+                result << std::string(Z(b), Z(e)) << "\n";
             }
 
             // Now output the result of file inclusion
@@ -224,7 +224,7 @@ private:
     }
 
     bool isSystemHeader(const FileEntry* entry) const {
-        return isSystemHeader(srcManager.translateFile(entry));
+        return isSystemHeader(srcManager.translateFile(Z(entry)));
     }
 
     bool isUserFile(SourceLocation loc) const {
@@ -243,25 +243,6 @@ private:
     }
 };
 
-// <Warning!!> -- Platform Specific Code lives here
-// This depends on A) that you're running linux and
-// B) that you have the same GCC LIBs installed that
-// I do.
-// Search through Clang itself for something like this,
-// go on, you won't find it. The reason why is Clang
-// has its own versions of std* which are installed under
-// /usr/local/lib/clang/<version>/include/
-// See somewhere around Driver.cpp:77 to see Clang adding
-// its version of the headers to its include path.
-static const char* systemPaths[] = {
-    "/usr/include",
-    "/usr/include/i386-linux-gnu",
-    "/usr/lib/gcc/i686-linux-gnu/4.6/include",
-    "/usr/include/c++/4.6",
-    "/usr/include/c++/4.6/i686-linux-gnu",
-
-};
-// </Warning!!> -- End of Platform Specific Code
 
 Inliner::Inliner(const std::vector<std::string>& systemHeadersDirectories,
                  const std::vector<std::string>& userHeadersDirectories)
