@@ -141,7 +141,7 @@ public:
 
     std::string getResult() const {
         if (replacementStack.size() != 1)
-            return "Caide error";
+            return "C++ inliner error";
         else
             return replacementStack[0].replaceWith;
     }
