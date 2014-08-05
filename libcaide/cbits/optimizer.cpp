@@ -33,8 +33,8 @@ class null_stream: public ostream {
 };
 
 ostream& dbg() {
-    //static null_stream null; return null;
-    return std::cerr;
+    static null_stream null; return null;
+    //return std::cerr;
 }
 
 typedef std::map<Decl*, std::set<Decl*> > References;
@@ -72,7 +72,7 @@ private:
             return;
         }
         uses[from].insert(to);
-        std::cerr << "Reference from <"
+        dbg() << "Reference from <"
                   << declToString(from).substr(0, 20)
                   << ">" << toString(from->getSourceRange()) << " to <"
                   << declToString(to).substr(0, 20)
@@ -88,7 +88,7 @@ public:
     bool shouldVisitTemplateInstantiations() const { return true; }
 
     bool VisitCallExpr(CallExpr* callExpr) {
-        std::cerr << __FUNCTION__ << std::endl;
+        dbg() << __FUNCTION__ << std::endl;
         Expr* callee = callExpr->getCallee();
         if (isa<UnresolvedMemberExpr>(callee) || isa<CXXDependentScopeMemberExpr>(callee))
             return false;
@@ -99,7 +99,7 @@ public:
     }
 
     bool VisitCXXConstructExpr(CXXConstructExpr* constructorExpr) {
-        std::cerr << __FUNCTION__ << std::endl;
+        dbg() << __FUNCTION__ << std::endl;
         insertReference(currentDecl, constructorExpr->getConstructor());
         // implicit constructor may not be visited; make sure we add dependency on its class
         // TODO: ???
@@ -108,14 +108,14 @@ public:
     }
 
     bool VisitDeclRefExpr(DeclRefExpr* ref) {
-        //std::cerr << __FUNCTION__ << std::endl;
-        //std::cerr << "Visiting declref at " << toString(ref->getSourceRange()) << std::endl;
+        //dbg() << __FUNCTION__ << std::endl;
+        //dbg() << "Visiting declref at " << toString(ref->getSourceRange()) << std::endl;
         insertReference(currentDecl, ref->getDecl());
         return true;
     }
 
     bool VisitValueDecl(ValueDecl* valueDecl) {
-        std::cerr << __FUNCTION__ << std::endl;
+        dbg() << __FUNCTION__ << std::endl;
         const Type* valueType = valueDecl->getType().getTypePtrOrNull();
         if (valueType)
             insertReference(valueDecl, valueType->getAsCXXRecordDecl());
@@ -123,26 +123,26 @@ public:
     }
 
     bool VisitCXXConstructorDecl(CXXConstructorDecl* constructorDecl) {
-        std::cerr << __FUNCTION__ << std::endl;
+        dbg() << __FUNCTION__ << std::endl;
         // TODO
         cerr << "Visit constructor: " << declToString(constructorDecl) << endl;
         return true;
     }
 
     bool VisitMemberExpr(MemberExpr* memberExpr) {
-        std::cerr << __FUNCTION__ << std::endl;
+        dbg() << __FUNCTION__ << std::endl;
         insertReference(currentDecl, memberExpr->getMemberDecl());
         return true;
     }
 
     bool VisitFieldDecl(FieldDecl* field) {
-        std::cerr << __FUNCTION__ << std::endl;
+        dbg() << __FUNCTION__ << std::endl;
         insertReference(field, field->getParent());
         return true;
     }
 
     bool VisitClassTemplateDecl(ClassTemplateDecl* templateDecl) {
-        std::cerr << __FUNCTION__ << std::endl;
+        dbg() << __FUNCTION__ << std::endl;
         for (ClassTemplateDecl::spec_iterator i = templateDecl->spec_begin();
                 i != templateDecl->spec_end(); ++i)
         {
@@ -153,7 +153,7 @@ public:
     }
 
     bool VisitClassTemplateSpecializationDecl(ClassTemplateSpecializationDecl* specDecl) {
-        std::cerr << __FUNCTION__ << std::endl;
+        dbg() << __FUNCTION__ << std::endl;
         insertReference(specDecl, specDecl->getSpecializedTemplate());
         return true;
     }
@@ -163,7 +163,7 @@ public:
             // skip non-instantiated template function
             return false;
         }
-        //std::cerr << __FUNCTION__ << std::endl;
+        //dbg() << __FUNCTION__ << std::endl;
         FunctionTemplateSpecializationInfo* specInfo = f->getTemplateSpecializationInfo();
         if (specInfo)
             insertReference(f, specInfo->getTemplate());
@@ -174,19 +174,19 @@ public:
             DeclarationName DeclName = f->getNameInfo().getName();
             string FuncName = DeclName.getAsString();
 
-            std::cerr << "Moving to " << FuncName << " at " << toString(f->getLocation()) << std::endl;
+            dbg() << "Moving to " << FuncName << " at " << toString(f->getLocation()) << std::endl;
         }
         return true;
     }
 
     bool VisitCXXMethodDecl(CXXMethodDecl* method) {
-        std::cerr << __FUNCTION__ << std::endl;
+        dbg() << __FUNCTION__ << std::endl;
         insertReference(method, method->getParent());
         return true;
     }
 
     bool VisitCXXRecordDecl(CXXRecordDecl* recordDecl) {
-        std::cerr << __FUNCTION__ << " " << recordDecl->getTemplateSpecializationKind() << std::endl;
+        dbg() << __FUNCTION__ << " " << recordDecl->getTemplateSpecializationKind() << std::endl;
         // TODO dependencies on base classes?
         insertReference(recordDecl, recordDecl->getDescribedClassTemplate());
         return true;
@@ -199,6 +199,7 @@ private:
     SourceManager& sourceManager;
     const std::set<Decl*>& used;
     std::set<Decl*> declared;
+    std::set<NamespaceDecl*> usedNamespaces;
     Rewriter& rewriter;
 
 public:
@@ -217,7 +218,7 @@ public:
         const bool funcIsUnused = used.find(canonicalDecl) == used.end();
         const bool thisIsRedeclaration = !functionDecl->doesThisDeclarationHaveABody() && declared.find(canonicalDecl) != declared.end();
         if (funcIsUnused || thisIsRedeclaration) {
-            std::cerr << __FUNCTION__ << std::endl;
+            dbg() << __FUNCTION__ << std::endl;
             removeDecl(functionDecl);
         }
         declared.insert(canonicalDecl);
@@ -226,7 +227,7 @@ public:
 
     // TODO: unused explicit function template specializations are not removed
     bool VisitFunctionTemplateDecl(FunctionTemplateDecl* functionDecl) {
-        std::cerr << __FUNCTION__ << std::endl;
+        dbg() << __FUNCTION__ << std::endl;
         if (used.find(functionDecl) == used.end())
             removeDecl(functionDecl);
     }
@@ -235,7 +236,7 @@ public:
     bool VisitCXXRecordDecl(CXXRecordDecl* recordDecl) {
         bool isTemplated = recordDecl->getDescribedClassTemplate();
         TemplateSpecializationKind specKind = recordDecl->getTemplateSpecializationKind();
-        std::cerr << __FUNCTION__ << specKind << " " << std::endl;
+        dbg() << __FUNCTION__ << specKind << " " << std::endl;
         if (isTemplated && (specKind == TSK_ImplicitInstantiation || specKind == TSK_Undeclared))
             return false;
         CXXRecordDecl* canonicalDecl = recordDecl->getCanonicalDecl();
@@ -250,7 +251,7 @@ public:
     }
 
     bool VisitClassTemplateDecl(ClassTemplateDecl* templateDecl) {
-        std::cerr << __FUNCTION__ << std::endl;
+        dbg() << __FUNCTION__ << std::endl;
         ClassTemplateDecl* canonicalDecl = templateDecl->getCanonicalDecl();
         const bool classIsUnused = used.find(canonicalDecl) == used.end();
         const bool thisIsRedeclaration = !templateDecl->isThisDeclarationADefinition() && declared.find(canonicalDecl) != declared.end();
@@ -259,6 +260,13 @@ public:
             removeDecl(templateDecl);
         }
         declared.insert(canonicalDecl);
+    }
+
+    bool VisitUsingDirectiveDecl(UsingDirectiveDecl* usingDecl) {
+        NamespaceDecl* ns = usingDecl->getNominatedNamespace();
+        if (ns && !usedNamespaces.insert(ns).second)
+            removeDecl(usingDecl);
+        return true;
     }
 
     // TODO remove #pragma once
@@ -271,7 +279,7 @@ private:
         SourceLocation start = decl->getLocStart();
         SourceLocation end = decl->getLocEnd();
         SourceLocation semicolonAfterDefinition = findSemiAfterLocation(end, decl->getASTContext());
-        std::cerr << "REMOVE: " << toString(start) << " " << toString(end)
+        dbg() << "REMOVE: " << toString(start) << " " << toString(end)
            << " " << toString(semicolonAfterDefinition) << std::endl;
         if (semicolonAfterDefinition.isValid())
             end = semicolonAfterDefinition;
@@ -295,7 +303,7 @@ public:
     {}
 
     virtual bool HandleTopLevelDecl(DeclGroupRef DR) {
-        std::cerr << __FUNCTION__ << std::endl;
+        dbg() << __FUNCTION__ << std::endl;
         for (DeclGroupRef::iterator b = DR.begin(), e = DR.end(); b != e; ++b) {
             Decl* decl = *b;
             if (sourceManager.isInMainFile(Z(decl)->getLocStart())) {
@@ -308,7 +316,7 @@ public:
     }
 
     virtual void HandleTagDeclDefinition(TagDecl* decl) {
-        std::cerr << __FUNCTION__ << std::endl;
+        dbg() << __FUNCTION__ << std::endl;
         if (ClassTemplateSpecializationDecl* specDecl = dyn_cast<ClassTemplateSpecializationDecl>(decl))
         {
             if (sourceManager.isInMainFile(Z(specDecl)->getLocStart())) {
