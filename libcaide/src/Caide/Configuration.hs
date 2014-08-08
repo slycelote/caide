@@ -36,7 +36,7 @@ import Caide.Types (ProblemID, CaideProject (..), getInternalOption, setInternal
 import Caide.Util (forceEither, splitString)
 
 
-{------------------------ Problem specific state -----------------------}
+{--------------------------- Problem specific state ----------------------------}
 
 type ProblemConfig = ConfigParser
 
@@ -59,7 +59,7 @@ setProblemOption :: ProblemConfig -> String -> String -> String -> ProblemConfig
 setProblemOption = setOption
 
 
-{--------------------------- Global options and state -------------------------------}
+{--------------------------- Global options and state ----------------------------}
 
 readCaideProject :: FilePath -> IO CaideProject
 readCaideProject caideRoot = do
@@ -85,7 +85,7 @@ readCaideProject caideRoot = do
         , getInternalOption = getOpt internalConf
         , setInternalOption = setOpt internalConf
         , getRootDirectory  = caideRoot
-        , saveProject       = saveConf rootConf rootConfigFile >> saveConf internalConf internalConfigFile
+        , saveProject       = saveConf internalConf internalConfigFile
         }
 
 
@@ -104,14 +104,16 @@ getDefaultLanguage conf = getUserOption conf "core" "language"
 getFeatures :: CaideProject -> IO [String]
 getFeatures conf = splitString ", " <$> getUserOption conf "core" "features"
 
-{--------------------------- Internals -------------------------------}
+{--------------------------- Internals -----------------------------}
 
 readConfigWithDefault :: FilePath -> ConfigParser -> IO ConfigParser
 readConfigWithDefault file def = do
     fileExists <- isFile file
     if fileExists
         then either (const def) id . readstring def . T.unpack <$> readFile (encodeString file)
-        else return def
+        else do
+            saveConfig def file
+            return def
 
 
 saveConfig :: ConfigParser -> FilePath -> IO ()
@@ -149,3 +151,4 @@ defaultProblemConf :: ConfigParser
 defaultProblemConf = forceEither $
     addSection "problem" emptyCP >>=
     setValue "problem" "language" "simplecpp"
+

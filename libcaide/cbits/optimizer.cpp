@@ -269,9 +269,7 @@ public:
         return true;
     }
 
-    // TODO remove #pragma once
-    // TODO remove duplicate using directives
-    // TODO remove member fields/methods in classes that are not used as template parameters of STL
+    // TODO remove member fields/methods in classes that are not used as template parameters of STL structures
 
 private:
     void removeDecl(Decl* decl) {

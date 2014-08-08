@@ -3,14 +3,12 @@ module Main where
 import Control.Monad (forM_)
 import Data.List (find)
 import Data.Maybe (isJust, isNothing, fromMaybe)
-import qualified Data.Text as T
 import Filesystem (getWorkingDirectory, isDirectory)
 import qualified Filesystem.Path as F
 import Filesystem.Path.CurrentOS (decodeString, encodeString, parent, (</>))
 import System.Environment (getArgs)
 
-import Caide.Codeforces.Parser (codeforcesParser)
-import Caide.Types (CommandHandler(..), parse, saveProject)
+import Caide.Types (CommandHandler(..), saveProject)
 
 import qualified Caide.Commands.BuildScaffold as BuildScaffold
 import qualified Caide.Commands.Checkout as Checkout
@@ -30,7 +28,7 @@ findRootCaideDir curDir = do
     rootIsHere <- isDirectory caideDir
     if rootIsHere
         then return $ Just curDir
-        else findRootCaideDir $ parent curDir 
+        else findRootCaideDir $ parent curDir
 
 
 commands :: [CommandHandler]
@@ -70,11 +68,3 @@ runAction cmd caideRoot args = do
     action cmd env args
     saveProject project
 
-test :: IO ()
-test = do
-    parseResult <- codeforcesParser `parse` T.pack "http://codeforces.com/contest/400/problem/B"
-    case parseResult of
-        Left err -> putStrLn err
-        Right (problem, testCases) -> do
-            print problem
-            print testCases

@@ -38,4 +38,5 @@ generateScaffoldSolution env [lang] = case findLanguage lang of
                 features <- mapMaybe findFeature <$> getFeatures env
                 forM_ features $ \feature -> onProblemCodeCreated feature env problem
 
-generateScaffoldSolution _ _ = putStrLn $ "Usage " ++ usage cmd 
+generateScaffoldSolution _ _ = putStrLn $ "Usage " ++ usage cmd
+
