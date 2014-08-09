@@ -2,7 +2,8 @@ module Caide.Commands.ParseProblem(
       cmd
 ) where
 
-import Control.Monad (forM_)
+import Control.Monad (forM_, when)
+import Data.Char (isAlphaNum, isAscii)
 import Data.List (find)
 import qualified Data.Text as T
 
@@ -11,8 +12,9 @@ import Filesystem.Path.CurrentOS (decodeString, (</>))
 
 import Caide.Types
 import Caide.Codeforces.Parser (codeforcesParser)
-import Caide.Configuration (setActiveProblem)
-import Data.Char (isAlphaNum, isAscii)
+import Caide.Configuration (getDefaultLanguage, setActiveProblem)
+import Caide.Commands.BuildScaffold (generateScaffoldSolution)
+
 
 cmd :: CommandHandler
 cmd = CommandHandler
@@ -27,39 +29,57 @@ parsers = [codeforcesParser]
 
 parseProblem :: CaideEnvironment -> [String] -> IO ()
 parseProblem env [url] = do
-    let parser = find (`matches` T.pack url) parsers
-    case parser of
-        Nothing -> do -- Create a new problem
-            let probId = url
-            if any (\c -> not (isAscii c) || not (isAlphaNum c)) probId
-            then putStrLn "Problem ID must be a string of alphanumeric characters"
-            else do
-                let problemDir = getRootDirectory env </> decodeString probId
-                -- Prepare problem directory
-                createDirectory False problemDir
-                -- Set active problem
-                setActiveProblem env probId
-                putStrLn $ "Problem successfully created in folder " ++ probId
-
-        Just p  -> do
-            parseResult <- p `parse` T.pack url
-            case parseResult of
-                Left err -> putStrLn $ "Encountered a problem while parsing:\n" ++ err
-                Right (problem, samples) -> do
-                    let problemDir = getRootDirectory env </> decodeString (problemId problem)
-
-                    -- Prepare problem directory
-                    createDirectory False problemDir
-
-                    -- Write test cases
-                    forM_ (zip samples [1::Int ..]) $ \(sample, i) -> do
-                        let inFile  = problemDir </> decodeString ("case" ++ show i ++ ".in")
-                            outFile = problemDir </> decodeString ("case" ++ show i ++ ".out")
-                        writeTextFile inFile  $ testCaseInput sample
-                        writeTextFile outFile $ testCaseOutput sample
-
-                    -- Set active problem
-                    setActiveProblem env $ problemId problem
-                    putStrLn $ "Problem successfully parsed into folder " ++ problemId problem
+    problemCreated <- case find (`matches` T.pack url) parsers of
+        Just parser -> parseExistingProblem env url parser
+        Nothing     -> createNewProblem env url
+    when problemCreated $ do
+        lang <- getDefaultLanguage env
+        generateScaffoldSolution env [lang]
 
 parseProblem _ _ = putStrLn $ "Usage: " ++ usage cmd
+
+
+createNewProblem :: CaideEnvironment -> ProblemID -> IO Bool
+createNewProblem env probId =
+    if any (\c -> not (isAscii c) || not (isAlphaNum c)) probId
+    then do
+        putStrLn "Problem ID must be a string of alphanumeric characters"
+        return False
+    else do
+        let problemDir = getRootDirectory env </> decodeString probId
+
+        -- Prepare problem directory
+        createDirectory False problemDir
+
+        -- Set active problem
+        setActiveProblem env probId
+        putStrLn $ "Problem successfully created in folder " ++ probId
+        return True
+
+
+parseExistingProblem :: CaideEnvironment -> String -> ProblemParser -> IO Bool
+parseExistingProblem env url parser = do
+    parseResult <- parser `parse` T.pack url
+    case parseResult of
+        Left err -> do
+            putStrLn $ "Encountered a problem while parsing:\n" ++ err
+            return False
+        Right (problem, samples) -> do
+            let problemDir = getRootDirectory env </> decodeString (problemId problem)
+
+            -- Prepare problem directory
+            createDirectory False problemDir
+
+            -- Write test cases
+            forM_ (zip samples [1::Int ..]) $ \(sample, i) -> do
+                let inFile  = problemDir </> decodeString ("case" ++ show i ++ ".in")
+                    outFile = problemDir </> decodeString ("case" ++ show i ++ ".out")
+                writeTextFile inFile  $ testCaseInput sample
+                writeTextFile outFile $ testCaseOutput sample
+
+            -- Set active problem
+            setActiveProblem env $ problemId problem
+            putStrLn $ "Problem successfully parsed into folder " ++ problemId problem
+
+            return True
+

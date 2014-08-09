@@ -23,7 +23,7 @@ cmd = CommandHandler
 
 checkoutProblem :: CaideEnvironment -> [String] -> IO ()
 checkoutProblem env [probId] = do
-    let caideRoot = getRootDirectory env
+    let caideRoot  = getRootDirectory env
         problemDir = caideRoot </> decodeString probId
     problemExists <- isDirectory problemDir
     if problemExists

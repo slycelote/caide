@@ -1,5 +1,6 @@
 module Caide.Commands.Make (
       cmd
+    , make
 ) where
 
 import Control.Applicative ((<$>))

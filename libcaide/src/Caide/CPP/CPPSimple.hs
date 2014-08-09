@@ -34,7 +34,7 @@ inlineCPPCode _ problemDir = do
     let probID = getProblemID problemDir
         solutionPath = problemDir </> decodeString (probID ++ ".cpp")
         inlinedTemplatePath = F.parent problemDir </> decodeString "templates" </> decodeString "main_template.cpp"
-        inlinedCodePath = problemDir </> decodeString "main.cpp"
+        inlinedCodePath = problemDir </> decodeString "submission.cpp"
     copyFile solutionPath inlinedCodePath
     mainCode <- readTextFile inlinedTemplatePath
     appendTextFile inlinedCodePath mainCode
@@ -45,3 +45,4 @@ language = ProgrammingLanguage
     , generateTestProgram = generateCPPTestProgram
     , inlineCode = inlineCPPCode
     }
+
