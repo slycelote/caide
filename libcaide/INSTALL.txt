@@ -1,21 +1,26 @@
 == Windows build
-1. Install Haskell Platform 2013.2.0.0 in a path without spaces or other special characters. UNCHECK the 'modify PATH' setting during install.
-2. Haskell Platform comes with a buggy mingw. Download release 2.21-2 of binutils here: sourceforge.net/projects/mingw/files/MinGW/Base/binutils/. Unpack the contents of the archive into folder (Haskell Platform path)\mingw.
+0. Install Python 2 from here: https://www.python.org/downloads/.
+1. Install Haskell Platform 2014.2.0.0 from here: https://www.haskell.org/platform/windows.html.
+    * Select a path WITHOUT SPACES or other special characters.
+    * UNCHECK the 'modify PATH' setting during install.
+2. Haskell Platform comes with a buggy mingw. Download release 2.21-2 of binutils here: http://sourceforge.net/projects/mingw/files/MinGW/Base/binutils/binutils-2.21/. Unpack the contents of the archive into folder (Haskell Platform path)\mingw.
 3. Install MSYS from here: http://sourceforge.net/projects/mingw/
 4. Open MSYS shell and CD to libcaide source directory.
 5. Edit the file mingw32.sh according to the installation path of Haskell Platform.
 
-All of the following is done in MSYS shell.
+All of the following is done in MSYS shell, from libcaide directory.
 
 6. Setup PATH:
-    > source mingw32.sh.
-7. Install latest cabal:
-    > cabal install cabal-install
+    > source mingw32.sh
+    (Note: you can copy the file to C:\MinGW\msys\1.0\home\<username>\.bashrc to
+    avoid having to do this every time you open a new MSYS shell.)
+7. Update package database:
+    > cabal update
 8. Initialize cabal sandbox:
-    > $APPDATA/cabal/bin/cabal sandbox init
+    > cabal sandbox init
 9. Install dependencies:
-    > $APPDATA/cabal/bin/cabal install --only-dependencies
+    > cabal install --only-dependencies
 10. Build:
-    > $APPDATA/cabal/bin/cabal configure
-    > $APPDATA/cabal/bin/cabal build
-Resulting executable: libcaide\dist\build\caide\caide.exe
+    > cabal configure
+    > cabal build
+Resulting executable: dist\build\caide\caide.exe
