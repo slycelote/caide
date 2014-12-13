@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Caide.Commands.RunTests (
       cmd
 ) where
@@ -70,14 +72,16 @@ testResult allFiles testFile = do
 
 compareFiles :: Text -> Text -> ComparisonResult Text
 compareFiles etalon out = let
-    actual   = T.lines out
     expected = T.lines etalon
+    actual   = T.lines out
     lineComparison = zipWith compareLines expected actual
     errors = [e | e@(_, Error _) <- zip [1::Int ..] lineComparison]
     (line, Error err) = head errors
-    in if null errors
-           then Success
-           else Error $ T.append (T.pack ("Line " ++ show line ++ ": ")) err
+    in case () of
+        _ | not (null errors) -> Error $ T.append (T.pack ("Line " ++ show line ++ ": ")) err
+          | length actual == length expected -> Success
+          | otherwise -> Error $ T.concat ["Expected ", tshow (length expected), " lines"]
+
 
 compareLines :: Text -> Text -> ComparisonResult Text
 compareLines expectedLine actualLine = let
@@ -96,3 +100,7 @@ compareTokens expected actual =
     if expected == actual
     then Success
     else Error $ T.concat [T.pack "Expected ", expected, T.pack ", found ", actual]
+
+tshow :: (Show a) => a -> Text
+tshow = T.pack . show
+
