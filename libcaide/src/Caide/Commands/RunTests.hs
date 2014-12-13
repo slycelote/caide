@@ -35,21 +35,21 @@ runTests env _ = do
     builderName <- getBuilder env
     let caideRoot = getRootDirectory env
         builder = findBuilder builderName
-        testsDir = caideRoot </> decodeString probId </> decodeString ".caideproblem" </> decodeString "test"
-        reportFile = testsDir </> decodeString "report.txt"
+        testsDir = caideRoot </> decodeString probId </> ".caideproblem" </> "test"
+        reportFile = testsDir </> "report.txt"
     buildOk <- builder env probId
     if buildOk
     then do
         report <- generateReport testsDir
         writeTextFile reportFile . serializeTestReport $ report
         T.putStrLn . T.unlines $
-            map (\(testName, res) -> T.concat [T.pack testName, T.pack ": ", humanReadable res]) report
+            map (\(testName, res) -> T.concat [T.pack testName, ": ", humanReadable res]) report
     else putStrLn "Test runner failed"
 
 
 generateReport :: FilePath -> IO (TestReport Text)
 generateReport testDir = do
-    testList <- readTests $ testDir </> decodeString "testList.txt"
+    testList <- readTests $ testDir </> "testList.txt"
     allFiles <- listDirectory testDir
     let (testNames, inputFiles) = unzip [(testName, inputFile) | (testName, _) <- testList,
                                           let inputFile = testDir </> decodeString (testName ++ ".in")
@@ -60,15 +60,16 @@ generateReport testDir = do
 
 testResult :: [FilePath] -> FilePath -> IO (ComparisonResult Text)
 testResult allFiles testFile = do
-    let [outFile, etalonFile, failedFile, skippedFile] = map (replaceExtension testFile . T.pack)
+    let [outFile, etalonFile, failedFile, skippedFile] = map (replaceExtension testFile)
           ["out", "etalon", "failed", "skipped"]
     case () of
       _ | outFile `elem` allFiles     -> if etalonFile `elem` allFiles
                                             then compareFiles <$> readTextFile etalonFile <*> readTextFile outFile
                                             else return EtalonUnknown
-        | failedFile `elem` allFiles  -> return . Error . T.pack $ "Program crashed"
+        | failedFile `elem` allFiles  -> return . Error $ "Program crashed"
         | skippedFile `elem` allFiles -> return Skipped
-        | otherwise                   -> return . Error . T.pack $ "unknown error"
+        | otherwise                   -> return . Error $ "unknown error"
+
 
 compareFiles :: Text -> Text -> ComparisonResult Text
 compareFiles etalon out = let
@@ -78,9 +79,9 @@ compareFiles etalon out = let
     errors = [e | e@(_, Error _) <- zip [1::Int ..] lineComparison]
     (line, Error err) = head errors
     in case () of
-        _ | not (null errors) -> Error $ T.append (T.pack ("Line " ++ show line ++ ": ")) err
-          | length actual == length expected -> Success
-          | otherwise -> Error $ T.concat ["Expected ", tshow (length expected), " lines"]
+      _ | not (null errors) -> Error $ T.concat ["Line ", tshow line, ": ", err]
+        | length actual == length expected -> Success
+        | otherwise -> Error $ T.concat ["Expected ", tshow (length expected), " lines"]
 
 
 compareLines :: Text -> Text -> ComparisonResult Text
@@ -91,15 +92,15 @@ compareLines expectedLine actualLine = let
     errors = [e | e@(_, Error _) <- zip [1::Int ..] tokenComparison]
     (numToken, Error err) = head errors
     in case () of
-      _ | not (null errors) -> Error $ T.concat [T.pack "Token ", T.pack (show numToken), T.pack ": ", err]
+      _ | not (null errors) -> Error $ T.concat ["Token ", tshow numToken, ": ", err]
         | length actual == length expected -> Success
-        | otherwise   ->  Error . T.pack $ "Expected " ++ show (length expected) ++ " tokens"
+        | otherwise   ->  Error $ T.concat ["Expected ", tshow (length expected), " tokens"]
 
 compareTokens :: Text -> Text -> ComparisonResult Text
 compareTokens expected actual =
     if expected == actual
     then Success
-    else Error $ T.concat [T.pack "Expected ", expected, T.pack ", found ", actual]
+    else Error $ T.concat ["Expected ", expected, ", found ", actual]
 
 tshow :: (Show a) => a -> Text
 tshow = T.pack . show

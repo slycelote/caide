@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Caide.TestCases.Types (
       ComparisonResult (..)
     , humanReadable
@@ -30,13 +32,13 @@ import Filesystem (isFile, readTextFile, writeTextFile)
 data ComparisonResult a = Success | Skipped | EtalonUnknown | Error a deriving Show
 
 humanReadable :: ComparisonResult Text -> Text
-humanReadable Success = T.pack "OK"
-humanReadable Skipped = T.pack "skipped"
-humanReadable EtalonUnknown = T.pack "unknown"
+humanReadable Success = "OK"
+humanReadable Skipped = "skipped"
+humanReadable EtalonUnknown = "unknown"
 humanReadable (Error err) = err
 
 machineReadable :: ComparisonResult Text -> Text
-machineReadable (Error _) = T.pack "failed"
+machineReadable (Error _) = "failed"
 machineReadable res = humanReadable res
 
 
@@ -44,14 +46,14 @@ type TestReport a = [(String, ComparisonResult a)]
 
 serializeTestReport :: TestReport Text -> Text
 serializeTestReport = T.unlines .
-            map (\(testName, res) -> T.concat [T.pack testName, T.pack " ", machineReadable res])
+            map (\(testName, res) -> T.concat [T.pack testName, " ", machineReadable res])
 
 deserializeTestReport :: Text -> TestReport ()
 deserializeTestReport text = let
     reportLines = T.lines text
 
     parseTest :: [Text] -> (String, ComparisonResult ())
-    parseTest [testName, testStatus] = (T.unpack testName, if testStatus == T.pack "failed" then Error () else Success)
+    parseTest [testName, testStatus] = (T.unpack testName, if testStatus == "failed" then Error () else Success)
     parseTest _ = error "Corrupted test report"
 
     in map (parseTest . T.words) reportLines
@@ -88,3 +90,4 @@ readTests testListFile = do
 
 writeTests :: TestList -> FilePath -> IO ()
 writeTests tests testListFile = writeTextFile testListFile $ serializeTestList tests
+

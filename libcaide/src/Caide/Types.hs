@@ -78,3 +78,4 @@ data Feature = Feature
     , onProblemCodeCreated :: CaideEnvironment -> String -> IO ()   -- ^ Run after `caide lang`
     , onProblemCheckedOut  :: CaideEnvironment -> String -> IO ()   -- ^ Run after `caide checkout`
     }
+
