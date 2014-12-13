@@ -37,7 +37,7 @@ data ProblemParser = ProblemParser
 
 
 -- | The type encapsulating functions required to support particular target
--- programming language. The first argument to all functions is the path to directory
+-- programming language. The second argument to all functions is the path to directory
 -- where the problem is located.
 data ProgrammingLanguage = ProgrammingLanguage
     { generateScaffold    :: CaideEnvironment -> F.FilePath -> IO ()
