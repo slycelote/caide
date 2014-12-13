@@ -38,11 +38,12 @@ doParseTagSoup url = do
                 outputDivs = sections (~== "<div class=output>") statement
                 replaceBr = concatMap f
                     where f x | isTagOpenName (T.pack "br") x = []
-                              | isTagCloseName (T.pack "br") x = [TagText $ T.pack "\r\n"]
+                              | isTagCloseName (T.pack "br") x = [TagText $ T.pack "\n"]
                               | otherwise = [x]
 
                 extractText = innerText . replaceBr . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>")
                 inputs = map extractText inputDivs
                 outputs = map extractText outputDivs
-                testCases = zipWith TestCase inputs outputs                  
+                testCases = zipWith TestCase inputs outputs
             return . Right $ (Problem title ("problem" ++ [T.head title]), testCases)
+
