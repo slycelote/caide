@@ -55,7 +55,7 @@ getTemplateFiles dir = do
 canonicalizePath :: FilePath -> IO FilePath
 canonicalizePath path = do
   canonicalPath <- inDir path $
-    rawSystemStdout silent "pwd" []
+    rawSystemStdout silent "sh" ["pwd"]
   return $ reverse . dropWhile isSpace . reverse . dropWhile isSpace $ canonicalPath
 
 
