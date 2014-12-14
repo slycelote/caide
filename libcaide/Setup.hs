@@ -55,7 +55,7 @@ getTemplateFiles dir = do
 canonicalizePath :: FilePath -> IO FilePath
 canonicalizePath path = do
   canonicalPath <- inDir path $
-    rawSystemStdout silent "sh" ["pwd"]
+    rawSystemStdout silent "sh" ["-c", "pwd"]
   return $ reverse . dropWhile isSpace . reverse . dropWhile isSpace $ canonicalPath
 
 
@@ -107,6 +107,7 @@ libClangConfHook (pkg, pbi) flags = do
                            , "--with-optimize-option=-O2"
                            , "--enable-libcpp=" ++ confCPPStdLib
                            , "--prefix=" ++ llvmPrefixDirCanonical
+--                           , "CXXFLAGS=-D_GLIBCXX_HAVE_FENV_H=1"
                            ]
           handleNoWindowsSH action
             | buildOS /= Windows = action
