@@ -5,6 +5,7 @@ import Control.Monad
 import Control.Applicative
 import Data.Char(isSpace)
 import Data.List (isPrefixOf, intersperse)
+import Data.Maybe (fromMaybe)
 import Distribution.PackageDescription
 import Distribution.Verbosity
 import Distribution.Simple
@@ -31,7 +32,6 @@ main = do
   defaultMainWithHooks simpleUserHooks
       { confHook  = libClangConfHook
       , buildHook = libClangBuildHook
-      , copyHook  = libClangCopyHook
       , cleanHook = libClangCleanHook
 
       , hookedPrograms = [ confProgram
@@ -63,20 +63,26 @@ libClangConfHook :: (GenericPackageDescription, HookedBuildInfo) -> ConfigFlags
                  -> IO LocalBuildInfo
 libClangConfHook (pkg, pbi) flags = do
   let verbosity = fromFlag (configVerbosity flags)
+      lookupConfFlag flagName defaultValue = fromMaybe defaultValue $
+            lookup (FlagName flagName) (configConfigurationsFlags flags)
+      debug = lookupConfFlag "debug" False
+      cppinliner = lookupConfFlag "cppinliner" True
+
   lbi <- confHook simpleUserHooks (pkg, pbi) flags
-  case lookup (FlagName "cppinliner") (configConfigurationsFlags flags) of
-    Just True -> do
+
+  when cppinliner $ do
       -- Infer which standard library to use.
       cppStdLib <- preferredStdLib (withPrograms lbi) flags
       let (_, confCPPStdLib) =
             case cppStdLib of
               LibStdCPP -> ("-lstdc++", "no")
               LibCPP    -> ("-lc++", "yes")
+          clangSubDir = if debug then "clangbuilddebug" else "clangbuild"
 
       -- Compute some paths that need to be absolute.
       curDir <- getCurrentDirectory
       let llvmRepoDir   = curDir </> "cbits" </> "llvm"
-          llvmBuildDir  = curDir </> "cbits" </> "clangbuild"
+          llvmBuildDir  = curDir </> "cbits" </> clangSubDir
           llvmPrefixDir = llvmBuildDir </> "out"
           clangRepoDir  = curDir </> "cbits" </> "clang"
           clangLinkPath = llvmRepoDir </> "tools" </> "clang"
@@ -89,26 +95,37 @@ libClangConfHook (pkg, pbi) flags = do
       let configurePath = llvmRepoDirCanonical ++ "/configure"
           llvmArgs      =  [ "--with-clang-srcdir=" ++ clangRepoDirCanonical
                            , "--disable-polly"
-                           , "--enable-shared"
+                           , "--disable-shared"
+                           , "--enable-bindings=none"
                            {-, "--disable-clang-arcmt"-}
                            {-, "--disable-clang-static-analyzer"-}
                            {-, "--disable-clang-rewriter"-}
-                           , "--enable-optimized"
                            , "--disable-assertions"
                            , "--disable-keep-symbols"
                            , "--disable-jit"
                            , "--disable-docs"
+                           , "--disable-doxygen"
                            , "--disable-threads"
                            {-, "--disable-pthreads"-}
                            , "--disable-zlib"
-                           {-, "--enable-targets=host"-}
+                           , "--enable-targets=x86"
                            , "--disable-terminfo"
                            , "--enable-bindings=none"
-                           , "--with-optimize-option=-O2"
                            , "--enable-libcpp=" ++ confCPPStdLib
                            , "--prefix=" ++ llvmPrefixDirCanonical
 --                           , "CXXFLAGS=-D_GLIBCXX_HAVE_FENV_H=1"
-                           ]
+                           ] ++
+                           {-
+                           -- mingw can't handle files this large
+                           if debug
+                             then ["--disable-optimized"]
+                             else ["--enable-optimized" , "--with-optimize-option=-O2"]
+                             -}
+                           if debug
+                              then ["--enable-debug-symbols", "--enable-debug-runtime"]
+                              else []
+
+
           handleNoWindowsSH action
             | buildOS /= Windows = action
             | otherwise          = action `catchIO` \ioe -> if isDoesNotExistError ioe
@@ -130,14 +147,16 @@ libClangConfHook (pkg, pbi) flags = do
           handleNoWindowsSH $
             rawSystemExit verbosity "sh" (configurePath:llvmArgs)
 
-    _ -> return () -- no cppinliner flag
-
   return lbi
 
 
 libClangBuildHook :: PackageDescription -> LocalBuildInfo -> UserHooks -> BuildFlags -> IO ()
 libClangBuildHook pkg lbi usrHooks flags = do
   let verbosity = fromFlag (buildVerbosity flags)
+      lookupConfFlag flagName defaultValue = fromMaybe defaultValue $
+            lookup (FlagName flagName) (configConfigurationsFlags $ configFlags lbi)
+      debug = lookupConfFlag "debug" False
+      cppinliner = lookupConfFlag "cppinliner" True
   curDir <- getCurrentDirectory
 
   -- Build list of file templates
@@ -146,20 +165,20 @@ libClangBuildHook pkg lbi usrHooks flags = do
   writeFile defaultTemplatesInc $ unlines $ map ("  " ++) . intersperse ", " $ map show defaultTemplates
 
   -- Build C++ library, if necessary
-  case lookup (FlagName "cppinliner") (configConfigurationsFlags $ configFlags lbi) of
-    Just True -> do
+  if cppinliner
+     then do
         -- Infer which standard library to use.
         cppStdLib <- preferredStdLib (withPrograms lbi) (configFlags lbi)
         let linkCPPStdLib = case cppStdLib of
               LibStdCPP -> "stdc++"
               LibCPP    -> "c++"
-
-        let llvmBuildDir  = curDir </> "cbits" </> "clangbuild"
+            clangSubDir = if debug then "clangbuilddebug" else "clangbuild"
+            llvmBuildDir  = curDir </> "cbits" </> clangSubDir
             llvmPrefixDir = llvmBuildDir </> "out"
             llvmLibDir = llvmPrefixDir </> "lib"
 
             addCWrapper bi = bi {
-              extraLibs = ["chelper", "cpphelper", "clang", "clangFrontendTool", "clangFrontend", "clangDriver", "clangSerialization", "clangCodeGen", "clangParse", "clangSema", "clangStaticAnalyzerFrontend", "clangStaticAnalyzerCheckers", "clangStaticAnalyzerCore", "clangAnalysis", "clangARCMigrate", "clangRewriteFrontend", "clangRewriteCore", "clangEdit", "clangAST", "clangLex", "clangBasic", "LLVMInstrumentation", "LLVMIRReader", "LLVMAsmParser", "LLVMDebugInfo", "LLVMOption", "LLVMLTO", "LLVMLinker", "LLVMipo", "LLVMVectorize", "LLVMBitWriter", "LLVMBitReader", "LLVMTableGen", "LLVMR600CodeGen", "LLVMR600Desc", "LLVMR600Info", "LLVMR600AsmPrinter", "LLVMSystemZDisassembler", "LLVMSystemZCodeGen", "LLVMSystemZAsmParser", "LLVMSystemZDesc", "LLVMSystemZInfo", "LLVMSystemZAsmPrinter", "LLVMHexagonCodeGen", "LLVMHexagonAsmPrinter", "LLVMHexagonDesc", "LLVMHexagonInfo", "LLVMNVPTXCodeGen", "LLVMNVPTXDesc", "LLVMNVPTXInfo", "LLVMNVPTXAsmPrinter", "LLVMCppBackendCodeGen", "LLVMCppBackendInfo", "LLVMMSP430CodeGen", "LLVMMSP430Desc", "LLVMMSP430Info", "LLVMMSP430AsmPrinter", "LLVMXCoreDisassembler", "LLVMXCoreCodeGen", "LLVMXCoreDesc", "LLVMXCoreInfo", "LLVMXCoreAsmPrinter", "LLVMMipsDisassembler", "LLVMMipsCodeGen", "LLVMMipsAsmParser", "LLVMMipsDesc", "LLVMMipsInfo", "LLVMMipsAsmPrinter", "LLVMARMDisassembler", "LLVMARMCodeGen", "LLVMARMAsmParser", "LLVMARMDesc", "LLVMARMInfo", "LLVMARMAsmPrinter", "LLVMAArch64Disassembler", "LLVMAArch64CodeGen", "LLVMAArch64AsmParser", "LLVMAArch64Desc", "LLVMAArch64Info", "LLVMAArch64AsmPrinter", "LLVMAArch64Utils", "LLVMPowerPCCodeGen", "LLVMPowerPCAsmParser", "LLVMPowerPCDesc", "LLVMPowerPCInfo", "LLVMPowerPCAsmPrinter", "LLVMSparcCodeGen", "LLVMSparcDesc", "LLVMSparcInfo", "LLVMX86Disassembler", "LLVMX86AsmParser", "LLVMX86CodeGen", "LLVMSelectionDAG", "LLVMAsmPrinter", "LLVMX86Desc", "LLVMX86Info", "LLVMX86AsmPrinter", "LLVMX86Utils", "LLVMMCDisassembler", "LLVMMCParser", "LLVMInterpreter", "LLVMMCJIT", "LLVMJIT", "LLVMCodeGen", "LLVMObjCARCOpts", "LLVMScalarOpts", "LLVMInstCombine", "LLVMTransformUtils", "LLVMipa", "LLVMAnalysis", "LLVMRuntimeDyld", "LLVMExecutionEngine", "LLVMTarget", "LLVMMC", "LLVMObject", "LLVMCore", "LLVMSupport", linkCPPStdLib] ++
+              extraLibs = ["chelper", "cpphelper", "clang", "clangFrontendTool", "clangFrontend", "clangDriver", "clangSerialization", "clangCodeGen", "clangParse", "clangSema", "clangStaticAnalyzerFrontend", "clangStaticAnalyzerCheckers", "clangStaticAnalyzerCore", "clangAnalysis", "clangARCMigrate", "clangRewriteFrontend", "clangRewriteCore", "clangEdit", "clangAST", "clangLex", "clangBasic", "LLVMInstrumentation", "LLVMIRReader", "LLVMAsmParser", "LLVMDebugInfo", "LLVMOption", "LLVMLTO", "LLVMLinker", "LLVMipo", "LLVMVectorize", "LLVMBitWriter", "LLVMBitReader", "LLVMTableGen", "LLVMX86Disassembler", "LLVMX86AsmParser", "LLVMX86CodeGen", "LLVMSelectionDAG", "LLVMAsmPrinter", "LLVMX86Desc", "LLVMX86Info", "LLVMX86AsmPrinter", "LLVMX86Utils", "LLVMMCDisassembler", "LLVMMCParser", "LLVMInterpreter", "LLVMMCJIT", "LLVMJIT", "LLVMCodeGen", "LLVMObjCARCOpts", "LLVMScalarOpts", "LLVMInstCombine", "LLVMTransformUtils", "LLVMipa", "LLVMAnalysis", "LLVMRuntimeDyld", "LLVMExecutionEngine", "LLVMTarget", "LLVMMC", "LLVMObject", "LLVMCore", "LLVMSupport", linkCPPStdLib] ++
                             ["imagehlp" | buildOS == Windows]
             }
 
@@ -204,13 +223,13 @@ libClangBuildHook pkg lbi usrHooks flags = do
 
         notice verbosity "Building C wrapper library..."
         inDir (curDir </> "cbits") $
-          runDbProgram verbosity makeProgram (withPrograms lbi') []
-
+          runDbProgram verbosity makeProgram (withPrograms lbi') ["CAIDE_DEBUG=1" | debug]
 
         buildHook simpleUserHooks (localPkgDescr lbi') lbi' usrHooks flags
 
-    -- No cppinliner flag
-    _ -> buildHook simpleUserHooks (localPkgDescr lbi) lbi usrHooks flags
+      else
+        -- No cppinliner flag
+        buildHook simpleUserHooks (localPkgDescr lbi) lbi usrHooks flags
 
   notice verbosity "Relinking..."
 
@@ -220,8 +239,11 @@ libClangCopyHook pkg lbi hooks flags = do
   copyHook simpleUserHooks pkg lbi hooks flags
 
   curDir <- getCurrentDirectory
-  let llvmLibDir = curDir </> "cbits" </> "clangbuild" </> "out" </> "lib"
-      verbosity = fromFlag (copyVerbosity flags)
+  let verbosity = fromFlag (copyVerbosity flags)
+      lookupConfFlag flagName defaultValue = fromMaybe defaultValue $
+            lookup (FlagName flagName) (configConfigurationsFlags $ configFlags lbi)
+      debug = lookupConfFlag "debug" False
+      llvmLibDir = curDir </> "cbits" </> (if debug then "clangbuilddebug" else "clangbuild") </> "out" </> "lib"
       libCopyDir = libdir $ absoluteInstallDirs pkg lbi NoCopyDest
 
   notice verbosity "Installing libclang shared libraries..."
@@ -232,14 +254,14 @@ libClangCleanHook :: PackageDescription -> () -> UserHooks -> CleanFlags -> IO (
 libClangCleanHook pkg v hooks flags = do
   curDir <- getCurrentDirectory
   let verbosity = fromFlag (cleanVerbosity flags)
-      buildDir = curDir </> "cbits" </> "clangbuild"
-
-  notice verbosity "Cleaning LLVM and Clang..."
-
+      buildDir = curDir </> "cbits" </> "build"
   buildDirExists <- doesDirectoryExist buildDir
   when buildDirExists $ removeDirectoryRecursive buildDir
 
   cleanHook simpleUserHooks pkg v hooks flags
+
+  notice verbosity "LLVM and Clang are NOT cleaned! Remove clangbuild folders manually to trigger their rebuild"
+
 
 
 mkStaticLib :: String -> String
@@ -321,3 +343,4 @@ onProgram prog f pdb = case lookupProgram prog pdb of
 
 onProgramOverrideArgs :: Lifter [String] ConfiguredProgram
 onProgramOverrideArgs f prog = prog { programOverrideArgs = f (programOverrideArgs prog) }
+

@@ -20,3 +20,10 @@ T* Z(T* p) {
     return p;
 }
 
+template<typename T>
+const T* Z(const T* p) {
+    if (!p)
+        throw std::runtime_error("Null pointer");
+    return p;
+}
+

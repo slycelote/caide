@@ -17,6 +17,10 @@ Flag cppinliner
   description: Include support for inlining C++ code via libclang
   default: True
 
+Flag debug
+  description: Debug build
+  default: False
+
 executable caide
   build-depends:
                    base >= 4,
@@ -43,9 +47,14 @@ executable caide
     other-modules:
                    Caide.CPP.CBinding,
                    Caide.CPP.CPP
+    include-dirs:    cbits
+    extra-lib-dirs:  cbits/build
+    if flag(debug) {
+      extra-lib-dirs: cbits/clangbuilddebug/out/lib
+    } else {
+      extra-lib-dirs: cbits/clangbuild/out/lib
+    }
   }
-  include-dirs:    cbits
-  extra-lib-dirs:  cbits/build, cbits/clangbuild/out/lib
   default-language: Haskell2010
   main-is:         Main.hs
   other-modules:
@@ -68,3 +77,4 @@ executable caide
                    Caide.Xml,
                    Caide.TestCases.Types,
                    Caide.Commands.GetOpt
+

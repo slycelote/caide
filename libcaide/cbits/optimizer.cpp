@@ -44,6 +44,8 @@ private:
     SourceManager& sourceManager;
 
     References& uses;
+
+    // Current function. FIXME: this doesn't handle top-level declarations correctly.
     Decl* currentDecl;
 
 private:
@@ -83,6 +85,7 @@ public:
     DependenciesCollector(SourceManager& srcMgr, References& uses)
         : sourceManager(srcMgr)
         , uses(uses)
+        , currentDecl(0)
     {}
     bool shouldVisitImplicitCode() const { return true; }
     bool shouldVisitTemplateInstantiations() const { return true; }
@@ -210,6 +213,8 @@ public:
     {}
 
     bool VisitFunctionDecl(FunctionDecl* functionDecl) {
+        if (!sourceManager.isInMainFile(Z(functionDecl)->getLocStart()))
+            return false;
         FunctionDecl* canonicalDecl = functionDecl->getCanonicalDecl();
         if (canonicalDecl->getTemplatedKind() != FunctionDecl::TK_NonTemplate) {
             // Will be processed as FunctionTemplateDecl
@@ -227,6 +232,8 @@ public:
 
     // TODO: unused explicit function template specializations are not removed
     bool VisitFunctionTemplateDecl(FunctionTemplateDecl* functionDecl) {
+        if (!sourceManager.isInMainFile(Z(functionDecl)->getLocStart()))
+            return false;
         dbg() << __FUNCTION__ << std::endl;
         if (used.find(functionDecl) == used.end())
             removeDecl(functionDecl);
@@ -234,6 +241,8 @@ public:
 
     // TODO: unused exlicit class template specializations are removed twice
     bool VisitCXXRecordDecl(CXXRecordDecl* recordDecl) {
+        if (!sourceManager.isInMainFile(Z(recordDecl)->getLocStart()))
+            return false;
         bool isTemplated = recordDecl->getDescribedClassTemplate();
         TemplateSpecializationKind specKind = recordDecl->getTemplateSpecializationKind();
         dbg() << __FUNCTION__ << specKind << " " << std::endl;
@@ -251,6 +260,8 @@ public:
     }
 
     bool VisitClassTemplateDecl(ClassTemplateDecl* templateDecl) {
+        if (!sourceManager.isInMainFile(Z(templateDecl)->getLocStart()))
+            return false;
         dbg() << __FUNCTION__ << std::endl;
         ClassTemplateDecl* canonicalDecl = templateDecl->getCanonicalDecl();
         const bool classIsUnused = used.find(canonicalDecl) == used.end();
@@ -263,6 +274,8 @@ public:
     }
 
     bool VisitUsingDirectiveDecl(UsingDirectiveDecl* usingDecl) {
+        if (!sourceManager.isInMainFile(Z(usingDecl)->getLocStart()))
+            return false;
         NamespaceDecl* ns = usingDecl->getNominatedNamespace();
         if (ns && !usedNamespaces.insert(ns).second)
             removeDecl(usingDecl);
@@ -300,34 +313,12 @@ public:
         , rewriter(rewriter)
     {}
 
-    virtual bool HandleTopLevelDecl(DeclGroupRef DR) {
-        dbg() << __FUNCTION__ << std::endl;
-        for (DeclGroupRef::iterator b = DR.begin(), e = DR.end(); b != e; ++b) {
-            Decl* decl = *b;
-            if (sourceManager.isInMainFile(Z(decl)->getLocStart())) {
-                topLevelDecls.push_back(decl);
-                DependenciesCollector visitor(sourceManager, uses);
-                visitor.TraverseDecl(decl);
-            }
-        }
-        return true;
-    }
-
-    virtual void HandleTagDeclDefinition(TagDecl* decl) {
-        dbg() << __FUNCTION__ << std::endl;
-        if (ClassTemplateSpecializationDecl* specDecl = dyn_cast<ClassTemplateSpecializationDecl>(decl))
-        {
-            if (sourceManager.isInMainFile(Z(specDecl)->getLocStart())) {
-                topLevelDecls.push_back(specDecl);
-                DependenciesCollector visitor(sourceManager, uses);
-                visitor.TraverseDecl(specDecl);
-            }
-
-        }
-    }
-
     virtual void HandleTranslationUnit(ASTContext& Ctx) {
-        // Search for used decls
+        dbg() << "Build dependency graph" << std::endl;
+        DependenciesCollector depsVisitor(sourceManager, uses);
+        depsVisitor.TraverseDecl(Ctx.getTranslationUnitDecl());
+
+        dbg() << "Search for used decls" << std::endl;
         std::set<Decl*> used;
         for (size_t i = 0; i < topLevelDecls.size(); ++i) {
             FunctionDecl* functionDecl = dyn_cast<FunctionDecl>(topLevelDecls[i]);
@@ -344,10 +335,10 @@ public:
                 break;
             }
         }
+
+        dbg() << "Remove unused decls" << std::endl;
         OptimizerVisitor visitor(sourceManager, used, rewriter);
-        for (size_t i = 0; i < topLevelDecls.size(); ++i) {
-            visitor.TraverseDecl(topLevelDecls[i]);
-        }
+        visitor.TraverseDecl(Ctx.getTranslationUnitDecl());
     }
 
     std::string getResult() const {

@@ -6,7 +6,7 @@ cabal.sandbox.config
 *.swp
 *~
 /cbits/build
-/cbits/clangbuild
+/cbits/clangbuild*
 /src/Caide/Commands/defaultTemplates.inc
 /regression-tests/tmp
 

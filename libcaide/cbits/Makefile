@@ -7,7 +7,11 @@
 # directories of LLVM, Clang in tools/clang/, etc.
 # Alternatively, if you're building vs. a binary download of LLVM, then
 # LLVM_SRC_PATH can point to the main untarred directory.
-LLVM_SRC_PATH := clangbuild/out
+ifdef CAIDE_DEBUG
+	LLVM_SRC_PATH := clangbuilddebug/out
+else
+	LLVM_SRC_PATH := clangbuild/out
+endif
 
 # LLVM_BUILD_PATH is the directory in which you built LLVM - where you ran
 # configure or cmake.
@@ -20,6 +24,9 @@ LLVM_BIN_PATH := $(LLVM_BUILD_PATH)/bin
 # It's recommended that CXX matches the compiler you used to build LLVM itself.
 CXX := g++
 CXXFLAGS := -fno-rtti -O2 -c -static -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS
+ifdef CAIDE_DEBUG
+	CXXFLAGS += -g
+endif
 ARCHIVER := ar
 
 LLVM_CXXFLAGS := $($(LLVM_BIN_PATH)/llvm-config --cxxflags)
@@ -59,7 +66,7 @@ clean:
 	rm -rf $(BUILDDIR)/* *.dot
 
 ######## Test targets
-LLVM_LDFLAGS := $($(LLVM_BIN_PATH)/llvm-config --ldflags --libs)
+LLVM_LDFLAGS := $($(LLVM_BIN_PATH)/llvm-config --libs)
 
 # List of Clang libraries to link. The proper -L will be provided by the
 # call to llvm-config
@@ -68,7 +75,7 @@ LLVM_LDFLAGS := $($(LLVM_BIN_PATH)/llvm-config --ldflags --libs)
 # to specify and maintain. The linker group options make the linking somewhat
 # slower, but IMHO they're still perfectly fine for tools that link with Clang.
 CLANG_LIBS := \
-	-Wl,--start-group \
+	-lclang \
 	-lclangFrontendTool  \
 	-lclangFrontend  \
 	-lclangDriver  \
@@ -87,7 +94,52 @@ CLANG_LIBS := \
 	-lclangAST  \
 	-lclangLex  \
 	-lclangBasic \
-	-Wl,--end-group
 
-test_exe: $(BUILDDIR)/libcpphelper.a $(BUILDDIR)/libchelper.a
-	$(CXX) -Lbuild -lchelper -lcpphelper $(CLANG_LIBS) $(LLVM_LDFLAGS) test_c.cpp -o test_c.exe
+LLVM_LIBS := \
+	-lLLVMInstrumentation \
+	-lLLVMIRReader \
+	-lLLVMAsmParser \
+	-lLLVMDebugInfo \
+	-lLLVMOption \
+	-lLLVMLTO \
+	-lLLVMLinker \
+	-lLLVMipo \
+	-lLLVMVectorize \
+	-lLLVMBitWriter \
+	-lLLVMBitReader \
+	-lLLVMTableGen \
+	-lLLVMX86Disassembler \
+	-lLLVMX86AsmParser \
+	-lLLVMX86CodeGen \
+	-lLLVMSelectionDAG \
+	-lLLVMAsmPrinter \
+	-lLLVMX86Desc \
+	-lLLVMX86Info \
+	-lLLVMX86AsmPrinter \
+	-lLLVMX86Utils \
+	-lLLVMMCDisassembler \
+	-lLLVMMCParser \
+	-lLLVMInterpreter \
+	-lLLVMMCJIT \
+	-lLLVMJIT \
+	-lLLVMCodeGen \
+	-lLLVMObjCARCOpts \
+	-lLLVMScalarOpts \
+	-lLLVMInstCombine \
+	-lLLVMTransformUtils \
+	-lLLVMipa \
+	-lLLVMAnalysis \
+	-lLLVMRuntimeDyld \
+	-lLLVMExecutionEngine \
+	-lLLVMTarget \
+	-lLLVMMC \
+	-lLLVMObject \
+	-lLLVMCore \
+	-lLLVMSupport
+
+test_c.exe: $(BUILDDIR)/libcpphelper.a $(BUILDDIR)/libchelper.a test_c.o
+	$(CXX) -static -Lbuild -L$(LLVM_BUILD_PATH)/lib test_c.o -lchelper -lcpphelper $(CLANG_LIBS) $(LLVM_LIBS) -lstdc++ -limagehlp -o test_c.exe
+
+test_c.o: test_c.cpp
+	$(CXX) $(CXXFLAGS) test_c.cpp -o test_c.o
+
