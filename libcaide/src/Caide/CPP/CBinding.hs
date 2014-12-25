@@ -38,3 +38,4 @@ removeUnusedCode cppFile systemHeaderDirs outputFile =
 
 withArrayOfStrings :: [String] -> (Ptr CString -> IO a) -> IO a
 withArrayOfStrings xs m = withMany withCString xs $ \ps -> withArray ps m
+

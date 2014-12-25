@@ -23,7 +23,7 @@ FL_EXPORT_C(void, inline_code)(const char** cppFiles, int numCppFiles,
        const char** systemHeaders, int numSystemHeaders,
        const char** userHeaders, int numUserHeaders, const char* outputFile)
 {
-    std::ofstream out(outputFile);
+    std::ofstream out(outputFile, std::ios::binary);
     try {
         const std::vector<std::string> systemHeaders_ = fromCharArrays(systemHeaders, numSystemHeaders);
         const std::vector<std::string> userHeaders_ = fromCharArrays(userHeaders, numUserHeaders);
@@ -40,7 +40,7 @@ FL_EXPORT_C(void, inline_code)(const char** cppFiles, int numCppFiles,
 FL_EXPORT_C(void, remove_unused_code)(const char* cppFile,
        const char** systemHeaders, int numSystemHeaders, const char* outputFile)
 {
-    std::ofstream out(outputFile);
+    std::ofstream out(outputFile, std::ios::binary);
     try {
         const std::vector<std::string> systemHeaders_ = fromCharArrays(systemHeaders, numSystemHeaders);
         Optimizer optimizer(systemHeaders_);

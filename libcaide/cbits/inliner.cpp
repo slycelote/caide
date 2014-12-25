@@ -180,8 +180,12 @@ private:
         std::ostringstream result;
         // We go over each #include directive in current file and replace it
         // with the result of inclusion.
+        // The last value of i doesn't correspond to an include directive,
+        // it's used to output the part of the file after the last include directive.
         for (int i = includedFrom + 1; i <= int(replacementStack.size()); ++i) {
-            // First output the block between #include directives
+            // First output the block before the #include directive.
+            // Block start is immediately after the previous include directive;
+            // block end is immediately before current include directive.
             SourceLocation blockStart, blockEnd;
 
             if (i == includedFrom + 1)
@@ -201,7 +205,7 @@ private:
                         blockEnd.print(llvm::errs(), srcManager);
                         llvm::errs() << "\n";
             */
-            // Skip cases when two include directive are adjacent
+            // skip cases when two include directives are adjacent
             //   or an include directive is in the beginning or end of file
             if (blockStart.isValid() && blockEnd.isValid() &&
                     srcManager.isBeforeInSLocAddrSpace(blockStart, blockEnd)) {
