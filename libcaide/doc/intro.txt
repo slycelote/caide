@@ -36,8 +36,8 @@ might be implemented by the IDE instead.
   Input:
     * (non-inlined) source code of test program from item 3
     * testList.txt file containing description of test cases to be run from item 3
-  Output: for each test case that was run, either *.out file containing program output on this case
-    or *.failed file meaning that the program crashed.
+  Output: for each test case that was run, either *.out file containing
+program output on this case or *.failed file meaning that the program crashed.
 > caide test
 
 5. Generating test report.
@@ -51,7 +51,7 @@ might be implemented by the IDE instead.
 > caide test
 
 6. Inlining of library code.
-  Input: 
+  Input:
     * Problem solution from item 2
     * Library of prewritten code
   Output: a single file to be sent to judging system.
@@ -80,3 +80,4 @@ Other commands:
 > caide status - prints active problem id, language
 > caide archive [<problem id>] - moves problem to archive
 > caide restore <problem id> - restores problem from archive
+

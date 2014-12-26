@@ -1,8 +1,12 @@
 {-# LANGUAGE TupleSections #-}
 
+import Codec.Archive.Zip (fromArchive, addFilesToArchive, emptyArchive, findEntryByPath,
+                          filesInArchive, addEntryToArchive,
+                          Archive(), Entry(eRelativePath, Entry), ZipOption(..))
 import Control.Exception
 import Control.Monad
 import Control.Applicative
+import qualified Data.ByteString.Lazy as B
 import Data.Char(isSpace)
 import Data.List (isPrefixOf, intersperse)
 import Data.Maybe (fromMaybe)
@@ -225,11 +229,26 @@ libClangBuildHook pkg lbi usrHooks flags = do
         inDir (curDir </> "cbits") $
           runDbProgram verbosity makeProgram (withPrograms lbi') ["CAIDE_DEBUG=1" | debug]
 
+
+        -- Zip headers. The archive will be embedded into the executable.
+        notice verbosity "Zipping header files..."
+
+        let addFilesToZipFile :: Archive -> FilePath -> IO Archive
+            addFilesToZipFile archive filesPath = inDir filesPath $
+                addFilesToArchive [OptRecursive] archive ["."]
+
+        archive <- addFilesToZipFile emptyArchive $
+            llvmPrefixDir </> "lib" </> "clang" </> "3.4.2"
+        archive' <- addFilesToZipFile archive $ curDir </> "res" </> "include"
+        B.writeFile (curDir </> "res" </> "headers.zip") $ fromArchive archive'
+
+        -- Build Haskell code
         buildHook simpleUserHooks (localPkgDescr lbi') lbi' usrHooks flags
 
       else
         -- No cppinliner flag
         buildHook simpleUserHooks (localPkgDescr lbi) lbi usrHooks flags
+
 
   notice verbosity "Relinking..."
 
