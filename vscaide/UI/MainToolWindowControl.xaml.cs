@@ -23,17 +23,15 @@ namespace slycelote.VsCaide
 
     public partial class MainToolWindowControl : System.Windows.Controls.UserControl
     {
-        public MainToolWindowControl()
+        private MainToolWindow mainToolWindow;
+
+        public MainToolWindowControl(MainToolWindow owner)
         {
             InitializeComponent();
-        }
-
-        // Test method
-        private void MainToolWindowUserControl_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            string stdout, stderr;
-            int exitCode = CaideExe.Execute(new[] {"help"}, @"C:\code\caide\libcaide\test", out stdout, out stderr);
-            MessageBox.Show(string.Format("Exit code: {0},\nstdout:\n{1}\nstderr:\n{2}", exitCode, stdout, stderr));
+            cbProgrammingLanguage.Items.Add("cpp");
+            cbProgrammingLanguage.Items.Add("simplecpp");
+            cbProgrammingLanguage.IsEnabled = cbProblems.IsEnabled = btnAddNewProblem.IsEnabled = false;
+            this.mainToolWindow = owner;
         }
 
         private void ReloadProblemList()
@@ -63,7 +61,8 @@ namespace slycelote.VsCaide
             int ret = CaideExe.Execute(new[] { "intgetopt", "core", "problem" }, solutionDir, out stdout, out stderr);
             if (ret != 0)
             {
-                throw new CaideException(string.Format("caide.exe error. Error code: {0}\n{1}\n{2}", ret, stdout, stderr));
+                Logger.LogError("caide.exe error. Error code: {0}\n{1}\n{2}", ret, stdout, stderr);
+                return;
             }
 
             cbProblems.SelectedItem = stdout.Trim();
@@ -83,8 +82,7 @@ namespace slycelote.VsCaide
                 {
                     Description = "Select solution folder",
                     ShowNewFolderButton = true,
-                    //RootFolder = Environment.SpecialFolder.Recent,
-                    //RootFolder = Environment.SpecialFolder.Personal,
+                    RootFolder = Environment.SpecialFolder.Personal,
                 };
                 var result = folderBrowserDialog.ShowDialog();
                 if (result != DialogResult.OK)
@@ -122,10 +120,11 @@ namespace slycelote.VsCaide
 
             bool isCaideDirectory = File.Exists(Path.Combine(solutionDir, "caide.ini"));
             btnCreateSolution.IsEnabled = !isCaideDirectory;
-            cbProblems.IsEnabled = btnAddNewProblem.IsEnabled = isCaideDirectory;
+            cbProblems.IsEnabled = cbProgrammingLanguage.IsEnabled = btnAddNewProblem.IsEnabled = isCaideDirectory;
             if (isCaideDirectory)
             {
-                this.Visibility = System.Windows.Visibility.Visible;
+                IVsWindowFrame windowFrame = (IVsWindowFrame)mainToolWindow.Frame;
+                windowFrame.Show();
                 ReloadProblemList();
             }
         }
@@ -133,11 +132,37 @@ namespace slycelote.VsCaide
         public void Solution_Closed()
         {
             btnCreateSolution.IsEnabled = true;
+            cbProblems.Items.Clear();
+            cbProblems.IsEnabled = cbProgrammingLanguage.IsEnabled = btnAddNewProblem.IsEnabled = false;
         }
 
         private void cbProblems_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            string selectedProblem = cbProblems.SelectedItem as string;
+            if (selectedProblem == null)
+                return;
 
+            var solutionService = Services.Solution;
+            string solutionDir, unused;
+
+            ErrorHandler.ThrowOnFailure(
+                solutionService.GetSolutionInfo(out solutionDir, out unused, out unused));
+            if (solutionDir == null)
+                return;
+
+
+            string stdout, stderr;
+            int ret = CaideExe.Execute(new[] { "probgetopt", selectedProblem, "problem", "language" }, solutionDir, out stdout, out stderr);
+            if (ret != 0)
+            {
+                Logger.LogError("caide.exe error. Return code {0}\n{1}\n{2}", ret, stdout, stderr);
+                return;
+            }
+
+            string language = stdout.Trim();
+            if (!cbProgrammingLanguage.Items.Contains(language) && !string.IsNullOrEmpty(language))
+                cbProgrammingLanguage.Items.Add(language);
+            cbProgrammingLanguage.SelectedItem = language;
         }
     }
 }

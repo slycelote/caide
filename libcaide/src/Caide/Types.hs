@@ -61,7 +61,7 @@ data CommandHandler = CommandHandler
     { command      :: String
     , description  :: String
     , usage        :: String
-    , action       :: CaideEnvironment -> [String] -> IO ()
+    , action       :: CaideEnvironment -> [String] -> IO (Maybe String)
     }
 
 -- | Builder is responsible for building the code and running

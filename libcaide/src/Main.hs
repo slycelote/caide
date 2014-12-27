@@ -7,6 +7,7 @@ import Filesystem (getWorkingDirectory, isDirectory)
 import qualified Filesystem.Path as F
 import Filesystem.Path.CurrentOS (decodeString, encodeString, parent, (</>))
 import System.Environment (getArgs)
+import System.Exit (exitWith, ExitCode(ExitFailure))
 
 import Caide.Types (CommandHandler(..), saveProject)
 
@@ -33,7 +34,7 @@ findRootCaideDir curDir = do
 
 commands :: [CommandHandler]
 commands = [Init.cmd, ParseProblem.cmd, BuildScaffold.cmd, Checkout.cmd, Make.cmd, RunTests.cmd,
-            GetOpt.cmd, GetOpt.cmdInternal]
+            GetOpt.cmd, GetOpt.cmdInternal, GetOpt.cmdProblem]
 
 findCommand :: String -> Maybe CommandHandler
 findCommand cmdName = find ((== cmdName) . command) commands
@@ -57,8 +58,12 @@ main = do
                 Just c  -> do
                     caideDir <- findRootCaideDir workDir
                     case () of
-                      _ | cmd /= "init" && isNothing caideDir -> putStrLn $ encodeString workDir ++ " is not a valid caide directory"
-                        | cmd == "init" && isJust caideDir    -> putStrLn "Caide directory already initialized"
+                      _ | cmd /= "init" && isNothing caideDir -> do
+                              putStrLn $ encodeString workDir ++ " is not a valid caide directory"
+                              halt
+                        | cmd == "init" && isJust caideDir    -> do
+                              putStrLn "Caide directory already initialized"
+                              halt
                         -- special case for init command: pass working directory as the first parameter
                         | otherwise -> runAction c (fromMaybe workDir caideDir) commandArgs
 
@@ -66,6 +71,11 @@ runAction :: CommandHandler -> F.FilePath -> [String] -> IO ()
 runAction cmd caideRoot args = do
     project <- readCaideProject caideRoot
     let env = project
-    action cmd env args
-    saveProject project
+    ret <- action cmd env args
+    case ret of
+        Just err -> putStrLn err >> halt
+        _        -> saveProject project
+
+halt :: IO ()
+halt = exitWith (ExitFailure 1)
 

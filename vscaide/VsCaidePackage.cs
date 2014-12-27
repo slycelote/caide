@@ -67,7 +67,7 @@ namespace slycelote.VsCaide
         /// </summary>
         private void ShowToolWindow(object sender, EventArgs e)
         {
-            ToolWindowPane window = LocateMainToolWindow(create: true);
+            ToolWindowPane window = LocateMainToolWindow();
             if ((null == window) || (null == window.Frame))
             {
                 throw new NotSupportedException(Resources.CanNotCreateWindow);
@@ -76,12 +76,12 @@ namespace slycelote.VsCaide
             Microsoft.VisualStudio.ErrorHandler.ThrowOnFailure(windowFrame.Show());
         }
 
-        private MainToolWindow LocateMainToolWindow(bool create = false)
+        private MainToolWindow LocateMainToolWindow()
         {
             // Get the instance number 0 of this tool window. This window is single instance so this instance
             // is actually the only one.
             // The last flag is set to true so that if the tool window does not exists it will be created.
-            return (MainToolWindow)this.FindToolWindow(typeof(MainToolWindow), 0, create);
+            return (MainToolWindow)this.FindToolWindow(typeof(MainToolWindow), 0, true);
         }
 
 
@@ -100,7 +100,7 @@ namespace slycelote.VsCaide
 
             if (Instance != null)
             {
-                throw new CaideException("Package has already been initialized");
+                Logger.LogError("Package has already been initialized");
             }
             Instance = this;
 

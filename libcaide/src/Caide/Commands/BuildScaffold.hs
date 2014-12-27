@@ -24,13 +24,13 @@ cmd = CommandHandler
     , action = generateScaffoldSolution
     }
 
-generateScaffoldSolution :: CaideEnvironment -> [String] -> IO ()
+generateScaffoldSolution :: CaideEnvironment -> [String] -> IO (Maybe String)
 generateScaffoldSolution env [lang] = case findLanguage lang of
-    Nothing -> putStrLn $ "Unknown or unsupported language: " ++ lang
+    Nothing -> return . Just $ "Unknown or unsupported language: " ++ lang
     Just language -> do
         problem <- getActiveProblem env
         if null problem
-            then putStrLn "No active problem. Generate one with `caide problem`"
+            then return . Just $ "No active problem. Generate one with `caide problem`"
             else do
                 let caideRoot = getRootDirectory env
                     problemDir = caideRoot </> decodeString problem
@@ -43,5 +43,5 @@ generateScaffoldSolution env [lang] = case findLanguage lang of
 
                 make env []
 
-generateScaffoldSolution _ _ = putStrLn $ "Usage " ++ usage cmd
+generateScaffoldSolution _ _ = return . Just $ "Usage " ++ usage cmd
 

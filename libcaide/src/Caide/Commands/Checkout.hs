@@ -21,7 +21,7 @@ cmd = CommandHandler
     , action = checkoutProblem
     }
 
-checkoutProblem :: CaideEnvironment -> [String] -> IO ()
+checkoutProblem :: CaideEnvironment -> [String] -> IO (Maybe String)
 checkoutProblem env [probId] = do
     let caideRoot  = getRootDirectory env
         problemDir = caideRoot </> decodeString probId
@@ -32,7 +32,8 @@ checkoutProblem env [probId] = do
             putStrLn $ "Checked out problem " ++ probId
             features <- mapMaybe findFeature <$> getFeatures env
             forM_ features $ \feature -> onProblemCheckedOut feature env probId
-        else putStrLn $ "Problem " ++ probId ++ " doesn't exist"
+            return Nothing
+        else return . Just $ "Problem " ++ probId ++ " doesn't exist"
 
-checkoutProblem _ _ = putStrLn $ "Usage: " ++ usage cmd
+checkoutProblem _ _ = return . Just $ "Usage: " ++ usage cmd
 

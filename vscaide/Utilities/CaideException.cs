@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace slycelote.VsCaide.Utilities
 {
+    [Serializable]
     public class CaideException: Exception
     {
         public CaideException(string message)

@@ -41,7 +41,7 @@ namespace slycelote.VsCaide
             // This is the user control hosted by the tool window; Note that, even if this class implements IDisposable,
             // we are not calling Dispose on this object. This is because ToolWindowPane calls Dispose on 
             // the object returned by the Content property.
-            base.Content = Control = new MainToolWindowControl();
+            base.Content = Control = new MainToolWindowControl(this);
         }
 
         public readonly MainToolWindowControl Control;

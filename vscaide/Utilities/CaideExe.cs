@@ -52,7 +52,9 @@ namespace slycelote.VsCaide.Utilities
         {
             if (CaideExePath == null)
             {
-                throw new CaideException("Couldn't find caide.exe");
+                stderr = "Couldn't find caide.exe";
+                stdout = "";
+                return 1;
             }
 
             var psi = new ProcessStartInfo

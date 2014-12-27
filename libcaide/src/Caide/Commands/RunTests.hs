@@ -29,7 +29,7 @@ cmd =  CommandHandler
     , action = runTests
     }
 
-runTests :: CaideEnvironment -> [String] -> IO ()
+runTests :: CaideEnvironment -> [String] -> IO (Maybe String)
 runTests env _ = do
     probId <- getActiveProblem env
     builderName <- getBuilder env
@@ -44,7 +44,8 @@ runTests env _ = do
         writeTextFile reportFile . serializeTestReport $ report
         T.putStrLn . T.unlines $
             map (\(testName, res) -> T.concat [T.pack testName, ": ", humanReadable res]) report
-    else putStrLn "Test runner failed"
+        return Nothing
+    else return . Just $ "Test runner failed"
 
 
 generateReport :: FilePath -> IO (TestReport Text)

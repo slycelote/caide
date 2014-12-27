@@ -30,29 +30,30 @@ cmd = CommandHandler
     , action = make
     }
 
-make :: CaideEnvironment -> [String] -> IO ()
+make :: CaideEnvironment -> [String] -> IO (Maybe String)
 make env _ = do
     probId <- getActiveProblem env
     if null probId
-        then putStrLn "No active problem. Generate one with `caide problem`"
+        then return . Just $ "No active problem. Generate one with `caide problem`"
         else do
             let problemDir = getRootDirectory env </> decodeString probId
             problemExists <- isDirectory problemDir
             if problemExists
                 then makeProblem env problemDir
-                else putStrLn $ "Problem " ++ probId ++ " doesn't exist"
+                else return . Just $ "Problem " ++ probId ++ " doesn't exist"
 
 
-makeProblem :: CaideEnvironment -> FilePath -> IO ()
+makeProblem :: CaideEnvironment -> FilePath -> IO (Maybe String)
 makeProblem env problemDir = do
     conf <- readProblemConfig $ getProblemConfigFileInDir problemDir
     case findLanguage $ getProblemOption conf "problem" "language" of
-        Nothing -> putStrLn "Couldn't determine language for the problem"
+        Nothing -> return . Just $ "Couldn't determine language for the problem"
         Just lang -> do
             generateTestProgram lang env problemDir
             inlineCode lang env problemDir
             copyTestInputs problemDir
             updateTestList $ problemDir </> decodeString ".caideproblem" </> decodeString "test"
+            return Nothing
 
 copyTestInputs :: FilePath -> IO ()
 copyTestInputs problemDir = do
@@ -97,3 +98,4 @@ updateTestList testsDir = do
             _               -> (True, testName)
         sortedTests = sortBy (comparing succeededAndName) updatedTests
     writeTests sortedTests testListFile
+

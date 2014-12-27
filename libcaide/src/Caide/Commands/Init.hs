@@ -28,7 +28,7 @@ cmd = CommandHandler
     , action = initialize
     }
 
-initialize :: CaideEnvironment -> [String] -> IO ()
+initialize :: CaideEnvironment -> [String] -> IO (Maybe String)
 initialize env _ = do
     let curDir = getRootDirectory env
         templatesDir = curDir </> decodeString "templates"
@@ -37,6 +37,7 @@ initialize env _ = do
         writeTextFile (templatesDir </> decodeString fileName) (T.pack fileContents)
     unzipHeaders curDir
     putStrLn $ "Initialized caide directory at " ++ encodeString curDir
+    return Nothing
 
 defaultTemplates :: [(FilePath, String)]
 defaultTemplates = [

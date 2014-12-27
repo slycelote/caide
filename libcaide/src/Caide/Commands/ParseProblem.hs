@@ -2,7 +2,7 @@ module Caide.Commands.ParseProblem(
       cmd
 ) where
 
-import Control.Monad (forM_, when)
+import Control.Monad (forM_)
 import Data.Char (isAlphaNum, isAscii)
 import Data.List (find)
 import qualified Data.Text as T
@@ -27,24 +27,24 @@ cmd = CommandHandler
 parsers :: [ProblemParser]
 parsers = [codeforcesParser]
 
-parseProblem :: CaideEnvironment -> [String] -> IO ()
+parseProblem :: CaideEnvironment -> [String] -> IO (Maybe String)
 parseProblem env [url] = do
-    problemCreated <- case find (`matches` T.pack url) parsers of
+    ret <- case find (`matches` T.pack url) parsers of
         Just parser -> parseExistingProblem env url parser
         Nothing     -> createNewProblem env url
-    when problemCreated $ do
-        lang <- getDefaultLanguage env
-        generateScaffoldSolution env [lang]
+    case ret of
+        Nothing -> do
+            lang <- getDefaultLanguage env
+            generateScaffoldSolution env [lang]
+        _       -> return ret
 
-parseProblem _ _ = putStrLn $ "Usage: " ++ usage cmd
+parseProblem _ _ = return . Just $ "Usage: " ++ usage cmd
 
 
-createNewProblem :: CaideEnvironment -> ProblemID -> IO Bool
+createNewProblem :: CaideEnvironment -> ProblemID -> IO (Maybe String)
 createNewProblem env probId =
     if any (\c -> not (isAscii c) || not (isAlphaNum c)) probId
-    then do
-        putStrLn "Problem ID must be a string of alphanumeric characters"
-        return False
+    then return . Just $ "Problem ID must be a string of alphanumeric characters"
     else do
         let problemDir = getRootDirectory env </> decodeString probId
 
@@ -54,16 +54,14 @@ createNewProblem env probId =
         -- Set active problem
         setActiveProblem env probId
         putStrLn $ "Problem successfully created in folder " ++ probId
-        return True
+        return Nothing
 
 
-parseExistingProblem :: CaideEnvironment -> String -> ProblemParser -> IO Bool
+parseExistingProblem :: CaideEnvironment -> String -> ProblemParser -> IO (Maybe String)
 parseExistingProblem env url parser = do
     parseResult <- parser `parse` T.pack url
     case parseResult of
-        Left err -> do
-            putStrLn $ "Encountered a problem while parsing:\n" ++ err
-            return False
+        Left err -> return . Just $ "Encountered a problem while parsing:\n" ++ err
         Right (problem, samples) -> do
             let problemDir = getRootDirectory env </> decodeString (problemId problem)
 
@@ -81,5 +79,5 @@ parseExistingProblem env url parser = do
             setActiveProblem env $ problemId problem
             putStrLn $ "Problem successfully parsed into folder " ++ problemId problem
 
-            return True
+            return Nothing
 
