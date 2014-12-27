@@ -3,11 +3,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             Background="{DynamicResource VsBrush.Window}"
              Foreground="{DynamicResource VsBrush.WindowText}"
              mc:Ignorable="d"
-             x:Name="MainToolWindowUserControl" Height="318.045" Width="330.451" MouseDoubleClick="MainToolWindowUserControl_MouseDoubleClick">
-    <Grid HorizontalAlignment="Left" Margin="0,0,0,278">
-        <ComboBox Width="200" Margin="23,21,-23,-20.6" Height="25"/>
-    </Grid>
+             x:Name="MainToolWindowUserControl" Height="318.045" Width="330.451" MouseDoubleClick="MainToolWindowUserControl_MouseDoubleClick" HorizontalAlignment="Left" VerticalAlignment="Top">
+    <StackPanel Margin="0,0,0,0">
+        <Button x:Name="btnCreateSolution" Content="Create caide solution" HorizontalAlignment="Left" Height="25" Margin="10,10,0,0" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.109,0.476" Click="btnCreateSolution_Click"/>
+        <ComboBox Margin="10,10,0,0" RenderTransformOrigin="0.5,0.5" VerticalAlignment="Bottom" BorderThickness="1" HorizontalAlignment="Left" Width="200"/>
+    </StackPanel>
 </UserControl>

@@ -138,6 +138,7 @@
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Utilities\CaideException.cs" />
     <Compile Include="Utilities\CaideExe.cs" />
+    <Compile Include="Utilities\Services.cs" />
     <Compile Include="VsCaidePackage.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UI\PkgCmdID.cs" />

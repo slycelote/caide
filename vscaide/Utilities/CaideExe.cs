@@ -4,10 +4,46 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace slycelote.VsCaide.Utilities
 {
+    internal class ReadStreamToOutputWindow
+    {
+        private readonly StreamReader Reader;
+        private readonly CancellationToken CancelToken;
+        
+        internal ReadStreamToOutputWindow(StreamReader reader, CancellationToken cancelToken)
+        {
+            this.Reader = reader;
+            this.CancelToken = cancelToken;
+        }
+
+        internal Task RunAsync()
+        {
+            return Task.Run(() =>
+            {
+                var outputWindow = Services.GeneralOutputWindow;
+                try
+                {
+                    for (;;)
+                    {
+                        if (CancelToken.IsCancellationRequested)
+                            return;
+
+                        var readTask = Reader.ReadLineAsync();
+                        if (readTask.Wait(1000, CancelToken))
+                        {
+                            outputWindow.OutputString(readTask.Result);
+                        }
+                    }
+                }
+                catch (OperationCanceledException) { }
+            });
+        }
+
+    }
     public abstract class CaideExe
     {
         public const int EXIT_CODE_TIMEOUT = -4451;

@@ -8,6 +8,7 @@ using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell;
+using slycelote.VsCaide.Utilities;
 
 namespace slycelote.VsCaide
 {
@@ -21,19 +22,31 @@ namespace slycelote.VsCaide
     /// IVsPackage interface and uses the registration attributes defined in the framework to 
     /// register itself and its components with the shell.
     /// </summary>
+
     // This attribute tells the PkgDef creation utility (CreatePkgDef.exe) that this class is
     // a package.
     [PackageRegistration(UseManagedResourcesOnly = true)]
+
     // This attribute is used to register the information needed to show this package
     // in the Help/About dialog of Visual Studio.
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)]
+
     // This attribute is needed to let the shell know that this package exposes some menus.
     [ProvideMenuResource("Menus.ctmenu", 1)]
+
     // This attribute registers a tool window exposed by this package.
-    [ProvideToolWindow(typeof(MainToolWindow))]
+    [ProvideToolWindow( typeof(MainToolWindow),
+        Window=Microsoft.VisualStudio.Shell.Interop.ToolWindowGuids.SolutionExplorer,
+        Style=VsDockStyle.Tabbed
+    )]
+
+    [ProvideAutoLoad(Microsoft.VisualStudio.VSConstants.UICONTEXT.NoSolution_string)]
+    [ProvideAutoLoad(Microsoft.VisualStudio.VSConstants.UICONTEXT.SolutionExists_string)]
     [Guid(GuidList.guidVsCaidePkgString)]
-    public sealed class VsCaidePackage : Package
+    public sealed class VsCaidePackage : Package, IVsShellPropertyEvents, IVsSolutionEvents
     {
+        private static VsCaidePackage Instance { get; set; }
+
         /// <summary>
         /// Default constructor of the package.
         /// Inside this method you can place any initialization code that does not require 
@@ -44,6 +57,7 @@ namespace slycelote.VsCaide
         public VsCaidePackage()
         {
             Debug.WriteLine(string.Format(CultureInfo.CurrentCulture, "Entering constructor for: {0}", this.ToString()));
+            Instance = null;
         }
 
         /// <summary>
@@ -53,16 +67,21 @@ namespace slycelote.VsCaide
         /// </summary>
         private void ShowToolWindow(object sender, EventArgs e)
         {
-            // Get the instance number 0 of this tool window. This window is single instance so this instance
-            // is actually the only one.
-            // The last flag is set to true so that if the tool window does not exists it will be created.
-            ToolWindowPane window = this.FindToolWindow(typeof(MainToolWindow), 0, true);
+            ToolWindowPane window = LocateMainToolWindow(create: true);
             if ((null == window) || (null == window.Frame))
             {
                 throw new NotSupportedException(Resources.CanNotCreateWindow);
             }
             IVsWindowFrame windowFrame = (IVsWindowFrame)window.Frame;
             Microsoft.VisualStudio.ErrorHandler.ThrowOnFailure(windowFrame.Show());
+        }
+
+        private MainToolWindow LocateMainToolWindow(bool create = false)
+        {
+            // Get the instance number 0 of this tool window. This window is single instance so this instance
+            // is actually the only one.
+            // The last flag is set to true so that if the tool window does not exists it will be created.
+            return (MainToolWindow)this.FindToolWindow(typeof(MainToolWindow), 0, create);
         }
 
 
@@ -79,6 +98,37 @@ namespace slycelote.VsCaide
             Debug.WriteLine (string.Format(CultureInfo.CurrentCulture, "Entering Initialize() of: {0}", this.ToString()));
             base.Initialize();
 
+            if (Instance != null)
+            {
+                throw new CaideException("Package has already been initialized");
+            }
+            Instance = this;
+
+            IVsShell shellService = Services.Shell;
+            if (shellService != null)
+                ErrorHandler.ThrowOnFailure(
+                  shellService.AdviseShellPropertyChanges(this, out shellPropertyChangeCookie));
+
+        }
+        #endregion
+
+        #region IVsShellPropertyEvents members
+
+        private uint shellPropertyChangeCookie;
+
+        public int OnShellPropertyChange(int propid, object var)
+        {
+            if ((int)__VSSPROPID.VSSPROPID_Zombie != propid || (bool)var == true)
+                return VSConstants.S_OK;
+
+            // when zombie state changes to false, finish package initialization
+            IVsShell shellService = Services.Shell;
+
+            if (shellService != null)
+                ErrorHandler.ThrowOnFailure(
+                  shellService.UnadviseShellPropertyChanges(this.shellPropertyChangeCookie));
+            this.shellPropertyChangeCookie = 0;
+
             // Add our command handlers for menu (commands must exist in the .vsct file)
             OleMenuCommandService mcs = GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
             if ( null != mcs )
@@ -88,8 +138,70 @@ namespace slycelote.VsCaide
                 MenuCommand menuToolWin = new MenuCommand(ShowToolWindow, toolwndCommandID);
                 mcs.AddCommand( menuToolWin );
             }
+
+            var solutionService = Services.Solution;
+            ErrorHandler.ThrowOnFailure(
+                solutionService.AdviseSolutionEvents(this, out solutionEventsCookie));
+
+            return VSConstants.S_OK;
         }
         #endregion
 
+        #region IVsSolutionEvents methods
+
+        private uint solutionEventsCookie;
+        public int OnAfterOpenSolution(object pUnkReserved, int fNewSolution)
+        {
+            LocateMainToolWindow().Control.Solution_Opened();
+            return VSConstants.S_OK;
+        }
+
+        public int OnAfterCloseSolution(object pUnkReserved)
+        {
+            LocateMainToolWindow().Control.Solution_Closed();
+            return VSConstants.S_OK;
+        }
+
+        public int OnAfterLoadProject(IVsHierarchy pStubHierarchy, IVsHierarchy pRealHierarchy)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnAfterOpenProject(IVsHierarchy pHierarchy, int fAdded)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnBeforeCloseProject(IVsHierarchy pHierarchy, int fRemoved)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnBeforeCloseSolution(object pUnkReserved)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnBeforeUnloadProject(IVsHierarchy pRealHierarchy, IVsHierarchy pStubHierarchy)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnQueryCloseProject(IVsHierarchy pHierarchy, int fRemoving, ref int pfCancel)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnQueryCloseSolution(object pUnkReserved, ref int pfCancel)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnQueryUnloadProject(IVsHierarchy pRealHierarchy, ref int pfCancel)
+        {
+            return VSConstants.S_OK;
+        }
+
+        #endregion
     }
 }
