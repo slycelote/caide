@@ -231,16 +231,19 @@ libClangBuildHook pkg lbi usrHooks flags = do
 
 
         -- Zip headers. The archive will be embedded into the executable.
-        notice verbosity "Zipping header files..."
+        let headersZipFile = curDir </> "res" </> "headers.zip"
+        headersZipFileExists <- doesFileExist headersZipFile
+        unless headersZipFileExists $ do
+            notice verbosity "Zipping header files..."
 
-        let addFilesToZipFile :: Archive -> FilePath -> IO Archive
-            addFilesToZipFile archive filesPath = inDir filesPath $
-                addFilesToArchive [OptRecursive] archive ["."]
+            let addFilesToZipFile :: Archive -> FilePath -> IO Archive
+                addFilesToZipFile archive filesPath = inDir filesPath $
+                    addFilesToArchive [OptRecursive] archive ["."]
 
-        archive <- addFilesToZipFile emptyArchive $
-            llvmPrefixDir </> "lib" </> "clang" </> "3.4.2"
-        archive' <- addFilesToZipFile archive $ curDir </> "res" </> "include"
-        B.writeFile (curDir </> "res" </> "headers.zip") $ fromArchive archive'
+            archive <- addFilesToZipFile emptyArchive $
+                llvmPrefixDir </> "lib" </> "clang" </> "3.4.2"
+            archive' <- addFilesToZipFile archive $ curDir </> "res" </> "include"
+            B.writeFile headersZipFile $ fromArchive archive'
 
         -- Build Haskell code
         buildHook simpleUserHooks (localPkgDescr lbi') lbi' usrHooks flags
@@ -274,8 +277,11 @@ libClangCleanHook pkg v hooks flags = do
   curDir <- getCurrentDirectory
   let verbosity = fromFlag (cleanVerbosity flags)
       buildDir = curDir </> "cbits" </> "build"
+      headersZipFile = curDir </> "res" </> "headers.zip"
   buildDirExists <- doesDirectoryExist buildDir
   when buildDirExists $ removeDirectoryRecursive buildDir
+  headersZipFileExists <- doesFileExist headersZipFile
+  when headersZipFileExists $ removeFile headersZipFile
 
   cleanHook simpleUserHooks pkg v hooks flags
 

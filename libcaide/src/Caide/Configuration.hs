@@ -25,6 +25,7 @@ import Control.Applicative ((<$>))
 import Control.Monad.Error (MonadError)
 import Data.ConfigFile
 import Data.IORef (IORef, newIORef, modifyIORef, readIORef)
+import Data.List (intercalate)
 import qualified Data.Text as T
 import Data.Text.IO (readFile)
 import Filesystem (writeTextFile, createTree, isFile)
@@ -78,7 +79,7 @@ readCaideProject caideRoot = do
         setOpt c s k v = modifyIORef c $ \conf -> setOption conf s k v
 
 
-    rootConf <- readConf rootConfigFile defaultRootConf
+    rootConf <- readConf rootConfigFile (defaultRootConf caideRoot)
     internalConf <- readConf internalConfigFile defaultInternalConf
     return CaideProject
         { getUserOption     = getOpt rootConf
@@ -135,12 +136,22 @@ addSection section conf = add_section conf section
 setValue :: MonadError CPError m => SectionSpec -> OptionSpec -> String -> ConfigParser -> m ConfigParser
 setValue section key value conf = set conf section key value
 
-defaultRootConf :: ConfigParser
-defaultRootConf = forceEither $
-   addSection "core" emptyCP >>=
-   setValue "core" "language" "simplecpp" >>=
-   setValue "core" "features" "" >>=
-   setValue "core" "builder" "none"
+defaultRootConf :: FilePath -> ConfigParser
+defaultRootConf caideRoot = forceEither $
+    addSection "core" emptyCP >>=
+    setValue "core" "language" "cpp" >>=
+    setValue "core" "features" "" >>=
+    setValue "core" "builder" "none" >>=
+    addSection "cpp" >>=
+    setValue "cpp" "system_header_dirs" (intercalate "," $ map encodeString headerDirs)
+
+    where
+    headerDirs = [
+        caideRoot </> decodeString "include" </> decodeString "mingw-4.8.1",
+        caideRoot </> decodeString "include" </> decodeString "mingw-4.8.1" </> decodeString "c++",
+        caideRoot </> decodeString "include" </> decodeString "mingw-4.8.1" </> decodeString "c++" </> decodeString "mingw32",
+        caideRoot </> decodeString "include" </> decodeString "include"]
+
 
 defaultInternalConf :: ConfigParser
 defaultInternalConf = forceEither $
