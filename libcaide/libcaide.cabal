@@ -43,7 +43,10 @@ executable caide
                    zip-archive >= 0.2.3.5
   other-extensions: CPP
   hs-source-dirs:  src
-  ghc-options:     -Wall -rtsopts -static
+  ghc-options:     -Wall -rtsopts=all -static
+  if flag(debug) {
+    ghc-options:    -debug -O0 -prof -fprof-auto
+  }
   if flag(cppinliner) {
     cpp-options:   -DCLANG_INLINER
     other-modules:
