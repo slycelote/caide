@@ -17,7 +17,11 @@ using System.Windows.Shapes;
 
 namespace slycelote.VsCaide
 {
+    using EnvDTE;
     using Microsoft.VisualStudio;
+    using Microsoft.VisualStudio.Shell;
+    using Microsoft.VisualStudio.VCProjectEngine;
+    using System.Diagnostics;
     using System.IO;
     using MessageBox = System.Windows.Forms.MessageBox;
 
@@ -170,6 +174,37 @@ namespace slycelote.VsCaide
             if (!cbProgrammingLanguage.Items.Contains(language) && !string.IsNullOrEmpty(language))
                 cbProgrammingLanguage.Items.Add(language);
             cbProgrammingLanguage.SelectedItem = language;
+
+            string[] cppLanguages = new[] { "simplecpp", "cpp" };
+            if (cppLanguages.Contains(language))
+            {
+                var dte = Services.DTE;
+                var allProjects = dte.Solution.Projects.OfType<Project>();
+                var project = allProjects.Single(p => p.Name == selectedProblem);
+                dte.Solution.SolutionBuild.StartupProjects = project.UniqueName;
+                
+                var allItems = project.ProjectItems.OfType<ProjectItem>();
+                var solutionCpp = allItems.Single(i => i.Name == selectedProblem + ".cpp");
+                //bool isOpen = solutionCpp.get_IsOpen(EnvDTE.Constants.vsViewKindCode);
+                var solutionCppWindow = solutionCpp.Open(EnvDTE.Constants.vsViewKindCode);
+                // FIXME: If this happens during opening of the solution, a second window with the file opens
+                solutionCppWindow.Visible = true;
+                solutionCppWindow.Activate();
+            }
+
+        }
+
+        // Test
+        private void btnAddNewProblem_Click(object sender, RoutedEventArgs e)
+        {
+            //var dte = Services.DTE;
+            var dte = (EnvDTE.DTE)Package.GetGlobalService(typeof(EnvDTE.DTE));
+            var allProjects = dte.Solution.Projects.OfType<Project>();
+            var project = allProjects.Single(p => p.Name == (string)cbProblems.SelectedItem);
+            object[] uniqueNames = { project.UniqueName };
+            //dte.Solution.SolutionBuild.StartupProjects = uniqueNames;
+            dte.Solution.SolutionBuild.StartupProjects = project.UniqueName;
+            Debug.WriteLine("...");
         }
     }
 }

@@ -11,7 +11,7 @@
         <Label Content="Selected problem:" Margin="0,0,0.4,0" Height="24"/>
         <StackPanel Height="29" Orientation="Horizontal" Margin="0,0,0.4,0" RenderTransformOrigin="0.498,0.227">
             <ComboBox x:Name="cbProblems" RenderTransformOrigin="0.5,0.5" BorderThickness="1" HorizontalAlignment="Left" Width="186" Height="22" VerticalAlignment="Center" Margin="10,0" SelectionChanged="cbProblems_SelectionChanged"/>
-            <Button x:Name="btnAddNewProblem" Content="Add new..." Width="65" VerticalAlignment="Center" HorizontalAlignment="Right" RenderTransformOrigin="1.055,-0.352" Margin="10,0"/>
+            <Button x:Name="btnAddNewProblem" Content="Add new..." Width="65" VerticalAlignment="Center" HorizontalAlignment="Right" RenderTransformOrigin="1.055,-0.352" Margin="10,0" Click="btnAddNewProblem_Click"/>
         </StackPanel>
         <Label Content="Selected programming language:"/>
         <ComboBox x:Name="cbProgrammingLanguage" HorizontalAlignment="Left" VerticalAlignment="Top" Width="186" Margin="10,0,10,10"/>

@@ -16,6 +16,7 @@ namespace slycelote.VsCaide.Utilities
         public static IVsOutputWindowPane GeneralOutputWindow { get { return Get<SVsGeneralOutputWindowPane, IVsOutputWindowPane>(); } }
         public static IVsOutputWindow OutputWindow { get { return Get<SVsOutputWindow, IVsOutputWindow>(); } }
         public static IVsShell Shell { get { return Get<SVsShell, IVsShell>(); } }
+        public static IVsFileChangeEx FileChangeEx { get { return Get<SVsFileChangeEx, IVsFileChangeEx>(); } }
         public static IVsActivityLog Log { get { return Get<SVsActivityLog, IVsActivityLog>(); } }
 
         private static TInterface Get<TService, TInterface>()
