@@ -152,7 +152,14 @@ namespace slycelote.VsCaide
 
 
             string stdout, stderr;
-            int ret = CaideExe.Execute(new[] { "probgetopt", selectedProblem, "problem", "language" }, solutionDir, out stdout, out stderr);
+            int ret = CaideExe.Execute(new[] { "checkout", selectedProblem }, solutionDir, out stdout, out stderr);
+            if (ret != 0)
+            {
+                Logger.LogError("caide.exe error. Return code {0}\n{1}\n{2}", ret, stdout, stderr);
+                return;
+            }
+
+            ret = CaideExe.Execute(new[] { "probgetopt", selectedProblem, "problem", "language" }, solutionDir, out stdout, out stderr);
             if (ret != 0)
             {
                 Logger.LogError("caide.exe error. Return code {0}\n{1}\n{2}", ret, stdout, stderr);

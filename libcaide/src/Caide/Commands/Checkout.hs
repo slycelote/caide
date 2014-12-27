@@ -9,7 +9,7 @@ import Data.Maybe (mapMaybe)
 import Filesystem (isDirectory)
 import Filesystem.Path.CurrentOS (decodeString, (</>))
 
-import Caide.Configuration (setActiveProblem, getFeatures)
+import Caide.Configuration (setActiveProblem, getActiveProblem, getFeatures)
 import Caide.Registry (findFeature)
 import Caide.Types
 
@@ -28,10 +28,14 @@ checkoutProblem env [probId] = do
     problemExists <- isDirectory problemDir
     if problemExists
         then do
-            setActiveProblem env probId
-            putStrLn $ "Checked out problem " ++ probId
-            features <- mapMaybe findFeature <$> getFeatures env
-            forM_ features $ \feature -> onProblemCheckedOut feature env probId
+            currentProbId <- getActiveProblem env
+            if currentProbId == probId
+                then putStrLn $ probId ++ ": already checked out"
+                else do
+                    setActiveProblem env probId
+                    putStrLn $ "Checked out problem " ++ probId
+                    features <- mapMaybe findFeature <$> getFeatures env
+                    forM_ features $ \feature -> onProblemCheckedOut feature env probId
             return Nothing
         else return . Just $ "Problem " ++ probId ++ " doesn't exist"
 
