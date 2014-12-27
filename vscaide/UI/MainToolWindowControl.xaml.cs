@@ -36,6 +36,39 @@ namespace slycelote.VsCaide
             MessageBox.Show(string.Format("Exit code: {0},\nstdout:\n{1}\nstderr:\n{2}", exitCode, stdout, stderr));
         }
 
+        private void ReloadProblemList()
+        {
+            IVsSolution solutionService = Services.Solution;
+            string solutionDir, unused;
+            ErrorHandler.ThrowOnFailure(
+                solutionService.GetSolutionInfo(out solutionDir, out unused, out unused)
+            );
+            var problemNames = new List<string>();
+            foreach (var subdir in Directory.EnumerateDirectories(solutionDir))
+            {
+                if (Directory.Exists(Path.Combine(subdir, ".caideproblem")))
+                {
+                    problemNames.Add(Path.GetFileName(subdir.TrimEnd(Path.DirectorySeparatorChar)));
+                }
+            }
+
+            problemNames.Sort(StringComparer.CurrentCultureIgnoreCase);
+            cbProblems.Items.Clear();
+            foreach (var problem in problemNames)
+            {
+                cbProblems.Items.Add(problem);
+            }
+
+            string stdout, stderr;
+            int ret = CaideExe.Execute(new[] { "intgetopt", "core", "problem" }, solutionDir, out stdout, out stderr);
+            if (ret != 0)
+            {
+                throw new CaideException(string.Format("caide.exe error. Error code: {0}\n{1}\n{2}", ret, stdout, stderr));
+            }
+
+            cbProblems.SelectedItem = stdout.Trim();
+        }
+
         private void btnCreateSolution_Click(object sender, RoutedEventArgs e)
         {
             IVsSolution solutionService = Services.Solution;
@@ -50,7 +83,8 @@ namespace slycelote.VsCaide
                 {
                     Description = "Select solution folder",
                     ShowNewFolderButton = true,
-                    RootFolder = Environment.SpecialFolder.Personal,
+                    //RootFolder = Environment.SpecialFolder.Recent,
+                    //RootFolder = Environment.SpecialFolder.Personal,
                 };
                 var result = folderBrowserDialog.ShowDialog();
                 if (result != DialogResult.OK)
@@ -86,14 +120,24 @@ namespace slycelote.VsCaide
             ErrorHandler.ThrowOnFailure(
                 solutionService.GetSolutionInfo(out solutionDir, out unused, out unused));
 
-            btnCreateSolution.IsEnabled = !File.Exists(Path.Combine(solutionDir, "caide.ini"));
-            if (btnCreateSolution.IsEnabled)
+            bool isCaideDirectory = File.Exists(Path.Combine(solutionDir, "caide.ini"));
+            btnCreateSolution.IsEnabled = !isCaideDirectory;
+            cbProblems.IsEnabled = btnAddNewProblem.IsEnabled = isCaideDirectory;
+            if (isCaideDirectory)
+            {
                 this.Visibility = System.Windows.Visibility.Visible;
+                ReloadProblemList();
+            }
         }
 
         public void Solution_Closed()
         {
             btnCreateSolution.IsEnabled = true;
+        }
+
+        private void cbProblems_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
         }
     }
 }
