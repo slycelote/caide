@@ -32,8 +32,8 @@ doParseTagSoup url = do
         Right cont -> do
             let tags = parseTags cont
                 statement = dropWhile (~/= "<div class=problem-statement>") tags
-                titleDiv = head . drop 1 . dropWhile (~/= "<div class=title>") $ statement
-                title = fromTagText titleDiv
+                beforeTitleDiv = drop 1 . dropWhile (~/= "<div class=title>") $ statement
+                title = fromTagText $ head beforeTitleDiv
                 inputDivs = sections (~== "<div class=input>") statement
                 outputDivs = sections (~== "<div class=output>") statement
                 replaceBr = concatMap f
@@ -45,5 +45,7 @@ doParseTagSoup url = do
                 inputs = map extractText inputDivs
                 outputs = map extractText outputDivs
                 testCases = zipWith TestCase inputs outputs
-            return . Right $ (Problem title ("problem" ++ [T.head title]), testCases)
+            if null beforeTitleDiv
+                then return . Left $ "Couldn't parse problem statement"
+                else return . Right $ (Problem title ("problem" ++ [T.head title]), testCases)
 
