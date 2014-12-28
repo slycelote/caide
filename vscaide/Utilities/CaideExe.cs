@@ -50,7 +50,7 @@ namespace slycelote.VsCaide.Utilities
 
         public static int Execute(string[] args, string directory, out string stdout, out string stderr)
         {
-            if (CaideExePath == null)
+            if (Paths.CaideExe == null)
             {
                 stderr = "Couldn't find caide.exe";
                 stdout = "";
@@ -59,7 +59,7 @@ namespace slycelote.VsCaide.Utilities
 
             var psi = new ProcessStartInfo
             {
-                FileName = CaideExePath,
+                FileName = Paths.CaideExe,
                 Arguments = CreateCommandLine(args),
                 WorkingDirectory = directory,
                 RedirectStandardInput = true,
@@ -133,21 +133,6 @@ namespace slycelote.VsCaide.Utilities
 
             escaped.Append('"');
             return escaped.ToString();
-        }
-
-        private static string caideExePath;
-        private static string CaideExePath
-        {
-            get
-            {
-                if (caideExePath == null)
-                {
-                    var extensionPath = Path.Combine(Path.GetDirectoryName(typeof(CaideExe).Assembly.Location), "..");
-                    var executables = Directory.EnumerateFiles(extensionPath, "caide.exe", SearchOption.AllDirectories).Take(1).ToList();
-                    caideExePath = executables.Any() ? executables[0] : null;
-                }
-                return caideExePath;
-            }
         }
 
     }

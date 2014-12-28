@@ -139,9 +139,13 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="UI\PromptDialog.xaml.cs">
+      <DependentUpon>PromptDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Utilities\CaideException.cs" />
     <Compile Include="Utilities\CaideExe.cs" />
     <Compile Include="Utilities\Logger.cs" />
+    <Compile Include="Utilities\Paths.cs" />
     <Compile Include="Utilities\Services.cs" />
     <Compile Include="VsCaidePackage.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -159,6 +163,10 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="ProjectTemplates\vscaide_vc2013_template.zip">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
@@ -185,7 +193,12 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="UI\PromptDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
+  <ItemGroup />
   <PropertyGroup>
     <UseCodebase>true</UseCodebase>
   </PropertyGroup>

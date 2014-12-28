@@ -43,7 +43,7 @@ namespace slycelote.VsCaide
     [ProvideAutoLoad(Microsoft.VisualStudio.VSConstants.UICONTEXT.NoSolution_string)]
     [ProvideAutoLoad(Microsoft.VisualStudio.VSConstants.UICONTEXT.SolutionExists_string)]
     [Guid(GuidList.guidVsCaidePkgString)]
-    public sealed class VsCaidePackage : Package, IVsShellPropertyEvents, IVsSolutionEvents, IVsSelectionEvents
+    public sealed class VsCaidePackage : Package, IVsShellPropertyEvents, IVsSolutionEvents, IVsSolutionLoadEvents, IVsSelectionEvents
     {
         private static VsCaidePackage Instance { get; set; }
 
@@ -144,7 +144,8 @@ namespace slycelote.VsCaide
                 solutionService.AdviseSolutionEvents(this, out solutionEventsCookie));
 
             var monitorSelection = Services.MonitorSelection;
-            monitorSelection.AdviseSelectionEvents(this, out monitorSelectionCookie);
+            ErrorHandler.ThrowOnFailure(
+                monitorSelection.AdviseSelectionEvents(this, out monitorSelectionCookie));
 
             return VSConstants.S_OK;
         }
@@ -165,6 +166,7 @@ namespace slycelote.VsCaide
             return VSConstants.S_OK;
         }
 
+        #region Unrelated events
         public int OnAfterLoadProject(IVsHierarchy pStubHierarchy, IVsHierarchy pRealHierarchy)
         {
             return VSConstants.S_OK;
@@ -204,6 +206,7 @@ namespace slycelote.VsCaide
         {
             return VSConstants.S_OK;
         }
+        #endregion
 
         #endregion
 
@@ -220,6 +223,7 @@ namespace slycelote.VsCaide
             return VSConstants.S_OK;
         }
 
+        #region Unrelated events
         public int OnCmdUIContextChanged(uint dwCmdUICookie, int fActive)
         {
             return VSConstants.S_OK;
@@ -229,6 +233,45 @@ namespace slycelote.VsCaide
         {
             return VSConstants.S_OK;
         }
+        #endregion
+
+        #endregion
+
+        #region IVsSolutionLoadEvents members
+        public int OnAfterBackgroundSolutionLoadComplete()
+        {
+            LocateMainToolWindow().Control.AllProjects_Loaded();
+            return VSConstants.S_OK;
+        }
+
+        #region Unrelated events
+        public int OnAfterLoadProjectBatch(bool fIsBackgroundIdleBatch)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnBeforeBackgroundSolutionLoadBegins()
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnBeforeLoadProjectBatch(bool fIsBackgroundIdleBatch)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnBeforeOpenSolution(string pszSolutionFilename)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnQueryBackgroundLoadProjectBatch(out bool pfShouldDelayLoadToNextIdle)
+        {
+            pfShouldDelayLoadToNextIdle = false;
+            return VSConstants.S_OK;
+        }
+        #endregion
+
         #endregion
     }
 }

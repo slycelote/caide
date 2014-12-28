@@ -18,9 +18,11 @@ using System.Windows.Shapes;
 namespace slycelote.VsCaide
 {
     using EnvDTE;
+    using EnvDTE80;
     using Microsoft.VisualStudio;
     using Microsoft.VisualStudio.Shell;
     using Microsoft.VisualStudio.VCProjectEngine;
+    using slycelote.VsCaide.UI;
     using System.Diagnostics;
     using System.IO;
     using MessageBox = System.Windows.Forms.MessageBox;
@@ -64,7 +66,9 @@ namespace slycelote.VsCaide
                 return;
             }
 
-            cbProblems.SelectedItem = stdout.Trim();
+            string currentProblem = stdout.Trim();
+
+            cbProblems.SelectedItem = currentProblem;
         }
 
         private void btnCreateSolution_Click(object sender, RoutedEventArgs e)
@@ -104,15 +108,32 @@ namespace slycelote.VsCaide
                     ErrorHandler.ThrowOnFailure(
                         Services.Solution.CreateSolution(solutionDir, "VsCaide", 0)
                     );
-                    ErrorHandler.ThrowOnFailure(
-                        Services.Solution.SaveSolutionElement((uint)__VSSLNSAVEOPTIONS.SLNSAVEOPT_ForceSave, null, 0)
-                    );
+                    SaveSolution();
                 }
+            }
+        }
+
+        private bool IsProjectsLoadingInProgress = false;
+        private List<Action> ToDoAfterAllProjectsLoaded = new List<Action>();
+
+        private void AfterProjectsLoaded(Action action)
+        {
+            lock (ToDoAfterAllProjectsLoaded)
+            {
+                if (IsProjectsLoadingInProgress)
+                    ToDoAfterAllProjectsLoaded.Add(action);
+                else
+                    action();
             }
         }
 
         public void Solution_Opened()
         {
+            lock (ToDoAfterAllProjectsLoaded)
+            {
+                IsProjectsLoadingInProgress = true;
+                ToDoAfterAllProjectsLoaded.Clear();
+            }
             bool isCaideDirectory = IsCaideSolution;
             btnCreateOrReloadCaideSolution.Content = isCaideDirectory ? "Reload problem list" : "Create caide solution";
             cbProblems.IsEnabled = cbProgrammingLanguage.IsEnabled = btnAddNewProblem.IsEnabled = isCaideDirectory;
@@ -129,6 +150,16 @@ namespace slycelote.VsCaide
             btnCreateOrReloadCaideSolution.Content = "Create caide solution";
             cbProblems.Items.Clear();
             cbProblems.IsEnabled = cbProgrammingLanguage.IsEnabled = btnAddNewProblem.IsEnabled = false;
+        }
+
+        public void AllProjects_Loaded()
+        {
+            lock (ToDoAfterAllProjectsLoaded)
+            {
+                IsProjectsLoadingInProgress = false;
+                ToDoAfterAllProjectsLoaded.ForEach(a => a());
+                ToDoAfterAllProjectsLoaded.Clear();
+            }
         }
 
         private void cbProblems_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -164,33 +195,69 @@ namespace slycelote.VsCaide
             string[] cppLanguages = new[] { "simplecpp", "cpp" };
             if (cppLanguages.Contains(language))
             {
-                var dte = Services.DTE;
-                var allProjects = dte.Solution.Projects.OfType<Project>();
-                var project = allProjects.Single(p => p.Name == selectedProblem);
-                dte.Solution.SolutionBuild.StartupProjects = project.UniqueName;
-                
-                var allItems = project.ProjectItems.OfType<ProjectItem>();
-                var solutionCpp = allItems.Single(i => i.Name == selectedProblem + ".cpp");
-                //bool isOpen = solutionCpp.get_IsOpen(EnvDTE.Constants.vsViewKindCode);
-                var solutionCppWindow = solutionCpp.Open(EnvDTE.Constants.vsViewKindCode);
-                // FIXME: If this happens during opening of the solution, a second window with the file opens
-                solutionCppWindow.Visible = true;
-                solutionCppWindow.Activate();
+                AfterProjectsLoaded(() =>
+                {
+                    var dte = Services.DTE;
+                    var solution = dte.Solution as Solution2;
+
+                    var allProjects = dte.Solution.Projects.OfType<Project>();
+                    var project = allProjects.SingleOrDefault(p => p.Name == selectedProblem);
+                    if (project == null)
+                    {
+                        // Create the project
+                        string projectTemplate = solution.GetProjectTemplate("vscaide_vc2013_template.zip", "VC");
+                        solution.AddFromTemplate(projectTemplate, Path.Combine(solutionDir, selectedProblem), selectedProblem,
+                            Exclusive: false);
+                        allProjects = dte.Solution.Projects.OfType<Project>();
+                        project = allProjects.SingleOrDefault(p => p.Name == selectedProblem);
+                        if (project == null)
+                        {
+                            Logger.LogError("Couldn't create {0} project", selectedProblem);
+                            return;
+                        }
+                    }
+
+                    // Ensure that the project contains necessary files
+                    var solutionFile = string.Format(@"{0}.cpp", selectedProblem);
+                    var testFile = string.Format(@"{0}_test.cpp", selectedProblem);
+
+                    foreach (var fileName in new[]{solutionFile, testFile})
+                    {
+                        if (!project.ProjectItems.OfType<ProjectItem>().Any(item => item.Name.Equals(fileName, StringComparison.CurrentCultureIgnoreCase)))
+                        {
+                            project.ProjectItems.AddFromFile(fileName);
+                        }
+                    }
+
+                    SaveSolution();
+
+                    dte.Solution.SolutionBuild.StartupProjects = project.UniqueName;
+
+                    var allItems = project.ProjectItems.OfType<ProjectItem>();
+                    var solutionCpp = allItems.Single(i => i.Name == solutionFile);
+                    var solutionCppWindow = solutionCpp.Open(EnvDTE.Constants.vsViewKindCode);
+                    solutionCppWindow.Visible = true;
+                    solutionCppWindow.Activate();
+                });
             }
 
         }
 
-        // Test
         private void btnAddNewProblem_Click(object sender, RoutedEventArgs e)
         {
-            //var dte = Services.DTE;
-            var dte = (EnvDTE.DTE)Package.GetGlobalService(typeof(EnvDTE.DTE));
-            var allProjects = dte.Solution.Projects.OfType<Project>();
-            var project = allProjects.Single(p => p.Name == (string)cbProblems.SelectedItem);
-            object[] uniqueNames = { project.UniqueName };
-            //dte.Solution.SolutionBuild.StartupProjects = uniqueNames;
-            dte.Solution.SolutionBuild.StartupProjects = project.UniqueName;
-            Debug.WriteLine("...");
+            var problemUrl = PromptDialog.Prompt("Input problem URL or name:", "New problem");
+            if (problemUrl == null)
+                return;
+            var solutionDir = SolutionDir;
+            string stdout, stderr;
+            int ret = CaideExe.Execute(new[] { "problem", problemUrl }, solutionDir, out stdout, out stderr);
+            if (ret != 0)
+            {
+                MessageBox.Show(string.Format("Coudln't create the problem.\n{0}\n{1}", stdout, stderr));
+                return;
+            }
+
+            ReloadProblemList();
         }
 
         internal void StartupProject_Changed(IVsHierarchy newStartupProjectHierarchy)
@@ -200,7 +267,7 @@ namespace slycelote.VsCaide
 
             var projectName = GetProject(newStartupProjectHierarchy).Name;
             var currentProblem = (string)cbProblems.SelectedItem;
-            if (currentProblem.Equals(projectName, StringComparison.CurrentCultureIgnoreCase))
+            if (currentProblem == null || currentProblem.Equals(projectName, StringComparison.CurrentCultureIgnoreCase))
                 return;
 
             if (!cbProblems.Items.Cast<string>().Any(problem => problem.Equals(projectName, StringComparison.CurrentCultureIgnoreCase)))
@@ -236,14 +303,12 @@ namespace slycelote.VsCaide
         {
             get
             {
-                {
-                    var solutionService = Services.Solution;
-                    string solutionDir, unused;
+                var solutionService = Services.Solution;
+                string solutionDir, unused;
 
-                    ErrorHandler.ThrowOnFailure(
-                        solutionService.GetSolutionInfo(out solutionDir, out unused, out unused));
-                    return solutionDir;
-                }
+                ErrorHandler.ThrowOnFailure(
+                    solutionService.GetSolutionInfo(out solutionDir, out unused, out unused));
+                return solutionDir;
             }
         }
 
@@ -255,5 +320,13 @@ namespace slycelote.VsCaide
                 return solutionDir != null && File.Exists(Path.Combine(solutionDir, "caide.ini"));
             }
         }
+
+        private void SaveSolution()
+        {
+            ErrorHandler.ThrowOnFailure(
+                Services.Solution.SaveSolutionElement(0, null, 0)
+            );
+        }
+
     }
 }
