@@ -60,8 +60,9 @@ copyTestInputs problemDir = do
     let tempTestDir = problemDir </> decodeString ".caideproblem" </> decodeString "test"
     createTree tempTestDir
 
-    -- Cleanup output from previous test run; leave only testList.txt file
-    filesToClear <- filter ((`notElem` ["testList.txt", "report.txt"]) . encodeString . filename) <$> listDirectory tempTestDir
+    -- Cleanup output from previous test run
+    let filesToKeep = ["testList.txt", "report.txt", "caideExe.txt"]
+    filesToClear <- filter ((`notElem` filesToKeep) . encodeString . filename) <$> listDirectory tempTestDir
     forM_ filesToClear removeFile
 
     fileList <- listDirectory problemDir

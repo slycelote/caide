@@ -29,7 +29,8 @@ import Filesystem (isFile, readTextFile, writeTextFile)
 
 
 
-data ComparisonResult a = Success | Skipped | EtalonUnknown | Error a deriving Show
+data ComparisonResult a = Success | Skipped | EtalonUnknown | Error a
+                            deriving (Show, Eq)
 
 humanReadable :: ComparisonResult Text -> Text
 humanReadable Success = "OK"

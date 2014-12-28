@@ -229,6 +229,15 @@ namespace slycelote.VsCaide
                         }
                     }
 
+                    // Ensure current directory of the program debugged is correct
+                    var workingDirectory = Path.Combine("$(ProjectDir)", ".caideproblem", "test");
+                    var vcProject = project.Object as VCProject;
+                    IVCCollection configs = (IVCCollection)vcProject.Configurations;
+                    foreach (var conf in configs.OfType<VCConfiguration>())
+                    {
+                        (conf.DebugSettings as VCDebugSettings).WorkingDirectory = workingDirectory;
+                    }
+
                     SaveSolution();
 
                     dte.Solution.SolutionBuild.StartupProjects = project.UniqueName;

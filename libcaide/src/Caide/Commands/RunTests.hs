@@ -7,6 +7,7 @@ module Caide.Commands.RunTests (
 
 import Control.Applicative ((<$>), (<*>))
 
+import Data.List (group, sort)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -29,6 +30,17 @@ cmd =  CommandHandler
     , action = runTests
     }
 
+
+humanReadableReport :: TestReport Text -> Text
+humanReadableReport = T.unlines .
+            map (\(testName, res) -> T.concat [T.pack testName, ": ", humanReadable res])
+
+humanReadableSummary :: TestReport Text -> Text
+humanReadableSummary = T.unlines . map toText . group . sort . map (fromComparisonResult . snd)
+    where toText list = T.concat [head list, " -- ", tshow (length list)]
+          fromComparisonResult (Error _) = "Error"
+          fromComparisonResult r = tshow r
+
 runTests :: CaideEnvironment -> [String] -> IO (Maybe String)
 runTests env _ = do
     probId <- getActiveProblem env
@@ -42,9 +54,12 @@ runTests env _ = do
     then do
         report <- generateReport testsDir
         writeTextFile reportFile . serializeTestReport $ report
-        T.putStrLn . T.unlines $
-            map (\(testName, res) -> T.concat [T.pack testName, ": ", humanReadable res]) report
-        return Nothing
+        T.putStrLn "Results summary (outcome -- count):"
+        T.putStrLn $ humanReadableSummary report
+        let nonSuccesses = [r | r@(_, res) <- report, res /= Success]
+        if null nonSuccesses
+            then return Nothing
+            else return . Just . T.unpack $ humanReadableReport nonSuccesses
     else return . Just $ "Test runner failed"
 
 
@@ -82,7 +97,7 @@ compareFiles etalon out = let
     in case () of
       _ | not (null errors) -> Error $ T.concat ["Line ", tshow line, ": ", err]
         | length actual == length expected -> Success
-        | otherwise -> Error $ T.concat ["Expected ", tshow (length expected), " lines"]
+        | otherwise -> Error $ T.concat ["Expected ", tshow (length expected), " line(s)"]
 
 
 compareLines :: Text -> Text -> ComparisonResult Text
@@ -95,7 +110,7 @@ compareLines expectedLine actualLine = let
     in case () of
       _ | not (null errors) -> Error $ T.concat ["Token ", tshow numToken, ": ", err]
         | length actual == length expected -> Success
-        | otherwise   ->  Error $ T.concat ["Expected ", tshow (length expected), " tokens"]
+        | otherwise   ->  Error $ T.concat ["Expected ", tshow (length expected), " token(s)"]
 
 compareTokens :: Text -> Text -> ComparisonResult Text
 compareTokens expected actual =

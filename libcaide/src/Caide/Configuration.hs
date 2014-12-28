@@ -32,6 +32,8 @@ import Filesystem (writeTextFile, createTree, isFile)
 import Filesystem.Path.CurrentOS (encodeString, decodeString)
 import Filesystem.Path (FilePath, (</>), directory)
 
+import System.Environment (getExecutablePath)
+
 
 import Caide.Types (ProblemID, CaideProject (..), getInternalOption, setInternalOption, getUserOption)
 import Caide.Util (forceEither, splitString)
@@ -79,8 +81,9 @@ readCaideProject caideRoot = do
         setOpt c s k v = modifyIORef c $ \conf -> setOption conf s k v
 
 
+    caideExe <- getExecutablePath
     rootConf <- readConf rootConfigFile (defaultRootConf caideRoot)
-    internalConf <- readConf internalConfigFile defaultInternalConf
+    internalConf <- readConf internalConfigFile (defaultInternalConf caideExe)
     return CaideProject
         { getUserOption     = getOpt rootConf
         , getInternalOption = getOpt internalConf
@@ -153,10 +156,11 @@ defaultRootConf caideRoot = forceEither $
         caideRoot </> decodeString "include" </> decodeString "include"]
 
 
-defaultInternalConf :: ConfigParser
-defaultInternalConf = forceEither $
+defaultInternalConf :: String -> ConfigParser
+defaultInternalConf caideExe = forceEither $
     addSection "core" emptyCP >>=
-    setValue "core" "problem" ""
+    setValue "core" "problem" "" >>=
+    setValue "core" "caide_exe" caideExe
 
 defaultProblemConf :: ConfigParser
 defaultProblemConf = forceEither $
