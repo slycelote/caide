@@ -40,13 +40,8 @@ namespace slycelote.VsCaide
 
         private void ReloadProblemList()
         {
-            IVsSolution solutionService = Services.Solution;
-            string solutionDir, unused;
-            ErrorHandler.ThrowOnFailure(
-                solutionService.GetSolutionInfo(out solutionDir, out unused, out unused)
-            );
             var problemNames = new List<string>();
-            foreach (var subdir in Directory.EnumerateDirectories(solutionDir))
+            foreach (var subdir in Directory.EnumerateDirectories(SolutionDir))
             {
                 if (Directory.Exists(Path.Combine(subdir, ".caideproblem")))
                 {
@@ -62,7 +57,7 @@ namespace slycelote.VsCaide
             }
 
             string stdout, stderr;
-            int ret = CaideExe.Execute(new[] { "intgetopt", "core", "problem" }, solutionDir, out stdout, out stderr);
+            int ret = CaideExe.Execute(new[] { "intgetopt", "core", "problem" }, SolutionDir, out stdout, out stderr);
             if (ret != 0)
             {
                 Logger.LogError("caide.exe error. Error code: {0}\n{1}\n{2}", ret, stdout, stderr);
@@ -74,11 +69,7 @@ namespace slycelote.VsCaide
 
         private void btnCreateSolution_Click(object sender, RoutedEventArgs e)
         {
-            IVsSolution solutionService = Services.Solution;
-            string solutionDir, slnFile, userOptsFile;
-            ErrorHandler.ThrowOnFailure(
-                solutionService.GetSolutionInfo(out solutionDir, out slnFile, out userOptsFile)
-            );
+            string solutionDir = SolutionDir;
             bool newSolution = solutionDir == null;
             if (newSolution)
             {
@@ -106,23 +97,17 @@ namespace slycelote.VsCaide
             if (newSolution)
             {
                 ErrorHandler.ThrowOnFailure(
-                    solutionService.CreateSolution(solutionDir, "VsCaide", 0)
+                    Services.Solution.CreateSolution(solutionDir, "VsCaide", 0)
                 );
                 ErrorHandler.ThrowOnFailure(
-                    solutionService.SaveSolutionElement((uint)__VSSLNSAVEOPTIONS.SLNSAVEOPT_ForceSave, null, 0)
+                    Services.Solution.SaveSolutionElement((uint)__VSSLNSAVEOPTIONS.SLNSAVEOPT_ForceSave, null, 0)
                 );
             }
         }
 
         public void Solution_Opened()
         {
-            var solutionService = Services.Solution;
-            string solutionDir, unused;
-
-            ErrorHandler.ThrowOnFailure(
-                solutionService.GetSolutionInfo(out solutionDir, out unused, out unused));
-
-            bool isCaideDirectory = File.Exists(Path.Combine(solutionDir, "caide.ini"));
+            bool isCaideDirectory = IsCaideSolution;
             btnCreateSolution.IsEnabled = !isCaideDirectory;
             cbProblems.IsEnabled = cbProgrammingLanguage.IsEnabled = btnAddNewProblem.IsEnabled = isCaideDirectory;
             if (isCaideDirectory)
@@ -146,14 +131,9 @@ namespace slycelote.VsCaide
             if (selectedProblem == null)
                 return;
 
-            var solutionService = Services.Solution;
-            string solutionDir, unused;
-
-            ErrorHandler.ThrowOnFailure(
-                solutionService.GetSolutionInfo(out solutionDir, out unused, out unused));
+            string solutionDir = SolutionDir;
             if (solutionDir == null)
                 return;
-
 
             string stdout, stderr;
             int ret = CaideExe.Execute(new[] { "checkout", selectedProblem }, solutionDir, out stdout, out stderr);
@@ -205,6 +185,69 @@ namespace slycelote.VsCaide
             //dte.Solution.SolutionBuild.StartupProjects = uniqueNames;
             dte.Solution.SolutionBuild.StartupProjects = project.UniqueName;
             Debug.WriteLine("...");
+        }
+
+        internal void StartupProject_Changed(IVsHierarchy newStartupProjectHierarchy)
+        {
+            if (newStartupProjectHierarchy == null)
+                return;
+
+            var projectName = GetProject(newStartupProjectHierarchy).Name;
+            var currentProblem = (string)cbProblems.SelectedItem;
+            if (currentProblem.Equals(projectName, StringComparison.CurrentCultureIgnoreCase))
+                return;
+
+            if (!cbProblems.Items.Cast<string>().Any(problem => problem.Equals(projectName, StringComparison.CurrentCultureIgnoreCase)))
+            {
+                // The project doesn't correspond to a problem
+                return;
+            }
+
+            string solutionDir = SolutionDir;
+            if (solutionDir == null)
+                return;
+
+            string stdout, stderr;
+            int ret = CaideExe.Execute(new[] { "checkout", projectName }, solutionDir, out stdout, out stderr);
+            if (ret != 0)
+            {
+                Logger.LogError("caide.exe error. Return code {0}\n{1}\n{2}", ret, stdout, stderr);
+                return;
+            }
+
+            ReloadProblemList();
+        }
+
+        private static Project GetProject(IVsHierarchy hierarchy)
+        {
+            object project;
+            ErrorHandler.ThrowOnFailure(
+                hierarchy.GetProperty(VSConstants.VSITEMID_ROOT, (int)__VSHPROPID.VSHPROPID_ExtObject, out project));
+            return project as Project;
+        }
+
+        private string SolutionDir
+        {
+            get
+            {
+                {
+                    var solutionService = Services.Solution;
+                    string solutionDir, unused;
+
+                    ErrorHandler.ThrowOnFailure(
+                        solutionService.GetSolutionInfo(out solutionDir, out unused, out unused));
+                    return solutionDir;
+                }
+            }
+        }
+
+        private bool IsCaideSolution
+        {
+            get
+            {
+                var solutionDir = SolutionDir;
+                return solutionDir != null && File.Exists(Path.Combine(solutionDir, "caide.ini"));
+            }
         }
     }
 }

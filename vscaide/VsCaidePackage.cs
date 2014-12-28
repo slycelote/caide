@@ -43,7 +43,7 @@ namespace slycelote.VsCaide
     [ProvideAutoLoad(Microsoft.VisualStudio.VSConstants.UICONTEXT.NoSolution_string)]
     [ProvideAutoLoad(Microsoft.VisualStudio.VSConstants.UICONTEXT.SolutionExists_string)]
     [Guid(GuidList.guidVsCaidePkgString)]
-    public sealed class VsCaidePackage : Package, IVsShellPropertyEvents, IVsSolutionEvents
+    public sealed class VsCaidePackage : Package, IVsShellPropertyEvents, IVsSolutionEvents, IVsSelectionEvents
     {
         private static VsCaidePackage Instance { get; set; }
 
@@ -143,6 +143,9 @@ namespace slycelote.VsCaide
             ErrorHandler.ThrowOnFailure(
                 solutionService.AdviseSolutionEvents(this, out solutionEventsCookie));
 
+            var monitorSelection = Services.MonitorSelection;
+            monitorSelection.AdviseSelectionEvents(this, out monitorSelectionCookie);
+
             return VSConstants.S_OK;
         }
         #endregion
@@ -202,6 +205,30 @@ namespace slycelote.VsCaide
             return VSConstants.S_OK;
         }
 
+        #endregion
+
+        #region IVsSelectionEvents methods
+        private uint monitorSelectionCookie;
+
+        public int OnElementValueChanged(uint elementid, object varValueOld, object varValueNew)
+        {
+            if (elementid == (uint)VSConstants.VSSELELEMID.SEID_StartupProject)
+            {
+                var newStartupProjectHierarchy = (IVsHierarchy)varValueNew;
+                LocateMainToolWindow().Control.StartupProject_Changed(newStartupProjectHierarchy);
+            }
+            return VSConstants.S_OK;
+        }
+
+        public int OnCmdUIContextChanged(uint dwCmdUICookie, int fActive)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnSelectionChanged(IVsHierarchy pHierOld, uint itemidOld, IVsMultiItemSelect pMISOld, ISelectionContainer pSCOld, IVsHierarchy pHierNew, uint itemidNew, IVsMultiItemSelect pMISNew, ISelectionContainer pSCNew)
+        {
+            return VSConstants.S_OK;
+        }
         #endregion
     }
 }
