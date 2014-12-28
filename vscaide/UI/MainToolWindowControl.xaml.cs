@@ -235,7 +235,12 @@ namespace slycelote.VsCaide
                     IVCCollection configs = (IVCCollection)vcProject.Configurations;
                     foreach (var conf in configs.OfType<VCConfiguration>())
                     {
-                        (conf.DebugSettings as VCDebugSettings).WorkingDirectory = workingDirectory;
+                        var debugSettings = (VCDebugSettings)conf.DebugSettings;
+                        debugSettings.WorkingDirectory = workingDirectory;
+
+                        var tools = (Microsoft.VisualStudio.VCProjectEngine.IVCCollection) conf.Tools; 
+                        var linkerTool = (VCLinkerTool)tools.Item("VCLinkerTool");
+                        linkerTool.SubSystem = subSystemOption.subSystemConsole;
                     }
 
                     SaveSolution();
