@@ -69,46 +69,52 @@ namespace slycelote.VsCaide
 
         private void btnCreateSolution_Click(object sender, RoutedEventArgs e)
         {
-            string solutionDir = SolutionDir;
-            bool newSolution = solutionDir == null;
-            if (newSolution)
+            if (IsCaideSolution)
             {
-                var folderBrowserDialog = new FolderBrowserDialog
+                ReloadProblemList();
+            }
+            else
+            {
+                string solutionDir = SolutionDir;
+                bool newSolution = solutionDir == null;
+                if (newSolution)
                 {
-                    Description = "Select solution folder",
-                    ShowNewFolderButton = true,
-                    RootFolder = Environment.SpecialFolder.Personal,
-                };
-                var result = folderBrowserDialog.ShowDialog();
-                if (result != DialogResult.OK)
+                    var folderBrowserDialog = new FolderBrowserDialog
+                    {
+                        Description = "Select solution folder",
+                        ShowNewFolderButton = true,
+                    };
+                    var result = folderBrowserDialog.ShowDialog();
+                    if (result != DialogResult.OK)
+                        return;
+                    solutionDir = folderBrowserDialog.SelectedPath;
+                }
+
+                string stdout, stderr;
+                int caideErrorCode = CaideExe.Execute(new[] { "init" }, solutionDir, out stdout, out stderr);
+                if (caideErrorCode != 0)
+                {
+                    MessageBox.Show(string.Format("Failed to initialize caide project. Error code: {0}\n{1}\n{2}",
+                        caideErrorCode, stdout, stderr));
                     return;
-                solutionDir = folderBrowserDialog.SelectedPath;
-            }
+                }
 
-            string stdout, stderr;
-            int caideErrorCode = CaideExe.Execute(new[] { "init" }, solutionDir, out stdout, out stderr);
-            if (caideErrorCode != 0)
-            {
-                MessageBox.Show(string.Format("Failed to initialize caide project. Error code: {0}\n{1}\n{2}",
-                    caideErrorCode, stdout, stderr));
-                return;
-            }
-
-            if (newSolution)
-            {
-                ErrorHandler.ThrowOnFailure(
-                    Services.Solution.CreateSolution(solutionDir, "VsCaide", 0)
-                );
-                ErrorHandler.ThrowOnFailure(
-                    Services.Solution.SaveSolutionElement((uint)__VSSLNSAVEOPTIONS.SLNSAVEOPT_ForceSave, null, 0)
-                );
+                if (newSolution)
+                {
+                    ErrorHandler.ThrowOnFailure(
+                        Services.Solution.CreateSolution(solutionDir, "VsCaide", 0)
+                    );
+                    ErrorHandler.ThrowOnFailure(
+                        Services.Solution.SaveSolutionElement((uint)__VSSLNSAVEOPTIONS.SLNSAVEOPT_ForceSave, null, 0)
+                    );
+                }
             }
         }
 
         public void Solution_Opened()
         {
             bool isCaideDirectory = IsCaideSolution;
-            btnCreateSolution.IsEnabled = !isCaideDirectory;
+            btnCreateOrReloadCaideSolution.Content = isCaideDirectory ? "Reload problem list" : "Create caide solution";
             cbProblems.IsEnabled = cbProgrammingLanguage.IsEnabled = btnAddNewProblem.IsEnabled = isCaideDirectory;
             if (isCaideDirectory)
             {
@@ -120,7 +126,7 @@ namespace slycelote.VsCaide
 
         public void Solution_Closed()
         {
-            btnCreateSolution.IsEnabled = true;
+            btnCreateOrReloadCaideSolution.Content = "Create caide solution";
             cbProblems.Items.Clear();
             cbProblems.IsEnabled = cbProgrammingLanguage.IsEnabled = btnAddNewProblem.IsEnabled = false;
         }
