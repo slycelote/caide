@@ -16,6 +16,7 @@ namespace slycelote.VsCaide.Utilities
         public static IVsSolution Solution { get { return Get<SVsSolution, IVsSolution>(); } }
         public static IVsOutputWindowPane GeneralOutputWindow { get { return Get<SVsGeneralOutputWindowPane, IVsOutputWindowPane>(); } }
         public static IVsMonitorSelection MonitorSelection { get { return Get<SVsShellMonitorSelection, IVsMonitorSelection>(); } }
+        public static IVsCommandWindow CommandWindow { get { return Get<SVsCommandWindow, IVsCommandWindow>(); } }
 
         public static IVsShell Shell { get { return Get<SVsShell, IVsShell>(); } }
         public static IVsOutputWindow OutputWindow { get { return Get<SVsOutputWindow, IVsOutputWindow>(); } }

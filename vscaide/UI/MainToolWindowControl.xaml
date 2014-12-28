@@ -7,7 +7,11 @@
              mc:Ignorable="d"
              x:Name="MainToolWindowUserControl" Height="318.045" Width="330.451" HorizontalAlignment="Left" VerticalAlignment="Top">
     <StackPanel Margin="0,0,0,0">
-        <Button x:Name="btnCreateOrReloadCaideSolution" Content="Create caide solution" HorizontalAlignment="Left" Height="25" Margin="10,10,0,0" VerticalAlignment="Top" Width="120" RenderTransformOrigin="0.109,0.476" Click="btnCreateSolution_Click"/>
+        <StackPanel Height="29" Orientation="Horizontal" Margin="0,0,0.4,0" RenderTransformOrigin="0.498,0.227">
+            <Button x:Name="btnCreateOrReloadCaideSolution" Content="Create caide solution" HorizontalAlignment="Left" Margin="10,0" VerticalAlignment="Center" Width="120" RenderTransformOrigin="0.109,0.476" Click="btnCreateSolution_Click"/>
+            <Button x:Name="btnRun" Content="Run tests" Width="75" Margin="10,0" VerticalAlignment="Center" Click="btnRun_Click"/>
+            <Button x:Name="btnDebug" Content="Debug tests" Width="75" Margin="10,0" VerticalAlignment="Center" Click="btnDebug_Click"/>
+        </StackPanel>
         <Label Content="Selected problem:" Margin="0,0,0.4,0" Height="24"/>
         <StackPanel Height="29" Orientation="Horizontal" Margin="0,0,0.4,0" RenderTransformOrigin="0.498,0.227">
             <ComboBox x:Name="cbProblems" RenderTransformOrigin="0.5,0.5" BorderThickness="1" HorizontalAlignment="Left" Width="186" Height="22" VerticalAlignment="Center" Margin="10,0" SelectionChanged="cbProblems_SelectionChanged"/>

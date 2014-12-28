@@ -51,7 +51,8 @@ parseProblem _ _ = return . Just $ "Usage: " ++ usage cmd
 createNewProblem :: CaideEnvironment -> ProblemID -> IO (Either String String)
 createNewProblem env probId =
     if any (\c -> not (isAscii c) || not (isAlphaNum c)) probId
-    then return . Left $ "Problem ID must be a string of alphanumeric characters"
+    then return . Left $ probId ++ " is not recognized as a supported URL. " ++
+        "To create an empty problem, input a valid problem ID (a string of alphanumeric characters)"
     else do
         let problemDir = getRootDirectory env </> decodeString probId
 

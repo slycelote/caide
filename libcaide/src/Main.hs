@@ -77,5 +77,5 @@ runAction cmd caideRoot args = do
         _        -> saveProject project
 
 halt :: IO ()
-halt = exitWith (ExitFailure 1)
+halt = exitWith (ExitFailure 0xCA1DE)
 

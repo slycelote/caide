@@ -36,7 +36,7 @@ namespace slycelote.VsCaide
             InitializeComponent();
             cbProgrammingLanguage.Items.Add("cpp");
             cbProgrammingLanguage.Items.Add("simplecpp");
-            cbProgrammingLanguage.IsEnabled = cbProblems.IsEnabled = btnAddNewProblem.IsEnabled = false;
+            EnableAll(false);
             this.mainToolWindow = owner;
         }
 
@@ -135,8 +135,7 @@ namespace slycelote.VsCaide
                 ToDoAfterAllProjectsLoaded.Clear();
             }
             bool isCaideDirectory = IsCaideSolution;
-            btnCreateOrReloadCaideSolution.Content = isCaideDirectory ? "Reload problem list" : "Create caide solution";
-            cbProblems.IsEnabled = cbProgrammingLanguage.IsEnabled = btnAddNewProblem.IsEnabled = isCaideDirectory;
+            EnableAll(isCaideDirectory);
             if (isCaideDirectory)
             {
                 IVsWindowFrame windowFrame = (IVsWindowFrame)mainToolWindow.Frame;
@@ -147,9 +146,16 @@ namespace slycelote.VsCaide
 
         public void Solution_Closed()
         {
-            btnCreateOrReloadCaideSolution.Content = "Create caide solution";
             cbProblems.Items.Clear();
-            cbProblems.IsEnabled = cbProgrammingLanguage.IsEnabled = btnAddNewProblem.IsEnabled = false;
+            EnableAll(false);
+        }
+
+        private void EnableAll(bool enable)
+        {
+            btnRun.IsEnabled = btnDebug.IsEnabled = 
+                cbProblems.IsEnabled = cbProgrammingLanguage.IsEnabled =
+                btnAddNewProblem.IsEnabled = enable;
+            btnCreateOrReloadCaideSolution.Content = enable ? "Reload problem list" : "Create caide solution";
         }
 
         public void AllProjects_Loaded()
@@ -340,6 +346,16 @@ namespace slycelote.VsCaide
             ErrorHandler.ThrowOnFailure(
                 Services.Solution.SaveSolutionElement(0, null, 0)
             );
+        }
+
+        private void btnRun_Click(object sender, RoutedEventArgs e)
+        {
+            Services.CommandWindow.ExecuteCommand("Debug.StartWithoutDebugging");
+        }
+
+        private void btnDebug_Click(object sender, RoutedEventArgs e)
+        {
+            Services.CommandWindow.ExecuteCommand("Debug.Start");
         }
 
     }
