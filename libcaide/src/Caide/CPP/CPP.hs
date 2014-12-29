@@ -32,7 +32,7 @@ inlineCPPCode env problemDir = do
         solutionPath = problemDir </> decodeString (probID ++ ".cpp")
         inlinedTemplatePath =  caideRoot </> decodeString "templates" </> decodeString "main_template.cpp"
         inlinedCodePath = problemDir </> decodeString ".caideproblem" </> decodeString "inlined.cpp"
-        optimizedCodePath = problemDir </> decodeString ".caideproblem" </> decodeString "optimized.cpp"
+        inlinedNoPragmaOnceCodePath = problemDir </> decodeString ".caideproblem" </> decodeString "inlinedNoPragmaOnce.cpp"
         finalCodePath = problemDir </> decodeString "submission.cpp"
         libraryDirectory = caideRoot </> decodeString "cpplib"
 
@@ -44,8 +44,8 @@ inlineCPPCode env problemDir = do
     systemHeaderDirs <- map decodeString . splitString "\r\n," <$> getUserOption env "cpp" "system_header_dirs"
 
     inlineLibraryCode (solutionPath:inlinedTemplatePath:libraryCPPFiles) systemHeaderDirs [libraryDirectory] inlinedCodePath
-    removeUnusedCode inlinedCodePath systemHeaderDirs optimizedCodePath
-    removePragmaOnceFromFile optimizedCodePath finalCodePath
+    removePragmaOnceFromFile inlinedCodePath inlinedNoPragmaOnceCodePath
+    removeUnusedCode inlinedNoPragmaOnceCodePath systemHeaderDirs finalCodePath
 
 listDirectoryRecursively :: FilePath -> IO [FilePath]
 listDirectoryRecursively dir = do
@@ -70,5 +70,4 @@ removePragmaOnce = T.unlines . filter (not . isPragmaOnce) . T.lines
           isMatch (Left _) = False
           isMatch (Right Nothing) = False
           isMatch _ = True
-
 
