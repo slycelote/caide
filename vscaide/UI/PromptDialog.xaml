@@ -2,11 +2,11 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         WindowStartupLocation="CenterScreen" 
-        SizeToContent="WidthAndHeight"
+        SizeToContent="Height"
         MinWidth="300"
         MinHeight="100"
         WindowStyle="SingleBorderWindow"
-        ResizeMode="CanMinimize">
+        ResizeMode="CanMinimize" Height="160" Width="330">
     <StackPanel Margin="5">
         <TextBlock Name="txtQuestion" Margin="5"/>
         <TextBox Name="txtResponse" Margin="5"/>
