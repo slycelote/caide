@@ -68,6 +68,9 @@
     <Reference Include="System.Xml" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="VSLangProj, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
     <Reference Include="WindowsBase" />
     <Reference Include="System.Xaml" />
   </ItemGroup>
@@ -147,6 +150,7 @@
     <Compile Include="Utilities\Logger.cs" />
     <Compile Include="Utilities\Paths.cs" />
     <Compile Include="Utilities\Services.cs" />
+    <Compile Include="Utilities\SolutionUtilities.cs" />
     <Compile Include="VsCaidePackage.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UI\PkgCmdID.cs" />

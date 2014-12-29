@@ -35,7 +35,7 @@ initialize env _ = do
     createDirectory True templatesDir
     forM_ defaultTemplates $ \(fileName, fileContents) ->
         writeTextFile (templatesDir </> decodeString fileName) (T.pack fileContents)
-    unzipHeaders curDir
+    prepareCppLibrary curDir
     putStrLn $ "Initialized caide directory at " ++ encodeString curDir
     return Nothing
 
@@ -44,17 +44,24 @@ defaultTemplates = [
 #include "defaultTemplates.inc"
     ]
 
-unzipHeaders :: FSP.FilePath -> IO ()
+prepareCppLibrary :: FSP.FilePath -> IO ()
 
 #ifdef CLANG_INLINER
 resourcesZipFile :: Data.ByteString.ByteString
 resourcesZipFile = $(embedFile "res/headers.zip")
 
-unzipHeaders rootDir = extractFilesFromArchive options archive
-    where archive = toArchive $ fromStrict resourcesZipFile
-          destination = encodeString $ rootDir </> decodeString "include"
-          options = [OptDestination destination]
+prepareCppLibrary rootDir = do
+    let archive = toArchive $ fromStrict resourcesZipFile
+        destination = encodeString $ rootDir </> decodeString "include"
+        options = [OptDestination destination]
+        cpplibDir = rootDir </> decodeString "cpplib"
+    extractFilesFromArchive options archive
+    createDirectory True cpplibDir
+    writeTextFile (cpplibDir </> decodeString "README.txt") $
+        T.pack "Put *.h and *.cpp files of your library in this directory."
+    writeTextFile (cpplibDir </> decodeString "dummy.cpp") $
+        T.pack "//force creation of static library\nclass Dummy_Caide_Class_ {};\n"
 #else
-unzipHeaders _ = return ()
+prepareCppLibrary _ = return ()
 #endif
 
