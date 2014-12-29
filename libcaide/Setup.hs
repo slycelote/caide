@@ -49,13 +49,6 @@ libclangSharedLibraries :: [String]
 libclangSharedLibraries = ["clang", "LLVM-3.4"]
 
 
-getTemplateFiles :: FilePath -> IO [(String, String)]
-getTemplateFiles dir = do
-    files <- getDirectoryContents dir
-    forM [f | f <- files, head f /= '.'] $ \fileName -> do
-        contents <- readFile $ dir </> fileName
-        return (fileName, contents)
-
 canonicalizePath :: FilePath -> IO FilePath
 canonicalizePath path = do
   canonicalPath <- inDir path $
@@ -154,6 +147,26 @@ libClangConfHook (pkg, pbi) flags = do
   return lbi
 
 
+-- Zip resources. The archive will be embedded into the executable.
+zipResources :: FilePath -> Verbosity -> Maybe FilePath -> IO ()
+zipResources curDir verbosity llvmPrefixDir = do
+    let initFile = curDir </> "res" </> "init.zip"
+    zipFileExists <- doesFileExist initFile
+    unless zipFileExists $ do
+        notice verbosity "Zipping resource files..."
+
+        let addFilesToZipFile :: Archive -> FilePath -> IO Archive
+            addFilesToZipFile archive filesPath = inDir filesPath $
+                addFilesToArchive [OptRecursive] archive ["."]
+
+        archive <- addFilesToZipFile emptyArchive $ curDir </> "res" </> "init"
+        case llvmPrefixDir of
+            Nothing -> B.writeFile initFile $ fromArchive archive
+            Just dir -> do
+                archive' <- addFilesToZipFile archive $ dir </> "lib" </> "clang" </> "3.4.2"
+                B.writeFile initFile $ fromArchive archive'
+
+
 libClangBuildHook :: PackageDescription -> LocalBuildInfo -> UserHooks -> BuildFlags -> IO ()
 libClangBuildHook pkg lbi usrHooks flags = do
   let verbosity = fromFlag (buildVerbosity flags)
@@ -162,11 +175,6 @@ libClangBuildHook pkg lbi usrHooks flags = do
       debug = lookupConfFlag "debug" False
       cppinliner = lookupConfFlag "cppinliner" True
   curDir <- getCurrentDirectory
-
-  -- Build list of file templates
-  defaultTemplates <- getTemplateFiles (curDir </> "templates")
-  let defaultTemplatesInc = curDir </> "src" </> "Caide" </> "Commands" </> "defaultTemplates.inc"
-  writeFile defaultTemplatesInc $ unlines $ map ("  " ++) . intersperse ", " $ map show defaultTemplates
 
   -- Build C++ library, if necessary
   if cppinliner
@@ -229,27 +237,14 @@ libClangBuildHook pkg lbi usrHooks flags = do
         inDir (curDir </> "cbits") $
           runDbProgram verbosity makeProgram (withPrograms lbi') ["CAIDE_DEBUG=1" | debug]
 
-
-        -- Zip headers. The archive will be embedded into the executable.
-        let headersZipFile = curDir </> "res" </> "headers.zip"
-        headersZipFileExists <- doesFileExist headersZipFile
-        unless headersZipFileExists $ do
-            notice verbosity "Zipping header files..."
-
-            let addFilesToZipFile :: Archive -> FilePath -> IO Archive
-                addFilesToZipFile archive filesPath = inDir filesPath $
-                    addFilesToArchive [OptRecursive] archive ["."]
-
-            archive <- addFilesToZipFile emptyArchive $
-                llvmPrefixDir </> "lib" </> "clang" </> "3.4.2"
-            archive' <- addFilesToZipFile archive $ curDir </> "res" </> "include"
-            B.writeFile headersZipFile $ fromArchive archive'
+        zipResources curDir verbosity $ Just llvmPrefixDir
 
         -- Build Haskell code
         buildHook simpleUserHooks (localPkgDescr lbi') lbi' usrHooks flags
 
-      else
+      else do
         -- No cppinliner flag
+        zipResources curDir verbosity Nothing
         buildHook simpleUserHooks (localPkgDescr lbi) lbi usrHooks flags
 
 

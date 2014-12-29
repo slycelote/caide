@@ -27,6 +27,7 @@ executable caide
                    bytestring >= 0.10.4.0,
                    ConfigFile >= 1.1,
                    file-embed >= 0.0.7,
+                   filepath,
                    HTTP >= 4000.2.11,
                    MissingH >= 1.2,
                    mtl >= 2.1,

@@ -153,7 +153,7 @@ defaultRootConf caideRoot = forceEither $
         caideRoot </> decodeString "include" </> decodeString "mingw-4.8.1",
         caideRoot </> decodeString "include" </> decodeString "mingw-4.8.1" </> decodeString "c++",
         caideRoot </> decodeString "include" </> decodeString "mingw-4.8.1" </> decodeString "c++" </> decodeString "mingw32",
-        caideRoot </> decodeString "include" </> decodeString "include"]
+        caideRoot </> decodeString "include"]
 
 
 defaultInternalConf :: String -> ConfigParser

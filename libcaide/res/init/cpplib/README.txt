@@ -1,0 +1,1 @@
+Put *.h and *.cpp files of your library in this directory (or its subdirectories)

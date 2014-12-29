@@ -7,6 +7,6 @@ cabal.sandbox.config
 *~
 /cbits/build
 /cbits/clangbuild*
-/src/Caide/Commands/defaultTemplates.inc
 /regression-tests/tmp
 /res/*.zip
+
