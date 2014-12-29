@@ -253,9 +253,6 @@ libClangBuildHook pkg lbi usrHooks flags = do
         buildHook simpleUserHooks (localPkgDescr lbi) lbi usrHooks flags
 
 
-  notice verbosity "Relinking..."
-
-
 libClangCopyHook :: PackageDescription -> LocalBuildInfo -> UserHooks -> CopyFlags -> IO ()
 libClangCopyHook pkg lbi hooks flags = do
   copyHook simpleUserHooks pkg lbi hooks flags

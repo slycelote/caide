@@ -115,10 +115,8 @@ public:
     }
 
     virtual void EndOfMainFile() {
-        if (replacementStack.size() > 1) {
-            replacementStack[0].replaceWith = calcReplacements(0, srcManager.getMainFileID());
-            replacementStack.resize(1);
-        }
+        replacementStack[0].replaceWith = calcReplacements(0, srcManager.getMainFileID());
+        replacementStack.resize(1);
     }
 
     // Documentation seems to be wrong: the first parameter is included file rather than parent
