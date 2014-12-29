@@ -18,6 +18,6 @@
             <Button x:Name="btnAddNewProblem" Content="Add new..." Width="65" VerticalAlignment="Center" HorizontalAlignment="Right" RenderTransformOrigin="1.055,-0.352" Margin="10,0" Click="btnAddNewProblem_Click"/>
         </StackPanel>
         <Label Content="Selected programming language:"/>
-        <ComboBox x:Name="cbProgrammingLanguage" HorizontalAlignment="Left" VerticalAlignment="Top" Width="186" Margin="10,0,10,10"/>
+        <ComboBox x:Name="cbProgrammingLanguage" HorizontalAlignment="Left" VerticalAlignment="Top" Width="186" Margin="10,0,10,10" SelectionChanged="cbProgrammingLanguage_SelectionChanged"/>
     </StackPanel>
 </UserControl>

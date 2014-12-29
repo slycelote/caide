@@ -34,8 +34,10 @@ namespace slycelote.VsCaide
         public MainToolWindowControl(MainToolWindow owner)
         {
             InitializeComponent();
+            SkipLanguageChangedEvent = true;
             cbProgrammingLanguage.Items.Add("cpp");
             cbProgrammingLanguage.Items.Add("simplecpp");
+            SkipLanguageChangedEvent = false;
             EnableAll(false);
             this.mainToolWindow = owner;
         }
@@ -58,11 +60,9 @@ namespace slycelote.VsCaide
                 cbProblems.Items.Add(problem);
             }
 
-            string stdout, stderr;
-            int ret = CaideExe.Execute(new[] { "intgetopt", "core", "problem" }, SolutionUtilities.GetSolutionDir(), out stdout, out stderr);
-            if (ret != 0)
+            string stdout = RunCaideExe("intgetopt", "core", "problem");
+            if (stdout == null)
             {
-                Logger.LogError("caide.exe error. Error code: {0}\n{1}\n{2}", ret, stdout, stderr);
                 return;
             }
 
@@ -94,12 +94,8 @@ namespace slycelote.VsCaide
                     solutionDir = folderBrowserDialog.SelectedPath;
                 }
 
-                string stdout, stderr;
-                int caideErrorCode = CaideExe.Execute(new[] { "init" }, solutionDir, out stdout, out stderr);
-                if (caideErrorCode != 0)
+                if (null == RunCaideExe(new[] { "init" }, loud: true, solutionDir: solutionDir))
                 {
-                    MessageBox.Show(string.Format("Failed to initialize caide project. Error code: {0}\n{1}\n{2}",
-                        caideErrorCode, stdout, stderr));
                     return;
                 }
 
@@ -230,29 +226,19 @@ namespace slycelote.VsCaide
             if (selectedProblem == null)
                 return;
 
-            string solutionDir = SolutionUtilities.GetSolutionDir();
-            if (solutionDir == null)
-                return;
-
-            string stdout, stderr;
-            int ret = CaideExe.Execute(new[] { "checkout", selectedProblem }, solutionDir, out stdout, out stderr);
-            if (ret != 0)
+            if (null == RunCaideExe("checkout", selectedProblem))
             {
-                Logger.LogError("caide.exe error. Return code {0}\n{1}\n{2}", ret, stdout, stderr);
                 return;
             }
 
-            ret = CaideExe.Execute(new[] { "probgetopt", selectedProblem, "problem", "language" }, solutionDir, out stdout, out stderr);
-            if (ret != 0)
+            string stdout = RunCaideExe("probgetopt", selectedProblem, "problem", "language");
+            if (null == stdout)
             {
-                Logger.LogError("caide.exe error. Return code {0}\n{1}\n{2}", ret, stdout, stderr);
                 return;
             }
 
             string language = stdout.Trim();
-            if (!cbProgrammingLanguage.Items.Contains(language) && !string.IsNullOrEmpty(language))
-                cbProgrammingLanguage.Items.Add(language);
-            cbProgrammingLanguage.SelectedItem = language;
+            SetCurrentLanguage(language);
 
             string[] cppLanguages = new[] { "simplecpp", "cpp" };
             if (cppLanguages.Contains(language))
@@ -268,7 +254,9 @@ namespace slycelote.VsCaide
                     {
                         // Create the project
                         string projectTemplate = solution.GetProjectTemplate("vscaide_vc2013_template.zip", "VC");
-                        solution.AddFromTemplate(projectTemplate, Path.Combine(solutionDir, selectedProblem), selectedProblem,
+                        solution.AddFromTemplate(projectTemplate,
+                            Destination: Path.Combine(SolutionUtilities.GetSolutionDir(), selectedProblem),
+                            ProjectName: selectedProblem,
                             Exclusive: false);
                         allProjects = solution.Projects.OfType<Project>();
                         project = allProjects.SingleOrDefault(p => p.Name == selectedProblem);
@@ -310,7 +298,6 @@ namespace slycelote.VsCaide
                         {
                             if (cpplibReference != null)
                             {
-                                //vcProject.RemoveReference(cpplibReference);
                                 cpplibReference.Remove();
                             }
                         }
@@ -351,12 +338,9 @@ namespace slycelote.VsCaide
             var problemUrl = PromptDialog.Prompt("Input problem URL or name:", "New problem");
             if (problemUrl == null)
                 return;
-            var solutionDir = SolutionUtilities.GetSolutionDir();
-            string stdout, stderr;
-            int ret = CaideExe.Execute(new[] { "problem", problemUrl }, solutionDir, out stdout, out stderr);
-            if (ret != 0)
+
+            if (null == RunCaideExe(new[] { "problem", problemUrl }, loud: true))
             {
-                MessageBox.Show(string.Format("Coudln't create the problem.\n{0}\n{1}", stdout, stderr));
                 return;
             }
 
@@ -379,15 +363,8 @@ namespace slycelote.VsCaide
                 return;
             }
 
-            string solutionDir = SolutionUtilities.GetSolutionDir();
-            if (solutionDir == null)
-                return;
-
-            string stdout, stderr;
-            int ret = CaideExe.Execute(new[] { "checkout", projectName }, solutionDir, out stdout, out stderr);
-            if (ret != 0)
+            if (null == RunCaideExe("checkout", projectName))
             {
-                Logger.LogError("caide.exe error. Return code {0}\n{1}\n{2}", ret, stdout, stderr);
                 return;
             }
 
@@ -404,5 +381,62 @@ namespace slycelote.VsCaide
             Services.DTE.ExecuteCommand("Debug.Start");
         }
 
+        private bool SkipLanguageChangedEvent = false;
+        private void SetCurrentLanguage(string language)
+        {
+            SkipLanguageChangedEvent = true;
+            try
+            {
+                if (!cbProgrammingLanguage.Items.Contains(language) && !string.IsNullOrEmpty(language))
+                    cbProgrammingLanguage.Items.Add(language);
+                cbProgrammingLanguage.SelectedItem = language;
+            }
+            finally
+            {
+                SkipLanguageChangedEvent = false;
+            }
+        }
+
+        private void cbProgrammingLanguage_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!SkipLanguageChangedEvent)
+            {
+                var language = (string)cbProgrammingLanguage.SelectedItem;
+                if (null == RunCaideExe(new[] { "lang", language }, loud: true))
+                {
+                    var previousLanguage = (string)e.RemovedItems[0];
+                    SetCurrentLanguage(previousLanguage);
+                    return;
+                }
+                UpdateCurrentProject();
+            }
+        }
+
+        private static string RunCaideExe(string[] args, bool loud = false, string solutionDir = null)
+        {
+            if (solutionDir == null)
+            {
+                solutionDir = SolutionUtilities.GetSolutionDir();
+            }
+
+            string stdout, stderr;
+            int ret = CaideExe.Execute(args, solutionDir, out stdout, out stderr);
+            if (ret != 0)
+            {
+                Logger.LogError("caide.exe error. Return code {0}\n{1}\n{2}", ret, stdout, stderr);
+                if (loud)
+                {
+                    MessageBox.Show(string.Format("caide.exe error. Return code {0}\n{1}\n{2}", ret, stdout, stderr));
+                }
+                return null;
+            }
+
+            return stdout;
+        }
+
+        private static string RunCaideExe(params string[] args)
+        {
+            return RunCaideExe(args, loud: false);
+        }
     }
 }
