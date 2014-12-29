@@ -4,6 +4,8 @@ module Caide.Commands.GetOpt (
     , cmdProblem
 ) where
 
+import Filesystem (isFile)
+
 import Caide.Configuration (readProblemConfig, getProblemConfigFile, getProblemOption)
 import Caide.Types
 
@@ -30,7 +32,7 @@ cmdInternal = CommandHandler
 
 getIntOpt :: CaideEnvironment -> [String] -> IO (Maybe String)
 getIntOpt env [section, key] = getInternalOption env section key >>= putStrLn >> return Nothing
-getIntOpt _ _ = return . Just $ usage cmd
+getIntOpt _ _ = return . Just $ usage cmdInternal
 
 
 cmdProblem :: CommandHandler
@@ -43,10 +45,15 @@ cmdProblem = CommandHandler
 
 getProbOpt :: CaideEnvironment -> [String] -> IO (Maybe String)
 getProbOpt env [problem, section, key] = do
-    problemConf <- readProblemConfig $ getProblemConfigFile env problem
-    putStrLn $ getProblemOption problemConf section key
-    -- FIXME error if no such option
-    return Nothing
+    let problemConfigFile = getProblemConfigFile env problem
+    problemExists <- isFile problemConfigFile
+    if problemExists
+       then do
+            problemConf <- readProblemConfig problemConfigFile
+            putStrLn $ getProblemOption problemConf section key
+            -- FIXME error if no such option
+            return Nothing
+       else return . Just $ "Problem " ++ problem ++ " doesn't exist"
 
-getProbOpt _ _ = return . Just $ usage cmd
+getProbOpt _ _ = return . Just $ usage cmdProblem
 

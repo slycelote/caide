@@ -52,10 +52,6 @@ int main() {
     }
 
     ret = std::system((caideExe + " test").c_str());
-    if (ret != 0) {
-        cerr << "caide test returned non-zero error code " << ret << endl;
-    }
-
     return ret;
 }
 
