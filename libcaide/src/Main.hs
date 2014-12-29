@@ -50,11 +50,11 @@ main = do
     args <- getArgs
     workDir <- getWorkingDirectory
     if null args
-        then printUsage
+        then printUsage >> halt
         else do
             let (cmd:commandArgs) = args
             case findCommand cmd of
-                Nothing -> printUsage
+                Nothing -> printUsage >> halt
                 Just c  -> do
                     caideDir <- findRootCaideDir workDir
                     case () of
