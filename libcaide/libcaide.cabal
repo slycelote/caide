@@ -45,7 +45,7 @@ executable caide
   hs-source-dirs:  src
   ghc-options:     -Wall -rtsopts=all -static
   if flag(debug) {
-    ghc-options:    -debug -O0 -prof -fprof-auto
+    ghc-options:    -debug -O0 -fprof-auto
   }
   if flag(cppinliner) {
     cpp-options:   -DCLANG_INLINER
