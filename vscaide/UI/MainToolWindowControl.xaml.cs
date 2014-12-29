@@ -221,6 +221,11 @@ namespace slycelote.VsCaide
 
         private void cbProblems_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            UpdateCurrentProject();
+        }
+
+        private void UpdateCurrentProject()
+        {
             string selectedProblem = cbProblems.SelectedItem as string;
             if (selectedProblem == null)
                 return;
@@ -288,16 +293,25 @@ namespace slycelote.VsCaide
 
                     var vcProject = (VCProject)project.Object;
 
-                    if (language == "cpp")
+                    var cpplibProject = solution.Projects.OfType<Project>().SingleOrDefault(p => p.Name == "cpplib");
+                    if (cpplibProject != null)
                     {
-                        var cpplibProject = solution.Projects.OfType<Project>().SingleOrDefault(p => p.Name == "cpplib");
-                        if (cpplibProject != null)
+                        var references = (VSLangProj.References)vcProject.References;
+                        var cpplibReference = references.OfType<VSLangProj.Reference>().SingleOrDefault(r =>
+                                r.SourceProject != null && r.SourceProject.UniqueName == cpplibProject.UniqueName);
+                        if (language == "cpp")
                         {
-                            var references = (VSLangProj.References)vcProject.References;
-                            if (!references.OfType<VSLangProj.Reference>().Any(r =>
-                                    r.SourceProject != null && r.SourceProject.UniqueName == cpplibProject.UniqueName))
+                            if (cpplibReference == null)
                             {
                                 vcProject.AddProjectReference(cpplibProject);
+                            }
+                        }
+                        else
+                        {
+                            if (cpplibReference != null)
+                            {
+                                //vcProject.RemoveReference(cpplibReference);
+                                cpplibReference.Remove();
                             }
                         }
                     }
@@ -314,12 +328,8 @@ namespace slycelote.VsCaide
                         var linkerTool = (VCLinkerTool)tools.Item("VCLinkerTool");
                         linkerTool.SubSystem = subSystemOption.subSystemConsole;
 
-                        if (language == "cpp")
-                        {
-                            // Add cpplib include path
-                            var compileTool = (VCCLCompilerTool)tools.Item("VCCLCompilerTool");
-                            compileTool.AdditionalIncludeDirectories = @"$(SolutionDir)\cpplib";
-                        }
+                        var compileTool = (VCCLCompilerTool)tools.Item("VCCLCompilerTool");
+                        compileTool.AdditionalIncludeDirectories = language == "cpp" ? Path.Combine("$(SolutionDir)", "cpplib") : "";
                     }
 
                     SolutionUtilities.SaveSolution();
