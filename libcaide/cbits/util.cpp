@@ -57,12 +57,3 @@ SourceLocation findLocationAfterSemi(SourceLocation loc, ASTContext &Ctx) {
         return SourceLocation();
     return SemiLoc.getLocWithOffset(1);
 }
-
-
-std::string declToString(const Decl* decl) {
-    std::string buffer;    // llvm wants regular string, not our versa-string
-    llvm::raw_string_ostream ostream(buffer);
-    Z(decl)->print(ostream);  // Note: can also set indentation and printingpolicy
-    return ostream.str();
-}
-

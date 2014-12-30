@@ -27,6 +27,11 @@
 using namespace clang;
 using namespace std;
 
+/*
+#define CLANG_Z(p, file, line) {if (!p) {errorMessage = "Null pointer at " file " " line; return false;}}
+
+#define Z(p) CLANG_Z(p, __FILE__, __LINE)
+*/
 
 class null_stream: public ostream {
     template<typename T> ostream& operator<<(const T&) { return *this; }
@@ -47,17 +52,36 @@ private:
 
     // Current function. FIXME: this doesn't handle top-level declarations correctly.
     Decl* currentDecl;
+    
+    FunctionDecl* mainFunctionDecl;
 
 private:
     std::string toString(SourceLocation loc) const {
         //return loc.printToString(sourceManager);
+        std::string fileName = sourceManager.getFilename(loc).str();
+        if (fileName.length() > 30) {
+            fileName = fileName.substr(fileName.length() - 30);
+        }
         std::ostringstream os;
-        os << sourceManager.getSpellingLineNumber(loc) << ":" <<
-              sourceManager.getSpellingColumnNumber(loc);
+        os << fileName << ":" << 
+            sourceManager.getSpellingLineNumber(loc) << ":" <<
+            sourceManager.getSpellingColumnNumber(loc);
         return os.str();
     }
     std::string toString(SourceRange range) const {
         return toString(range.getBegin()) + " -- " + toString(range.getEnd());
+    }
+    std::string toString(const Decl* decl) const {
+        if (!decl)
+            return "<invalid>";
+        bool invalid;
+        const char* b = sourceManager.getCharacterData(decl->getLocStart(), &invalid);
+        if (invalid || !b)
+            return "<invalid>";
+        const char* e = sourceManager.getCharacterData(decl->getLocEnd(), &invalid);
+        if (invalid || !e)
+            return "<invalid>";
+        return std::string(b, std::max(b+30, e));
     }
 
     bool isUserFile(SourceLocation loc) const {
@@ -75,17 +99,22 @@ private:
         }
         uses[from].insert(to);
         dbg() << "Reference from <"
-                  << declToString(from).substr(0, 20)
+                  << toString(from).substr(0, 20)
                   << ">" << toString(from->getSourceRange()) << " to <"
-                  << declToString(to).substr(0, 20)
+                  << toString(to).substr(0, 20)
                   << ">" << toString(to->getSourceRange()) << "\n";
     }
 
 public:
+    FunctionDecl* getMainFunction() const {
+        return mainFunctionDecl;
+    }
+
     DependenciesCollector(SourceManager& srcMgr, References& uses)
         : sourceManager(srcMgr)
         , uses(uses)
         , currentDecl(0)
+        , mainFunctionDecl(0)
     {}
     bool shouldVisitImplicitCode() const { return true; }
     bool shouldVisitTemplateInstantiations() const { return true; }
@@ -93,10 +122,10 @@ public:
     bool VisitCallExpr(CallExpr* callExpr) {
         dbg() << __FUNCTION__ << std::endl;
         Expr* callee = callExpr->getCallee();
-        if (isa<UnresolvedMemberExpr>(callee) || isa<CXXDependentScopeMemberExpr>(callee))
-            return false;
         Decl* calleeDecl = callExpr->getCalleeDecl();
-        if (isUserFile(Z(calleeDecl)->getCanonicalDecl()->getSourceRange().getBegin()))
+        if (!callee || !calleeDecl || isa<UnresolvedMemberExpr>(callee) || isa<CXXDependentScopeMemberExpr>(callee))
+            return true;
+        if (isUserFile(calleeDecl->getCanonicalDecl()->getSourceRange().getBegin()))
             insertReference(currentDecl, calleeDecl);
         return true;
     }
@@ -128,7 +157,6 @@ public:
     bool VisitCXXConstructorDecl(CXXConstructorDecl* constructorDecl) {
         dbg() << __FUNCTION__ << std::endl;
         // TODO
-        cerr << "Visit constructor: " << declToString(constructorDecl) << endl;
         return true;
     }
 
@@ -152,7 +180,7 @@ public:
             //insertReference(*i, templateDecl);
         }
         insertReference(templateDecl, templateDecl->getTemplatedDecl());
-        return false;
+        return true;
     }
 
     bool VisitClassTemplateSpecializationDecl(ClassTemplateSpecializationDecl* specDecl) {
@@ -162,9 +190,12 @@ public:
     }
 
     bool VisitFunctionDecl(FunctionDecl* f) {
+        if (f->isMain()) {
+            mainFunctionDecl = f;
+        }
         if (f->getTemplatedKind() == FunctionDecl::TK_FunctionTemplate) {
             // skip non-instantiated template function
-            return false;
+            return true;
         }
         //dbg() << __FUNCTION__ << std::endl;
         FunctionTemplateSpecializationInfo* specInfo = f->getTemplateSpecializationInfo();
@@ -173,7 +204,6 @@ public:
         if (f->hasBody()) {
             currentDecl = f;
 
-            // Function name
             DeclarationName DeclName = f->getNameInfo().getName();
             string FuncName = DeclName.getAsString();
 
@@ -213,12 +243,12 @@ public:
     {}
 
     bool VisitFunctionDecl(FunctionDecl* functionDecl) {
-        if (!sourceManager.isInMainFile(Z(functionDecl)->getLocStart()))
-            return false;
+        if (!sourceManager.isInMainFile(functionDecl->getLocStart()))
+            return true;
         FunctionDecl* canonicalDecl = functionDecl->getCanonicalDecl();
         if (canonicalDecl->getTemplatedKind() != FunctionDecl::TK_NonTemplate) {
             // Will be processed as FunctionTemplateDecl
-            return false;
+            return true;
         }
         const bool funcIsUnused = used.find(canonicalDecl) == used.end();
         const bool thisIsRedeclaration = !functionDecl->doesThisDeclarationHaveABody() && declared.find(canonicalDecl) != declared.end();
@@ -227,27 +257,27 @@ public:
             removeDecl(functionDecl);
         }
         declared.insert(canonicalDecl);
-        return false;
+        return true;
     }
 
     // TODO: unused explicit function template specializations are not removed
     bool VisitFunctionTemplateDecl(FunctionTemplateDecl* functionDecl) {
-        if (!sourceManager.isInMainFile(Z(functionDecl)->getLocStart()))
-            return false;
+        if (!sourceManager.isInMainFile(functionDecl->getLocStart()))
+            return true;
         dbg() << __FUNCTION__ << std::endl;
         if (used.find(functionDecl) == used.end())
             removeDecl(functionDecl);
     }
 
-    // TODO: unused exlicit class template specializations are removed twice
+    // TODO: unused explicit class template specializations are removed twice
     bool VisitCXXRecordDecl(CXXRecordDecl* recordDecl) {
-        if (!sourceManager.isInMainFile(Z(recordDecl)->getLocStart()))
-            return false;
+        if (!sourceManager.isInMainFile(recordDecl->getLocStart()))
+            return true;
         bool isTemplated = recordDecl->getDescribedClassTemplate();
         TemplateSpecializationKind specKind = recordDecl->getTemplateSpecializationKind();
         dbg() << __FUNCTION__ << specKind << " " << std::endl;
         if (isTemplated && (specKind == TSK_ImplicitInstantiation || specKind == TSK_Undeclared))
-            return false;
+            return true;
         CXXRecordDecl* canonicalDecl = recordDecl->getCanonicalDecl();
         const bool classIsUnused = used.find(canonicalDecl) == used.end();
         const bool thisIsRedeclaration = !recordDecl->isCompleteDefinition() && declared.find(canonicalDecl) != declared.end();
@@ -256,12 +286,12 @@ public:
             removeDecl(recordDecl);
         }
         declared.insert(canonicalDecl);
-        return false;
+        return true;
     }
 
     bool VisitClassTemplateDecl(ClassTemplateDecl* templateDecl) {
-        if (!sourceManager.isInMainFile(Z(templateDecl)->getLocStart()))
-            return false;
+        if (!sourceManager.isInMainFile(templateDecl->getLocStart()))
+            return true;
         dbg() << __FUNCTION__ << std::endl;
         ClassTemplateDecl* canonicalDecl = templateDecl->getCanonicalDecl();
         const bool classIsUnused = used.find(canonicalDecl) == used.end();
@@ -274,8 +304,8 @@ public:
     }
 
     bool VisitUsingDirectiveDecl(UsingDirectiveDecl* usingDecl) {
-        if (!sourceManager.isInMainFile(Z(usingDecl)->getLocStart()))
-            return false;
+        if (!sourceManager.isInMainFile(usingDecl->getLocStart()))
+            return true;
         NamespaceDecl* ns = usingDecl->getNominatedNamespace();
         if (ns && !usedNamespaces.insert(ns).second)
             removeDecl(usingDecl);
@@ -286,12 +316,13 @@ public:
 
 private:
     void removeDecl(Decl* decl) {
-        Z(decl);
+        if (!decl)
+            return;
         SourceLocation start = decl->getLocStart();
         SourceLocation end = decl->getLocEnd();
         SourceLocation semicolonAfterDefinition = findSemiAfterLocation(end, decl->getASTContext());
         dbg() << "REMOVE: " << toString(start) << " " << toString(end)
-           << " " << toString(semicolonAfterDefinition) << std::endl;
+              << " " << toString(semicolonAfterDefinition) << std::endl;
         if (semicolonAfterDefinition.isValid())
             end = semicolonAfterDefinition;
         Rewriter::RewriteOptions opts;
@@ -299,7 +330,7 @@ private:
         rewriter.RemoveText(SourceRange(start, end), opts);
     }
     bool isDeclUsed(Decl* decl) const {
-        return used.find(Z(decl)->getCanonicalDecl()) != used.end();
+        return used.find(decl->getCanonicalDecl()) != used.end();
     }
     std::string toString(const SourceLocation& loc) const {
         return loc.printToString(sourceManager);
@@ -312,31 +343,31 @@ public:
         : sourceManager(srcMgr)
         , rewriter(rewriter)
     {}
-
+    
     virtual void HandleTranslationUnit(ASTContext& Ctx) {
-        dbg() << "Build dependency graph" << std::endl;
+        //cerr << "Build dependency graph" << std::endl;
         DependenciesCollector depsVisitor(sourceManager, uses);
         depsVisitor.TraverseDecl(Ctx.getTranslationUnitDecl());
 
-        dbg() << "Search for used decls" << std::endl;
+        FunctionDecl* mainFunction = depsVisitor.getMainFunction();
+        if (!mainFunction) {
+            cerr << "Error: no main function in the file!\n";
+            return;
+        }
+        
+        //cerr << "Search for used decls" << std::endl;
         std::set<Decl*> used;
-        for (size_t i = 0; i < topLevelDecls.size(); ++i) {
-            FunctionDecl* functionDecl = dyn_cast<FunctionDecl>(topLevelDecls[i]);
-            if (functionDecl && functionDecl->isMain()) {
-                std::set<Decl*> queue;
-                queue.insert(functionDecl->getCanonicalDecl());
-                while (!queue.empty()) {
-                    Decl* decl = *queue.begin();
-                    queue.erase(queue.begin());
-                    if (used.insert(decl).second) {
-                        queue.insert(uses[decl].begin(), uses[decl].end());
-                    }
-                }
-                break;
+        std::set<Decl*> queue;
+        queue.insert(mainFunction->getCanonicalDecl());
+        while (!queue.empty()) {
+            Decl* decl = *queue.begin();
+            queue.erase(queue.begin());
+            if (used.insert(decl).second) {
+                queue.insert(uses[decl].begin(), uses[decl].end());
             }
         }
 
-        dbg() << "Remove unused decls" << std::endl;
+        //cerr << "Remove unused decls" << std::endl;
         OptimizerVisitor visitor(sourceManager, used, rewriter);
         visitor.TraverseDecl(Ctx.getTranslationUnitDecl());
     }
@@ -354,7 +385,7 @@ public:
             if (buf && !invalid)
                 return std::string(buf->getBufferStart(), buf->getBufferEnd());
             else
-                return ""; // something's wrong
+                return "Inliner error"; // something's wrong
         }
     }
 
@@ -362,7 +393,6 @@ private:
     SourceManager& sourceManager;
     Rewriter& rewriter;
     References uses;
-    std::vector<Decl*> topLevelDecls;
 };
 
 Optimizer::Optimizer(const std::vector<std::string>& systemHeadersDirectories):
@@ -421,4 +451,3 @@ std::string Optimizer::doOptimize(const std::string& cppFile) {
 
     return consumer.getResult();
 }
-

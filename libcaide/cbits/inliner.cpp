@@ -70,7 +70,10 @@ public:
         IncludeReplacement rep;
         rep.includeDirectiveRange = SourceRange(HashLoc, end);
         rep.fileName = srcManager.getFilename(HashLoc).data();
-        rep.replaceWith = string(Z(s), Z(e)) + "\n";
+        if (s && e)
+            rep.replaceWith = string(s, e) + "\n";
+        else
+            rep.replaceWith = "<Inliner error>\n";
         replacementStack.push_back(rep);
     }
 
@@ -209,8 +212,13 @@ private:
                     srcManager.isBeforeInSLocAddrSpace(blockStart, blockEnd)) {
                 bool invalid;
                 const char* b = srcManager.getCharacterData(blockStart, &invalid);
-                const char* e = srcManager.getCharacterData(blockEnd, &invalid);
-                result << std::string(Z(b), Z(e)) << "\n";
+                const char* e = 0;
+                if (!invalid)
+                    e = srcManager.getCharacterData(blockEnd, &invalid);
+                if (invalid || !b || !e)
+                    result << "<Inliner error>\n";
+                else
+                    result << std::string(b, e) << "\n";
             }
 
             // Now output the result of file inclusion
@@ -226,7 +234,7 @@ private:
     }
 
     bool isSystemHeader(const FileEntry* entry) const {
-        return isSystemHeader(srcManager.translateFile(Z(entry)));
+        return isSystemHeader(srcManager.translateFile(entry));
     }
 
     bool isUserFile(SourceLocation loc) const {
@@ -253,6 +261,8 @@ Inliner::Inliner(const std::vector<std::string>& systemHeadersDirectories,
 {}
 
 std::string Inliner::doInline(const std::string& cppFile) {
+    //cerr << "Inline cpp file " << cppFile << "\n";
+    
     // CompilerInstance will hold the instance of the Clang compiler for us,
     // managing the various objects needed to run the compiler.
     CompilerInstance compiler;

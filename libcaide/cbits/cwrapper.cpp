@@ -31,7 +31,7 @@ FL_EXPORT_C(void, inline_code)(const char** cppFiles, int numCppFiles,
         for (int i = 0; i < numCppFiles; ++i)
             out << inliner.doInline(cppFiles[i]) << "\n";
     } catch (const std::exception& e) {
-        out << e.what() << std::endl;
+        out << "Exception: " << e.what() << std::endl;
     } catch (...) {
         out << "Unexpected error\n";
     }
@@ -46,9 +46,8 @@ FL_EXPORT_C(void, remove_unused_code)(const char* cppFile,
         Optimizer optimizer(systemHeaders_);
         out << optimizer.doOptimize(cppFile) << "\n";
     } catch (const std::exception& e) {
-        out << e.what() << std::endl;
+        out << "Exception: " << e.what() << std::endl;
     } catch (...) {
         out << "Unexpected error\n";
     }
 }
-
