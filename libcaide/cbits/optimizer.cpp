@@ -52,7 +52,6 @@ private:
 
     // Current function. FIXME: this doesn't handle top-level declarations correctly.
     Decl* currentDecl;
-    
     FunctionDecl* mainFunctionDecl;
 
 private:
@@ -63,7 +62,7 @@ private:
             fileName = fileName.substr(fileName.length() - 30);
         }
         std::ostringstream os;
-        os << fileName << ":" << 
+        os << fileName << ":" <<
             sourceManager.getSpellingLineNumber(loc) << ":" <<
             sourceManager.getSpellingColumnNumber(loc);
         return os.str();
@@ -343,7 +342,7 @@ public:
         : sourceManager(srcMgr)
         , rewriter(rewriter)
     {}
-    
+
     virtual void HandleTranslationUnit(ASTContext& Ctx) {
         //cerr << "Build dependency graph" << std::endl;
         DependenciesCollector depsVisitor(sourceManager, uses);
@@ -354,7 +353,7 @@ public:
             cerr << "Error: no main function in the file!\n";
             return;
         }
-        
+
         //cerr << "Search for used decls" << std::endl;
         std::set<Decl*> used;
         std::set<Decl*> queue;

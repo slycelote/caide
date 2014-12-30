@@ -7,7 +7,7 @@ import Data.List (partition)
 import qualified Data.Text as T
 
 import Prelude hiding (FilePath)
-import Filesystem (isFile, readTextFile, writeTextFile, listDirectory, isDirectory)
+import Filesystem (isFile, copyFile, readTextFile, writeTextFile, listDirectory, isDirectory)
 import Filesystem.Path.CurrentOS (decodeString)
 import Filesystem.Path ((</>), FilePath, hasExtension)
 
@@ -46,6 +46,8 @@ inlineCPPCode env problemDir = do
     inlineLibraryCode (solutionPath:inlinedTemplatePath:libraryCPPFiles) systemHeaderDirs [libraryDirectory] inlinedCodePath
     removePragmaOnceFromFile inlinedCodePath inlinedNoPragmaOnceCodePath
     removeUnusedCode inlinedNoPragmaOnceCodePath systemHeaderDirs finalCodePath
+    copyFile finalCodePath $ caideRoot </> decodeString "submission.cpp"
+
 
 listDirectoryRecursively :: FilePath -> IO [FilePath]
 listDirectoryRecursively dir = do
