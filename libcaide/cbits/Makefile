@@ -47,7 +47,7 @@ all: make_builddir $(BUILDDIR)/libcpphelper.a $(BUILDDIR)/libchelper.a
 make_builddir:
 	@test -d $(BUILDDIR) || mkdir $(BUILDDIR)
 
-$(BUILDDIR)/libcpphelper.a: $(BUILDDIR)/inliner.o $(BUILDDIR)/optimizer.o $(BUILDDIR)/util.o
+$(BUILDDIR)/libcpphelper.a: $(BUILDDIR)/inliner.o $(BUILDDIR)/optimizer.o $(BUILDDIR)/SmartRewriter.o $(BUILDDIR)/util.o
 	$(ARCHIVER) rcs $(BUILDDIR)/libcpphelper.a $^
 
 $(BUILDDIR)/libchelper.a: $(BUILDDIR)/libcpphelper.a cwrapper.cpp inliner.h optimizer.h
@@ -59,6 +59,9 @@ $(BUILDDIR)/inliner.o: inliner.cpp util.h inliner.h
 
 $(BUILDDIR)/optimizer.o: optimizer.cpp util.h optimizer.h
 	$(CXX) $(CXXFLAGS) $(LLVM_CXXFLAGS) $(CLANG_INCLUDES) optimizer.cpp -o $@
+
+$(BUILDDIR)/SmartRewriter.o: SmartRewriter.cpp SmartRewriter.h
+	$(CXX) $(CXXFLAGS) $(LLVM_CXXFLAGS) $(CLANG_INCLUDES) SmartRewriter.cpp -o $@
 
 $(BUILDDIR)/util.o: util.cpp util.h
 	$(CXX) $(CXXFLAGS) $(LLVM_CXXFLAGS) $(CLANG_INCLUDES) util.cpp -o $@

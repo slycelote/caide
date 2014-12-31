@@ -22,6 +22,7 @@
 
 
 #include "optimizer.h"
+#include "SmartRewriter.h"
 #include "util.h"
 
 using namespace clang;
@@ -232,7 +233,7 @@ private:
     const std::set<Decl*>& used;
     std::set<Decl*> declared;
     std::set<NamespaceDecl*> usedNamespaces;
-    Rewriter& rewriter;
+    SmartRewriter rewriter;
 
 public:
     OptimizerVisitor(SourceManager& srcManager, const std::set<Decl*>& used, Rewriter& rewriter)
@@ -326,7 +327,7 @@ private:
             end = semicolonAfterDefinition;
         Rewriter::RewriteOptions opts;
         opts.RemoveLineIfEmpty = true;
-        rewriter.RemoveText(SourceRange(start, end), opts);
+        rewriter.removeRange(SourceRange(start, end), opts);
     }
     bool isDeclUsed(Decl* decl) const {
         return used.find(decl->getCanonicalDecl()) != used.end();
