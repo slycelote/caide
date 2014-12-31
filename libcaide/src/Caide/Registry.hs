@@ -48,3 +48,4 @@ features = [("codelite", Codelite.feature),
 
 findFeature :: String -> Maybe Feature
 findFeature name = snd <$> find ((== map toLower name). fst) features
+

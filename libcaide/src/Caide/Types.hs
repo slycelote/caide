@@ -1,6 +1,10 @@
+{-# LANGUAGE Rank2Types, FlexibleInstances #-}
+
 module Caide.Types(
       Problem (..)
     , ProblemID
+    , Option
+    , optionToString
     , CaideProject (..)
     , ProblemParser (..)
     , ProgrammingLanguage (..)
@@ -8,12 +12,14 @@ module Caide.Types(
     , URL
     , CommandHandler (..)
     , Builder
+    , BuilderResult(..)
     , Feature (..)
     , CaideEnvironment
 ) where
 
 import Data.Text (Text)
 import qualified Filesystem.Path as F
+import qualified Data.ConfigFile as C
 
 data TestCase = TestCase
     { testCaseInput  :: Text
@@ -46,10 +52,21 @@ data ProgrammingLanguage = ProgrammingLanguage
     }
 
 
+class C.Get_C a => Option a where
+    optionToString :: a -> String
+
+instance Option Bool where
+    optionToString False = "no"
+    optionToString True  = "yes"
+
+instance Option [Char] where
+    optionToString = id
+
+
 data CaideProject = CaideProject
-    { getUserOption     :: String -> String -> IO String
-    , getInternalOption :: String -> String -> IO String
-    , setInternalOption :: String -> String -> String -> IO ()
+    { getUserOption     :: Option a => String -> String -> IO a
+    , getInternalOption :: Option a => String -> String -> IO a
+    , setInternalOption :: Option a => String -> String -> a -> IO ()
     , getRootDirectory  :: F.FilePath
     , saveProject       :: IO ()
     }
@@ -64,11 +81,13 @@ data CommandHandler = CommandHandler
     , action       :: CaideEnvironment -> [String] -> IO (Maybe String)
     }
 
+data BuilderResult = BuildFailed | TestsFailed | TestsNotRun | TestsOK
+
 -- | Builder is responsible for building the code and running
 --   test program
-type Builder =  CaideEnvironment -- ^ Caide environment
-             -> String           -- ^ Problem ID
-             -> IO Bool          -- ^ Returns True if the build was successful and test runner didn't crash
+type Builder  = CaideEnvironment     -- ^ Caide environment
+              -> String              -- ^ Problem ID
+              -> IO BuilderResult
 
 -- | A feature is a piece of optional functionality that may be run
 --   at certain points, depending on the configuration. A feature doesn't

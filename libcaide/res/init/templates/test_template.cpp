@@ -15,7 +15,10 @@ using namespace std;
 int main() {
     // Read path to caide executable from a file in current directory
     string caideExe;
-    ifstream("caideExe.txt") >> caideExe;
+    {
+        ifstream caidePath("caideExe.txt");
+        caidePath >> caideExe;
+    }
 
     // Prepare the list of test cases in correct order; add recently created test cases too.
     // Prepare submission file.
@@ -31,6 +34,7 @@ int main() {
     while (testList >> testName >> testState ) {
         if (testState == "Skip") {
             cerr << "Skipping test " << testName << endl;
+            // mark test as skipped
             ofstream resFile((testName + ".skipped").c_str());
         } else if (testState == "Run") {
             cerr << "Running test " << testName << endl;
@@ -40,18 +44,28 @@ int main() {
                 solve(in, out);
             } catch (...) {
                 cerr << "Test " << testName << "threw an exception" << endl;
+                // mark test as failed
                 ofstream resFile((testName + ".failed").c_str());
                 continue;
             }
+
+            // save program output
             string result = out.str();
             ofstream resFile((testName + ".out").c_str());
             resFile << result;
+
+            // optional: print program output to stderr
+            if (result.size() > 100)
+                result = result.substr(0, 100) + "[...] (output truncated)\n";
+            cerr << result << endl;
         } else {
+            // internal caide error: unknown test status
             ofstream resFile((testName + ".error").c_str());
         }
     }
 
-    ret = std::system((caideExe + " test").c_str());
+    // optional: evaluate tests automatically
+    ret = std::system((caideExe + " eval_tests").c_str());
     return ret;
 }
 

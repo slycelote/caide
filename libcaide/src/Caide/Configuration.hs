@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+
 module Caide.Configuration (
       readCaideProject
 
@@ -35,7 +36,7 @@ import Filesystem.Path (FilePath, (</>), directory)
 import System.Environment (getExecutablePath)
 
 
-import Caide.Types (ProblemID, CaideProject (..), getInternalOption, setInternalOption, getUserOption)
+import Caide.Types (ProblemID, CaideProject (..), getInternalOption, setInternalOption, getUserOption, Option, optionToString)
 import Caide.Util (forceEither, splitString)
 
 
@@ -125,13 +126,13 @@ saveConfig conf file = do
     createTree $ directory file
     writeTextFile file $ T.pack $ to_string conf
 
-getOption :: Get_C a => ConfigParser -> String -> String -> a
+getOption :: Option a => ConfigParser -> String -> String -> a
 getOption conf section key = case get conf section key of
     Left err  -> error $ show err
     Right val -> val
 
-setOption :: ConfigParser -> String -> String -> String -> ConfigParser
-setOption conf section key val = forceEither $ set conf section key val
+setOption :: Option a => ConfigParser -> String -> String -> a -> ConfigParser
+setOption conf section key val = forceEither $ set conf section key (optionToString val)
 
 addSection :: MonadError CPError m => SectionSpec -> ConfigParser -> m ConfigParser
 addSection section conf = add_section conf section

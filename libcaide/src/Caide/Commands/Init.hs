@@ -10,7 +10,7 @@ import qualified Data.ByteString as BS
 import Data.ByteString.Lazy (fromStrict)
 import Data.FileEmbed (embedFile)
 
-import Filesystem.Path.CurrentOS (encodeString, (</>))
+import Filesystem.Path.CurrentOS (encodeString)
 import qualified Filesystem.Path as FSP
 
 import Caide.Types

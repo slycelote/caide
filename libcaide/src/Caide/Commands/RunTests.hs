@@ -2,6 +2,7 @@
 
 module Caide.Commands.RunTests (
       cmd
+    , cmdEvaluate
 ) where
 
 
@@ -30,6 +31,14 @@ cmd =  CommandHandler
     , action = runTests
     }
 
+cmdEvaluate :: CommandHandler
+cmdEvaluate =  CommandHandler
+    { command = "eval_tests"
+    , description = "(Internal) Generate test report"
+    , usage = "caide eval_tests"
+    , action = evalTests
+    }
+
 
 humanReadableReport :: TestReport Text -> Text
 humanReadableReport = T.unlines .
@@ -37,7 +46,7 @@ humanReadableReport = T.unlines .
 
 humanReadableSummary :: TestReport Text -> Text
 humanReadableSummary = T.unlines . map toText . group . sort . map (fromComparisonResult . snd)
-    where toText list = T.concat [head list, " -- ", tshow (length list)]
+    where toText list = T.concat [head list, "\t", tshow (length list)]
           fromComparisonResult (Error _) = "Error"
           fromComparisonResult r = tshow r
 
@@ -45,22 +54,29 @@ runTests :: CaideEnvironment -> [String] -> IO (Maybe String)
 runTests env _ = do
     probId <- getActiveProblem env
     builderName <- getBuilder env
+    let builder = findBuilder builderName
+    buildResult <- builder env probId
+    case buildResult of
+        BuildFailed -> return . Just $ "Build failed"
+        TestsFailed -> return . Just $ "Tests failed"
+        TestsOK     -> return Nothing
+        TestsNotRun -> evalTests env []
+
+evalTests :: CaideEnvironment -> [String] -> IO (Maybe String)
+evalTests env _ = do
+    probId <- getActiveProblem env
     let caideRoot = getRootDirectory env
-        builder = findBuilder builderName
         testsDir = caideRoot </> decodeString probId </> ".caideproblem" </> "test"
         reportFile = testsDir </> "report.txt"
-    buildOk <- builder env probId
-    if buildOk
-    then do
-        report <- generateReport testsDir
-        writeTextFile reportFile . serializeTestReport $ report
-        T.putStrLn "Results summary (outcome -- count):"
-        T.putStrLn $ humanReadableSummary report
-        let nonSuccesses = [r | r@(_, res) <- report, res /= Success]
-        if null nonSuccesses
-            then return Nothing
-            else return . Just . T.unpack $ humanReadableReport nonSuccesses
-    else return . Just $ "Test runner failed"
+
+    report <- generateReport testsDir
+    writeTextFile reportFile . serializeTestReport $ report
+    T.putStrLn "Results summary\n_______________\nOutcome\tCount"
+    T.putStrLn $ humanReadableSummary report
+    let nonSuccesses = [r | r@(_, res) <- report, res /= Success]
+    if null nonSuccesses
+        then return Nothing
+        else return . Just . T.unpack $ humanReadableReport nonSuccesses
 
 
 generateReport :: FilePath -> IO (TestReport Text)
