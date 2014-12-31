@@ -149,7 +149,7 @@ defaultRootConf caideRoot = forceEither $
     addSection "cpp" >>=
     setValue "cpp" "system_header_dirs" (intercalate "," $ map encodeString headerDirs)
 
-    where
+  where
     headerDirs = [
         caideRoot </> decodeString "include" </> decodeString "mingw-4.8.1",
         caideRoot </> decodeString "include" </> decodeString "mingw-4.8.1" </> decodeString "c++",

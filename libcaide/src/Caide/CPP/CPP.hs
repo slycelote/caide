@@ -38,8 +38,8 @@ inlineCPPCode env problemDir = do
 
     libExists <- isDirectory libraryDirectory
     libraryCPPFiles <- if libExists
-                           then filter (`hasExtension` T.pack "cpp") <$> listDirectoryRecursively libraryDirectory
-                           else return []
+                       then filter (`hasExtension` T.pack "cpp") <$> listDirectoryRecursively libraryDirectory
+                       else return []
 
     systemHeaderDirs <- map decodeString . splitString "\r\n," <$> getUserOption env "cpp" "system_header_dirs"
 

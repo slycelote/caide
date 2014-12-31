@@ -12,6 +12,13 @@ import Filesystem.Path.CurrentOS (decodeString)
 import Caide.Types (ProgrammingLanguage(..), CaideEnvironment)
 import Caide.Util (getProblemID)
 
+language :: ProgrammingLanguage
+language = ProgrammingLanguage
+    { generateScaffold = generateCPPScaffold
+    , generateTestProgram = generateCPPTestProgram
+    , inlineCode = inlineCPPCode
+    }
+
 generateCPPScaffold :: CaideEnvironment -> F.FilePath -> IO ()
 generateCPPScaffold _ problemDir = do
     let probID = getProblemID problemDir
@@ -26,7 +33,6 @@ generateCPPTestProgram _ problemDir = do
         testProgramPath = problemDir </> decodeString (probID ++ "_test.cpp")
         testTemplatePath = F.parent problemDir </> decodeString "templates" </> decodeString "test_template.cpp"
     fileExists <- isFile testProgramPath
-    -- TODO: Replace CAIDE_EXE token with full path to caide executable in test template
     unless fileExists $ copyFile testTemplatePath testProgramPath
 
 inlineCPPCode :: CaideEnvironment -> F.FilePath -> IO ()
@@ -38,11 +44,4 @@ inlineCPPCode _ problemDir = do
     copyFile solutionPath inlinedCodePath
     mainCode <- readTextFile inlinedTemplatePath
     appendTextFile inlinedCodePath mainCode
-
-language :: ProgrammingLanguage
-language = ProgrammingLanguage
-    { generateScaffold = generateCPPScaffold
-    , generateTestProgram = generateCPPTestProgram
-    , inlineCode = inlineCPPCode
-    }
 

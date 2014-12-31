@@ -22,8 +22,10 @@ builder name env probId = do
     (_, _, _, ph) <- createProcess process { cwd = Just (encodeString probDir) }
     exitCode <- waitForProcess ph
     case exitCode of
-        ExitSuccess -> putStrLn "Done" >> return (if evaluatesTests then TestsOK else TestsNotRun)
+        ExitSuccess -> do
+            putStrLn "Done"
+            return $ if evaluatesTests then TestsPassed else TestsNotRun
         ExitFailure code -> do
-            putStrLn $ "Process terminated with exit code " ++ show code
-            return $ if evaluatesTests && code > 1000 then TestsFailed else BuildFailed
+            putStrLn $ "Builder exit code " ++ show code
+            return $ if evaluatesTests && code == 0xCA1DE then TestsFailed else BuildFailed
 

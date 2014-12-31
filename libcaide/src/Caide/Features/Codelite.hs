@@ -158,3 +158,4 @@ generateWorkspaceXml projects activeProblem = do
             modifyFromJust parent -- go to WorkspaceConfiguration
         modifyFromJust parent -- go to BuildMatrix
     goToDocRoot
+

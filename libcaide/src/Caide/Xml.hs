@@ -18,6 +18,7 @@ module Caide.Xml (
 import Control.Monad.State.Strict (get, put, modify, MonadState, State, runState, gets)
 import Data.Char (toLower)
 import Data.List (find)
+import Data.Maybe (isJust)
 
 import Text.XML.Light (Content(..), QName(..), Element(..), Attr(..), blank_element, unqual, showContent)
 import Text.XML.Light.Cursor
@@ -65,9 +66,7 @@ hasAttrEqualTo key value (Cur (Elem el) _ _ _) = case find (attribHasName key) (
 hasAttrEqualTo _ _ _ = False
 
 hasAttr :: String -> Cursor -> Bool
-hasAttr key (Cur (Elem el) _ _ _) = case find (attribHasName key) (elAttribs el) of
-    Just _ -> True
-    _      -> False
+hasAttr key (Cur (Elem el) _ _ _) = isJust $ find (attribHasName key) (elAttribs el)
 hasAttr _ _ = False
 
 mkAttr :: String -> String -> Attr
@@ -98,8 +97,8 @@ goToChild path = tryDo $ goToChild' path
 goToDocRoot :: State Cursor ()
 goToDocRoot = modify (go . root) where
     go c = case left c of
-                Nothing -> c
-                Just c' -> go c'
+               Nothing -> c
+               Just c' -> go c'
 
 showXml :: Cursor -> String
 showXml = dropWhile (/= '<') . unlines . map showContent . toForest
@@ -132,3 +131,4 @@ getTextContent = getTextContent' . current
 getTextContent' :: Content -> Maybe String
 getTextContent' (Elem t) = Just $ strContent t
 getTextContent' _ = Nothing
+

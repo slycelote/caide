@@ -59,7 +59,7 @@ runTests env _ = do
     case buildResult of
         BuildFailed -> return . Just $ "Build failed"
         TestsFailed -> return . Just $ "Tests failed"
-        TestsOK     -> return Nothing
+        TestsPassed -> return Nothing
         TestsNotRun -> evalTests env []
 
 evalTests :: CaideEnvironment -> [String] -> IO (Maybe String)
@@ -91,42 +91,41 @@ generateReport testDir = do
 
 
 testResult :: [FilePath] -> FilePath -> IO (ComparisonResult Text)
-testResult allFiles testFile = do
-    let [outFile, etalonFile, failedFile, skippedFile] = map (replaceExtension testFile)
+testResult allFiles testFile = case () of
+    _ | outFile `elem` allFiles     -> if etalonFile `elem` allFiles
+                                          then compareFiles <$> readTextFile etalonFile <*> readTextFile outFile
+                                          else return EtalonUnknown
+      | failedFile `elem` allFiles  -> return . Error $ "Program crashed"
+      | skippedFile `elem` allFiles -> return Skipped
+      | otherwise                   -> return . Error $ "unknown error"
+  where [outFile, etalonFile, failedFile, skippedFile] = map (replaceExtension testFile)
           ["out", "etalon", "failed", "skipped"]
-    case () of
-      _ | outFile `elem` allFiles     -> if etalonFile `elem` allFiles
-                                            then compareFiles <$> readTextFile etalonFile <*> readTextFile outFile
-                                            else return EtalonUnknown
-        | failedFile `elem` allFiles  -> return . Error $ "Program crashed"
-        | skippedFile `elem` allFiles -> return Skipped
-        | otherwise                   -> return . Error $ "unknown error"
 
 
 compareFiles :: Text -> Text -> ComparisonResult Text
-compareFiles etalon out = let
+compareFiles etalon out = case () of
+    _ | not (null errors) -> Error $ T.concat ["Line ", tshow line, ": ", err]
+      | length actual == length expected -> Success
+      | otherwise -> Error $ T.concat ["Expected ", tshow (length expected), " line(s)"]
+  where
     expected = T.lines etalon
     actual   = T.lines out
     lineComparison = zipWith compareLines expected actual
     errors = [e | e@(_, Error _) <- zip [1::Int ..] lineComparison]
     (line, Error err) = head errors
-    in case () of
-      _ | not (null errors) -> Error $ T.concat ["Line ", tshow line, ": ", err]
-        | length actual == length expected -> Success
-        | otherwise -> Error $ T.concat ["Expected ", tshow (length expected), " line(s)"]
 
 
 compareLines :: Text -> Text -> ComparisonResult Text
-compareLines expectedLine actualLine = let
+compareLines expectedLine actualLine = case () of
+    _ | not (null errors) -> Error $ T.concat ["Token ", tshow numToken, ": ", err]
+      | length actual == length expected -> Success
+      | otherwise   ->  Error $ T.concat ["Expected ", tshow (length expected), " token(s)"]
+  where
     expected = T.words expectedLine
     actual = T.words actualLine
     tokenComparison = zipWith compareTokens expected actual
     errors = [e | e@(_, Error _) <- zip [1::Int ..] tokenComparison]
     (numToken, Error err) = head errors
-    in case () of
-      _ | not (null errors) -> Error $ T.concat ["Token ", tshow numToken, ": ", err]
-        | length actual == length expected -> Success
-        | otherwise   ->  Error $ T.concat ["Expected ", tshow (length expected), " token(s)"]
 
 compareTokens :: Text -> Text -> ComparisonResult Text
 compareTokens expected actual =

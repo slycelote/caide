@@ -81,10 +81,12 @@ data CommandHandler = CommandHandler
     , action       :: CaideEnvironment -> [String] -> IO (Maybe String)
     }
 
-data BuilderResult = BuildFailed | TestsFailed | TestsNotRun | TestsOK
+data BuilderResult = BuildFailed  -- ^ Build failed or program under test exited unexpectedly
+                   | TestsFailed  -- ^ Build succeeded, tests have been evaluated and failed
+                   | TestsNotRun  -- ^ Build succeeded, tests have not been evaluated
+                   | TestsPassed  -- ^ Tests succeeded
 
--- | Builder is responsible for building the code and running
---   test program
+-- | Builder is responsible for building the code and running test program
 type Builder  = CaideEnvironment     -- ^ Caide environment
               -> String              -- ^ Problem ID
               -> IO BuilderResult
@@ -92,6 +94,7 @@ type Builder  = CaideEnvironment     -- ^ Caide environment
 -- | A feature is a piece of optional functionality that may be run
 --   at certain points, depending on the configuration. A feature doesn't
 --   run by itself, but only in response to certain events.
+--   The second parameter in all functions is ID of the problem that triggered the event.
 data Feature = Feature
     { onProblemCreated     :: CaideEnvironment -> String -> IO ()   -- ^ Run after `caide problem`
     , onProblemCodeCreated :: CaideEnvironment -> String -> IO ()   -- ^ Run after `caide lang`

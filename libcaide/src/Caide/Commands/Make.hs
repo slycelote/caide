@@ -25,7 +25,7 @@ import Caide.TestCases.Types
 cmd :: CommandHandler
 cmd = CommandHandler
     { command = "make"
-    , description = "Generate test program and submission file"
+    , description = "Prepares submission file and updates test list"
     , usage = "caide make"
     , action = make
     }

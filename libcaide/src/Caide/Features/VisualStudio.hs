@@ -37,6 +37,7 @@ getGuidForProblem :: ProblemID -> String
 getGuidForProblem = map toUpper . toString . generateNamed caideUuid . map (fromIntegral . ord)
 
 
+-- | Deprecated: use VsCaide extension instead
 feature :: Feature
 feature  = Feature
     { onProblemCreated     = \_ _ -> return ()
@@ -74,10 +75,10 @@ generateProjectXML probId = do
     modifyFromJust $ findRight (isTag "Project")
     removeChildren $ \c -> isTag "ItemGroup" c && not (hasAttr "Label" c)
 
-    errorIfFailed "Couldn't insert ItemGroup element" $ 
+    errorIfFailed "Couldn't insert ItemGroup element" $
         insertLastChild $ Elem $ mkElem "ItemGroup" []
     forM_ [probId ++ ".cpp", probId ++ "_test.cpp"] $ \file -> do
-        errorIfFailed "Couldn't insert ClCompile element" $ 
+        errorIfFailed "Couldn't insert ClCompile element" $
             insertLastChild $ Elem $ mkElem "ClCompile" [("Include", file)]
         modifyFromJust parent
     modifyFromJust parent
@@ -158,7 +159,7 @@ generateSolutionFileContents problems _activeProblem = unlines $
         ++ concatMap makeProjectDefinition problems
 
         ++ [
-        "Global", 
+        "Global",
         "\tGlobalSection(SolutionConfigurationPlatforms) = preSolution",
         "\t\tDebug|Win32 = Debug|Win32",
         "\t\tRelease|Win32 = Release|Win32",
@@ -186,3 +187,4 @@ generateSolutionFileContents problems _activeProblem = unlines $
             tag <- ["ActiveCfg", "Build.0"]
             return $ "\t\t" ++ guid ++ "." ++ conf ++ "." ++ tag ++ " = " ++ conf
         showGuid guid = "\"{" ++ guid ++ "}\""
+

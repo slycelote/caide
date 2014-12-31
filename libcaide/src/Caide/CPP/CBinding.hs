@@ -19,23 +19,25 @@ foreign import ccall unsafe "cwrapper.h inline_code"
 
 inlineLibraryCode :: [FilePath] -> [FilePath] -> [FilePath] -> FilePath -> IO ()
 inlineLibraryCode cppFiles systemHeaderDirs userHeaderDirs outputFile =
-    withArrayOfStrings (map encodeString cppFiles) $ \cpp ->
-        withArrayOfStrings (map encodeString systemHeaderDirs) $ \systemHeaders ->
-            withArrayOfStrings (map encodeString userHeaderDirs) $ \userHeaders ->
-                withCString (encodeString outputFile) $ \out ->
-                    c_inline_code cpp (fromIntegral $ length cppFiles) systemHeaders (fromIntegral $ length systemHeaderDirs) userHeaders (fromIntegral $ length userHeaderDirs) out
+    withArrayOfStrings (map encodeString cppFiles)         $ \cpp ->
+    withArrayOfStrings (map encodeString systemHeaderDirs) $ \systemHeaders ->
+    withArrayOfStrings (map encodeString userHeaderDirs)   $ \userHeaders ->
+    withCString (encodeString outputFile)                  $ \out ->
+    c_inline_code cpp (len cppFiles) systemHeaders (len systemHeaderDirs) userHeaders (len userHeaderDirs) out
 
 foreign import ccall unsafe "cwrapper.h remove_unused_code"
     c_remove_unused_code  :: CString -> Ptr CString -> CInt -> CString -> IO ()
 
 removeUnusedCode :: FilePath -> [FilePath] -> FilePath -> IO ()
 removeUnusedCode cppFile systemHeaderDirs outputFile =
-    withCString (encodeString cppFile) $ \cpp ->
-        withArrayOfStrings (map encodeString systemHeaderDirs) $ \systemHeaders ->
-            withCString (encodeString outputFile) $ \out ->
-                c_remove_unused_code cpp systemHeaders (fromIntegral $ length systemHeaderDirs) out
-
+    withCString (encodeString cppFile)                     $ \cpp ->
+    withArrayOfStrings (map encodeString systemHeaderDirs) $ \systemHeaders ->
+    withCString (encodeString outputFile)                  $ \out ->
+    c_remove_unused_code cpp systemHeaders (len systemHeaderDirs) out
 
 withArrayOfStrings :: [String] -> (Ptr CString -> IO a) -> IO a
 withArrayOfStrings xs m = withMany withCString xs $ \ps -> withArray ps m
+
+len :: Num n => [a] -> n
+len = fromIntegral . length
 

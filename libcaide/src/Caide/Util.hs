@@ -66,5 +66,5 @@ splitString separators s = reverse (go s []) where
     go [] parts = parts
     go str parts = let (_, rest)     = span (`elem` separators) str
                        (word, rest') = break (`elem` separators) rest
-                   in go rest' (if null word then parts else word:parts)
+                   in go rest' $ if null word then parts else word:parts
 

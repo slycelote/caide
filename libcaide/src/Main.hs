@@ -28,8 +28,8 @@ findRootCaideDir curDir = do
     let caideDir = curDir </> decodeString ".caide"
     rootIsHere <- isDirectory caideDir
     if rootIsHere
-        then return $ Just curDir
-        else findRootCaideDir $ parent curDir
+    then return $ Just curDir
+    else findRootCaideDir $ parent curDir
 
 
 commands :: [CommandHandler]
@@ -48,24 +48,23 @@ printUsage = do
 main :: IO ()
 main = do
     args <- getArgs
+    let (cmd:commandArgs) = args
     workDir <- getWorkingDirectory
     if null args
         then printUsage >> halt
-        else do
-            let (cmd:commandArgs) = args
-            case findCommand cmd of
-                Nothing -> printUsage >> halt
-                Just c  -> do
-                    caideDir <- findRootCaideDir workDir
-                    case () of
-                      _ | cmd /= "init" && isNothing caideDir -> do
-                              putStrLn $ encodeString workDir ++ " is not a valid caide directory"
-                              halt
-                        | cmd == "init" && isJust caideDir    -> do
-                              putStrLn "Caide directory already initialized"
-                              halt
-                        -- special case for init command: pass working directory as the first parameter
-                        | otherwise -> runAction c (fromMaybe workDir caideDir) commandArgs
+        else case findCommand cmd of
+            Nothing -> printUsage >> halt
+            Just c  -> do
+                caideDir <- findRootCaideDir workDir
+                case () of
+                  _ | cmd /= "init" && isNothing caideDir -> do
+                        putStrLn $ encodeString workDir ++ " is not a valid caide directory"
+                        halt
+                    | cmd == "init" && isJust caideDir    -> do
+                        putStrLn "Caide directory already initialized"
+                        halt
+                    -- special case for init command: pass working directory as the first parameter
+                    | otherwise -> runAction c (fromMaybe workDir caideDir) commandArgs
 
 runAction :: CommandHandler -> F.FilePath -> [String] -> IO ()
 runAction cmd caideRoot args = do
