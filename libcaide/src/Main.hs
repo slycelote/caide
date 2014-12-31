@@ -34,7 +34,7 @@ findRootCaideDir curDir = do
 
 commands :: [CommandHandler]
 commands = [Init.cmd, ParseProblem.cmd, BuildScaffold.cmd, Checkout.cmd, Make.cmd, RunTests.cmd,
-            GetOpt.cmd, GetOpt.cmdInternal, GetOpt.cmdProblem, RunTests.cmdEvaluate]
+            GetOpt.cmd, GetOpt.cmdInternal, GetOpt.cmdProblem, RunTests.cmdEvaluate, Make.cmdUpdateTests]
 
 findCommand :: String -> Maybe CommandHandler
 findCommand cmdName = find ((== cmdName) . command) commands

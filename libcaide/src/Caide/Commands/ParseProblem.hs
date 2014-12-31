@@ -5,6 +5,7 @@ module Caide.Commands.ParseProblem(
 import Control.Monad (forM_)
 import Data.Char (isAlphaNum, isAscii)
 import Data.List (find)
+import Data.Maybe (isJust)
 import qualified Data.Text as T
 
 import Filesystem (createDirectory, createTree, writeTextFile)
@@ -14,6 +15,7 @@ import Caide.Types
 import Caide.Codeforces.Parser (codeforcesParser)
 import Caide.Configuration (getDefaultLanguage, setActiveProblem)
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
+import Caide.Commands.Make (updateTests)
 
 
 cmd :: CommandHandler
@@ -35,13 +37,14 @@ parseProblem env [url] = do
     case ret of
         Right probId -> do
             let testDir = getRootDirectory env </> decodeString probId </> decodeString ".caideproblem" </> decodeString "test"
-            caideExe <- getInternalOption env "core" "caide_exe"
 
             createTree testDir
-            writeTextFile (testDir </> decodeString "caideExe.txt") $ T.pack caideExe
 
             lang <- getDefaultLanguage env
-            generateScaffoldSolution env [lang]
+            updateTestsRet <- updateTests env
+            if isJust updateTestsRet
+            then return updateTestsRet
+            else generateScaffoldSolution env [lang]
 
         Left err     -> return . Just $ err
 

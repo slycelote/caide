@@ -316,7 +316,19 @@ namespace slycelote.VsCaide
                         linkerTool.SubSystem = subSystemOption.subSystemConsole;
 
                         var compileTool = (VCCLCompilerTool)tools.Item("VCCLCompilerTool");
-                        compileTool.AdditionalIncludeDirectories = language == "cpp" ? Path.Combine("$(SolutionDir)", "cpplib") : "";
+                        var postBuildEventTool = (VCPostBuildEventTool)tools.Item("VCPostBuildEventTool");
+                        if (language == "cpp")
+                        {
+                            compileTool.AdditionalIncludeDirectories = Path.Combine("$(SolutionDir)", "cpplib");
+                            postBuildEventTool.CommandLine = Paths.CaideExe + " make";
+                            postBuildEventTool.Description = "Prepare final code for submission";
+                            postBuildEventTool.ExcludedFromBuild = false;
+                        }
+                        else
+                        {
+                            compileTool.AdditionalIncludeDirectories = "";
+                            postBuildEventTool.CommandLine = postBuildEventTool.Description = "";
+                        }
                     }
 
                     SolutionUtilities.SaveSolution();

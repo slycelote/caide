@@ -6,15 +6,13 @@ module Caide.Commands.BuildScaffold (
 import Control.Applicative ((<$>))
 import Control.Monad (forM_)
 import Data.Maybe (mapMaybe)
+import Filesystem.Path.CurrentOS (decodeString, (</>))
 
 import Caide.Types
-
-import Filesystem.Path.CurrentOS (decodeString, (</>))
 import Caide.Registry (findLanguage, findFeature)
 import Caide.Configuration (getActiveProblem, getProblemConfigFile, readProblemConfig,
                             saveProblemConfig, setProblemOption, getFeatures)
 
-import Caide.Commands.Make (make)
 
 cmd :: CommandHandler
 cmd = CommandHandler
@@ -40,8 +38,7 @@ generateScaffoldSolution env [lang] = case findLanguage lang of
                 saveProblemConfig (setProblemOption problemConf "problem" "language" lang) problemConfigFile
                 features <- mapMaybe findFeature <$> getFeatures env
                 forM_ features $ \feature -> onProblemCodeCreated feature env problem
-
-                make env []
+                return Nothing
 
 generateScaffoldSolution _ _ = return . Just $ "Usage " ++ usage cmd
 

@@ -1,19 +1,22 @@
 module Caide.Commands.Make (
       cmd
-    , make
+    , cmdUpdateTests
+    , updateTests
+    --, cmdPrepareSubmission
 ) where
 
 import Control.Applicative ((<$>))
 import Control.Monad (forM_)
 import Data.List (sortBy)
+import Data.Maybe (fromMaybe, isNothing)
 import Data.Ord (comparing)
 
 import qualified Data.Text as T
 
 import Prelude hiding (FilePath)
-import Filesystem (isDirectory, listDirectory, createTree, removeFile, copyFile)
-import Filesystem.Path.CurrentOS (FilePath, decodeString, encodeString, hasExtension, replaceExtension,
-                                  basename, filename, (</>))
+import Filesystem (isDirectory, listDirectory, createTree, removeFile, copyFile, writeTextFile)
+import Filesystem.Path.CurrentOS (FilePath, decodeString, encodeString,
+    hasExtension, replaceExtension, basename, filename, (</>))
 
 import Caide.Configuration (getActiveProblem, readProblemConfig, getProblemOption, getProblemConfigFileInDir)
 import Caide.Registry (findLanguage)
@@ -30,6 +33,24 @@ cmd = CommandHandler
     , action = make
     }
 
+cmdUpdateTests :: CommandHandler
+cmdUpdateTests = CommandHandler
+    { command = "update_tests"
+    , description = "(Internal) Updates test list"
+    , usage = "caide update_tests"
+    , action = \env _ -> updateTests env
+    }
+
+{-
+cmdPrepareSubmission :: CommandHandler
+cmdPrepareSubmission = CommandHandler
+    { command = "prepare_submission"
+    , description = "(Internal) Prepares code for submission"
+    , usage = "caide prepare_submission"
+    , action = \env _ -> prepareSubmission env
+    }
+-}
+
 make :: CaideEnvironment -> [String] -> IO (Maybe String)
 make env _ = do
     probId <- getActiveProblem env
@@ -39,21 +60,57 @@ make env _ = do
             let problemDir = getRootDirectory env </> decodeString probId
             problemExists <- isDirectory problemDir
             if problemExists
-                then makeProblem env problemDir
+                then makeProblem env
                 else return . Just $ "Problem " ++ probId ++ " doesn't exist"
 
+updateTests :: CaideEnvironment -> IO (Maybe String)
+updateTests env = do
+    probId <- getActiveProblem env
+    if null probId
+        then return . Just $ "No active problem. Generate one with `caide problem`"
+        else do
+            let problemDir = getRootDirectory env </> decodeString probId
+            problemExists <- isDirectory problemDir
+            if problemExists
+                then do
+                    copyTestInputs problemDir
 
-makeProblem :: CaideEnvironment -> FilePath -> IO (Maybe String)
-makeProblem env problemDir = do
-    conf <- readProblemConfig $ getProblemConfigFileInDir problemDir
-    case findLanguage $ getProblemOption conf "problem" "language" of
-        Nothing -> return . Just $ "Couldn't determine language for the problem"
-        Just lang -> do
-            generateTestProgram lang env problemDir
-            inlineCode lang env problemDir
-            copyTestInputs problemDir
-            updateTestList $ problemDir </> decodeString ".caideproblem" </> decodeString "test"
-            return Nothing
+                    let testDir = problemDir </> decodeString ".caideproblem" </> decodeString "test"
+                    updateTestList testDir
+
+                    caideExe <- getInternalOption env "core" "caide_exe"
+                    writeTextFile (testDir </> decodeString "caideExe.txt") $ T.pack caideExe
+
+                    return Nothing
+
+                else return . Just $ "Problem " ++ probId ++ " doesn't exist"
+
+prepareSubmission :: CaideEnvironment -> IO (Maybe String)
+prepareSubmission env = do
+    probId <- getActiveProblem env
+    if null probId
+        then return . Just $ "No active problem. Generate one with `caide problem`"
+        else do
+            let problemDir = getRootDirectory env </> decodeString probId
+            problemExists <- isDirectory problemDir
+            if problemExists
+                then do
+                    conf <- readProblemConfig $ getProblemConfigFileInDir problemDir
+                    case findLanguage $ getProblemOption conf "problem" "language" of
+                        Nothing -> return . Just $ "Couldn't determine language for the problem"
+                        Just lang -> do
+                            inlineCode lang env problemDir
+                            return Nothing
+
+                else return . Just $ "Problem " ++ probId ++ " doesn't exist"
+
+makeProblem :: CaideEnvironment -> IO (Maybe String)
+makeProblem env = do
+    ret1 <- prepareSubmission env
+    ret2 <- updateTests env
+    if isNothing ret1 && isNothing ret2
+    then return Nothing
+    else return . Just $ fromMaybe "" ret1 ++ " " ++ fromMaybe "" ret2
 
 copyTestInputs :: FilePath -> IO ()
 copyTestInputs problemDir = do

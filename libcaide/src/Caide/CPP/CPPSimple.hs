@@ -15,7 +15,6 @@ import Caide.Util (getProblemID)
 language :: ProgrammingLanguage
 language = ProgrammingLanguage
     { generateScaffold = generateCPPScaffold
-    , generateTestProgram = generateCPPTestProgram
     , inlineCode = inlineCPPCode
     }
 
@@ -26,9 +25,10 @@ generateCPPScaffold _ problemDir = do
         scaffoldTemplatePath = F.parent problemDir </> decodeString "templates" </> decodeString "solution_template.cpp"
     fileExists <- isFile scaffoldPath
     unless fileExists $ copyFile scaffoldTemplatePath scaffoldPath
+    generateCPPTestProgram problemDir
 
-generateCPPTestProgram :: CaideEnvironment -> F.FilePath -> IO ()
-generateCPPTestProgram _ problemDir = do
+generateCPPTestProgram :: F.FilePath -> IO ()
+generateCPPTestProgram problemDir = do
     let probID = getProblemID problemDir
         testProgramPath = problemDir </> decodeString (probID ++ "_test.cpp")
         testTemplatePath = F.parent problemDir </> decodeString "templates" </> decodeString "test_template.cpp"

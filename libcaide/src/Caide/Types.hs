@@ -47,7 +47,6 @@ data ProblemParser = ProblemParser
 -- where the problem is located.
 data ProgrammingLanguage = ProgrammingLanguage
     { generateScaffold    :: CaideEnvironment -> F.FilePath -> IO ()
-    , generateTestProgram :: CaideEnvironment -> F.FilePath -> IO ()
     , inlineCode          :: CaideEnvironment -> F.FilePath -> IO ()
     }
 
