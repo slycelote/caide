@@ -1,12 +1,27 @@
+### Cabal ###
 cabal-dev
 dist
 .dist-buildwrapper
 .cabal-sandbox
 cabal.sandbox.config
+
+### Vim ###
 *.swp
 *~
+
+### Build artifacts ###
 /cbits/build
 /cbits/clangbuild*
 /regression-tests/tmp
 /res/*.zip
+
+### IntelliJ ###
+*.iml
+
+## Directory-based project format:
+.idea/
+
+## File-based project format:
+*.ipr
+*.iws
 
