@@ -21,7 +21,6 @@ int main() {
     }
 
     // Prepare the list of test cases in correct order; add recently created test cases too.
-    // Prepare submission file.
     int ret = std::system((caideExe + " update_tests").c_str());
     if (ret != 0) {
         cerr << "caide make returned non-zero error code " << ret << endl;

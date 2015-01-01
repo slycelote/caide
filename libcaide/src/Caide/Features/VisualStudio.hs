@@ -5,8 +5,9 @@ module Caide.Features.VisualStudio (
 import Prelude hiding (readFile)
 
 import Control.Applicative ((<$>))
-import Control.Monad (forM_, when, unless)
+import Control.Monad (forM_, forM, when, unless)
 import Control.Monad.State.Strict (execState, evalState, State, get)
+import Control.Monad.State (liftIO)
 import Data.Char (toUpper, ord)
 import Data.List.Utils (replace)
 
@@ -23,7 +24,7 @@ import Filesystem.Path ((</>), basename)
 import Text.XML.Light (parseXML, Content(..))
 import Text.XML.Light.Cursor
 
-import Caide.Configuration (readProblemConfig, getProblemOption, getProblemConfigFile, getActiveProblem)
+import Caide.Configuration (readProblemConfig, getActiveProblem)
 import Caide.Types
 import Caide.Util (copyFileToDir)
 import Caide.Xml (removeChildren, isTag, insertLastChild, mkElem, mkText, modifyFromJust,
@@ -40,34 +41,37 @@ getGuidForProblem = map toUpper . toString . generateNamed caideUuid . map (from
 -- | Deprecated: use VsCaide extension instead
 feature :: Feature
 feature  = Feature
-    { onProblemCreated     = \_ _ -> return ()
+    { onProblemCreated     = \_ -> return ()
     , onProblemCodeCreated = generateProject
-    , onProblemCheckedOut  = \env _ -> generateSolution env
+    , onProblemCheckedOut  = const generateSolution
     }
 
 
-generateProject :: CaideEnvironment -> ProblemID -> IO ()
-generateProject env probId = do
-    conf <- readProblemConfig $ getProblemConfigFile env probId
-    when (getProblemOption conf "problem" "language" `elem` ["simplecpp", "cpp", "c++"]) $ do
-        putStrLn "Generating VS project"
-        let problemDir  = getRootDirectory env </> decodeString probId
-            projectFile = problemDir </> decodeString (probId ++ ".vcxproj")
-            userFile    = problemDir </> decodeString (probId ++ ".vcxproj.user")
-        projectExists <- isFile projectFile
-        if projectExists
-        then putStrLn $ probId ++ ".vcxproj already exists. Not overwriting."
-        else do
-            xmlString <- readFile . encodeString $ getRootDirectory env </> decodeString "templates" </> decodeString "vs2012_template.vcxproj"
-            let doc = parseXML xmlString
-                Just cursor = fromForest doc
-                transformed = execState (generateProjectXML probId) cursor
-                outXml = T.pack . replace "&#39;" "'" . showXml $ transformed
-                templateUserFile = getRootDirectory env </> decodeString "templates" </> decodeString "vs2012_template.vcxproj.user"
-            outXml `seq` writeTextFile projectFile outXml
-            copyFile templateUserFile userFile
-            putStrLn $ probId ++ ".vcxproj for Visual Studio successfully generated."
-        generateSolution env
+generateProject :: ProblemID -> CaideIO ()
+generateProject probId = do
+    croot <- caideRoot
+    hProblem <- readProblemConfig probId
+    lang <- getProp hProblem "problem" "language"
+    when (lang `elem` ["simplecpp", "cpp", "c++"]) $ do
+        liftIO $ do
+            putStrLn "Generating VS project"
+            let problemDir  = croot </> decodeString probId
+                projectFile = problemDir </> decodeString (probId ++ ".vcxproj")
+                userFile    = problemDir </> decodeString (probId ++ ".vcxproj.user")
+            projectExists <- isFile projectFile
+            if projectExists
+            then putStrLn $ probId ++ ".vcxproj already exists. Not overwriting."
+            else do
+                xmlString <- readFile . encodeString $ croot </> decodeString "templates" </> decodeString "vs2012_template.vcxproj"
+                let doc = parseXML xmlString
+                    Just cursor = fromForest doc
+                    transformed = execState (generateProjectXML probId) cursor
+                    outXml = T.pack . replace "&#39;" "'" . showXml $ transformed
+                    templateUserFile = croot </> decodeString "templates" </> decodeString "vs2012_template.vcxproj.user"
+                outXml `seq` writeTextFile projectFile outXml
+                copyFile templateUserFile userFile
+                putStrLn $ probId ++ ".vcxproj for Visual Studio successfully generated."
+        generateSolution
 
 
 generateProjectXML :: ProblemID -> State Cursor ()
@@ -104,27 +108,29 @@ generateProjectXML probId = do
     goToDocRoot
 
 
-generateSolution :: CaideEnvironment -> IO ()
-generateSolution env = do
-    problems <- getVSProblems env
-    activeProblem <- getActiveProblem env
-    let caideRoot = getRootDirectory env
-        workspaceFile = caideRoot </> decodeString "caide.sln"
+generateSolution :: CaideIO ()
+generateSolution = do
+    problems <- getVSProblems
+    activeProblem <- getActiveProblem
+    croot <- caideRoot
+    let workspaceFile = croot </> decodeString "caide.sln"
         sln = generateSolutionFileContents problems activeProblem
-        vspropsFile = caideRoot </> decodeString "vs_common.props"
-        vspropsTemplate = caideRoot </> decodeString "templates" </> decodeString "vs_common.props"
-    writeTextFile workspaceFile . T.pack $ sln
-    propsExists <- isFile vspropsFile
-    unless propsExists $ copyFileToDir vspropsTemplate caideRoot
+        vspropsFile = croot </> decodeString "vs_common.props"
+        vspropsTemplate = croot </> decodeString "templates" </> decodeString "vs_common.props"
+    liftIO $ do
+        writeTextFile workspaceFile . T.pack $ sln
+        propsExists <- isFile vspropsFile
+        unless propsExists $ copyFileToDir vspropsTemplate croot
 
 
-getVSProblems :: CaideEnvironment -> IO [(ProblemID, String)]
-getVSProblems env = do
-    let caideRoot = getRootDirectory env
-    dirs <- listDirectory caideRoot
-    let problemIds = map (encodeString . basename) dirs
-        readGuid probId = do
-            let projectFile = caideRoot </> decodeString probId </> decodeString (probId ++ ".vcxproj")
+getVSProblems :: CaideIO [(ProblemID, String)]
+getVSProblems = do
+    croot <- caideRoot
+    liftIO $ do
+        dirs <- listDirectory croot
+        let problemIds = map (encodeString . basename) dirs
+        guids <- forM problemIds $ \probId -> do
+            let projectFile = croot </> decodeString probId </> decodeString (probId ++ ".vcxproj")
             haveProject <- isFile projectFile
             if haveProject
                 then do
@@ -134,8 +140,7 @@ getVSProblems env = do
                     return $ evalState getProjectGuid cursor
                 else return Nothing
 
-    guids <- mapM readGuid problemIds
-    return [(probId, guid) | (probId, Just guid) <- zip problemIds guids]
+        return [(probId, guid) | (probId, Just guid) <- zip problemIds guids]
 
 
 getProjectGuid :: State Cursor (Maybe String)

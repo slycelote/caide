@@ -4,6 +4,7 @@ module Caide.Commands.Checkout (
 
 import Control.Applicative ((<$>))
 import Control.Monad (forM_)
+import Control.Monad.State (liftIO)
 import Data.Maybe (mapMaybe)
 
 import Filesystem (isDirectory)
@@ -21,23 +22,23 @@ cmd = CommandHandler
     , action = checkoutProblem
     }
 
-checkoutProblem :: CaideEnvironment -> [String] -> IO (Maybe String)
-checkoutProblem env [probId] = do
-    let caideRoot  = getRootDirectory env
-        problemDir = caideRoot </> decodeString probId
-    problemExists <- isDirectory problemDir
+checkoutProblem :: [String] -> CaideIO ()
+checkoutProblem [probId] = do
+    root <- caideRoot
+    let problemDir = root </> decodeString probId
+    problemExists <- liftIO $ isDirectory problemDir
+
     if problemExists
         then do
-            currentProbId <- getActiveProblem env
+            currentProbId <- getActiveProblem
             if currentProbId == probId
-                then putStrLn $ probId ++ ": already checked out"
+                then liftIO $ putStrLn $ probId ++ ": already checked out"
                 else do
-                    setActiveProblem env probId
-                    putStrLn $ "Checked out problem " ++ probId
-                    features <- mapMaybe findFeature <$> getFeatures env
-                    forM_ features $ \feature -> onProblemCheckedOut feature env probId
-            return Nothing
-        else return . Just $ "Problem " ++ probId ++ " doesn't exist"
+                    setActiveProblem probId
+                    liftIO $ putStrLn $ "Checked out problem " ++ probId
+                    features <- mapMaybe findFeature <$> getFeatures
+                    forM_ features $ \feature -> onProblemCheckedOut feature probId
+        else throw $ "Problem " ++ probId ++ " doesn't exist"
 
-checkoutProblem _ _ = return . Just $ "Usage: " ++ usage cmd
+checkoutProblem _ = throw $ "Usage: " ++ usage cmd
 

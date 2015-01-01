@@ -1,147 +1,166 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts, Rank2Types #-}
 
 module Caide.Configuration (
-      readCaideProject
+      -- * General utilities
+      setProperties
+    , getListProp
+    , describeError
 
-    -- * Caide configuration
+      -- * Caide configuration
+    , readCaideConf
+    , readCaideState
+    , writeCaideConf
+    , writeCaideState
+    , defaultCaideConf
+    , defaultCaideState
+
+      -- * Caide options and state
     , getActiveProblem
     , setActiveProblem
     , getDefaultLanguage
     , getBuilder
     , getFeatures
 
-    -- * Problem Configuration
-    , ProblemConfig
+      -- * Problem configuration
     , getProblemConfigFile
-    , getProblemConfigFileInDir
     , readProblemConfig
-    , saveProblemConfig
-    , getProblemOption
-    , setProblemOption
+    , getProblemStateFile
+    , readProblemState
+    , defaultProblemConfig
+    , defaultProblemState
+    , writeProblemState
+    , writeProblemConf
+
 ) where
 
 import Prelude hiding (readFile, FilePath)
 
 import Control.Applicative ((<$>))
-import Control.Monad.Error (MonadError)
-import Data.ConfigFile
-import Data.IORef (IORef, newIORef, modifyIORef, readIORef)
+import Control.Monad (forM_)
+import Control.Monad.Trans (liftIO)
+import Data.ConfigFile (ConfigParser, CPError, CPErrorData(OtherProblem), SectionSpec, OptionSpec,
+                        set, emptyCP, add_section)
 import Data.List (intercalate)
-import qualified Data.Text as T
-import Data.Text.IO (readFile)
-import Filesystem (writeTextFile, createTree, isFile)
+import Filesystem (isDirectory)
 import Filesystem.Path.CurrentOS (encodeString, decodeString)
-import Filesystem.Path (FilePath, (</>), directory)
-
-import System.Environment (getExecutablePath)
+import Filesystem.Path (FilePath, (</>))
 
 
-import Caide.Types (ProblemID, CaideProject (..), getInternalOption, setInternalOption, getUserOption, Option, optionToString)
+import Caide.Types
 import Caide.Util (forceEither, splitString)
 
 
+setProperties :: Monad m => ConfigFileHandle -> [(String, String, String)] -> CaideM m ()
+setProperties handle properties = forM_ properties $ \(section, key, value) ->
+    setProp handle section key value
+
+getListProp :: (Functor m, Monad m) => ConfigFileHandle -> String -> String -> CaideM m [String]
+getListProp h section key = splitString ",\r\n " <$> getProp h section key
+
+describeError :: CPError -> String
+describeError (OtherProblem err, _) = err
+describeError e                     = "Config parser error: " ++ show e
+
 {--------------------------- Problem specific state ----------------------------}
 
-type ProblemConfig = ConfigParser
+getProblemStateFile :: Monad m => ProblemID -> CaideM m FilePath
+getProblemStateFile probId = do
+    root <- caideRoot
+    return $ root </> decodeString probId </> decodeString ".caideproblem" </> decodeString "config"
 
-getProblemConfigFile :: CaideProject -> ProblemID -> FilePath
-getProblemConfigFile project probId = getProblemConfigFileInDir $ getRootDirectory project </> decodeString probId
+readProblemState :: ProblemID -> CaideIO ConfigFileHandle
+readProblemState probId = do
+    root <- caideRoot
+    problemExists <- liftIO $ isDirectory $ root </> decodeString probId </> decodeString ".caideproblem"
+    if problemExists
+    then getProblemStateFile probId >>= readConf
+    else throw "No such problem"
 
-getProblemConfigFileInDir :: FilePath -> FilePath
-getProblemConfigFileInDir problemDir = problemDir </> decodeString ".caideproblem" </> decodeString "config"
+getProblemConfigFile :: Monad m => ProblemID -> CaideM m FilePath
+getProblemConfigFile probId = do
+    root <- caideRoot
+    return $ root </> decodeString probId </> decodeString "problem.ini"
 
-readProblemConfig :: FilePath -> IO ProblemConfig
-readProblemConfig file = readConfigWithDefault file defaultProblemConf
+readProblemConfig :: ProblemID -> CaideIO ConfigFileHandle
+readProblemConfig probId = do
+    root <- caideRoot
+    problemExists <- liftIO $ isDirectory $ root </> decodeString probId </> decodeString ".caideproblem"
+    if problemExists
+    then getProblemConfigFile probId >>= readConf
+    else throw "No such problem"
 
-saveProblemConfig :: ProblemConfig -> FilePath -> IO ()
-saveProblemConfig = saveConfig
+writeProblemConf :: Monad m => ProblemID -> CaideM m ConfigFileHandle
+writeProblemConf probId = do
+    filePath <- getProblemConfigFile probId
+    createConf filePath defaultProblemConfig
 
-getProblemOption :: ProblemConfig -> String -> String -> String
-getProblemOption = getOption
-
-setProblemOption :: ProblemConfig -> String -> String -> String -> ProblemConfig
-setProblemOption = setOption
-
+writeProblemState :: Monad m => ProblemID -> CaideM m ConfigFileHandle
+writeProblemState probId = do
+    filePath <- getProblemStateFile probId
+    createConf filePath defaultProblemState
 
 {--------------------------- Global options and state ----------------------------}
+caideConfFile :: Monad m => CaideM m FilePath
+caideConfFile = do
+    root <- caideRoot
+    return $ root </> decodeString "caide.ini"
 
-readCaideProject :: FilePath -> IO CaideProject
-readCaideProject caideRoot = do
-    let rootConfigFile = caideRoot </> decodeString "caide.ini"
-        internalConfigFile = caideRoot </> decodeString ".caide" </> decodeString "config"
+caideStateFile :: Monad m => CaideM m FilePath
+caideStateFile = do
+    root <- caideRoot
+    return $ root </> decodeString ".caide" </> decodeString "config"
 
-        readConf :: FilePath -> ConfigParser -> IO (IORef ConfigParser)
-        readConf confFile defaultConf = readConfigWithDefault confFile defaultConf >>= newIORef
+readCaideConf :: CaideIO ConfigFileHandle
+readCaideConf = caideConfFile >>= readConf
 
-        saveConf :: IORef ConfigParser -> FilePath -> IO ()
-        saveConf conf file = do
-            c <- readIORef conf
-            saveConfig c file
+readCaideState :: CaideIO ConfigFileHandle
+readCaideState = caideStateFile >>= readConf
 
-        getOpt c s k = readIORef c >>= \conf -> return $ getOption conf s k
-        setOpt c s k v = modifyIORef c $ \conf -> setOption conf s k v
+writeCaideConf :: Monad m => ConfigParser -> CaideM m ConfigFileHandle
+writeCaideConf cp = do
+    filePath <- caideConfFile
+    createConf filePath cp
 
+writeCaideState :: Monad m => ConfigParser -> CaideM m ConfigFileHandle
+writeCaideState cp = do
+    filePath <- caideStateFile
+    createConf filePath cp
 
-    caideExe <- getExecutablePath
-    rootConf <- readConf rootConfigFile (defaultRootConf caideRoot)
-    internalConf <- readConf internalConfigFile (defaultInternalConf caideExe)
-    return CaideProject
-        { getUserOption     = getOpt rootConf
-        , getInternalOption = getOpt internalConf
-        , setInternalOption = setOpt internalConf
-        , getRootDirectory  = caideRoot
-        , saveProject       = saveConf internalConf internalConfigFile
-        }
+getActiveProblem :: CaideIO ProblemID
+getActiveProblem = do
+    h <- readCaideState
+    getProp h "core" "problem"
 
+setActiveProblem :: ProblemID -> CaideIO ()
+setActiveProblem probId = do
+    h <- readCaideState
+    setProp h "core" "problem" probId
 
-getActiveProblem :: CaideProject -> IO String
-getActiveProblem conf = getInternalOption conf "core" "problem"
+getBuilder :: CaideIO String
+getBuilder = do
+    h <- readCaideConf
+    getProp h "core" "builder"
 
-setActiveProblem :: CaideProject -> String -> IO ()
-setActiveProblem conf = setInternalOption conf "core" "problem"
+getDefaultLanguage :: CaideIO String
+getDefaultLanguage = do
+    h <- readCaideConf
+    getProp h "core" "language"
 
-getBuilder :: CaideProject -> IO String
-getBuilder conf = getUserOption conf "core" "builder"
-
-getDefaultLanguage :: CaideProject -> IO String
-getDefaultLanguage conf = getUserOption conf "core" "language"
-
-getFeatures :: CaideProject -> IO [String]
-getFeatures conf = splitString ", " <$> getUserOption conf "core" "features"
+getFeatures :: CaideIO [String]
+getFeatures = do
+    h <- readCaideConf
+    getListProp h "core" "features"
 
 {--------------------------- Internals -----------------------------}
 
-readConfigWithDefault :: FilePath -> ConfigParser -> IO ConfigParser
-readConfigWithDefault file def = do
-    fileExists <- isFile file
-    if fileExists
-        then either (const def) id . readstring def . T.unpack <$> readFile (encodeString file)
-        else do
-            saveConfig def file
-            return def
-
-
-saveConfig :: ConfigParser -> FilePath -> IO ()
-saveConfig conf file = do
-    createTree $ directory file
-    writeTextFile file $ T.pack $ to_string conf
-
-getOption :: Option a => ConfigParser -> String -> String -> a
-getOption conf section key = case get conf section key of
-    Left err  -> error $ show err
-    Right val -> val
-
-setOption :: Option a => ConfigParser -> String -> String -> a -> ConfigParser
-setOption conf section key val = forceEither $ set conf section key (optionToString val)
-
-addSection :: MonadError CPError m => SectionSpec -> ConfigParser -> m ConfigParser
+addSection :: SectionSpec -> ConfigParser -> Either CPError ConfigParser
 addSection section conf = add_section conf section
 
-setValue :: MonadError CPError m => SectionSpec -> OptionSpec -> String -> ConfigParser -> m ConfigParser
+setValue :: SectionSpec -> OptionSpec -> String -> ConfigParser -> Either CPError ConfigParser
 setValue section key value conf = set conf section key value
 
-defaultRootConf :: FilePath -> ConfigParser
-defaultRootConf caideRoot = forceEither $
+defaultCaideConf :: FilePath -> ConfigParser
+defaultCaideConf root = forceEither $
     addSection "core" emptyCP >>=
     setValue "core" "language" "cpp" >>=
     setValue "core" "features" "" >>=
@@ -151,20 +170,25 @@ defaultRootConf caideRoot = forceEither $
 
   where
     headerDirs = [
-        caideRoot </> decodeString "include" </> decodeString "mingw-4.8.1",
-        caideRoot </> decodeString "include" </> decodeString "mingw-4.8.1" </> decodeString "c++",
-        caideRoot </> decodeString "include" </> decodeString "mingw-4.8.1" </> decodeString "c++" </> decodeString "mingw32",
-        caideRoot </> decodeString "include"]
+        root </> decodeString "include" </> decodeString "mingw-4.8.1",
+        root </> decodeString "include" </> decodeString "mingw-4.8.1" </> decodeString "c++",
+        root </> decodeString "include" </> decodeString "mingw-4.8.1" </> decodeString "c++" </> decodeString "mingw32",
+        root </> decodeString "include"]
 
 
-defaultInternalConf :: String -> ConfigParser
-defaultInternalConf caideExe = forceEither $
+defaultCaideState :: String -> ConfigParser
+defaultCaideState caideExe = forceEither $
     addSection "core" emptyCP >>=
     setValue "core" "problem" "" >>=
     setValue "core" "caide_exe" caideExe
 
-defaultProblemConf :: ConfigParser
-defaultProblemConf = forceEither $
+defaultProblemConfig :: ConfigParser
+defaultProblemConfig = forceEither $
+    addSection "problem" emptyCP >>=
+    setValue "problem" "double_precision" "0.000001"
+
+defaultProblemState :: ConfigParser
+defaultProblemState = forceEither $
     addSection "problem" emptyCP >>=
     setValue "problem" "language" "simplecpp"
 

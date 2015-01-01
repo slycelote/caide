@@ -3,13 +3,14 @@ module Caide.CPP.CPPSimple(
 ) where
 
 import Control.Monad (unless)
+import Control.Monad.State (liftIO)
 
 import Filesystem (appendTextFile, copyFile, readTextFile, isFile)
 import qualified Filesystem.Path as F
-import Filesystem.Path ((</>),)
+import Filesystem.Path ((</>))
 import Filesystem.Path.CurrentOS (decodeString)
 
-import Caide.Types (ProgrammingLanguage(..), CaideEnvironment)
+import Caide.Types
 import Caide.Util (getProblemID)
 
 language :: ProgrammingLanguage
@@ -18,30 +19,27 @@ language = ProgrammingLanguage
     , inlineCode = inlineCPPCode
     }
 
-generateCPPScaffold :: CaideEnvironment -> F.FilePath -> IO ()
-generateCPPScaffold _ problemDir = do
+generateCPPScaffold :: F.FilePath -> CaideIO ()
+generateCPPScaffold problemDir = do
     let probID = getProblemID problemDir
         scaffoldPath = problemDir </> decodeString (probID ++ ".cpp")
         scaffoldTemplatePath = F.parent problemDir </> decodeString "templates" </> decodeString "solution_template.cpp"
-    fileExists <- isFile scaffoldPath
-    unless fileExists $ copyFile scaffoldTemplatePath scaffoldPath
-    generateCPPTestProgram problemDir
-
-generateCPPTestProgram :: F.FilePath -> IO ()
-generateCPPTestProgram problemDir = do
-    let probID = getProblemID problemDir
         testProgramPath = problemDir </> decodeString (probID ++ "_test.cpp")
         testTemplatePath = F.parent problemDir </> decodeString "templates" </> decodeString "test_template.cpp"
-    fileExists <- isFile testProgramPath
-    unless fileExists $ copyFile testTemplatePath testProgramPath
+    liftIO $ do
+        solutionFileExists <- isFile scaffoldPath
+        unless solutionFileExists $ copyFile scaffoldTemplatePath scaffoldPath
+        testFileExists <- isFile testProgramPath
+        unless testFileExists $ copyFile testTemplatePath testProgramPath
 
-inlineCPPCode :: CaideEnvironment -> F.FilePath -> IO ()
-inlineCPPCode _ problemDir = do
+inlineCPPCode :: F.FilePath -> CaideIO ()
+inlineCPPCode problemDir = do
     let probID = getProblemID problemDir
         solutionPath = problemDir </> decodeString (probID ++ ".cpp")
         inlinedTemplatePath = F.parent problemDir </> decodeString "templates" </> decodeString "main_template.cpp"
         inlinedCodePath = problemDir </> decodeString "submission.cpp"
-    copyFile solutionPath inlinedCodePath
-    mainCode <- readTextFile inlinedTemplatePath
-    appendTextFile inlinedCodePath mainCode
+    liftIO $ do
+        copyFile solutionPath inlinedCodePath
+        mainCode <- readTextFile inlinedTemplatePath
+        appendTextFile inlinedCodePath mainCode
 

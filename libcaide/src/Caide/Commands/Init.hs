@@ -5,6 +5,7 @@ module Caide.Commands.Init(
       cmd
 ) where
 
+import Control.Monad.State (liftIO)
 import Codec.Archive.Zip (extractFilesFromArchive, toArchive, ZipOption(..))
 import qualified Data.ByteString as BS
 import Data.ByteString.Lazy (fromStrict)
@@ -13,6 +14,9 @@ import Data.FileEmbed (embedFile)
 import Filesystem.Path.CurrentOS (encodeString)
 import qualified Filesystem.Path as FSP
 
+import System.Environment (getExecutablePath)
+
+import Caide.Configuration (writeCaideConf, writeCaideState, defaultCaideConf, defaultCaideState)
 import Caide.Types
 
 cmd :: CommandHandler
@@ -23,12 +27,15 @@ cmd = CommandHandler
     , action = initialize
     }
 
-initialize :: CaideEnvironment -> [String] -> IO (Maybe String)
-initialize env _ = do
-    let curDir = getRootDirectory env
-    unpackResources curDir
-    putStrLn $ "Initialized caide directory at " ++ encodeString curDir
-    return Nothing
+initialize :: [String] -> CaideIO ()
+initialize _ = do
+    curDir <- caideRoot
+    caideExe <- liftIO getExecutablePath
+    _ <- writeCaideConf $ defaultCaideConf curDir
+    _ <- writeCaideState $ defaultCaideState caideExe
+    liftIO $ do
+        unpackResources curDir
+        putStrLn $ "Initialized caide directory at " ++ encodeString curDir
 
 
 -- This zip file is prepared in advance in Setup.hs

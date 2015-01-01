@@ -7,6 +7,8 @@ module Caide.Commands.RunTests (
 
 
 import Control.Applicative ((<$>), (<*>))
+import Control.Monad (unless)
+import Control.Monad.State (liftIO)
 
 import Data.List (group, sort)
 import Data.Text (Text)
@@ -50,33 +52,34 @@ humanReadableSummary = T.unlines . map toText . group . sort . map (fromComparis
           fromComparisonResult (Error _) = "Error"
           fromComparisonResult r = tshow r
 
-runTests :: CaideEnvironment -> [String] -> IO (Maybe String)
-runTests env _ = do
-    probId <- getActiveProblem env
-    builderName <- getBuilder env
+runTests :: [String] -> CaideIO ()
+runTests _ = do
+    probId <- getActiveProblem
+    builderName <- getBuilder
     let builder = findBuilder builderName
-    buildResult <- builder env probId
+    buildResult <- builder probId
     case buildResult of
-        BuildFailed -> return . Just $ "Build failed"
-        TestsFailed -> return . Just $ "Tests failed"
-        TestsPassed -> return Nothing
-        TestsNotRun -> evalTests env []
+        BuildFailed -> throw "Build failed"
+        TestsFailed -> throw "Tests failed"
+        TestsPassed -> return ()
+        TestsNotRun -> evalTests []
 
-evalTests :: CaideEnvironment -> [String] -> IO (Maybe String)
-evalTests env _ = do
-    probId <- getActiveProblem env
-    let caideRoot = getRootDirectory env
-        testsDir = caideRoot </> decodeString probId </> ".caideproblem" </> "test"
+evalTests :: [String] -> CaideIO ()
+evalTests _ = do
+    probId <- getActiveProblem
+    root <- caideRoot
+    let testsDir = root </> decodeString probId </> ".caideproblem" </> "test"
         reportFile = testsDir </> "report.txt"
 
-    report <- generateReport testsDir
-    writeTextFile reportFile . serializeTestReport $ report
-    T.putStrLn "Results summary\n_______________\nOutcome\tCount"
-    T.putStrLn $ humanReadableSummary report
-    let nonSuccesses = [r | r@(_, res) <- report, res /= Success]
-    if null nonSuccesses
-        then return Nothing
-        else return . Just . T.unpack $ humanReadableReport nonSuccesses
+    nonSuccesses <- liftIO $ do
+        report <- generateReport testsDir
+        writeTextFile reportFile . serializeTestReport $ report
+        T.putStrLn "Results summary\n_______________\nOutcome\tCount"
+        T.putStrLn $ humanReadableSummary report
+        return [r | r@(_, res) <- report, res /= Success]
+
+    unless (null nonSuccesses) $
+        throw $ T.unpack $ humanReadableReport nonSuccesses
 
 
 generateReport :: FilePath -> IO (TestReport Text)

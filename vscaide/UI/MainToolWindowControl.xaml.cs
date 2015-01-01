@@ -60,7 +60,7 @@ namespace slycelote.VsCaide
                 cbProblems.Items.Add(problem);
             }
 
-            string stdout = RunCaideExe("intgetopt", "core", "problem");
+            string stdout = RunCaideExe("getstate", "core", "problem");
             if (stdout == null)
             {
                 return;
@@ -231,7 +231,7 @@ namespace slycelote.VsCaide
                 return;
             }
 
-            string stdout = RunCaideExe("probgetopt", selectedProblem, "problem", "language");
+            string stdout = RunCaideExe("probgetstate", selectedProblem, "problem", "language");
             if (null == stdout)
             {
                 return;

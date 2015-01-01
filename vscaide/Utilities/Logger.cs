@@ -12,6 +12,7 @@ namespace slycelote.VsCaide.Utilities
         {
             var outputWindow = Services.GeneralOutputWindow;
             outputWindow.OutputStringThreadSafe("[VsCaide] " + string.Format(formatString, args));
+            outputWindow.Activate();
         }
     }
 }

@@ -9,7 +9,8 @@ import Filesystem.Path.CurrentOS (decodeString, encodeString, parent, (</>))
 import System.Environment (getArgs)
 import System.Exit (exitWith, ExitCode(ExitFailure))
 
-import Caide.Types (CommandHandler(..), saveProject)
+import Caide.Configuration (describeError)
+import Caide.Types
 
 import qualified Caide.Commands.BuildScaffold as BuildScaffold
 import qualified Caide.Commands.Checkout as Checkout
@@ -18,7 +19,6 @@ import qualified Caide.Commands.Init as Init
 import qualified Caide.Commands.Make as Make
 import qualified Caide.Commands.ParseProblem as ParseProblem
 import qualified Caide.Commands.RunTests as RunTests
-import Caide.Configuration (readCaideProject)
 
 
 
@@ -34,7 +34,9 @@ findRootCaideDir curDir = do
 
 commands :: [CommandHandler]
 commands = [Init.cmd, ParseProblem.cmd, BuildScaffold.cmd, Checkout.cmd, Make.cmd, RunTests.cmd,
-            GetOpt.cmd, GetOpt.cmdInternal, GetOpt.cmdProblem, RunTests.cmdEvaluate, Make.cmdUpdateTests]
+            -- Commands for internal use
+            GetOpt.cmd, GetOpt.cmdState, GetOpt.cmdProblem, GetOpt.cmdProblemState, RunTests.cmdEvaluate,
+            Make.cmdUpdateTests]
 
 findCommand :: String -> Maybe CommandHandler
 findCommand cmdName = find ((== cmdName) . command) commands
@@ -67,13 +69,11 @@ main = do
                     | otherwise -> runAction c (fromMaybe workDir caideDir) commandArgs
 
 runAction :: CommandHandler -> F.FilePath -> [String] -> IO ()
-runAction cmd caideRoot args = do
-    project <- readCaideProject caideRoot
-    let env = project
-    ret <- action cmd env args
+runAction cmd root args = do
+    ret <- runInDirectory root $ action cmd args
     case ret of
-        Just err -> putStrLn err >> halt
-        _        -> saveProject project
+        Left err -> putStrLn (describeError err) >> halt
+        _        -> return ()
 
 halt :: IO ()
 halt = exitWith (ExitFailure 0xCA1DE)

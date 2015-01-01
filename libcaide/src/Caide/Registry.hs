@@ -24,13 +24,6 @@ import qualified Caide.Features.Codelite as Codelite
 import qualified Caide.Features.VisualStudio as VS
 
 
-languages :: [([String], ProgrammingLanguage)]
-languages = [ (["simplecpp", "simplec++"], CPPSimple.language)
-#ifdef CLANG_INLINER
-            , (["cpp", "c++"], CPP.language)
-#endif
-            ]
-
 findLanguage :: String -> Maybe ProgrammingLanguage
 findLanguage name = snd <$> find (\(names, _) -> map toLower name `elem` names) languages
 
@@ -49,4 +42,11 @@ features = [ ("codelite", Codelite.feature)
 
 findFeature :: String -> Maybe Feature
 findFeature name = snd <$> find ((== map toLower name). fst) features
+
+languages :: [([String], ProgrammingLanguage)]
+languages = [ (["simplecpp", "simplec++"], CPPSimple.language)
+#ifdef CLANG_INLINER
+            , (["cpp", "c++"], CPP.language)
+#endif
+            ]
 

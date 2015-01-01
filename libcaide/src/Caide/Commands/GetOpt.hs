@@ -1,12 +1,13 @@
 module Caide.Commands.GetOpt (
       cmd
-    , cmdInternal
+    , cmdState
     , cmdProblem
+    , cmdProblemState
 ) where
 
-import Filesystem (isFile)
+import Control.Monad.State (liftIO)
 
-import Caide.Configuration (readProblemConfig, getProblemConfigFile, getProblemOption)
+import Caide.Configuration (readProblemConfig, readProblemState, readCaideConf, readCaideState)
 import Caide.Types
 
 cmd :: CommandHandler
@@ -17,22 +18,28 @@ cmd = CommandHandler
     , action = getOpt
     }
 
-getOpt :: CaideEnvironment -> [String] -> IO (Maybe String)
-getOpt env [section, key] = getUserOption env section key >>= putStrLn >> return Nothing
-getOpt _ _ = return . Just $ usage cmd
 
+getOpt :: [String] -> CaideIO ()
+getOpt [section, key] = do
+    h <- readCaideConf
+    val <- getProp h section key
+    liftIO $ putStrLn val
+getOpt _ = throw $ usage cmd
 
-cmdInternal :: CommandHandler
-cmdInternal = CommandHandler
-    { command = "intgetopt"
+cmdState :: CommandHandler
+cmdState = CommandHandler
+    { command = "getstate"
     , description = "(Internal) Print option"
-    , usage = "caide intgetopt section key"
-    , action = getIntOpt
+    , usage = "caide getstate section key"
+    , action = getState
     }
 
-getIntOpt :: CaideEnvironment -> [String] -> IO (Maybe String)
-getIntOpt env [section, key] = getInternalOption env section key >>= putStrLn >> return Nothing
-getIntOpt _ _ = return . Just $ usage cmdInternal
+getState :: [String] -> CaideIO ()
+getState [section, key] = do
+    h <- readCaideState
+    val <- getProp h section key
+    liftIO $ putStrLn val
+getState _ = throw $ usage cmdState
 
 
 cmdProblem :: CommandHandler
@@ -43,17 +50,25 @@ cmdProblem = CommandHandler
     , action = getProbOpt
     }
 
-getProbOpt :: CaideEnvironment -> [String] -> IO (Maybe String)
-getProbOpt env [problem, section, key] = do
-    let problemConfigFile = getProblemConfigFile env problem
-    problemExists <- isFile problemConfigFile
-    if problemExists
-       then do
-            problemConf <- readProblemConfig problemConfigFile
-            putStrLn $ getProblemOption problemConf section key
-            -- FIXME error if no such option
-            return Nothing
-       else return . Just $ "Problem " ++ problem ++ " doesn't exist"
+getProbOpt :: [String] -> CaideIO ()
+getProbOpt [problem, section, key] = do
+    h <- readProblemConfig problem
+    val <- getProp h section key
+    liftIO $ putStrLn val
+getProbOpt _ = throw $ usage cmdProblem
 
-getProbOpt _ _ = return . Just $ usage cmdProblem
+cmdProblemState :: CommandHandler
+cmdProblemState = CommandHandler
+    { command = "probgetstate"
+    , description = "(Internal) Print problem option"
+    , usage = "caide probgetstate problem section key"
+    , action = getProbState
+    }
+
+getProbState :: [String] -> CaideIO ()
+getProbState [problem, section, key] = do
+    h <- readProblemState problem
+    val <- getProp h section key
+    liftIO $ putStrLn val
+getProbState _ = throw $ usage cmdProblemState
 

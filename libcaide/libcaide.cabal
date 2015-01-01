@@ -3,7 +3,13 @@ version:        0.1
 cabal-version:  >= 1.14
 build-type:     Custom
 author:         slycelote
+maintainer:     slycelot@yandex.ru
+synopsis:       Automate certain common tasks that you do during programming competitions.
+category:       Application
 license:        BSD3
+description:
+    Automates certain common tasks that you do during programming competitions:
+    parsing, running and debugging problem tests, inlining library code.
 
 Flag preferlibcpp
   description: Prefer building with libc++
@@ -23,15 +29,17 @@ Flag debug
 
 executable caide
   build-depends:
-                   base >= 4,
+                   base >= 4 && < 6,
                    bytestring >= 0.10.4.0,
                    ConfigFile >= 1.1,
+                   containers,
                    file-embed >= 0.0.7,
                    filepath,
                    HTTP >= 4000.2.11,
                    MissingH >= 1.2,
-                   mtl >= 2.1,
-                   network >= 2.4.2.2,
+                   mtl >= 2.2.1,
+                   network >= 2.6,
+                   network-uri >= 2.6,
                    process >=1.2.0,
                    system-fileio == 0.3.12,
                    system-filepath >= 0.4.9,
@@ -46,7 +54,8 @@ executable caide
   hs-source-dirs:  src
   ghc-options:     -Wall -rtsopts=all -static
   if flag(debug) {
-    ghc-options:    -debug -O0 -fprof-auto
+    -- run as cabal configure -fdebug --ghc-option=-debug -O0
+    ghc-options:    -fprof-auto
   }
   if flag(cppinliner) {
     cpp-options:   -DCLANG_INLINER

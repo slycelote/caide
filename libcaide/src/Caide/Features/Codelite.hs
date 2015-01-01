@@ -6,6 +6,7 @@ import Prelude hiding (readFile)
 
 import Control.Monad (forM_, when, unless)
 import Control.Monad.State.Strict (execState, modify, State)
+import Control.Monad.State (liftIO)
 import qualified Data.Text as T
 import Data.Text.IO (readFile)
 
@@ -13,37 +14,39 @@ import Filesystem (isFile, writeTextFile, listDirectory, createDirectory)
 import Filesystem.Path.CurrentOS (decodeString, encodeString)
 import Filesystem.Path ((</>), basename)
 
-import Text.XML.Light (parseXML, Content(..),)
+import Text.XML.Light (parseXML, Content(..))
 import Text.XML.Light.Cursor
 
 import Caide.Types
 import Caide.Xml (goToChild, removeChildren, isTag, insertLastChild, mkElem, modifyFromJust,
                   changeAttr, hasAttrEqualTo, goToDocRoot, showXml)
-import Caide.Configuration (readProblemConfig, getProblemOption, getProblemConfigFile, getActiveProblem)
+import Caide.Configuration (readProblemConfig, getActiveProblem)
 
 feature :: Feature
 feature = Feature
-    { onProblemCreated = \_ _ -> return ()
+    { onProblemCreated = \_ -> return ()
     , onProblemCodeCreated = generateProject
-    , onProblemCheckedOut = \env _ -> generateWorkspace env
+    , onProblemCheckedOut = const generateWorkspace
     }
 
-generateProject :: CaideEnvironment -> ProblemID -> IO ()
-generateProject env probId = do
-    conf <- readProblemConfig $ getProblemConfigFile env probId
-    let lang = getProblemOption conf "problem" "language"
+generateProject :: ProblemID -> CaideIO ()
+generateProject probId = do
+    hProblem <- readProblemConfig probId
+    lang <- getProp hProblem "problem" "language"
     when (lang `elem` ["simplecpp", "cpp", "c++"]) $ do
-        putStrLn "Generating codelite project"
+        liftIO $ putStrLn "Generating codelite project"
+        croot <- caideRoot
 
-        let projectFile = getRootDirectory env </> decodeString probId </> decodeString (probId ++ ".project")
+        let projectFile = croot </> decodeString probId </> decodeString (probId ++ ".project")
             needLibrary = lang `elem` ["cpp", "c++"]
-        when needLibrary $ do
-            let libProjectDir  = getRootDirectory env </> decodeString "cpplib"
-                libProjectFile = libProjectDir </> decodeString "cpplib.project"
+            libProjectDir  = croot </> decodeString "cpplib"
+            libProjectFile = libProjectDir </> decodeString "cpplib.project"
+
+        when needLibrary $ liftIO $ do
             libProjectExists <- isFile libProjectFile
             unless libProjectExists $ do
                 createDirectory False libProjectDir
-                xmlString <- readFile . encodeString $ getRootDirectory env </> decodeString "templates" </> decodeString "codelite_project_template.project"
+                xmlString <- readFile . encodeString $ croot </> decodeString "templates" </> decodeString "codelite_project_template.project"
                 let doc = parseXML xmlString
                     Just cursor = fromForest doc
                     files = []
@@ -54,21 +57,22 @@ generateProject env probId = do
                 transformed `seq` writeTextFile libProjectFile . T.pack . showXml $ transformed
                 putStrLn "cpplib.project for Codelite successfully generated."
 
-        projectExists <- isFile projectFile
+        projectExists <- liftIO $ isFile projectFile
         if projectExists
-        then putStrLn $ probId ++ ".project already exists. Not overwriting."
+        then liftIO $ putStrLn $ probId ++ ".project already exists. Not overwriting."
         else do
-            xmlString <- readFile . encodeString $ getRootDirectory env </> decodeString "templates" </> decodeString "codelite_project_template.project"
-            let doc = parseXML xmlString
-                Just cursor = fromForest doc
-                files = [probId ++ ".cpp", probId ++ "_test.cpp"]
-                includePaths = "." : ["../cpplib" | needLibrary]
-                libs = ["cpplib" | needLibrary]
-                libraryPaths = ["../cpplib/$(ConfigurationName)" | needLibrary]
-                transformed = execState (generateProjectXML probId files includePaths libraryPaths libs) cursor
-            transformed `seq` writeTextFile projectFile . T.pack . showXml $ transformed
-            putStrLn $ probId ++ ".project for Codelite successfully generated."
-            generateWorkspace env
+            liftIO $ do
+                xmlString <- readFile . encodeString $ croot </> decodeString "templates" </> decodeString "codelite_project_template.project"
+                let doc = parseXML xmlString
+                    Just cursor = fromForest doc
+                    files = [probId ++ ".cpp", probId ++ "_test.cpp"]
+                    includePaths = "." : ["../cpplib" | needLibrary]
+                    libs = ["cpplib" | needLibrary]
+                    libraryPaths = ["../cpplib/$(ConfigurationName)" | needLibrary]
+                    transformed = execState (generateProjectXML probId files includePaths libraryPaths libs) cursor
+                transformed `seq` writeTextFile projectFile . T.pack . showXml $ transformed
+                putStrLn $ probId ++ ".project for Codelite successfully generated."
+            generateWorkspace
 
 generateProjectXML :: String -> [String] -> [String] -> [String] -> [String] -> State Cursor ()
 generateProjectXML projectName sourceFiles includePaths libPaths libs = do
@@ -105,30 +109,34 @@ generateProjectXML projectName sourceFiles includePaths libPaths libs = do
 
     goToDocRoot
 
-generateWorkspace :: CaideEnvironment -> IO ()
-generateWorkspace env = do
-    projects <- getCodeliteProjects env
-    activeProblem <- getActiveProblem env
-    let workspaceFile = getRootDirectory env </> decodeString "caide.workspace"
-    workspaceExists <- isFile workspaceFile
-    let existingWorkspace = if workspaceExists
-        then workspaceFile
-        else getRootDirectory env </> decodeString "templates" </> decodeString "codelite_workspace_template.workspace"
-    xmlString <- readFile $ encodeString existingWorkspace
-    let doc = parseXML xmlString
-        Just cursor = fromForest doc
-        transformed = execState (generateWorkspaceXml projects activeProblem) cursor
-    transformed `seq` writeTextFile workspaceFile . T.pack . showXml $ transformed
+generateWorkspace :: CaideIO ()
+generateWorkspace = do
+    croot <- caideRoot
+    projects <- getCodeliteProjects
+    activeProblem <- getActiveProblem
+    let workspaceFile = croot </> decodeString "caide.workspace"
+
+    liftIO $ do
+        workspaceExists <- isFile workspaceFile
+        let existingWorkspace = if workspaceExists
+            then workspaceFile
+            else croot </> decodeString "templates" </> decodeString "codelite_workspace_template.workspace"
+        xmlString <- readFile $ encodeString existingWorkspace
+        let doc = parseXML xmlString
+            Just cursor = fromForest doc
+            transformed = execState (generateWorkspaceXml projects activeProblem) cursor
+        transformed `seq` writeTextFile workspaceFile . T.pack . showXml $ transformed
 
 -- Includes problems and CPP library
-getCodeliteProjects :: CaideEnvironment -> IO [String]
-getCodeliteProjects env = do
-    let caideRoot = getRootDirectory env
-    dirs <- listDirectory caideRoot
-    let problemIds = map (encodeString . basename) dirs
-        haveCodelite probId = isFile $ caideRoot </> decodeString probId </> decodeString (probId ++ ".project")
-    projectExists <- mapM haveCodelite problemIds
-    return [probId | (probId, True) <- zip problemIds projectExists]
+getCodeliteProjects :: CaideIO [String]
+getCodeliteProjects = do
+    croot <- caideRoot
+    liftIO $ do
+        dirs <- listDirectory croot
+        let problemIds = map (encodeString . basename) dirs
+            haveCodelite probId = isFile $ croot </> decodeString probId </> decodeString (probId ++ ".project")
+        projectExists <- mapM haveCodelite problemIds
+        return [probId | (probId, True) <- zip problemIds projectExists]
 
 
 errorIfFailed :: Monad m => String -> m Bool -> m ()

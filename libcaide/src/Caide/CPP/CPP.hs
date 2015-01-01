@@ -3,6 +3,7 @@ module Caide.CPP.CPP (
 ) where
 
 import Control.Applicative ((<$>))
+import Control.Monad.State (liftIO)
 import Data.List (partition)
 import qualified Data.Text as T
 
@@ -17,36 +18,39 @@ import Text.Regex.Base.RegexLike (defaultExecOpt, defaultCompOpt)
 
 import qualified Caide.CPP.CPPSimple as CPPSimple
 
+import Caide.Configuration (getListProp, readCaideConf)
 import Caide.CPP.CBinding
 import Caide.Types
-import Caide.Util (getProblemID, splitString)
+import Caide.Util (getProblemID)
 
 
 language :: ProgrammingLanguage
 language = CPPSimple.language {inlineCode = inlineCPPCode}
 
-inlineCPPCode :: CaideEnvironment -> FilePath -> IO ()
-inlineCPPCode env problemDir = do
+inlineCPPCode :: FilePath -> CaideIO ()
+inlineCPPCode problemDir = do
+    root <- caideRoot
     let probID = getProblemID problemDir
-        caideRoot = getRootDirectory env
         solutionPath = problemDir </> decodeString (probID ++ ".cpp")
-        inlinedTemplatePath =  caideRoot </> decodeString "templates" </> decodeString "main_template.cpp"
+        inlinedTemplatePath =  root </> decodeString "templates" </> decodeString "main_template.cpp"
         inlinedCodePath = problemDir </> decodeString ".caideproblem" </> decodeString "inlined.cpp"
         inlinedNoPragmaOnceCodePath = problemDir </> decodeString ".caideproblem" </> decodeString "inlinedNoPragmaOnce.cpp"
         finalCodePath = problemDir </> decodeString "submission.cpp"
-        libraryDirectory = caideRoot </> decodeString "cpplib"
+        libraryDirectory = root </> decodeString "cpplib"
 
-    libExists <- isDirectory libraryDirectory
-    libraryCPPFiles <- if libExists
-                       then filter (`hasExtension` T.pack "cpp") <$> listDirectoryRecursively libraryDirectory
-                       else return []
+    hConf <- readCaideConf
+    systemHeaderDirs <- map decodeString <$> getListProp hConf "cpp" "system_header_dirs"
 
-    systemHeaderDirs <- map decodeString . splitString "\r\n," <$> getUserOption env "cpp" "system_header_dirs"
+    liftIO $ do
+        libExists <- isDirectory libraryDirectory
+        libraryCPPFiles <- if libExists
+                           then filter (`hasExtension` T.pack "cpp") <$> listDirectoryRecursively libraryDirectory
+                           else return []
 
-    inlineLibraryCode (solutionPath:inlinedTemplatePath:libraryCPPFiles) systemHeaderDirs [libraryDirectory] inlinedCodePath
-    removePragmaOnceFromFile inlinedCodePath inlinedNoPragmaOnceCodePath
-    removeUnusedCode inlinedNoPragmaOnceCodePath systemHeaderDirs finalCodePath
-    copyFile finalCodePath $ caideRoot </> decodeString "submission.cpp"
+        inlineLibraryCode (solutionPath:inlinedTemplatePath:libraryCPPFiles) systemHeaderDirs [libraryDirectory] inlinedCodePath
+        removePragmaOnceFromFile inlinedCodePath inlinedNoPragmaOnceCodePath
+        removeUnusedCode inlinedNoPragmaOnceCodePath systemHeaderDirs finalCodePath
+        copyFile finalCodePath $ root </> decodeString "submission.cpp"
 
 
 listDirectoryRecursively :: FilePath -> IO [FilePath]
