@@ -50,14 +50,13 @@ serializeTestReport = T.unlines .
             map (\(testName, res) -> T.concat [T.pack testName, " ", machineReadable res])
 
 deserializeTestReport :: Text -> TestReport ()
-deserializeTestReport text = let
+deserializeTestReport text = map (parseTest . T.words) reportLines
+  where
     reportLines = T.lines text
 
     parseTest :: [Text] -> (String, ComparisonResult ())
     parseTest [testName, testStatus] = (T.unpack testName, if testStatus == "failed" then Error () else Success)
     parseTest _ = error "Corrupted test report"
-
-    in map (parseTest . T.words) reportLines
 
 readTestReport :: FilePath -> IO (TestReport ())
 readTestReport reportFile = do
@@ -74,20 +73,19 @@ serializeTestList :: TestList -> Text
 serializeTestList = T.pack . unlines . map (\(name, state) -> name ++ " " ++ show state)
 
 deserializeTestList :: Text -> TestList
-deserializeTestList text = let
+deserializeTestList text = map toTest testLines
+  where
     testLines = map (words . T.unpack) . T.lines $ text
 
     toTest [name, state] = (name, read state)
     toTest _ = error "Corrupted testList file"
 
-    in map toTest testLines
-
 readTests :: FilePath -> IO TestList
 readTests testListFile = do
     testListExists <- isFile testListFile
     if testListExists
-        then deserializeTestList <$> readTextFile testListFile
-        else return []
+    then deserializeTestList <$> readTextFile testListFile
+    else return []
 
 writeTests :: TestList -> FilePath -> IO ()
 writeTests tests testListFile = writeTextFile testListFile $ serializeTestList tests

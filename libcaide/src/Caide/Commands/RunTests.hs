@@ -93,8 +93,8 @@ generateReport testDir = do
 testResult :: [FilePath] -> FilePath -> IO (ComparisonResult Text)
 testResult allFiles testFile = case () of
     _ | outFile `elem` allFiles     -> if etalonFile `elem` allFiles
-                                          then compareFiles <$> readTextFile etalonFile <*> readTextFile outFile
-                                          else return EtalonUnknown
+                                       then compareFiles <$> readTextFile etalonFile <*> readTextFile outFile
+                                       else return EtalonUnknown
       | failedFile `elem` allFiles  -> return . Error $ "Program crashed"
       | skippedFile `elem` allFiles -> return Skipped
       | otherwise                   -> return . Error $ "unknown error"
@@ -135,4 +135,3 @@ compareTokens expected actual =
 
 tshow :: (Show a) => a -> Text
 tshow = T.pack . show
-
