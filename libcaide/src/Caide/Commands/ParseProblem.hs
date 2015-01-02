@@ -13,6 +13,7 @@ import Filesystem.Path.CurrentOS (decodeString, (</>))
 
 import Caide.Types
 import Caide.Parsers.Codeforces (codeforcesParser)
+import Caide.Parsers.CodeChef (codeChefParser)
 import Caide.Configuration (getDefaultLanguage, setActiveProblem, writeProblemConf, writeProblemState)
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
@@ -27,7 +28,7 @@ cmd = CommandHandler
     }
 
 parsers :: [ProblemParser]
-parsers = [codeforcesParser]
+parsers = [codeforcesParser, codeChefParser]
 
 parseProblem :: [String] -> CaideIO ()
 parseProblem [url] = do

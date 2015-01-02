@@ -47,15 +47,15 @@ import qualified Filesystem.Path as F
 import qualified Filesystem.Path.CurrentOS as F
 
 data TestCase = TestCase
-    { testCaseInput  :: Text
-    , testCaseOutput :: Text
+    { testCaseInput  :: !Text
+    , testCaseOutput :: !Text
     } deriving (Show)
 
 type ProblemID = String
 
 data Problem = Problem
-    { problemName :: Text      -- ^ Human readable identifier, used for displaying in GUI
-    , problemId   :: ProblemID -- ^ ID used for folder names, code generation etc.
+    { problemName :: !Text      -- ^ Human readable identifier, used for displaying in GUI
+    , problemId   :: !ProblemID -- ^ ID used for folder names, code generation etc.
     } deriving (Show)
 
 type URL = Text
