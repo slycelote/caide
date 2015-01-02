@@ -2,7 +2,7 @@ module Caide.Commands.ParseProblem(
       cmd
 ) where
 
-import Control.Monad (forM_)
+import Control.Monad (forM_, when)
 import Control.Monad.State (liftIO)
 import Data.Char (isAlphaNum, isAscii)
 import Data.List (find)
@@ -12,7 +12,7 @@ import Filesystem (createDirectory, createTree, writeTextFile)
 import Filesystem.Path.CurrentOS (decodeString, (</>))
 
 import Caide.Types
-import Caide.Codeforces.Parser (codeforcesParser)
+import Caide.Parsers.Codeforces (codeforcesParser)
 import Caide.Configuration (getDefaultLanguage, setActiveProblem, writeProblemConf, writeProblemState)
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
@@ -50,21 +50,21 @@ parseProblem _ = throw $ "Usage: " ++ usage cmd
 
 
 createNewProblem :: ProblemID -> CaideIO String
-createNewProblem probId =
-    if any (\c -> not (isAscii c) || not (isAlphaNum c)) probId
-    then throw $ probId ++ " is not recognized as a supported URL. " ++
-        "To create an empty problem, input a valid problem ID (a string of alphanumeric characters)"
-    else do
-        root <- caideRoot
-        let problemDir = root </> decodeString probId
+createNewProblem probId = do
+    when (any (\c -> not (isAscii c) || not (isAlphaNum c)) probId) $
+        throw $ probId ++ " is not recognized as a supported URL. " ++
+            "To create an empty problem, input a valid problem ID (a string of alphanumeric characters)"
 
-        -- Prepare problem directory
-        liftIO $ createDirectory False problemDir
+    root <- caideRoot
+    let problemDir = root </> decodeString probId
 
-        -- Set active problem
-        setActiveProblem probId
-        liftIO $ putStrLn $ "Problem successfully created in folder " ++ probId
-        return probId
+    -- Prepare problem directory
+    liftIO $ createDirectory False problemDir
+
+    -- Set active problem
+    setActiveProblem probId
+    liftIO $ putStrLn $ "Problem successfully created in folder " ++ probId
+    return probId
 
 
 parseExistingProblem :: String -> ProblemParser -> CaideIO String

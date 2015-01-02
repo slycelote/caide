@@ -59,8 +59,8 @@ withProblem processProblem = do
     let problemDir = root </> decodeString probId
     problemExists <- liftIO $ isDirectory problemDir
     if problemExists
-        then processProblem probId problemDir
-        else throw $ "Problem " ++ probId ++ " doesn't exist"
+    then processProblem probId problemDir
+    else throw $ "Problem " ++ probId ++ " doesn't exist"
 
 make :: [String] -> CaideIO ()
 make _ = withProblem $ \_ _ -> makeProblem

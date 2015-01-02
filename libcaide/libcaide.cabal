@@ -74,7 +74,7 @@ executable caide
   main-is:         Main.hs
   other-modules:
                    Caide.Types,
-                   Caide.Codeforces.Parser,
+                   Caide.Parsers.Codeforces,
                    Caide.Util,
                    Caide.CPP.CPPSimple,
                    Caide.Commands.Init,

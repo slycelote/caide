@@ -1,4 +1,4 @@
-module Caide.Codeforces.Parser(
+module Caide.Parsers.Codeforces (
     codeforcesParser
 ) where
 

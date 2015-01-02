@@ -3,7 +3,7 @@ module Caide.Commands.Checkout (
 ) where
 
 import Control.Applicative ((<$>))
-import Control.Monad (forM_)
+import Control.Monad (forM_, unless)
 import Control.Monad.State (liftIO)
 import Data.Maybe (mapMaybe)
 
@@ -28,17 +28,16 @@ checkoutProblem [probId] = do
     let problemDir = root </> decodeString probId
     problemExists <- liftIO $ isDirectory problemDir
 
-    if problemExists
-        then do
-            currentProbId <- getActiveProblem
-            if currentProbId == probId
-                then liftIO $ putStrLn $ probId ++ ": already checked out"
-                else do
-                    setActiveProblem probId
-                    liftIO $ putStrLn $ "Checked out problem " ++ probId
-                    features <- mapMaybe findFeature <$> getFeatures
-                    forM_ features $ \feature -> onProblemCheckedOut feature probId
-        else throw $ "Problem " ++ probId ++ " doesn't exist"
+    unless problemExists $ throw $ "Problem " ++ probId ++ " doesn't exist"
+
+    currentProbId <- getActiveProblem
+    if currentProbId == probId
+        then liftIO $ putStrLn $ probId ++ ": already checked out"
+        else do
+            setActiveProblem probId
+            liftIO $ putStrLn $ "Checked out problem " ++ probId
+            features <- mapMaybe findFeature <$> getFeatures
+            forM_ features $ \feature -> onProblemCheckedOut feature probId
 
 checkoutProblem _ = throw $ "Usage: " ++ usage cmd
 
