@@ -36,7 +36,7 @@ namespace slycelote.VsCaide
 
     // This attribute registers a tool window exposed by this package.
     [ProvideToolWindow( typeof(MainToolWindow),
-        Window=Microsoft.VisualStudio.Shell.Interop.ToolWindowGuids.SolutionExplorer,
+        Window=Microsoft.VisualStudio.Shell.Interop.ToolWindowGuids.PropertyBrowser,
         Style=VsDockStyle.Tabbed
     )]
 
