@@ -2,6 +2,7 @@
 
 module Caide.TestCases.Types (
       ComparisonResult (..)
+    , ComparisonOptions (..)
     , humanReadable
     , machineReadable
 
@@ -28,6 +29,9 @@ import Filesystem.Path (FilePath)
 import Filesystem (isFile, readTextFile, writeTextFile)
 
 
+data ComparisonOptions = ComparisonOptions
+    { doublePrecision :: Double
+    }
 
 data ComparisonResult a = Success | Skipped | EtalonUnknown | Error a
                             deriving (Show, Eq)
