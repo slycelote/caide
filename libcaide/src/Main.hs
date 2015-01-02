@@ -12,6 +12,7 @@ import System.Exit (exitWith, ExitCode(ExitFailure))
 import Caide.Configuration (describeError)
 import Caide.Types
 
+import qualified Caide.Commands.Archive as Archive
 import qualified Caide.Commands.BuildScaffold as BuildScaffold
 import qualified Caide.Commands.Checkout as Checkout
 import qualified Caide.Commands.GetOpt as GetOpt
@@ -34,6 +35,7 @@ findRootCaideDir curDir = do
 
 commands :: [CommandHandler]
 commands = [Init.cmd, ParseProblem.cmd, BuildScaffold.cmd, Checkout.cmd, Make.cmd, RunTests.cmd,
+            Archive.cmd,
             -- Commands for internal use
             GetOpt.cmd, GetOpt.cmdState, GetOpt.cmdProblem, GetOpt.cmdProblemState, RunTests.cmdEvaluate,
             Make.cmdUpdateTests]

@@ -4,13 +4,16 @@ module Caide.Util(
       downloadDocument
     , getProblemID
     , forceEither
+    , listDir
     , copyFileToDir
+    , copyTreeToDir
     , splitString
 ) where
 
+import Control.Monad (forM_)
 import Data.Maybe (fromJust)
 import qualified Data.Text as T
-import Filesystem (copyFile)
+import Filesystem (copyFile, listDirectory, isFile, isDirectory, createDirectory)
 import qualified Filesystem.Path as F
 import Filesystem.Path (basename, filename, (</>))
 import Filesystem.Path.CurrentOS (encodeString)
@@ -57,9 +60,28 @@ getProblemID problemDir = encodeString . basename $ problemDir
 forceEither :: Either a c -> c
 forceEither = either (error "Left in forceEither") id
 
+-- | Returns (file list, directory list)
+listDir :: F.FilePath -> IO ([F.FilePath], [F.FilePath])
+listDir dir = do
+    filesAndDirs <- listDirectory dir
+    thisIsFile <- mapM isFile filesAndDirs
+    thisIsDir <- mapM isDirectory filesAndDirs
+    let files = map fst . filter snd $ zip filesAndDirs thisIsFile
+        dirs  = map fst . filter snd $ zip filesAndDirs thisIsDir
+    return (files, dirs)
+
 copyFileToDir :: F.FilePath -> F.FilePath -> IO ()
 copyFileToDir srcFile dstDir = copyFile srcFile dstFile
     where dstFile = dstDir </> filename srcFile
+
+copyTreeToDir :: F.FilePath -> F.FilePath -> IO ()
+copyTreeToDir srcTree dstDir = do
+    let targetDir = dstDir </> basename srcTree
+    createDirectory True targetDir
+    (files, dirs) <- listDir srcTree
+    forM_ files $ \file -> copyFileToDir file targetDir
+    forM_ dirs $ \dir -> copyTreeToDir dir targetDir
+
 
 splitString :: String -> String -> [String]
 splitString separators s = reverse (go s []) where

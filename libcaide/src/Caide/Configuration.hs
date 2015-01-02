@@ -37,6 +37,7 @@ import Prelude hiding (readFile, FilePath)
 
 import Control.Applicative ((<$>))
 import Control.Monad (forM_)
+import Control.Monad.Except (catchError)
 import Control.Monad.Trans (liftIO)
 import Data.ConfigFile (ConfigParser, CPError, CPErrorData(OtherProblem), SectionSpec, OptionSpec,
                         set, emptyCP, add_section)
@@ -129,7 +130,10 @@ writeCaideState cp = do
 getActiveProblem :: CaideIO ProblemID
 getActiveProblem = do
     h <- readCaideState
-    getProp h "core" "problem"
+    res <- getProp h "core" "problem" `catchError` const (return "")
+    if null res
+    then throw "No active problem. Switch to an existing problem with `caide checkout <problemID>`"
+    else return res
 
 setActiveProblem :: ProblemID -> CaideIO ()
 setActiveProblem probId = do

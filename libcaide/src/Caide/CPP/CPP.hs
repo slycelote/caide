@@ -4,11 +4,10 @@ module Caide.CPP.CPP (
 
 import Control.Applicative ((<$>))
 import Control.Monad.State (liftIO)
-import Data.List (partition)
 import qualified Data.Text as T
 
 import Prelude hiding (FilePath)
-import Filesystem (isFile, copyFile, readTextFile, writeTextFile, listDirectory, isDirectory)
+import Filesystem (copyFile, readTextFile, writeTextFile, isDirectory)
 import Filesystem.Path.CurrentOS (decodeString)
 import Filesystem.Path ((</>), FilePath, hasExtension)
 
@@ -21,7 +20,7 @@ import qualified Caide.CPP.CPPSimple as CPPSimple
 import Caide.Configuration (getListProp, readCaideConf)
 import Caide.CPP.CBinding
 import Caide.Types
-import Caide.Util (getProblemID)
+import Caide.Util (getProblemID, listDir)
 
 
 language :: ProgrammingLanguage
@@ -55,10 +54,7 @@ inlineCPPCode problemDir = do
 
 listDirectoryRecursively :: FilePath -> IO [FilePath]
 listDirectoryRecursively dir = do
-    filesAndDirs <- listDirectory dir
-    thisIsFile <- mapM isFile filesAndDirs
-    let (files', dirs') = partition snd $ zip filesAndDirs thisIsFile
-        (files, dirs) = (map fst files', map fst dirs')
+    (files, dirs) <- listDir dir
     recList <- concat <$> mapM listDirectoryRecursively dirs
     return $ files ++ recList
 
