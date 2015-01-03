@@ -9,6 +9,7 @@ import Network.URI (parseURI, uriAuthority, uriRegName)
 
 import Text.HTML.TagSoup (fromTagText, innerText, isTagOpenName, isTagCloseName,
                           parseTags, sections, fromAttrib, Tag(TagText), (~==), (~/=))
+import Text.HTML.TagSoup.Utils ((~~==), (~~/==))
 
 import Text.Regex.TDFA.Text (Regex)
 import Text.Regex.Base.RegexLike (makeRegex, matchAllText)
@@ -35,11 +36,11 @@ doParseTagSoup url = do
         Left err -> return $ Left err
         Right cont -> do
             let tags = parseTags cont
-                statement = dropWhile (~/= "<div class=problem-statement>") tags
-                beforeTitleDiv = drop 1 . dropWhile (~/= "<div class=title>") $ statement
+                statement = dropWhile (~~/== "<div class=problem-statement>") tags
+                beforeTitleDiv = drop 1 . dropWhile (~~/== "<div class=title>") $ statement
                 title = fromTagText $ head beforeTitleDiv
-                inputDivs = sections (~== "<div class=input>") statement
-                outputDivs = sections (~== "<div class=output>") statement
+                inputDivs = sections (~~== "<div class=input>") statement
+                outputDivs = sections (~~== "<div class=output>") statement
                 replaceBr = concatMap f
                     where f x | isTagOpenName (T.pack "br") x = []
                               | isTagCloseName (T.pack "br") x = [TagText $ T.pack "\n"]
@@ -52,7 +53,7 @@ doParseTagSoup url = do
 
                 -- Contest
                 sidebar = dropWhile (~/= "<div id=sidebar>") tags
-                rtable = takeWhile (~/= "</tbody>") . dropWhile (~/= "<tbody>") $ sidebar
+                rtable = takeWhile (~/= "</table>") . dropWhile (~~/== "<table class=rtable>") $ sidebar
                 anchors = sections (~== "<a>") rtable
                 links = map (fromAttrib (T.pack "href") . head) anchors
                 allMatches = concatMap (matchAllText contestUrlRegex) links
