@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell;
 using slycelote.VsCaide.Utilities;
+using EnvDTE80;
 
 namespace slycelote.VsCaide
 {
@@ -149,6 +150,8 @@ namespace slycelote.VsCaide
 
             return VSConstants.S_OK;
         }
+
+
         #endregion
 
         #region IVsSolutionEvents methods
@@ -166,6 +169,29 @@ namespace slycelote.VsCaide
             return VSConstants.S_OK;
         }
 
+        private IVsHierarchy unloadingProjectHier = null;
+        public int OnBeforeUnloadProject(IVsHierarchy pRealHierarchy, IVsHierarchy pStubHierarchy)
+        {
+            unloadingProjectHier = pRealHierarchy;
+            return VSConstants.S_OK;
+        }
+
+        public int OnBeforeCloseProject(IVsHierarchy pHierarchy, int fRemoved)
+        {
+            try
+            {
+                if (fRemoved != 0 && pHierarchy != unloadingProjectHier)
+                {
+                    LocateMainToolWindow().Control.Project_Removed(pHierarchy);
+                }
+            }
+            finally
+            {
+                unloadingProjectHier = null;
+            }
+            return VSConstants.S_OK;
+        }
+
         #region Unrelated events
         public int OnAfterLoadProject(IVsHierarchy pStubHierarchy, IVsHierarchy pRealHierarchy)
         {
@@ -177,17 +203,7 @@ namespace slycelote.VsCaide
             return VSConstants.S_OK;
         }
 
-        public int OnBeforeCloseProject(IVsHierarchy pHierarchy, int fRemoved)
-        {
-            return VSConstants.S_OK;
-        }
-
         public int OnBeforeCloseSolution(object pUnkReserved)
-        {
-            return VSConstants.S_OK;
-        }
-
-        public int OnBeforeUnloadProject(IVsHierarchy pRealHierarchy, IVsHierarchy pStubHierarchy)
         {
             return VSConstants.S_OK;
         }

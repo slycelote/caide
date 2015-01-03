@@ -65,6 +65,13 @@ namespace slycelote.VsCaide.Utilities
             return (Project)project;
         }
 
+        public static Project TryGetProject(IVsHierarchy hierarchy)
+        {
+            object project;
+            int hr = hierarchy.GetProperty(VSConstants.VSITEMID_ROOT, (int)__VSHPROPID.VSHPROPID_ExtObject, out project);
+            return hr == VSConstants.S_OK ? project as Project : null;
+        }
+
         public static void SaveSolution()
         {
             ErrorHandler.ThrowOnFailure(

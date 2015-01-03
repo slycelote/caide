@@ -44,7 +44,16 @@ namespace slycelote.VsCaide
 
         private void ReloadProblemList()
         {
+            string stdout = RunCaideExe("getstate", "core", "problem");
+            string currentProblem = stdout == null ? null : stdout.Trim();
+
             var problemNames = new List<string>();
+
+            if (string.Empty == currentProblem)
+            {
+                problemNames.Add("");
+            }
+
             foreach (var subdir in Directory.EnumerateDirectories(SolutionUtilities.GetSolutionDir()))
             {
                 if (Directory.Exists(Path.Combine(subdir, ".caideproblem")))
@@ -60,13 +69,10 @@ namespace slycelote.VsCaide
                 cbProblems.Items.Add(problem);
             }
 
-            string stdout = RunCaideExe("getstate", "core", "problem");
-            if (stdout == null)
+            if (currentProblem == null)
             {
                 return;
             }
-
-            string currentProblem = stdout.Trim();
 
             cbProblems.SelectedItem = currentProblem;
         }
@@ -223,7 +229,7 @@ namespace slycelote.VsCaide
         private void UpdateCurrentProject()
         {
             string selectedProblem = cbProblems.SelectedItem as string;
-            if (selectedProblem == null)
+            if (string.IsNullOrEmpty(selectedProblem))
                 return;
 
             if (null == RunCaideExe("checkout", selectedProblem))
@@ -369,7 +375,7 @@ namespace slycelote.VsCaide
             if (currentProblem == null || currentProblem.Equals(projectName, StringComparison.CurrentCultureIgnoreCase))
                 return;
 
-            if (!cbProblems.Items.Cast<string>().Any(problem => problem.Equals(projectName, StringComparison.CurrentCultureIgnoreCase)))
+            if (!IsCaideProblem(projectName))
             {
                 // The project doesn't correspond to a problem
                 return;
@@ -381,6 +387,19 @@ namespace slycelote.VsCaide
             }
 
             ReloadProblemList();
+        }
+
+        internal void Project_Removed(IVsHierarchy projectHier)
+        {
+            Project project = SolutionUtilities.TryGetProject(projectHier);
+            if (project == null)
+                return;
+            var projectName = project.Name;
+            if (IsCaideProblem(projectName))
+            {
+                RunCaideExe("archive", projectName);
+                ReloadProblemList();
+            }
         }
 
         private void btnRun_Click(object sender, RoutedEventArgs e)
@@ -449,6 +468,12 @@ namespace slycelote.VsCaide
         private static string RunCaideExe(params string[] args)
         {
             return RunCaideExe(args, loud: false);
+        }
+
+        private bool IsCaideProblem(string projectName)
+        {
+            return cbProblems.Items.Cast<string>().Any(problem =>
+                problem.Equals(projectName, StringComparison.CurrentCultureIgnoreCase));
         }
     }
 }
