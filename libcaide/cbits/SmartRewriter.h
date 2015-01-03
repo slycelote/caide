@@ -8,8 +8,8 @@
 
 class SmartRewriter {
 public:
-    explicit SmartRewriter(clang::Rewriter& rewriter)
-        : rewriter(rewriter)
+    explicit SmartRewriter(clang::Rewriter& _rewriter)
+        : rewriter(_rewriter)
     {}
 
     bool canRemoveRange(const clang::SourceRange& range) const;

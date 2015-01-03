@@ -39,9 +39,12 @@ class null_stream: public ostream {
 };
 
 ostream& dbg() {
-    static null_stream null; return null;
-    //return std::cerr;
+    //static null_stream null; return null;
+    return std::cerr;
 }
+
+#define CAIDE_FUNC ""
+//#define CAIDE_FUNC __FUNCTION__ << endl
 
 typedef std::map<Decl*, std::set<Decl*> > References;
 
@@ -81,7 +84,7 @@ private:
         const char* e = sourceManager.getCharacterData(decl->getLocEnd(), &invalid);
         if (invalid || !e)
             return "<invalid>";
-        return std::string(b, std::max(b+30, e));
+        return std::string(b, std::min(b+30, e));
     }
 
     bool isUserFile(SourceLocation loc) const {
@@ -110,9 +113,9 @@ public:
         return mainFunctionDecl;
     }
 
-    DependenciesCollector(SourceManager& srcMgr, References& uses)
+    DependenciesCollector(SourceManager& srcMgr, References& _uses)
         : sourceManager(srcMgr)
-        , uses(uses)
+        , uses(_uses)
         , currentDecl(0)
         , mainFunctionDecl(0)
     {}
@@ -120,7 +123,7 @@ public:
     bool shouldVisitTemplateInstantiations() const { return true; }
 
     bool VisitCallExpr(CallExpr* callExpr) {
-        dbg() << __FUNCTION__ << std::endl;
+        dbg() << CAIDE_FUNC;
         Expr* callee = callExpr->getCallee();
         Decl* calleeDecl = callExpr->getCalleeDecl();
         if (!callee || !calleeDecl || isa<UnresolvedMemberExpr>(callee) || isa<CXXDependentScopeMemberExpr>(callee))
@@ -131,7 +134,7 @@ public:
     }
 
     bool VisitCXXConstructExpr(CXXConstructExpr* constructorExpr) {
-        dbg() << __FUNCTION__ << std::endl;
+        dbg() << CAIDE_FUNC;
         insertReference(currentDecl, constructorExpr->getConstructor());
         // implicit constructor may not be visited; make sure we add dependency on its class
         // TODO: ???
@@ -140,40 +143,40 @@ public:
     }
 
     bool VisitDeclRefExpr(DeclRefExpr* ref) {
-        //dbg() << __FUNCTION__ << std::endl;
+        //dbg() << CAIDE_FUNC;
         //dbg() << "Visiting declref at " << toString(ref->getSourceRange()) << std::endl;
         insertReference(currentDecl, ref->getDecl());
         return true;
     }
 
     bool VisitValueDecl(ValueDecl* valueDecl) {
-        dbg() << __FUNCTION__ << std::endl;
+        dbg() << CAIDE_FUNC;
         const Type* valueType = valueDecl->getType().getTypePtrOrNull();
         if (valueType)
             insertReference(valueDecl, valueType->getAsCXXRecordDecl());
         return true;
     }
 
-    bool VisitCXXConstructorDecl(CXXConstructorDecl* constructorDecl) {
-        dbg() << __FUNCTION__ << std::endl;
+    bool VisitCXXConstructorDecl(CXXConstructorDecl* /*constructorDecl*/) {
+        dbg() << CAIDE_FUNC;
         // TODO
         return true;
     }
 
     bool VisitMemberExpr(MemberExpr* memberExpr) {
-        dbg() << __FUNCTION__ << std::endl;
+        dbg() << CAIDE_FUNC;
         insertReference(currentDecl, memberExpr->getMemberDecl());
         return true;
     }
 
     bool VisitFieldDecl(FieldDecl* field) {
-        dbg() << __FUNCTION__ << std::endl;
+        dbg() << CAIDE_FUNC;
         insertReference(field, field->getParent());
         return true;
     }
 
     bool VisitClassTemplateDecl(ClassTemplateDecl* templateDecl) {
-        dbg() << __FUNCTION__ << std::endl;
+        dbg() << CAIDE_FUNC;
         for (ClassTemplateDecl::spec_iterator i = templateDecl->spec_begin();
                 i != templateDecl->spec_end(); ++i)
         {
@@ -184,7 +187,7 @@ public:
     }
 
     bool VisitClassTemplateSpecializationDecl(ClassTemplateSpecializationDecl* specDecl) {
-        dbg() << __FUNCTION__ << std::endl;
+        dbg() << CAIDE_FUNC;
         insertReference(specDecl, specDecl->getSpecializedTemplate());
         return true;
     }
@@ -197,7 +200,7 @@ public:
             // skip non-instantiated template function
             return true;
         }
-        //dbg() << __FUNCTION__ << std::endl;
+        //dbg() << CAIDE_FUNC;
         FunctionTemplateSpecializationInfo* specInfo = f->getTemplateSpecializationInfo();
         if (specInfo)
             insertReference(f, specInfo->getTemplate());
@@ -207,19 +210,18 @@ public:
             DeclarationName DeclName = f->getNameInfo().getName();
             string FuncName = DeclName.getAsString();
 
-            dbg() << "Moving to " << FuncName << " at " << toString(f->getLocation()) << std::endl;
+            //dbg() << "Moving to " << FuncName << " at " << toString(f->getLocation()) << std::endl;
         }
         return true;
     }
 
     bool VisitCXXMethodDecl(CXXMethodDecl* method) {
-        dbg() << __FUNCTION__ << std::endl;
+        dbg() << CAIDE_FUNC;
         insertReference(method, method->getParent());
         return true;
     }
 
     bool VisitCXXRecordDecl(CXXRecordDecl* recordDecl) {
-        dbg() << __FUNCTION__ << " " << recordDecl->getTemplateSpecializationKind() << std::endl;
         // TODO dependencies on base classes?
         insertReference(recordDecl, recordDecl->getDescribedClassTemplate());
         return true;
@@ -235,11 +237,24 @@ private:
     std::set<NamespaceDecl*> usedNamespaces;
     SmartRewriter rewriter;
 
+    std::string toString(const Decl* decl) const {
+        if (!decl)
+            return "<invalid>";
+        bool invalid;
+        const char* b = sourceManager.getCharacterData(decl->getLocStart(), &invalid);
+        if (invalid || !b)
+            return "<invalid>";
+        const char* e = sourceManager.getCharacterData(decl->getLocEnd(), &invalid);
+        if (invalid || !e)
+            return "<invalid>";
+        return std::string(b, std::min(b+30, e));
+    }
+
 public:
-    OptimizerVisitor(SourceManager& srcManager, const std::set<Decl*>& used, Rewriter& rewriter)
+    OptimizerVisitor(SourceManager& srcManager, const std::set<Decl*>& _used, Rewriter& _rewriter)
         : sourceManager(srcManager)
-        , used(used)
-        , rewriter(rewriter)
+        , used(_used)
+        , rewriter(_rewriter)
     {}
 
     bool VisitFunctionDecl(FunctionDecl* functionDecl) {
@@ -253,7 +268,7 @@ public:
         const bool funcIsUnused = used.find(canonicalDecl) == used.end();
         const bool thisIsRedeclaration = !functionDecl->doesThisDeclarationHaveABody() && declared.find(canonicalDecl) != declared.end();
         if (funcIsUnused || thisIsRedeclaration) {
-            dbg() << __FUNCTION__ << std::endl;
+            dbg() << CAIDE_FUNC;
             removeDecl(functionDecl);
         }
         declared.insert(canonicalDecl);
@@ -264,20 +279,20 @@ public:
     bool VisitFunctionTemplateDecl(FunctionTemplateDecl* functionDecl) {
         if (!sourceManager.isInMainFile(functionDecl->getLocStart()))
             return true;
-        dbg() << __FUNCTION__ << std::endl;
+        dbg() << CAIDE_FUNC;
         if (used.find(functionDecl) == used.end())
             removeDecl(functionDecl);
+        return true;
     }
 
-    // TODO: unused explicit class template specializations are removed twice
     bool VisitCXXRecordDecl(CXXRecordDecl* recordDecl) {
         if (!sourceManager.isInMainFile(recordDecl->getLocStart()))
             return true;
         bool isTemplated = recordDecl->getDescribedClassTemplate();
         TemplateSpecializationKind specKind = recordDecl->getTemplateSpecializationKind();
-        dbg() << __FUNCTION__ << specKind << " " << std::endl;
         if (isTemplated && (specKind == TSK_ImplicitInstantiation || specKind == TSK_Undeclared))
             return true;
+        dbg() << toString(recordDecl) << endl;
         CXXRecordDecl* canonicalDecl = recordDecl->getCanonicalDecl();
         const bool classIsUnused = used.find(canonicalDecl) == used.end();
         const bool thisIsRedeclaration = !recordDecl->isCompleteDefinition() && declared.find(canonicalDecl) != declared.end();
@@ -292,7 +307,7 @@ public:
     bool VisitClassTemplateDecl(ClassTemplateDecl* templateDecl) {
         if (!sourceManager.isInMainFile(templateDecl->getLocStart()))
             return true;
-        dbg() << __FUNCTION__ << std::endl;
+        dbg() << CAIDE_FUNC;
         ClassTemplateDecl* canonicalDecl = templateDecl->getCanonicalDecl();
         const bool classIsUnused = used.find(canonicalDecl) == used.end();
         const bool thisIsRedeclaration = !templateDecl->isThisDeclarationADefinition() && declared.find(canonicalDecl) != declared.end();
@@ -301,6 +316,7 @@ public:
             removeDecl(templateDecl);
         }
         declared.insert(canonicalDecl);
+        return true;
     }
 
     bool VisitUsingDirectiveDecl(UsingDirectiveDecl* usingDecl) {
@@ -339,9 +355,9 @@ private:
 
 class OptimizerConsumer: public ASTConsumer {
 public:
-    explicit OptimizerConsumer(SourceManager& srcMgr, Rewriter& rewriter)
+    explicit OptimizerConsumer(SourceManager& srcMgr, Rewriter& _rewriter)
         : sourceManager(srcMgr)
-        , rewriter(rewriter)
+        , rewriter(_rewriter)
     {}
 
     virtual void HandleTranslationUnit(ASTContext& Ctx) {
@@ -363,6 +379,7 @@ public:
             Decl* decl = *queue.begin();
             queue.erase(queue.begin());
             if (used.insert(decl).second) {
+                dbg() << "---------------\n" << toString(decl) << endl;
                 queue.insert(uses[decl].begin(), uses[decl].end());
             }
         }
@@ -370,6 +387,19 @@ public:
         //cerr << "Remove unused decls" << std::endl;
         OptimizerVisitor visitor(sourceManager, used, rewriter);
         visitor.TraverseDecl(Ctx.getTranslationUnitDecl());
+    }
+
+    std::string toString(const Decl* decl) const {
+        if (!decl)
+            return "<invalid>";
+        bool invalid;
+        const char* b = sourceManager.getCharacterData(decl->getLocStart(), &invalid);
+        if (invalid || !b)
+            return "<invalid>";
+        const char* e = sourceManager.getCharacterData(decl->getLocEnd(), &invalid);
+        if (invalid || !e)
+            return "<invalid>";
+        return std::string(b, std::min(b+30, e));
     }
 
     std::string getResult() const {
@@ -395,8 +425,8 @@ private:
     References uses;
 };
 
-Optimizer::Optimizer(const std::vector<std::string>& systemHeadersDirectories):
-    systemHeadersDirectories(systemHeadersDirectories)
+Optimizer::Optimizer(const std::vector<std::string>& _systemHeadersDirectories):
+    systemHeadersDirectories(_systemHeadersDirectories)
 {}
 
 std::string Optimizer::doOptimize(const std::string& cppFile) {
@@ -451,3 +481,4 @@ std::string Optimizer::doOptimize(const std::string& cppFile) {
 
     return consumer.getResult();
 }
+

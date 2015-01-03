@@ -28,9 +28,9 @@ using namespace std;
 
 class TrackMacro: public PPCallbacks {
 public:
-    TrackMacro(SourceManager& srcManager, std::set<std::string>& includedHeaders)
-        : srcManager(srcManager)
-        , includedHeaders(includedHeaders)
+    TrackMacro(SourceManager& _srcManager, std::set<std::string>& _includedHeaders)
+        : srcManager(_srcManager)
+        , includedHeaders(_includedHeaders)
     {
         // Setup a placeholder where the result for the whole CPP file will be stored
         replacementStack.resize(1);
@@ -38,14 +38,14 @@ public:
     }
 
     virtual void InclusionDirective(SourceLocation HashLoc,
-                                    const Token &IncludeTok,
+                                    const Token& /*IncludeTok*/,
                                     StringRef FileName,
-                                    bool IsAngled,
+                                    bool /*IsAngled*/,
                                     CharSourceRange FilenameRange,
                                     const FileEntry *File,
-                                    StringRef SearchPath,
-                                    StringRef RelativePath,
-                                    const Module *Imported)
+                                    StringRef /*SearchPath*/,
+                                    StringRef /*RelativePath*/,
+                                    const Module* /*Imported*/)
     {
         if (FileName.empty())
             return;
@@ -78,7 +78,7 @@ public:
     }
 
     virtual void FileChanged(SourceLocation Loc, FileChangeReason Reason,
-                             SrcMgr::CharacteristicKind FileType,
+                             SrcMgr::CharacteristicKind /*FileType*/,
                              FileID PrevFID/* = FileID()*/)
     {
         const FileEntry* curEntry = srcManager.getFileEntryForID(PrevFID);
@@ -121,7 +121,7 @@ public:
     // Documentation seems to be wrong: the first parameter is included file rather than parent
     // TODO: move detection of double inclusion to optimizer step?
     virtual void FileSkipped(const FileEntry &IncludedFile, const Token &FilenameTok,
-                             SrcMgr::CharacteristicKind FileType)
+                             SrcMgr::CharacteristicKind /*FileType*/)
     {
         // Don't track system headers including each other
         if (!srcManager.isInSystemHeader(FilenameTok.getLocation())) {
@@ -260,10 +260,10 @@ private:
 };
 
 
-Inliner::Inliner(const std::vector<std::string>& systemHeadersDirectories,
-                 const std::vector<std::string>& userHeadersDirectories)
-    : systemHeadersDirectories(systemHeadersDirectories)
-    , userHeadersDirectories(userHeadersDirectories)
+Inliner::Inliner(const std::vector<std::string>& _systemHeadersDirectories,
+                 const std::vector<std::string>& _userHeadersDirectories)
+    : systemHeadersDirectories(_systemHeadersDirectories)
+    , userHeadersDirectories(_userHeadersDirectories)
 {}
 
 std::string Inliner::doInline(const std::string& cppFile) {

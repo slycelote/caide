@@ -23,7 +23,7 @@ LLVM_BIN_PATH := $(LLVM_BUILD_PATH)/bin
 
 # It's recommended that CXX matches the compiler you used to build LLVM itself.
 CXX := g++
-CXXFLAGS := -c -static -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS
+CXXFLAGS := -c -static -Wall -Wextra -Wshadow -Wlogical-op -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS
 ifdef CAIDE_DEBUG
 	CXXFLAGS += -g
 else
@@ -34,8 +34,8 @@ ARCHIVER := ar
 LLVM_CXXFLAGS := $($(LLVM_BIN_PATH)/llvm-config --cxxflags)
 
 CLANG_INCLUDES := \
-	-I$(LLVM_SRC_PATH)/include \
-	-I$(LLVM_BUILD_PATH)/include
+	-isystem $(LLVM_SRC_PATH)/include \
+	-isystem $(LLVM_BUILD_PATH)/include
 
 BUILDDIR := build
 
