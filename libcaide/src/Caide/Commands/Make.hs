@@ -7,7 +7,6 @@ module Caide.Commands.Make (
 
 import Control.Applicative ((<$>))
 import Control.Monad (forM_)
-import Control.Monad.Except (catchError)
 import Control.Monad.State (liftIO)
 import Data.List (sortBy)
 import Data.Ord (comparing)
@@ -54,7 +53,7 @@ cmdPrepareSubmission = CommandHandler
 
 withProblem ::  (ProblemID -> FilePath -> CaideM IO a) -> CaideM IO a
 withProblem processProblem = do
-    probId <- getActiveProblem `catchError` const (throw "No active problem. Generate one with `caide problem`")
+    probId <- getActiveProblem
     root <- caideRoot
     let problemDir = root </> decodeString probId
     problemExists <- liftIO $ isDirectory problemDir

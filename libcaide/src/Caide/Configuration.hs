@@ -4,6 +4,7 @@ module Caide.Configuration (
       -- * General utilities
       setProperties
     , getListProp
+    , orDefault
     , describeError
 
       -- * Caide configuration
@@ -57,6 +58,9 @@ setProperties handle properties = forM_ properties $ \(section, key, value) ->
 
 getListProp :: (Functor m, Monad m) => ConfigFileHandle -> String -> String -> CaideM m [String]
 getListProp h section key = splitString ",\r\n " <$> getProp h section key
+
+orDefault :: Monad m => CaideM m a -> a -> CaideM m a
+orDefault getter defaultValue = getter `catchError` const (return defaultValue)
 
 describeError :: CPError -> String
 describeError (OtherProblem err, _) = err
@@ -130,7 +134,7 @@ writeCaideState cp = do
 getActiveProblem :: CaideIO ProblemID
 getActiveProblem = do
     h <- readCaideState
-    res <- getProp h "core" "problem" `catchError` const (return "")
+    res <- getProp h "core" "problem" `orDefault` ""
     if null res
     then throw "No active problem. Switch to an existing problem with `caide checkout <problemID>`"
     else return res

@@ -10,7 +10,7 @@ import Data.Maybe (mapMaybe)
 import Filesystem (isDirectory)
 import Filesystem.Path.CurrentOS (decodeString, (</>))
 
-import Caide.Configuration (setActiveProblem, getActiveProblem, getFeatures)
+import Caide.Configuration (setActiveProblem, getActiveProblem, getFeatures, orDefault)
 import Caide.Registry (findFeature)
 import Caide.Types
 
@@ -30,14 +30,14 @@ checkoutProblem [probId] = do
 
     unless problemExists $ throw $ "Problem " ++ probId ++ " doesn't exist"
 
-    currentProbId <- getActiveProblem
+    currentProbId <- getActiveProblem `orDefault` ""
     if currentProbId == probId
         then liftIO $ putStrLn $ probId ++ ": already checked out"
         else do
             setActiveProblem probId
             liftIO $ putStrLn $ "Checked out problem " ++ probId
             features <- mapMaybe findFeature <$> getFeatures
-            forM_ features $ \feature -> onProblemCheckedOut feature probId
+            forM_ features (`onProblemCheckedOut` probId)
 
 checkoutProblem _ = throw $ "Usage: " ++ usage cmd
 
