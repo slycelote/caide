@@ -51,11 +51,9 @@ namespace slycelote.VsCaide.UI
 
         public static string Prompt(string question, string title, string defaultValue = "", InputType inputType = InputType.Text)
         {
-            PromptDialog inst = new PromptDialog(question, title, defaultValue, inputType);
+            var inst = new PromptDialog(question, title, defaultValue, inputType);
             inst.ShowDialog();
-            if (inst.DialogResult == true)
-                return inst.ResponseText;
-            return null;
+            return (inst.DialogResult == true ? inst.ResponseText : null);
         }
 
         public string ResponseText

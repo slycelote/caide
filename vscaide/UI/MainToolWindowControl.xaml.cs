@@ -217,7 +217,7 @@ namespace slycelote.VsCaide
         {
             btnRun.IsEnabled = btnDebug.IsEnabled = 
                 cbProblems.IsEnabled = cbProgrammingLanguage.IsEnabled =
-                btnAddNewProblem.IsEnabled = enable;
+                btnAddNewProblem.IsEnabled = btnParseContest.IsEnabled = btnArchive.IsEnabled = enable;
             btnCreateOrReloadCaideSolution.Content = enable ? "Reload problem list" : "Create caide solution";
         }
 
@@ -412,6 +412,15 @@ namespace slycelote.VsCaide
             Services.DTE.ExecuteCommand("Debug.Start");
         }
 
+        private void btnParseContest_Click(object sender, RoutedEventArgs e)
+        {
+            string url = PromptDialog.Prompt("Enter contest URL: ", "Parse contest");
+            if (url == null)
+                return;
+            RunCaideExe(new[] { "contest", url }, loud: true);
+            ReloadProblemList();
+        }
+
         private bool SkipLanguageChangedEvent = false;
         private void SetCurrentLanguage(string language)
         {
@@ -475,5 +484,6 @@ namespace slycelote.VsCaide
             return cbProblems.Items.Cast<string>().Any(problem =>
                 problem.Equals(projectName, StringComparison.CurrentCultureIgnoreCase));
         }
+
     }
 }

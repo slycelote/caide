@@ -12,12 +12,16 @@
             <Button x:Name="btnRun" Content="Run tests" Width="75" Margin="10,0" VerticalAlignment="Center" Click="btnRun_Click"/>
             <Button x:Name="btnDebug" Content="Debug tests" Width="75" Margin="10,0" VerticalAlignment="Center" Click="btnDebug_Click"/>
         </StackPanel>
-        <Label Content="Selected problem:" Margin="0,0,0.4,0" Height="24"/>
-        <StackPanel Height="29" Orientation="Horizontal" Margin="0,0,0.4,0" RenderTransformOrigin="0.498,0.227">
-            <ComboBox x:Name="cbProblems" RenderTransformOrigin="0.5,0.5" BorderThickness="1" HorizontalAlignment="Left" Width="186" Height="22" VerticalAlignment="Center" Margin="10,0" SelectionChanged="cbProblems_SelectionChanged"/>
-            <Button x:Name="btnAddNewProblem" Content="Add new..." Width="65" VerticalAlignment="Center" HorizontalAlignment="Right" RenderTransformOrigin="1.055,-0.352" Margin="10,0" Click="btnAddNewProblem_Click"/>
+        <StackPanel Orientation="Horizontal">
+            <Label Content="Selected problem:" Margin="0" Height="30" HorizontalAlignment="Left"/>
+            <ComboBox x:Name="cbProblems" RenderTransformOrigin="0.408,0.618" BorderThickness="1" HorizontalAlignment="Left" Width="186" Height="22" VerticalAlignment="Center" Margin="10,0" SelectionChanged="cbProblems_SelectionChanged"/>
         </StackPanel>
-        <Label Content="Selected programming language:"/>
+        <StackPanel Height="29" Orientation="Horizontal" Margin="0,0,0.4,0" RenderTransformOrigin="0.498,0.227">
+            <Button x:Name="btnAddNewProblem" Content="Add new..." Width="65" VerticalAlignment="Center" HorizontalAlignment="Right" RenderTransformOrigin="1.055,-0.352" Margin="10,4,10,2.8" Click="btnAddNewProblem_Click"/>
+            <Button x:Name="btnParseContest" Content="Parse contest..." Width="88" Margin="10,4,10,2.8" HorizontalAlignment="Center" Click="btnParseContest_Click"/>
+            <Button x:Name="btnArchive" Content="Archive selected" Width="94" Margin="10,4,10,2.8" HorizontalAlignment="Right"/>
+        </StackPanel>
+        <Label Content="Selected programming language:" Height="30" Margin="0"/>
         <ComboBox x:Name="cbProgrammingLanguage" HorizontalAlignment="Left" VerticalAlignment="Top" Width="186" Margin="10,0,10,10" SelectionChanged="cbProgrammingLanguage_SelectionChanged"/>
     </StackPanel>
 </UserControl>
