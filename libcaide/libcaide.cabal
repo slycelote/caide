@@ -62,9 +62,6 @@ executable caide
   }
   if flag(cppinliner) {
     cpp-options:   -DCLANG_INLINER
-    other-modules:
-                   Caide.CPP.CBinding,
-                   Caide.CPP.CPP
     include-dirs:    cbits
     extra-lib-dirs:  cbits/build
     if flag(debug) {
