@@ -14,8 +14,8 @@ import Caide.Util (downloadDocument)
 
 codeChefParser :: ProblemParser
 codeChefParser = ProblemParser
-    { matches = isCodeChefUrl
-    , parse = doParse
+    { problemUrlMatches = isCodeChefUrl
+    , parseProblem = doParse
     }
 
 isCodeChefUrl :: URL -> Bool

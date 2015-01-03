@@ -23,6 +23,7 @@ module Caide.Types(
     , caideRoot
 
     , ProblemParser (..)
+    , ContestParser (..)
     , ProgrammingLanguage (..)
     , TestCase (..)
     , URL
@@ -62,8 +63,13 @@ type URL = Text
 
 -- | Downloads problem data
 data ProblemParser = ProblemParser
-    { matches :: URL -> Bool
-    , parse   :: URL -> IO (Either String (Problem, [TestCase]))
+    { problemUrlMatches :: URL -> Bool
+    , parseProblem      :: URL -> IO (Either String (Problem, [TestCase]))
+    }
+
+data ContestParser = ContestParser
+    { contestUrlMatches :: URL -> Bool
+    , parseContest      :: URL -> IO (Either String [URL])
     }
 
 

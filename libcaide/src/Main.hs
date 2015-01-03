@@ -18,6 +18,7 @@ import qualified Caide.Commands.Checkout as Checkout
 import qualified Caide.Commands.GetOpt as GetOpt
 import qualified Caide.Commands.Init as Init
 import qualified Caide.Commands.Make as Make
+import qualified Caide.Commands.ParseContest as ParseContest
 import qualified Caide.Commands.ParseProblem as ParseProblem
 import qualified Caide.Commands.RunTests as RunTests
 
@@ -35,7 +36,7 @@ findRootCaideDir curDir = do
 
 commands :: [CommandHandler]
 commands = [Init.cmd, ParseProblem.cmd, BuildScaffold.cmd, Checkout.cmd, Make.cmd, RunTests.cmd,
-            Archive.cmd,
+            Archive.cmd, ParseContest.cmd,
             -- Commands for internal use
             GetOpt.cmd, GetOpt.cmdState, GetOpt.cmdProblem, GetOpt.cmdProblemState, RunTests.cmdEvaluate,
             Make.cmdUpdateTests]

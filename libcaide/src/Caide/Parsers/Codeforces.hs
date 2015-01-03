@@ -1,13 +1,16 @@
 module Caide.Parsers.Codeforces (
-    codeforcesParser
+      codeforcesParser
+    , codeforcesContestParser
 ) where
 
+import Control.Applicative ((<$>))
 import Data.Array ((!))
+import Data.Maybe (mapMaybe)
 import qualified Data.Text as T
 
 import Network.URI (parseURI, uriAuthority, uriRegName)
 
-import Text.HTML.TagSoup (fromTagText, innerText, isTagOpenName, isTagCloseName,
+import Text.HTML.TagSoup (fromTagText, innerText, isTagOpenName, isTagCloseName, partitions,
                           parseTags, sections, fromAttrib, Tag(TagText), (~==), (~/=))
 import Text.HTML.TagSoup.Utils ((~~==), (~~/==))
 
@@ -20,8 +23,14 @@ import Caide.Util (downloadDocument)
 
 codeforcesParser :: ProblemParser
 codeforcesParser = ProblemParser
-    { matches = isCodeForcesUrl
-    , parse = doParseTagSoup
+    { problemUrlMatches = isCodeForcesUrl
+    , parseProblem = doParseTagSoup
+    }
+
+codeforcesContestParser :: ContestParser
+codeforcesContestParser = ContestParser
+    { contestUrlMatches = isCodeForcesUrl
+    , parseContest = doParseContest
     }
 
 isCodeForcesUrl :: URL -> Bool
@@ -70,4 +79,27 @@ doParseTagSoup url = do
 
 contestUrlRegex :: Regex
 contestUrlRegex = makeRegex ".*/([[:digit:]]+)$"
+
+doParseContest :: URL -> IO (Either String [URL])
+doParseContest url = parseCfContest <$> downloadDocument url
+
+parseCfContest :: Either String T.Text -> Either String [T.Text]
+parseCfContest (Left err)   = Left err
+parseCfContest (Right cont) = if null problemsTable
+                              then Left "Couldn't parse contest"
+                              else Right problems
+  where
+    tags = parseTags cont
+    content = dropWhile (~/= "<div id=content>") tags
+    problemsTable = takeWhile (~/= "</table>") . dropWhile (~~/== "<table class=problems>") $ content
+    trs = partitions (~== "<tr>") problemsTable
+    problems = mapMaybe extractURL trs
+
+extractURL :: [Tag T.Text] -> Maybe T.Text
+extractURL tr = T.append (T.pack "http://codeforces.com") <$> if null anchors then Nothing else Just url
+  where
+    td = dropWhile (~~/== "<td class=id>") tr
+    anchors = dropWhile (~/= "<a>") td
+    anchor = head anchors
+    url = fromAttrib (T.pack "href") anchor
 
