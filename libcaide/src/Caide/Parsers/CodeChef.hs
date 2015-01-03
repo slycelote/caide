@@ -36,7 +36,7 @@ doParse url = do
                 spanContents = takeWhile (~/= "</span>") problemCode
                 -- TODO title
                 title = T.strip $ innerText spanContents
-                probId = T.unpack title
+                probId = "chef" ++ T.unpack title
 
                 -- test cases
                 problemPage = dropWhile (~/= "<div id=problem-page>") tags

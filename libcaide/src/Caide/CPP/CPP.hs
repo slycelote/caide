@@ -11,8 +11,8 @@ import Filesystem (copyFile, readTextFile, writeTextFile, isDirectory)
 import Filesystem.Path.CurrentOS (decodeString)
 import Filesystem.Path ((</>), FilePath, hasExtension)
 
-import Text.Regex.TDFA.Text (Regex, compile, execute)
-import Text.Regex.Base.RegexLike (defaultExecOpt, defaultCompOpt)
+import Text.Regex.TDFA.Text (Regex)
+import Text.Regex.Base.RegexLike (makeRegex, match)
 
 
 import qualified Caide.CPP.CPPSimple as CPPSimple
@@ -63,13 +63,9 @@ removePragmaOnceFromFile inputPath outputPath =
     readTextFile inputPath >>= writeTextFile outputPath . removePragmaOnce
 
 pragmaOnceRegex :: Regex
-Right pragmaOnceRegex = compile defaultCompOpt defaultExecOpt . T.pack $ "^" ++ space ++ "*#" ++ space ++ "*pragma" ++ space ++ "+once" ++ space ++ "*$"
-    where space = "[ \\t\\r\\n\\v\\f]"
+pragmaOnceRegex = makeRegex . T.pack $ "^[[:space:]]*#[[:space:]]*pragma[[:space:]]+once[[:space:]]*$"
 
 removePragmaOnce :: T.Text -> T.Text
 removePragmaOnce = T.unlines . filter (not . isPragmaOnce) . T.lines
-    where isPragmaOnce = isMatch . execute pragmaOnceRegex
-          isMatch (Left _) = False
-          isMatch (Right Nothing) = False
-          isMatch _ = True
+    where isPragmaOnce = match pragmaOnceRegex
 

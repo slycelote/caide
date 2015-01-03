@@ -29,6 +29,7 @@ Flag debug
 
 executable caide
   build-depends:
+                   array,
                    base >= 4 && < 6,
                    bytestring,
                    ConfigFile,

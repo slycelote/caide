@@ -2,12 +2,16 @@ module Caide.Parsers.Codeforces (
     codeforcesParser
 ) where
 
+import Data.Array ((!))
 import qualified Data.Text as T
 
 import Network.URI (parseURI, uriAuthority, uriRegName)
 
 import Text.HTML.TagSoup (fromTagText, innerText, isTagOpenName, isTagCloseName,
-                          parseTags, sections, Tag(TagText), (~==), (~/=))
+                          parseTags, sections, fromAttrib, Tag(TagText), (~==), (~/=))
+
+import Text.Regex.TDFA.Text (Regex)
+import Text.Regex.Base.RegexLike (makeRegex, matchAllText)
 
 import Caide.Types
 import Caide.Util (downloadDocument)
@@ -22,7 +26,7 @@ codeforcesParser = ProblemParser
 isCodeForcesUrl :: URL -> Bool
 isCodeForcesUrl url = case parseURI (T.unpack url) >>= uriAuthority of
     Nothing   -> False
-    Just auth -> uriRegName auth `elem` ["codeforces.com", "www.codeforces.com"]
+    Just auth -> uriRegName auth `elem` ["codeforces.com", "www.codeforces.com", "codeforces.ru", "www.codeforces.ru"]
 
 doParseTagSoup :: URL -> IO (Either String (Problem, [TestCase]))
 doParseTagSoup url = do
@@ -45,7 +49,24 @@ doParseTagSoup url = do
                 inputs = map extractText inputDivs
                 outputs = map extractText outputDivs
                 testCases = zipWith TestCase inputs outputs
+
+                -- Contest
+                sidebar = dropWhile (~/= "<div id=sidebar>") tags
+                rtable = takeWhile (~/= "</tbody>") . dropWhile (~/= "<tbody>") $ sidebar
+                anchors = sections (~== "<a>") rtable
+                links = map (fromAttrib (T.pack "href") . head) anchors
+                allMatches = concatMap (matchAllText contestUrlRegex) links
+                contestIds = map (fst . (!1)) allMatches
+
+                probIdPrefix = if length contestIds == 1
+                               then "cf" ++ T.unpack (head contestIds)
+                               else "cfproblem"
+                probId = probIdPrefix ++ [T.head title]
             if null beforeTitleDiv
                 then return . Left $ "Couldn't parse problem statement"
-                else return . Right $ (Problem title ("problem" ++ [T.head title]), testCases)
+                else return . Right $ (Problem title probId, testCases)
+
+
+contestUrlRegex :: Regex
+contestUrlRegex = makeRegex ".*/([[:digit:]]+)$"
 
