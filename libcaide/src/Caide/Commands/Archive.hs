@@ -6,12 +6,14 @@ import Prelude hiding (FilePath)
 import Control.Applicative ((<$>))
 import Control.Monad (unless, when, forM_, forM)
 import Control.Monad.State (liftIO)
+import Data.List (sort)
 import Data.Time (getZonedTime, formatTime)
 import Filesystem (isDirectory, createTree, removeTree, listDirectory, isDirectory)
 import Filesystem.Path.CurrentOS ((</>), decodeString, encodeString, basename, FilePath)
 import System.Locale (defaultTimeLocale)
 
-import Caide.Configuration (getActiveProblem, setActiveProblem)
+import qualified Caide.Commands.Checkout as Checkout
+import Caide.Configuration (getActiveProblem)
 import Caide.Types
 import Caide.Util (copyTreeToDir, copyFileToDir, listDir)
 
@@ -47,12 +49,14 @@ archive [probId] = do
         -- Remove problem directory
         removeTree problemDir
 
+    -- TODO Notify features about archiving event
+
     -- Change active problem, if necessary
     activeProblem <- getActiveProblem
     when (activeProblem == probId) $ do
         allProblems <- liftIO $ caideProblems root
         let newActiveProblem = if null allProblems then "" else head allProblems
-        setActiveProblem newActiveProblem
+        action Checkout.cmd [newActiveProblem]
 
 
 archive _ = throw $ "Usage: " ++ usage cmd
@@ -61,5 +65,5 @@ caideProblems :: FilePath -> IO [ProblemID]
 caideProblems rootDir = do
     dirs <- listDirectory rootDir
     isCaideProblem <- forM dirs $ \dir -> isDirectory (dir </> decodeString ".caideproblem")
-    return [encodeString (basename dir) | (dir, True) <- zip dirs isCaideProblem]
+    return $ sort [encodeString (basename dir) | (dir, True) <- zip dirs isCaideProblem]
 
