@@ -314,6 +314,7 @@ namespace slycelote.VsCaide
                     var configs = (IVCCollection)vcProject.Configurations;
                     foreach (var conf in configs.OfType<VCConfiguration>())
                     {
+                        conf.OutputDirectory = @"$(ProjectDir)\$(Configuration)\";
                         var debugSettings = (VCDebugSettings)conf.DebugSettings;
                         debugSettings.WorkingDirectory = workingDirectory;
 
@@ -323,6 +324,7 @@ namespace slycelote.VsCaide
 
                         var compileTool = (VCCLCompilerTool)tools.Item("VCCLCompilerTool");
                         var postBuildEventTool = (VCPostBuildEventTool)tools.Item("VCPostBuildEventTool");
+
                         if (language == "cpp")
                         {
                             compileTool.AdditionalIncludeDirectories = Path.Combine("$(SolutionDir)", "cpplib");
