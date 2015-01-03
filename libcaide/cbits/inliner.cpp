@@ -69,7 +69,7 @@ public:
 
         IncludeReplacement rep;
         rep.includeDirectiveRange = SourceRange(HashLoc, end);
-        rep.fileName = srcManager.getFilename(HashLoc).data();
+        rep.fileName = getCanonicalPath(srcManager.getFileEntryForID(srcManager.getFileID(HashLoc)));
         if (s && e)
             rep.replaceWith = string(s, e) + "\n";
         else
@@ -81,15 +81,13 @@ public:
                              SrcMgr::CharacteristicKind FileType,
                              FileID PrevFID/* = FileID()*/)
     {
-        //llvm::errs() << "File changed to " << srcManager.getFilename(Loc) << "\n";
         const FileEntry* curEntry = srcManager.getFileEntryForID(PrevFID);
         if (Reason == PPCallbacks::ExitFile && curEntry) {
             // Don't track system headers including each other
             if (!isUserFile(Loc))
                 return;
             // Rewind replacement stack and compute result of including current file.
-            std::string currentFile = curEntry->getName();
-//            llvm::errs() << "Exiting from " << currentFile << "\n";
+            std::string currentFile = getCanonicalPath(curEntry);
 
             // - Search the stack for the topmost replacement belonging to another file.
             //   That's where we were included from.
@@ -98,20 +96,18 @@ public:
                 --includedFrom;
 
             // - Mark this header as visited for future CPP files.
-            if (!includedHeaders.insert(currentFile).second) {
+            if (!markAsIncluded(currentFile)) {
                 // - If current header should be skipped, set empty replacement
                 //llvm::errs() << currentFile << " was seen\n";
                 replacementStack[includedFrom].replaceWith = "";
             } else if (isSystemHeader(PrevFID)) {
                 // - This is a new system header. Leave include directive as is,
                 //   i. e. do nothing.
-                //llvm::errs() << currentFile << " hasn't been seen " << srcManager.getFilename(Loc) << "\n";
             } else {
                 // - This is a new user header. Apply all replacements from current file.
                 replacementStack[includedFrom].replaceWith = calcReplacements(includedFrom, PrevFID);
             }
 
-            //llvm::errs() << currentFile << "  --->  " << (includedFrom + 1) << "\n";
             // - Actually rewind.
             replacementStack.resize(includedFrom + 1);
         }
@@ -134,9 +130,8 @@ public:
             // It's important to do a manual check here because in other versions of STL
             // the header may not have been included. In other words, we need to explicitly
             // include every file that we use.
-            if (!includedHeaders.insert(IncludedFile.getName()).second)
+            if (!markAsIncluded(IncludedFile))
                 replacementStack.back().replaceWith = "";
-            //llvm::errs() << "Skip include of " << IncludedFile.getName() << " from " << srcManager.getFilename(FilenameTok.getLocation())<< "#" << srcManager.getSpellingLineNumber(FilenameTok.getLocation()) << " " << replacementStack.back().fileName << "\n";
         }
     }
 
@@ -199,13 +194,6 @@ private:
             else
                 blockEnd = replacementStack[i].includeDirectiveRange.getBegin().getLocWithOffset(-1);
 
-            /*
-                        llvm::errs() << "Start: ";
-                        blockStart.print(llvm::errs(), srcManager);
-                        llvm::errs() << ", end: ";
-                        blockEnd.print(llvm::errs(), srcManager);
-                        llvm::errs() << "\n";
-            */
             // skip cases when two include directives are adjacent
             //   or an include directive is in the beginning or end of file
             if (blockStart.isValid() && blockEnd.isValid() &&
@@ -228,6 +216,28 @@ private:
         return result.str();
     }
 
+    std::string getCanonicalPath(const FileEntry* entry) const {
+        const DirectoryEntry* dirEntry = entry->getDir();
+        StringRef strRef = srcManager.getFileManager().getCanonicalName(dirEntry);
+        std::string res(strRef.data());
+        res.push_back('/');
+        std::string fname(entry->getName());
+        int i = (int)fname.size() - 1;
+        while (i >= 0 && fname[i] != '/' && fname[i] != '\\')
+            --i;
+        res += fname.substr(i+1);
+        return res;
+    }
+
+    bool markAsIncluded(const FileEntry& entry) {
+        std::string fname = getCanonicalPath(&entry);
+        return markAsIncluded(fname);
+    }
+
+    bool markAsIncluded(const std::string& canonicalPath) {
+        return includedHeaders.insert(canonicalPath).second;
+    }
+
     bool isSystemHeader(FileID header) const {
         SourceLocation loc = srcManager.getLocForStartOfFile(header);
         return srcManager.isInSystemHeader(loc);
@@ -239,10 +249,6 @@ private:
 
     bool isUserFile(SourceLocation loc) const {
         return !srcManager.isInSystemHeader(loc) && loc.isValid();
-    }
-
-    bool wasSeen(const std::string& filename) const {
-        return includedHeaders.find(filename) != includedHeaders.end();
     }
 
     void debug() const {
@@ -262,7 +268,7 @@ Inliner::Inliner(const std::vector<std::string>& systemHeadersDirectories,
 
 std::string Inliner::doInline(const std::string& cppFile) {
     //cerr << "Inline cpp file " << cppFile << "\n";
-    
+
     // CompilerInstance will hold the instance of the Clang compiler for us,
     // managing the various objects needed to run the compiler.
     CompilerInstance compiler;
