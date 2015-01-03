@@ -19,7 +19,7 @@
         <StackPanel Height="29" Orientation="Horizontal" Margin="0,0,0.4,0" RenderTransformOrigin="0.498,0.227">
             <Button x:Name="btnAddNewProblem" Content="Add new..." Width="65" VerticalAlignment="Center" HorizontalAlignment="Right" RenderTransformOrigin="1.055,-0.352" Margin="10,4,10,2.8" Click="btnAddNewProblem_Click"/>
             <Button x:Name="btnParseContest" Content="Parse contest..." Width="88" Margin="10,4,10,2.8" HorizontalAlignment="Center" Click="btnParseContest_Click"/>
-            <Button x:Name="btnArchive" Content="Archive selected" Width="94" Margin="10,4,10,2.8" HorizontalAlignment="Right"/>
+            <Button x:Name="btnArchive" Content="Archive selected" Width="94" Margin="10,4,10,2.8" HorizontalAlignment="Right" Click="btnArchive_Click"/>
         </StackPanel>
         <Label Content="Selected programming language:" Height="30" Margin="0"/>
         <ComboBox x:Name="cbProgrammingLanguage" HorizontalAlignment="Left" VerticalAlignment="Top" Width="186" Margin="10,0,10,10" SelectionChanged="cbProgrammingLanguage_SelectionChanged"/>

@@ -421,6 +421,26 @@ namespace slycelote.VsCaide
             ReloadProblemList();
         }
 
+        private void btnArchive_Click(object sender, RoutedEventArgs e)
+        {
+            var currentProblem = (string)cbProblems.SelectedItem;
+            if (string.IsNullOrEmpty(currentProblem))
+                return;
+            var solution = Services.DTE.Solution;
+            var project = solution.Projects.OfType<Project>().SingleOrDefault(p => p.Name == currentProblem);
+            if (project == null)
+            {
+                // A problem not tracked by VsCaide
+                RunCaideExe(new[] { "archive", currentProblem }, loud: true);
+                ReloadProblemList();
+            }
+            else
+            {
+                solution.Remove(project);
+                // The problem will be archived on Project_Removed event
+            }
+        }
+
         private bool SkipLanguageChangedEvent = false;
         private void SetCurrentLanguage(string language)
         {
