@@ -81,6 +81,7 @@ LLVM_LDFLAGS := $($(LLVM_BIN_PATH)/llvm-config --libs)
 # slower, but IMHO they're still perfectly fine for tools that link with Clang.
 CLANG_LIBS := \
 	-lclang \
+	-lclangTooling \
 	-lclangFrontendTool  \
 	-lclangFrontend  \
 	-lclangDriver  \

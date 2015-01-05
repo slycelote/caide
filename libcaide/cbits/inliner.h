@@ -4,13 +4,12 @@
 
 class Inliner {
 public:
-    Inliner(const std::vector<std::string>& systemHeadersDirectories,
-            const std::vector<std::string>& userHeadersDirectories);
+    explicit Inliner(const std::vector<std::string>& clangCommandLineOptions);
 
     std::string doInline(const std::string& cppFile);
 
 private:
-    std::vector<std::string> systemHeadersDirectories, userHeadersDirectories;
+    std::vector<std::string> cmdLineOptions;
     std::set<std::string> includedHeaders;
     std::vector<std::string> inlineResults;
 };

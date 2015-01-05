@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <sstream>
 
@@ -11,12 +12,17 @@
 #include "clang/Basic/SourceManager.h"
 #include "clang/Basic/TargetOptions.h"
 #include "clang/Basic/TargetInfo.h"
+#include "clang/Frontend/ASTConsumers.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Frontend/FrontendActions.h"
 #include "clang/Frontend/Utils.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Parse/ParseAST.h"
 #include "clang/Rewrite/Core/Rewriter.h"
+#include "clang/Tooling/CompilationDatabase.h"
+#include "clang/Tooling/Tooling.h"
+
 #include "llvm/Support/Host.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -26,11 +32,19 @@
 using namespace clang;
 using namespace std;
 
+struct IncludeReplacement {
+    SourceRange includeDirectiveRange;
+    std::string fileName;
+    std::string replaceWith;
+};
+
 class TrackMacro: public PPCallbacks {
 public:
-    TrackMacro(SourceManager& _srcManager, std::set<std::string>& _includedHeaders)
+    TrackMacro(SourceManager& _srcManager, std::set<std::string>& _includedHeaders,
+               std::vector<IncludeReplacement>& _replacements)
         : srcManager(_srcManager)
         , includedHeaders(_includedHeaders)
+        , replacementStack(_replacements)
     {
         // Setup a placeholder where the result for the whole CPP file will be stored
         replacementStack.resize(1);
@@ -154,18 +168,12 @@ private:
      */
     std::set<std::string>& includedHeaders;
 
-    struct IncludeReplacement {
-        SourceRange includeDirectiveRange;
-        std::string fileName;
-        std::string replaceWith;
-    };
-
     /*
      * A 'stack' of replacements, reflecting current include stack.
      * Replacements in the same file are ordered by their location.
      * Replacement string may be empty which means that we skip this include file.
      */
-    std::vector<IncludeReplacement> replacementStack;
+    std::vector<IncludeReplacement>& replacementStack;
 
 private:
 
@@ -259,70 +267,80 @@ private:
     }
 };
 
+class InlinerVisitor: public RecursiveASTVisitor<InlinerVisitor> {
+    // noop visitor, we only need PPCallbacks
+};
 
-Inliner::Inliner(const std::vector<std::string>& _systemHeadersDirectories,
-                 const std::vector<std::string>& _userHeadersDirectories)
-    : systemHeadersDirectories(_systemHeadersDirectories)
-    , userHeadersDirectories(_userHeadersDirectories)
+class InlinerConsumer: public ASTConsumer {
+private:
+    InlinerVisitor visitor;
+
+public:
+    virtual void HandleTranslationUnit(ASTContext &Context) {
+        visitor.TraverseDecl(Context.getTranslationUnitDecl());
+    }
+};
+
+class InlinerFrontendAction : public ASTFrontendAction {
+private:
+    std::vector<IncludeReplacement>& replacementStack;
+    std::set<std::string>& includedHeaders;
+
+public:
+    InlinerFrontendAction(vector<IncludeReplacement>& _replacementStack,
+                          set<string>& _includedHeaders)
+        : replacementStack(_replacementStack)
+        , includedHeaders(_includedHeaders)
+    {}
+
+    virtual ASTConsumer* CreateASTConsumer(CompilerInstance& compiler, StringRef /*file*/) {
+        compiler.getPreprocessor().addPPCallbacks(new TrackMacro(
+                compiler.getSourceManager(), includedHeaders, replacementStack));
+
+        return new InlinerConsumer();
+    }
+};
+
+class InlinerFrontendActionFactory: public tooling::FrontendActionFactory {
+private:
+    std::vector<IncludeReplacement>& replacementStack;
+    std::set<std::string>& includedHeaders;
+
+public:
+    InlinerFrontendActionFactory(vector<IncludeReplacement>& _replacementStack,
+                                 set<string>& _includedHeaders)
+        : replacementStack(_replacementStack)
+        , includedHeaders(_includedHeaders)
+    {}
+    FrontendAction* create() {
+        return new InlinerFrontendAction(replacementStack, includedHeaders);
+    }
+};
+
+Inliner::Inliner(const std::vector<std::string>& _cmdLineOptions)
+    : cmdLineOptions(_cmdLineOptions)
 {}
 
 std::string Inliner::doInline(const std::string& cppFile) {
-    //cerr << "Inline cpp file " << cppFile << "\n";
+    std::auto_ptr<clang::tooling::FixedCompilationDatabase> compilationDatabase(
+        createCompilationDatabaseFromCommandLine(cmdLineOptions));
 
-    // CompilerInstance will hold the instance of the Clang compiler for us,
-    // managing the various objects needed to run the compiler.
-    CompilerInstance compiler;
-    compiler.createDiagnostics(0, false);
+    std::vector<std::string> sources(1);
+    sources[0] = cppFile;
 
-    // Initialize target info with the default triple for our platform.
-    IntrusiveRefCntPtr<TargetOptions> TO(new TargetOptions);
-    TO->Triple = llvm::sys::getDefaultTargetTriple();
-    TargetInfo* TI = TargetInfo::CreateTargetInfo(compiler.getDiagnostics(), TO.getPtr());
-    compiler.setTarget(TI);
-    CompilerInvocation::setLangDefaults(compiler.getLangOpts(), IK_CXX);
-    compiler.getLangOpts().CPlusPlus = 1;
-    compiler.getLangOpts().CPlusPlus11 = 1;
+    std::vector<IncludeReplacement> replacementStack;
+    InlinerFrontendActionFactory factory(replacementStack, includedHeaders);
 
-    compiler.createFileManager();
-    FileManager& fileMgr = compiler.getFileManager();
-    compiler.createSourceManager(fileMgr);
-    SourceManager& sourceMgr = compiler.getSourceManager();
-    compiler.createPreprocessor();
-    compiler.getPreprocessor().getBuiltinInfo().InitializeBuiltins(
-        compiler.getPreprocessor().getIdentifierTable(),
-        compiler.getPreprocessor().getLangOpts());
-    TrackMacro* tracker = new TrackMacro(sourceMgr, includedHeaders);
-    compiler.getPreprocessor().addPPCallbacks(tracker);
+    clang::tooling::ClangTool tool(*compilationDatabase, sources);
 
-    llvm::IntrusiveRefCntPtr<clang::HeaderSearchOptions> hso(new clang::HeaderSearchOptions);
-    HeaderSearch headerSearch(hso, sourceMgr, compiler.getDiagnostics(),
-                              compiler.getLangOpts(), TI);
-    for (size_t i = 0; i < systemHeadersDirectories.size(); ++i)
-        hso->AddPath(systemHeadersDirectories[i], clang::frontend::System, false, false);
-    for (size_t i = 0; i < userHeadersDirectories.size(); ++i)
-        hso->AddPath(userHeadersDirectories[i], clang::frontend::Quoted, false, false);
+    int ret = tool.run(&factory);
 
-    clang::InitializePreprocessor(compiler.getPreprocessor(), compiler.getPreprocessorOpts(),
-                                  *hso, compiler.getFrontendOpts());
+    if (ret != 0)
+        throw std::runtime_error("Compilation error");
+    else if (replacementStack.size() != 1)
+        throw std::logic_error("Caide inliner error");
 
-    compiler.createASTContext();
-
-    // Set the main file handled by the source manager to the input file.
-    const FileEntry* fileIn = fileMgr.getFile(cppFile.c_str());
-    if (!fileIn)
-        return cppFile + ": File doesn't exist";
-    sourceMgr.createMainFileID(fileIn);
-    compiler.getDiagnosticClient().BeginSourceFile(compiler.getLangOpts(), &compiler.getPreprocessor());
-
-    // Create an AST consumer instance which is going to get called by ParseAST.
-    ASTConsumer consumer;
-
-    // Parse the file to AST, registering our consumer as the AST consumer.
-    ParseAST(compiler.getPreprocessor(), &consumer, compiler.getASTContext());
-    compiler.getDiagnosticClient().EndSourceFile();
-    tracker->EndOfMainFile();
-
-    inlineResults.push_back(tracker->getResult());
+    inlineResults.push_back(replacementStack[0].replaceWith);
     return inlineResults.back();
 }
 

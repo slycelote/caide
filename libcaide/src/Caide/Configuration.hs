@@ -174,14 +174,22 @@ defaultCaideConf root = forceEither $
     setValue "core" "features" "" >>=
     setValue "core" "builder" "none" >>=
     addSection "cpp" >>=
-    setValue "cpp" "system_header_dirs" (intercalate "," $ map encodeString headerDirs)
+    setValue "cpp" "clang_options" (intercalate "," clangOptions)
 
   where
-    headerDirs = [
-        root </> decodeString "include" </> decodeString "mingw-4.8.1",
-        root </> decodeString "include" </> decodeString "mingw-4.8.1" </> decodeString "c++",
-        root </> decodeString "include" </> decodeString "mingw-4.8.1" </> decodeString "c++" </> decodeString "mingw32",
-        root </> decodeString "include"]
+    clangOptions = [
+        "-isystem",
+        encodeString $ root </> decodeString "include" </> decodeString "mingw-4.8.1",
+        "-isystem",
+        encodeString $ root </> decodeString "include" </> decodeString "mingw-4.8.1" </> decodeString "c++",
+        "-isystem",
+        encodeString $ root </> decodeString "include" </> decodeString "mingw-4.8.1" </> decodeString "c++" </> decodeString "mingw32",
+        "-isystem",
+        encodeString $ root </> decodeString "include",
+        "-I",
+        encodeString $ root </> decodeString "cpplib",
+        "-std=c++11"
+        ]
 
 
 defaultCaideState :: String -> ConfigParser

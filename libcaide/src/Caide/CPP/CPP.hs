@@ -3,6 +3,7 @@ module Caide.CPP.CPP (
 ) where
 
 import Control.Applicative ((<$>))
+import Control.Monad (when)
 import Control.Monad.State (liftIO)
 import qualified Data.Text as T
 
@@ -38,18 +39,21 @@ inlineCPPCode problemDir = do
         libraryDirectory = root </> decodeString "cpplib"
 
     hConf <- readCaideConf
-    systemHeaderDirs <- map decodeString <$> getListProp hConf "cpp" "system_header_dirs"
+    cmdLineOptions <- getListProp hConf "cpp" "clang_options"
 
-    liftIO $ do
-        libExists <- isDirectory libraryDirectory
-        libraryCPPFiles <- if libExists
-                           then filter (`hasExtension` T.pack "cpp") <$> listDirectoryRecursively libraryDirectory
-                           else return []
+    libExists <- liftIO $ isDirectory libraryDirectory
+    libraryCPPFiles <- if libExists
+                       then filter (`hasExtension` T.pack "cpp") <$> liftIO (listDirectoryRecursively libraryDirectory)
+                       else return []
 
-        inlineLibraryCode (solutionPath:inlinedTemplatePath:libraryCPPFiles) systemHeaderDirs [libraryDirectory] inlinedCodePath
-        removePragmaOnceFromFile inlinedCodePath inlinedNoPragmaOnceCodePath
-        removeUnusedCode inlinedNoPragmaOnceCodePath systemHeaderDirs finalCodePath
-        copyFile finalCodePath $ root </> decodeString "submission.cpp"
+    retInliner <- liftIO $ inlineLibraryCode (solutionPath:inlinedTemplatePath:libraryCPPFiles) cmdLineOptions inlinedCodePath
+    when (retInliner /= 0) $
+        throw $ "C++ library code inliner failed with error code " ++ show retInliner
+    liftIO $ removePragmaOnceFromFile inlinedCodePath inlinedNoPragmaOnceCodePath
+    retOptimizer <- liftIO $ removeUnusedCode inlinedNoPragmaOnceCodePath cmdLineOptions finalCodePath
+    when (retOptimizer /= 0) $
+        throw $ "C++ library code inliner failed with error code " ++ show retOptimizer
+    liftIO $ copyFile finalCodePath $ root </> decodeString "submission.cpp"
 
 
 listDirectoryRecursively :: FilePath -> IO [FilePath]

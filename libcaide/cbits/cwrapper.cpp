@@ -19,35 +19,40 @@ std::vector<std::string> fromCharArrays(const char** a, int n) {
 }
 
 
-FL_EXPORT_C(void, inline_code)(const char** cppFiles, int numCppFiles,
-       const char** systemHeaders, int numSystemHeaders,
-       const char** userHeaders, int numUserHeaders, const char* outputFile)
+FL_EXPORT_C(int, inline_code)(const char** cppFiles, int numCppFiles,
+       const char** cmdLineOptions, int numCmdLineOptions,
+       const char* outputFile)
 {
     std::ofstream out(outputFile, std::ios::binary);
     try {
-        const std::vector<std::string> systemHeaders_ = fromCharArrays(systemHeaders, numSystemHeaders);
-        const std::vector<std::string> userHeaders_ = fromCharArrays(userHeaders, numUserHeaders);
-        Inliner inliner(systemHeaders_, userHeaders_);
+        const std::vector<std::string> cmdLineOptions_ = fromCharArrays(cmdLineOptions, numCmdLineOptions);
+        Inliner inliner(cmdLineOptions_);
         for (int i = 0; i < numCppFiles; ++i)
             out << inliner.doInline(cppFiles[i]) << "\n";
+        return 0;
     } catch (const std::exception& e) {
         out << "Exception: " << e.what() << std::endl;
     } catch (...) {
         out << "Unexpected error\n";
     }
+    return 42;
 }
 
-FL_EXPORT_C(void, remove_unused_code)(const char* cppFile,
-       const char** systemHeaders, int numSystemHeaders, const char* outputFile)
+FL_EXPORT_C(int, remove_unused_code)(const char* cppFile,
+       const char** cmdLineOptions, int numCmdLineOptions,
+       const char* outputFile)
 {
     std::ofstream out(outputFile, std::ios::binary);
     try {
-        const std::vector<std::string> systemHeaders_ = fromCharArrays(systemHeaders, numSystemHeaders);
-        Optimizer optimizer(systemHeaders_);
+        const std::vector<std::string> cmdLineOptions_ = fromCharArrays(cmdLineOptions, numCmdLineOptions);
+        Optimizer optimizer(cmdLineOptions_);
         out << optimizer.doOptimize(cppFile) << "\n";
+        return 0;
     } catch (const std::exception& e) {
         out << "Exception: " << e.what() << std::endl;
     } catch (...) {
         out << "Unexpected error\n";
     }
+    return 43;
 }
+

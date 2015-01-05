@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <sstream>
 
@@ -12,11 +13,16 @@
 #include "clang/Basic/TargetOptions.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Frontend/FrontendActions.h"
 #include "clang/Frontend/Utils.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Parse/ParseAST.h"
 #include "clang/Rewrite/Core/Rewriter.h"
+
+#include "clang/Tooling/CompilationDatabase.h"
+#include "clang/Tooling/Tooling.h"
+
 #include "llvm/Support/Host.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -389,9 +395,10 @@ private:
 
 class OptimizerConsumer: public ASTConsumer {
 public:
-    explicit OptimizerConsumer(SourceManager& srcMgr, Rewriter& _rewriter)
+    explicit OptimizerConsumer(SourceManager& srcMgr, Rewriter& _rewriter, std::string& _result)
         : sourceManager(srcMgr)
         , rewriter(_rewriter)
+        , result(_result)
     {}
 
     virtual void HandleTranslationUnit(ASTContext& Ctx) {
@@ -420,6 +427,8 @@ public:
         //cerr << "Remove unused decls" << std::endl;
         OptimizerVisitor visitor(sourceManager, used, rewriter);
         visitor.TraverseDecl(Ctx.getTranslationUnitDecl());
+
+        result = getResult();
     }
 
     std::string toString(const Decl* decl) const {
@@ -456,62 +465,65 @@ private:
     SourceManager& sourceManager;
     Rewriter& rewriter;
     References uses;
+    std::string& result;
 };
 
-Optimizer::Optimizer(const std::vector<std::string>& _systemHeadersDirectories):
-    systemHeadersDirectories(_systemHeadersDirectories)
+
+class OptimizerFrontendAction : public ASTFrontendAction {
+private:
+    Rewriter& rewriter;
+    string& result;
+public:
+    OptimizerFrontendAction(Rewriter& _rewriter, string& _result)
+        : rewriter(_rewriter)
+        , result(_result)
+    {}
+
+    virtual ASTConsumer* CreateASTConsumer(CompilerInstance& compiler, StringRef /*file*/)
+    {
+        if (!compiler.hasSourceManager()) {
+            throw "No source manager";
+        }
+        rewriter.setSourceMgr(compiler.getSourceManager(), compiler.getLangOpts());
+        return new OptimizerConsumer(compiler.getSourceManager(), rewriter, result);
+    }
+};
+
+class OptimizerFrontendActionFactory: public tooling::FrontendActionFactory {
+private:
+    Rewriter& rewriter;
+    string& result;
+public:
+    OptimizerFrontendActionFactory(Rewriter& _rewriter, string& _result)
+        : rewriter(_rewriter)
+        , result(_result)
+    {}
+    FrontendAction* create() {
+        return new OptimizerFrontendAction(rewriter, result);
+    }
+};
+
+Optimizer::Optimizer(const std::vector<std::string>& _cmdLineOptions):
+    cmdLineOptions(_cmdLineOptions)
 {}
 
 std::string Optimizer::doOptimize(const std::string& cppFile) {
-    // CompilerInstance will hold the instance of the Clang compiler for us,
-    // managing the various objects needed to run the compiler.
-    CompilerInstance compiler;
-    compiler.createDiagnostics(0, false);
+    std::auto_ptr<tooling::FixedCompilationDatabase> compilationDatabase(
+        createCompilationDatabaseFromCommandLine(cmdLineOptions));
 
-    // Initialize target info with the default triple for our platform.
-    IntrusiveRefCntPtr<TargetOptions> TO(new TargetOptions);
-    TO->Triple = llvm::sys::getDefaultTargetTriple();
-    TargetInfo* TI = TargetInfo::CreateTargetInfo(compiler.getDiagnostics(), TO.getPtr());
-    compiler.setTarget(TI);
-    CompilerInvocation::setLangDefaults(compiler.getLangOpts(), IK_CXX);
-    compiler.getLangOpts().CPlusPlus = 1;
-    compiler.getLangOpts().CPlusPlus11 = 1;
+    vector<string> sources;
+    sources.push_back(cppFile);
 
-    compiler.createFileManager();
-    FileManager& fileManager = compiler.getFileManager();
-    compiler.createSourceManager(fileManager);
-    SourceManager& sourceManager = compiler.getSourceManager();
-    compiler.createPreprocessor();
-    compiler.getPreprocessor().getBuiltinInfo().InitializeBuiltins(
-        compiler.getPreprocessor().getIdentifierTable(),
-        compiler.getPreprocessor().getLangOpts());
+    clang::tooling::ClangTool tool(*compilationDatabase, sources);
 
-    llvm::IntrusiveRefCntPtr<clang::HeaderSearchOptions> hso(new clang::HeaderSearchOptions);
-    HeaderSearch headerSearch(hso, sourceManager, compiler.getDiagnostics(), compiler.getLangOpts(), TI);
-    for (size_t i = 0; i < systemHeadersDirectories.size(); ++i)
-        hso->AddPath(systemHeadersDirectories[i], clang::frontend::System, false, false);
-
-    clang::InitializePreprocessor(compiler.getPreprocessor(), compiler.getPreprocessorOpts(),
-                                  *hso, compiler.getFrontendOpts());
-
-    compiler.createASTContext();
-
-    // Set the main file handled by the source manager to the input file.
-    const FileEntry* inputFile = fileManager.getFile(cppFile.c_str());
-    if (!inputFile)
-        return cppFile + ": File doesn't exist";
-    sourceManager.createMainFileID(inputFile);
-    compiler.getDiagnosticClient().BeginSourceFile(compiler.getLangOpts(), &compiler.getPreprocessor());
-
-    // Create an AST consumer instance which is going to get called by ParseAST.
     Rewriter rewriter;
-    rewriter.setSourceMgr(sourceManager, compiler.getLangOpts());
-    OptimizerConsumer consumer(sourceManager, rewriter);
+    string result;
+    OptimizerFrontendActionFactory factory(rewriter, result);
 
-    // Parse the file to AST, registering our consumer as the AST consumer.
-    ParseAST(compiler.getPreprocessor(), &consumer, compiler.getASTContext());
-    compiler.getDiagnosticClient().EndSourceFile();
+    int ret = tool.run(&factory);
+    if (ret != 0)
+        throw std::runtime_error("Compilation error");
 
-    return consumer.getResult();
+    return result;
 }
 

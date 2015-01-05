@@ -25,12 +25,12 @@
 #ifdef __cplusplus
 EXPORT {
 #endif
-  FL_EXPORT_C(void, inline_code)(const char** cppFiles, int numCppFiles,
-       const char** systemHeaders, int numSystemHeaders,
-       const char** userHeaders, int numUserHeaders,
+  FL_EXPORT_C(int, inline_code)(const char** cppFiles, int numCppFiles,
+       const char** cmdLineOptions, int numCmdLineOptions,
        const char* outputFile);
-  FL_EXPORT_C(void, remove_unused_code)(const char* cppFile,
-       const char** systemHeaders, int numSystemHeaders, const char* outputFile);
+  FL_EXPORT_C(int, remove_unused_code)(const char* cppFile,
+       const char** cmdLineOptions, int numCmdLineOptions,
+       const char* outputFile);
 #ifdef __cplusplus
 }
 #endif

@@ -5,6 +5,7 @@ module Caide.CPP.CBinding (
     , removeUnusedCode
 ) where
 
+import Control.Applicative ((<$>))
 import Foreign
 import Foreign.C.String
 import Foreign.C.Types
@@ -15,25 +16,24 @@ import Filesystem.Path.CurrentOS (encodeString)
 
 
 foreign import ccall unsafe "cwrapper.h inline_code"
-    c_inline_code  :: Ptr CString -> CInt -> Ptr CString -> CInt -> Ptr CString -> CInt -> CString -> IO ()
+    c_inline_code  :: Ptr CString -> CInt -> Ptr CString -> CInt -> CString -> IO CInt
 
-inlineLibraryCode :: [FilePath] -> [FilePath] -> [FilePath] -> FilePath -> IO ()
-inlineLibraryCode cppFiles systemHeaderDirs userHeaderDirs outputFile =
+inlineLibraryCode :: [FilePath] -> [String] -> FilePath -> IO Int
+inlineLibraryCode cppFiles cmdLineOptions outputFile =
     withArrayOfStrings (map encodeString cppFiles)         $ \cpp ->
-    withArrayOfStrings (map encodeString systemHeaderDirs) $ \systemHeaders ->
-    withArrayOfStrings (map encodeString userHeaderDirs)   $ \userHeaders ->
+    withArrayOfStrings cmdLineOptions                      $ \options ->
     withCString (encodeString outputFile)                  $ \out ->
-    c_inline_code cpp (len cppFiles) systemHeaders (len systemHeaderDirs) userHeaders (len userHeaderDirs) out
+    fromIntegral <$> c_inline_code cpp (len cppFiles) options (len cmdLineOptions) out
 
 foreign import ccall unsafe "cwrapper.h remove_unused_code"
-    c_remove_unused_code  :: CString -> Ptr CString -> CInt -> CString -> IO ()
+    c_remove_unused_code  :: CString -> Ptr CString -> CInt -> CString -> IO CInt
 
-removeUnusedCode :: FilePath -> [FilePath] -> FilePath -> IO ()
-removeUnusedCode cppFile systemHeaderDirs outputFile =
+removeUnusedCode :: FilePath -> [String] -> FilePath -> IO Int
+removeUnusedCode cppFile cmdLineOptions outputFile =
     withCString (encodeString cppFile)                     $ \cpp ->
-    withArrayOfStrings (map encodeString systemHeaderDirs) $ \systemHeaders ->
+    withArrayOfStrings cmdLineOptions                      $ \options ->
     withCString (encodeString outputFile)                  $ \out ->
-    c_remove_unused_code cpp systemHeaders (len systemHeaderDirs) out
+    fromIntegral <$> c_remove_unused_code cpp options (len cmdLineOptions) out
 
 withArrayOfStrings :: [String] -> (Ptr CString -> IO a) -> IO a
 withArrayOfStrings xs m = withMany withCString xs $ \ps -> withArray ps m

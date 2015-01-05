@@ -57,3 +57,16 @@ SourceLocation findLocationAfterSemi(SourceLocation loc, ASTContext &Ctx) {
         return SourceLocation();
     return SemiLoc.getLocWithOffset(1);
 }
+
+clang::tooling::FixedCompilationDatabase* createCompilationDatabaseFromCommandLine(const std::vector<std::string> cmdLine)
+{
+    int argc = cmdLine.size() + 1;
+    std::vector<const char*> argv(argc);
+    argv[0] = "--";
+
+    for (int i = 1; i < argc; ++i)
+        argv[i] = cmdLine[i-1].c_str();
+
+    return clang::tooling::FixedCompilationDatabase::loadFromCommandLine(argc, &argv[0]);
+}
+
