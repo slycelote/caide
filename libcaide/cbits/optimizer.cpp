@@ -39,8 +39,8 @@ class null_stream: public ostream {
 };
 
 ostream& dbg() {
-    //static null_stream null; return null;
-    return std::cerr;
+    static null_stream null; return null;
+    //return std::cerr;
 }
 
 #define CAIDE_FUNC ""
@@ -101,9 +101,10 @@ private:
             return;
         }
         uses[from].insert(to);
-        dbg() << "Reference from <"
+        dbg() << "Reference from " << from->getDeclKindName() << " " << from << "<"
                   << toString(from).substr(0, 20)
-                  << ">" << toString(from->getSourceRange()) << " to <"
+                  << ">" << toString(from->getSourceRange())
+                  << " to " << to->getDeclKindName() << " " << to << "<"
                   << toString(to).substr(0, 20)
                   << ">" << toString(to->getSourceRange()) << "\n";
     }
@@ -143,8 +144,7 @@ public:
     }
 
     bool VisitDeclRefExpr(DeclRefExpr* ref) {
-        //dbg() << CAIDE_FUNC;
-        //dbg() << "Visiting declref at " << toString(ref->getSourceRange()) << std::endl;
+        dbg() << CAIDE_FUNC;
         insertReference(currentDecl, ref->getDecl());
         return true;
     }
@@ -177,11 +177,6 @@ public:
 
     bool VisitClassTemplateDecl(ClassTemplateDecl* templateDecl) {
         dbg() << CAIDE_FUNC;
-        for (ClassTemplateDecl::spec_iterator i = templateDecl->spec_begin();
-                i != templateDecl->spec_end(); ++i)
-        {
-            //insertReference(*i, templateDecl);
-        }
         insertReference(templateDecl, templateDecl->getTemplatedDecl());
         return true;
     }
@@ -204,13 +199,17 @@ public:
         FunctionTemplateSpecializationInfo* specInfo = f->getTemplateSpecializationInfo();
         if (specInfo)
             insertReference(f, specInfo->getTemplate());
+        if (FunctionDecl* instantiatedFrom = f->getInstantiatedFromMemberFunction()) {
+            insertReference(f, instantiatedFrom);
+        }
         if (f->hasBody()) {
             currentDecl = f;
 
             DeclarationName DeclName = f->getNameInfo().getName();
             string FuncName = DeclName.getAsString();
 
-            //dbg() << "Moving to " << FuncName << " at " << toString(f->getLocation()) << std::endl;
+            if (sourceManager.isInMainFile(f->getLocStart()))
+                dbg() << "Moving to " << FuncName << " at " << toString(f->getLocation()) << std::endl;
         }
         return true;
     }
@@ -257,14 +256,29 @@ public:
         , rewriter(_rewriter)
     {}
 
+    /*
+     Here's how template functions and classes are represented in the AST.
+-FunctionTemplateDecl <-- the template
+ |-TemplateTypeParmDecl
+ |-FunctionDecl  <-- for each instantiation of the template
+ | `-CompoundStmt
+ |   `-...
+-FunctionDecl   <-- non-template or full specialization of a template
+
+     *
+     */
     bool VisitFunctionDecl(FunctionDecl* functionDecl) {
         if (!sourceManager.isInMainFile(functionDecl->getLocStart()))
             return true;
-        FunctionDecl* canonicalDecl = functionDecl->getCanonicalDecl();
-        if (canonicalDecl->getTemplatedKind() != FunctionDecl::TK_NonTemplate) {
-            // Will be processed as FunctionTemplateDecl
+        if (functionDecl->getDescribedFunctionTemplate() != 0) {
+            // An instantiation of a template function; will be processed as FunctionTemplateDecl
             return true;
         }
+        if (functionDecl->getInstantiatedFromMemberFunction() != 0) {
+            // A method in an instantiated class template; will be processed as a method in ClassTemplateDecl
+            return true;
+        }
+        FunctionDecl* canonicalDecl = functionDecl->getCanonicalDecl();
         const bool funcIsUnused = used.find(canonicalDecl) == used.end();
         const bool thisIsRedeclaration = !functionDecl->doesThisDeclarationHaveABody() && declared.find(canonicalDecl) != declared.end();
         if (funcIsUnused || thisIsRedeclaration) {
@@ -288,11 +302,10 @@ public:
     bool VisitCXXRecordDecl(CXXRecordDecl* recordDecl) {
         if (!sourceManager.isInMainFile(recordDecl->getLocStart()))
             return true;
-        bool isTemplated = recordDecl->getDescribedClassTemplate();
+        bool isTemplated = recordDecl->getDescribedClassTemplate() != 0;
         TemplateSpecializationKind specKind = recordDecl->getTemplateSpecializationKind();
         if (isTemplated && (specKind == TSK_ImplicitInstantiation || specKind == TSK_Undeclared))
             return true;
-        dbg() << toString(recordDecl) << endl;
         CXXRecordDecl* canonicalDecl = recordDecl->getCanonicalDecl();
         const bool classIsUnused = used.find(canonicalDecl) == used.end();
         const bool thisIsRedeclaration = !recordDecl->isCompleteDefinition() && declared.find(canonicalDecl) != declared.end();
@@ -337,7 +350,7 @@ private:
         SourceLocation start = decl->getLocStart();
         SourceLocation end = decl->getLocEnd();
         SourceLocation semicolonAfterDefinition = findSemiAfterLocation(end, decl->getASTContext());
-        dbg() << "REMOVE: " << toString(start) << " " << toString(end)
+        dbg() << "REMOVE " << decl->getDeclKindName() << " " << decl << ": " << toString(start) << " " << toString(end)
               << " " << toString(semicolonAfterDefinition) << std::endl;
         if (semicolonAfterDefinition.isValid())
             end = semicolonAfterDefinition;
@@ -379,7 +392,6 @@ public:
             Decl* decl = *queue.begin();
             queue.erase(queue.begin());
             if (used.insert(decl).second) {
-                dbg() << "---------------\n" << toString(decl) << endl;
                 queue.insert(uses[decl].begin(), uses[decl].end());
             }
         }
