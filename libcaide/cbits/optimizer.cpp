@@ -77,11 +77,13 @@ private:
     std::string toString(const Decl* decl) const {
         if (!decl)
             return "<invalid>";
+        SourceLocation start = sourceManager.getExpansionLoc(decl->getLocStart());
         bool invalid;
-        const char* b = sourceManager.getCharacterData(decl->getLocStart(), &invalid);
+        const char* b = sourceManager.getCharacterData(start, &invalid);
         if (invalid || !b)
             return "<invalid>";
-        const char* e = sourceManager.getCharacterData(decl->getLocEnd(), &invalid);
+        SourceLocation end = sourceManager.getExpansionLoc(decl->getLocEnd());
+        const char* e = sourceManager.getCharacterData(end, &invalid);
         if (invalid || !e)
             return "<invalid>";
         return std::string(b, std::min(b+30, e));
@@ -96,10 +98,6 @@ private:
             return;
         from = from->getCanonicalDecl();
         to = to->getCanonicalDecl();
-        if (!isUserFile(to->getLocation())) {
-            // reference to standard library
-            return;
-        }
         uses[from].insert(to);
         dbg() << "Reference from " << from->getDeclKindName() << " " << from << "<"
                   << toString(from).substr(0, 20)
@@ -239,11 +237,13 @@ private:
     std::string toString(const Decl* decl) const {
         if (!decl)
             return "<invalid>";
+        SourceLocation start = sourceManager.getExpansionLoc(decl->getLocStart());
         bool invalid;
-        const char* b = sourceManager.getCharacterData(decl->getLocStart(), &invalid);
+        const char* b = sourceManager.getCharacterData(start, &invalid);
         if (invalid || !b)
             return "<invalid>";
-        const char* e = sourceManager.getCharacterData(decl->getLocEnd(), &invalid);
+        SourceLocation end = sourceManager.getExpansionLoc(decl->getLocEnd());
+        const char* e = sourceManager.getCharacterData(end, &invalid);
         if (invalid || !e)
             return "<invalid>";
         return std::string(b, std::min(b+30, e));
@@ -289,6 +289,7 @@ public:
 
 
      */
+    // TODO: dependencies on types of template parameters
     bool VisitFunctionDecl(FunctionDecl* functionDecl) {
         if (!sourceManager.isInMainFile(functionDecl->getLocStart()))
             return true;
@@ -311,7 +312,6 @@ public:
         return true;
     }
 
-    // TODO: unused explicit function template specializations are not removed
     bool VisitFunctionTemplateDecl(FunctionTemplateDecl* functionDecl) {
         if (!sourceManager.isInMainFile(functionDecl->getLocStart()))
             return true;
@@ -339,6 +339,7 @@ public:
         return true;
     }
 
+    // TODO: dependencies on types of template parameters
     bool VisitClassTemplateDecl(ClassTemplateDecl* templateDecl) {
         if (!sourceManager.isInMainFile(templateDecl->getLocStart()))
             return true;
@@ -362,8 +363,6 @@ public:
             removeDecl(usingDecl);
         return true;
     }
-
-    // TODO remove member fields/methods in classes that are not used as template parameters of STL structures
 
 private:
     void removeDecl(Decl* decl) {
