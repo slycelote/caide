@@ -123,6 +123,8 @@ public:
     bool shouldVisitImplicitCode() const { return true; }
     bool shouldVisitTemplateInstantiations() const { return true; }
 
+    //bool VisitDecl(Decl* decl) { dbg() << decl->getDeclKindName() << " " << decl << endl; return true; }
+
     bool VisitCallExpr(CallExpr* callExpr) {
         dbg() << CAIDE_FUNC;
         Expr* callee = callExpr->getCallee();
@@ -137,9 +139,6 @@ public:
     bool VisitCXXConstructExpr(CXXConstructExpr* constructorExpr) {
         dbg() << CAIDE_FUNC;
         insertReference(currentDecl, constructorExpr->getConstructor());
-        // implicit constructor may not be visited; make sure we add dependency on its class
-        // TODO: ???
-        //insertReference(currentDecl, constructorExpr->getConstructor()->getParent());
         return true;
     }
 
@@ -154,12 +153,6 @@ public:
         const Type* valueType = valueDecl->getType().getTypePtrOrNull();
         if (valueType)
             insertReference(valueDecl, valueType->getAsCXXRecordDecl());
-        return true;
-    }
-
-    bool VisitCXXConstructorDecl(CXXConstructorDecl* /*constructorDecl*/) {
-        dbg() << CAIDE_FUNC;
-        // TODO
         return true;
     }
 
@@ -183,7 +176,14 @@ public:
 
     bool VisitClassTemplateSpecializationDecl(ClassTemplateSpecializationDecl* specDecl) {
         dbg() << CAIDE_FUNC;
-        insertReference(specDecl, specDecl->getSpecializedTemplate());
+        llvm::PointerUnion<ClassTemplateDecl*, ClassTemplatePartialSpecializationDecl*>
+            instantiatedFrom = specDecl->getInstantiatedFrom();
+
+        if (instantiatedFrom.is<ClassTemplateDecl*>())
+            insertReference(specDecl, instantiatedFrom.get<ClassTemplateDecl*>());
+        else if (instantiatedFrom.is<ClassTemplatePartialSpecializationDecl*>())
+            insertReference(specDecl, instantiatedFrom.get<ClassTemplatePartialSpecializationDecl*>());
+
         return true;
     }
 
@@ -265,7 +265,29 @@ public:
  |   `-...
 -FunctionDecl   <-- non-template or full specialization of a template
 
-     *
+
+
+|-ClassTemplateDecl <-- root template
+| |-TemplateTypeParmDecl
+| |-CXXRecordDecl  <-- non-specialized root template class
+| | |-CXXRecordDecl
+| | `-CXXMethodDecl...
+| |-ClassTemplateSpecialization <-- non-instantiated explicit specialization (?)
+| `-ClassTemplateSpecializationDecl <-- implicit instantiation of root template
+|   |-TemplateArgument type 'double'
+|   |-CXXRecordDecl
+|   |-CXXMethodDecl...
+|-ClassTemplatePartialSpecializationDecl <-- partial specialization
+| |-TemplateArgument
+| |-TemplateTypeParmDecl
+| |-CXXRecordDecl
+| `-CXXMethodDecl...
+|-ClassTemplateSpecializationDecl <-- instantiation of explicit specialization
+| |-TemplateArgument type 'int'
+| |-CXXRecordDecl
+| `-CXXMethodDecl...
+
+
      */
     bool VisitFunctionDecl(FunctionDecl* functionDecl) {
         if (!sourceManager.isInMainFile(functionDecl->getLocStart()))
