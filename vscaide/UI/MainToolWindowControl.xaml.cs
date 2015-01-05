@@ -192,6 +192,7 @@ namespace slycelote.VsCaide
                         foreach (var conf in configs.OfType<VCConfiguration>())
                         {
                             conf.ConfigurationType = ConfigurationTypes.typeStaticLibrary;
+                            conf.OutputDirectory = @"$(ProjectDir)\$(Configuration)\";
                         }
 
                     }
