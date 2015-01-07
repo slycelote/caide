@@ -64,7 +64,7 @@ runTests _ = do
         BuildFailed -> throw "Build failed"
         TestsFailed -> throw "Tests failed"
         TestsPassed -> return ()
-        TestsNotRun -> evalTests []
+        NoEvalTests -> evalTests []
 
 evalTests :: [String] -> CaideIO ()
 evalTests _ = do
@@ -76,15 +76,15 @@ evalTests _ = do
         reportFile = testsDir </> "report.txt"
         cmpOptions = ComparisonOptions { doublePrecision = precision }
 
-    nonSuccesses <- liftIO $ do
+    errors <- liftIO $ do
         report <- generateReport cmpOptions testsDir
         writeTextFile reportFile . serializeTestReport $ report
         T.putStrLn "Results summary\n_______________\nOutcome\tCount"
         T.putStrLn $ humanReadableSummary report
-        return [r | r@(_, res) <- report, res /= Success]
+        return [r | r@(_, Error _) <- report]
 
-    unless (null nonSuccesses) $
-        throw $ T.unpack $ humanReadableReport nonSuccesses
+    unless (null errors) $
+        throw $ T.unpack $ humanReadableReport errors
 
 
 generateReport :: ComparisonOptions -> FilePath -> IO (TestReport Text)

@@ -131,6 +131,10 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TestCase.cs" />
+    <Compile Include="UI\EditTestsWindow.xaml.cs">
+      <DependentUpon>EditTestsWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UI\MainToolWindowControl.xaml.cs">
       <DependentUpon>MainToolWindowControl.xaml</DependentUpon>
     </Compile>
@@ -193,6 +197,10 @@
     <Content Include="Resources\Package.ico" />
   </ItemGroup>
   <ItemGroup>
+    <Page Include="UI\EditTestsWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="UI\MainToolWindowControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

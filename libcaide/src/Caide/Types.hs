@@ -185,7 +185,7 @@ data CommandHandler = CommandHandler
 -- | 'Builder' result
 data BuilderResult = BuildFailed  -- ^ Build failed or program under test exited unexpectedly
                    | TestsFailed  -- ^ Build succeeded, tests have been evaluated and failed
-                   | TestsNotRun  -- ^ Build succeeded, tests have not been evaluated
+                   | NoEvalTests  -- ^ Build succeeded, tests have not been evaluated
                    | TestsPassed  -- ^ Tests succeeded
 
 -- | Builder is responsible for building the code and running test program

@@ -217,7 +217,7 @@ namespace slycelote.VsCaide
         private void EnableAll(bool enable)
         {
             btnRun.IsEnabled = btnDebug.IsEnabled = 
-                cbProblems.IsEnabled = cbProgrammingLanguage.IsEnabled =
+                cbProblems.IsEnabled = cbProgrammingLanguage.IsEnabled = btnEditTests.IsEnabled =
                 btnAddNewProblem.IsEnabled = btnParseContest.IsEnabled = btnArchive.IsEnabled = enable;
             btnCreateOrReloadCaideSolution.Content = enable ? "Reload problem list" : "Create caide solution";
         }
@@ -442,6 +442,15 @@ namespace slycelote.VsCaide
                 solution.Remove(project);
                 // The problem will be archived on Project_Removed event
             }
+        }
+
+        private void btnEditTests_Click(object sender, RoutedEventArgs e)
+        {
+            string currentProblem = (string)cbProblems.SelectedItem;
+            var problemDirectory = Path.Combine(SolutionUtilities.GetSolutionDir(), currentProblem);
+            var testCases = TestCase.FromDirectory(problemDirectory);
+            testCases = EditTestsWindow.Edit(testCases);
+            TestCase.WriteToDirectory(testCases, problemDirectory);
         }
 
         private bool SkipLanguageChangedEvent = false;

@@ -29,7 +29,7 @@ builder name probId = do
         case exitCode of
             ExitSuccess -> do
                 putStrLn "Done"
-                return $ if evaluatesTests then TestsPassed else TestsNotRun
+                return $ if evaluatesTests then TestsPassed else NoEvalTests
             ExitFailure code -> do
                 putStrLn $ "Builder exit code " ++ show code
                 return $ if evaluatesTests && code == 0xCA1DE then TestsFailed else BuildFailed

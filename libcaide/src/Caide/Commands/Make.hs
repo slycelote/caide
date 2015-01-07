@@ -70,10 +70,8 @@ updateTests = withProblem $ \_ problemDir -> do
     caideExe <- getProp hState "core" "caide_exe"
     liftIO $ do
         copyTestInputs problemDir
-
+        updateTestList problemDir
         let testDir = problemDir </> decodeString ".caideproblem" </> decodeString "test"
-        updateTestList testDir
-
         writeTextFile (testDir </> decodeString "caideExe.txt") $ T.pack caideExe
 
 prepareSubmission :: CaideIO ()
@@ -115,20 +113,19 @@ copyTestInputs problemDir = do
 --    * adds new tests
 --    * makes sure previously failed tests (if any) come first
 updateTestList :: FilePath -> IO ()
-updateTestList testsDir = do
-    let testListFile = testsDir </> decodeString "testList.txt"
-        previousRunFile = testsDir </> decodeString "report.txt"
-    tests <- readTests testListFile
-    inFileNames <- map (encodeString . basename) .
-                   filter (`hasExtension` T.pack "in") <$>
-                   listDirectory testsDir
+updateTestList problemDir = do
+    let testDir = problemDir </> decodeString ".caideproblem" </> decodeString "test"
+        previousRunFile = testDir </> decodeString "report.txt"
     report <- readTestReport previousRunFile
-    let newTestNames = filter (`notElem` map fst tests) inFileNames
-        updatedTests = filter (\(name, _) -> name `elem` inFileNames) tests
-                       ++ zip newTestNames (repeat Run)
+    allFiles <- listDirectory problemDir
+    let allTests    = map (encodeString . basename) . filter (`hasExtension` T.pack "in") $ allFiles
+        testsToSkip = map (encodeString . basename) . filter (`hasExtension` T.pack "skip") $ allFiles
+        testState testName = if testName `elem` testsToSkip then Skip else Run
+        testList = zip allTests (map testState allTests)
         succeededAndName (testName, _) = case lookup testName report of
-            Just (Error ()) -> (False, testName)
-            _               -> (True, testName)
-        sortedTests = sortBy (comparing succeededAndName) updatedTests
+            Just (Error _) -> (False, testName)
+            _              -> (True,  testName)
+        sortedTests = sortBy (comparing succeededAndName) testList
+        testListFile = testDir </> decodeString "testList.txt"
     writeTests sortedTests testListFile
 
