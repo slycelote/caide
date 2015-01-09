@@ -202,6 +202,47 @@ namespace slycelote.VsCaide
                     // Ensure that all files from the directory are added
                     SolutionUtilities.AddDirectoryRecursively(vcProject, cppLibraryDir);
 
+                    // Create 'submission' project
+                    const string submission = "submission";
+                    project = allProjects.SingleOrDefault(p => p.Name == submission);
+                    if (project == null)
+                    {
+                        string projectTemplate = solution.GetProjectTemplate("vscaide_vc2013_template.zip", "VC");
+                        solution.AddFromTemplate(projectTemplate,
+                            Destination: Path.Combine(SolutionUtilities.GetSolutionDir(), submission),
+                            ProjectName: submission,
+                            Exclusive: false);
+                        allProjects = solution.Projects.OfType<Project>();
+                        project = allProjects.SingleOrDefault(p => p.Name == submission);
+                        if (project == null)
+                        {
+                            Logger.LogError("Couldn't create {0} project", submission);
+                            return;
+                        }
+                    }
+
+                    var submissionFile = Path.Combine("..", "submission.cpp");
+
+                    if (!project.ProjectItems.OfType<ProjectItem>().Any(item => 
+                        item.Name.Equals(submissionFile, StringComparison.CurrentCultureIgnoreCase)))
+                    {
+                        project.ProjectItems.AddFromFile(submissionFile);
+                    }
+
+                    var workingDirectory = "$(ProjectDir)";
+                    var submissionConfigs = (IVCCollection)vcProject.Configurations;
+                    foreach (var conf in submissionConfigs.OfType<VCConfiguration>())
+                    {
+                        conf.OutputDirectory = @"$(ProjectDir)\$(Configuration)\";
+                        var debugSettings = (VCDebugSettings)conf.DebugSettings;
+                        debugSettings.WorkingDirectory = workingDirectory;
+
+                        var tools = (IVCCollection)conf.Tools; 
+                        var linkerTool = (VCLinkerTool)tools.Item("VCLinkerTool");
+                        linkerTool.SubSystem = subSystemOption.subSystemConsole;
+                    }
+
+                    
                     SolutionUtilities.SaveSolution();
                 });
 
