@@ -174,10 +174,13 @@ defaultCaideConf root = forceEither $
     setValue "core" "features" "" >>=
     setValue "core" "builder" "none" >>=
     addSection "cpp" >>=
-    setValue "cpp" "clang_options" (intercalate "," clangOptions)
+    setValue "cpp" "clang_options" (intercalate ",\n  " clangOptions)
 
   where
     clangOptions = [
+        "-target",
+        "i386-pc-mingw32",
+        "-nostdinc",
         "-isystem",
         encodeString $ root </> decodeString "include" </> decodeString "mingw-4.8.1",
         "-isystem",
@@ -188,7 +191,9 @@ defaultCaideConf root = forceEither $
         encodeString $ root </> decodeString "include",
         "-I",
         encodeString $ root </> decodeString "cpplib",
-        "-std=c++11"
+        "-std=c++11",
+        "-D__MSVCRT__=1",
+        "_D__declspec="
         ]
 
 
