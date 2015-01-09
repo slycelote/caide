@@ -55,7 +55,10 @@ executable caide
                    zip-archive
   other-extensions: CPP
   hs-source-dirs:  src
-  ghc-options:     -Wall -rtsopts=all -static
+  ghc-options:     -Wall -rtsopts=all -static -optl-static
+  if !os(windows) {
+    ghc-options:   -optl-pthread
+  }
   if flag(debug) {
     -- run as cabal configure -fdebug --ghc-option=-debug -O0
     ghc-options:    -fprof-auto

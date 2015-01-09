@@ -93,6 +93,8 @@ libClangConfHook (pkg, pbi) flags = do
           llvmArgs      =  [ "--with-clang-srcdir=" ++ clangRepoDirCanonical
                            , "--disable-polly"
                            , "--disable-shared"
+                           -- https://ghc.haskell.org/trac/ghc/ticket/9657
+                           , "--disable-pic"
                            , "--enable-bindings=none"
                            {-, "--disable-clang-arcmt"-}
                            {-, "--disable-clang-static-analyzer"-}
