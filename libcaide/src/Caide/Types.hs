@@ -31,6 +31,7 @@ module Caide.Types(
     , Builder
     , BuilderResult(..)
     , Feature (..)
+    , noOpFeature
 ) where
 
 import Control.Applicative (Applicative)
@@ -196,9 +197,18 @@ type Builder = ProblemID -> CaideIO BuilderResult
 --   run by itself, but only in response to certain events.
 --   The first parameter in all functions is ID of the problem that triggered the event.
 data Feature = Feature
-    { onProblemCreated     :: String -> CaideIO ()   -- ^ Run after `caide problem`
-    , onProblemCodeCreated :: String -> CaideIO ()   -- ^ Run after `caide lang`
-    , onProblemCheckedOut  :: String -> CaideIO ()   -- ^ Run after `caide checkout`
+    { onProblemCreated     :: ProblemID -> CaideIO ()   -- ^ Run after `caide problem`
+    , onProblemCodeCreated :: ProblemID -> CaideIO ()   -- ^ Run after `caide lang`
+    , onProblemCheckedOut  :: ProblemID -> CaideIO ()   -- ^ Run after `caide checkout`
+    , onProblemRemoved     :: ProblemID -> CaideIO ()   -- ^ Run after `caide archive`
+    }
+
+noOpFeature :: Feature
+noOpFeature =  Feature
+    { onProblemCreated     = const $ return ()
+    , onProblemCodeCreated = const $ return ()
+    , onProblemCheckedOut  = const $ return ()
+    , onProblemRemoved     = const $ return ()
     }
 
 {------------------ Implementation ---------------------}

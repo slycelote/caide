@@ -1,9 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Caide.Features.Codelite (
       feature
 ) where
 
 import Prelude hiding (readFile)
 
+import Control.Applicative ((<$>))
 import Control.Monad (forM_, when, unless)
 import Control.Monad.State.Strict (execState, modify, State)
 import Control.Monad.State (liftIO)
@@ -12,29 +15,29 @@ import Data.Text.IO (readFile)
 
 import Filesystem (isFile, writeTextFile, listDirectory, createDirectory)
 import Filesystem.Path.CurrentOS (decodeString, encodeString)
-import Filesystem.Path ((</>), basename)
+import Filesystem.Path ((</>), basename, hasExtension)
 
 import Text.XML.Light (parseXML, Content(..))
 import Text.XML.Light.Cursor
 
 import Caide.Types
 import Caide.Xml (goToChild, removeChildren, isTag, insertLastChild, mkElem, modifyFromJust,
-                  changeAttr, hasAttrEqualTo, goToDocRoot, showXml)
-import Caide.Configuration (readProblemConfig, getActiveProblem)
+                  changeAttr, hasAttrEqualTo, goToDocRoot, showXml, forEachChild)
+import Caide.Configuration (readProblemState, getActiveProblem)
+import Caide.Util (listDir)
 
 feature :: Feature
-feature = Feature
-    { onProblemCreated = \_ -> return ()
-    , onProblemCodeCreated = generateProject
-    , onProblemCheckedOut = const generateWorkspace
+feature =  noOpFeature
+    { onProblemCodeCreated = generateProject
+    , onProblemCheckedOut = \probId -> generateWorkspace >> generateProject probId
+    , onProblemRemoved = const generateWorkspace
     }
 
 generateProject :: ProblemID -> CaideIO ()
 generateProject probId = do
-    hProblem <- readProblemConfig probId
+    hProblem <- readProblemState probId
     lang <- getProp hProblem "problem" "language"
-    when (lang `elem` ["simplecpp", "cpp", "c++"]) $ do
-        liftIO $ putStrLn "Generating codelite project"
+    when (lang `elem` ["simplecpp", "cpp", "c++" :: String]) $ do
         croot <- caideRoot
 
         let projectFile = croot </> decodeString probId </> decodeString (probId ++ ".project")
@@ -44,24 +47,28 @@ generateProject probId = do
 
         when needLibrary $ liftIO $ do
             libProjectExists <- isFile libProjectFile
+            -- TODO update files included into cpplib.project when it already exists
             unless libProjectExists $ do
-                createDirectory False libProjectDir
+                createDirectory True libProjectDir
                 xmlString <- readFile . encodeString $ croot </> decodeString "templates" </> decodeString "codelite_project_template.project"
+                allFiles <- fst <$> listDir libProjectDir
                 let doc = parseXML xmlString
                     Just cursor = fromForest doc
-                    files = []
+                    files = map encodeString . filter (\f -> f `hasExtension` "h" || f `hasExtension` "cpp") $ allFiles
                     includePaths = ["."]
                     libs = []
                     libraryPaths = []
-                    transformed = execState (generateProjectXML "cpplib" files includePaths libraryPaths libs) cursor
+                    transformed = execState (generateProjectXML "cpplib" "Static Library" files includePaths libraryPaths libs) cursor
                 transformed `seq` writeTextFile libProjectFile . T.pack . showXml $ transformed
                 putStrLn "cpplib.project for Codelite successfully generated."
 
+        -- TODO generate submission.project
         projectExists <- liftIO $ isFile projectFile
         if projectExists
         then liftIO $ putStrLn $ probId ++ ".project already exists. Not overwriting."
         else do
             liftIO $ do
+                putStrLn "Generating codelite project"
                 xmlString <- readFile . encodeString $ croot </> decodeString "templates" </> decodeString "codelite_project_template.project"
                 let doc = parseXML xmlString
                     Just cursor = fromForest doc
@@ -69,15 +76,32 @@ generateProject probId = do
                     includePaths = "." : ["../cpplib" | needLibrary]
                     libs = ["cpplib" | needLibrary]
                     libraryPaths = ["../cpplib/$(ConfigurationName)" | needLibrary]
-                    transformed = execState (generateProjectXML probId files includePaths libraryPaths libs) cursor
+                    transformed = execState (generateProjectXML probId "Executable" files includePaths libraryPaths libs) cursor
                 transformed `seq` writeTextFile projectFile . T.pack . showXml $ transformed
                 putStrLn $ probId ++ ".project for Codelite successfully generated."
             generateWorkspace
 
-generateProjectXML :: String -> [String] -> [String] -> [String] -> [String] -> State Cursor ()
-generateProjectXML projectName sourceFiles includePaths libPaths libs = do
-    modifyFromJust $ findRight (isTag "Codelite_Project")
+setProjectName :: String -> State Cursor Bool
+setProjectName projectName = do
+    goToDocRoot
+    modifyFromJust $ findRight (isTag "CodeLite_Project")
     changeAttr "Name" projectName
+
+setProjectType :: String -> State Cursor Bool
+setProjectType projectType = do
+    goToDocRoot
+    modifyFromJust $ findRight (isTag "CodeLite_Project")
+    errorIfFailed "Couldn't find Settings node" $ goToChild ["Settings"]
+    changed <- changeAttr "Type" projectType
+    confChanged <- forEachChild (isTag "Configuration") $ changeAttr "Type" projectType
+    return $ or (changed:confChanged)
+
+generateProjectXML :: String -> String -> [String] -> [String] -> [String] -> [String] -> State Cursor ()
+generateProjectXML projectName projectType sourceFiles includePaths libPaths libs = do
+    _ <- setProjectName projectName
+    _ <- setProjectType projectType
+    goToDocRoot
+    modifyFromJust $ findRight (isTag "Codelite_Project")
     modifyFromJust $ findChild $ \c -> isTag "VirtualDirectory" c && hasAttrEqualTo "Name" "src" c
     removeChildren $ isTag "File"
     forM_ sourceFiles $ \file -> do
@@ -90,7 +114,7 @@ generateProjectXML projectName sourceFiles includePaths libPaths libs = do
         goToChild ["Settings", "GlobalSettings", "Compiler"]
 
     forM_ includePaths $ \path -> do
-        errorIfFailed "Coudln't insert include path" $
+        errorIfFailed "Couldn't insert IncludePath tag" $
             insertLastChild $ Elem $ mkElem "IncludePath" [("Value", path)]
         modifyFromJust parent -- <Compiler>
     modifyFromJust parent -- <GlobalSettings>
@@ -98,11 +122,11 @@ generateProjectXML projectName sourceFiles includePaths libPaths libs = do
     errorIfFailed "Couldn't find GlobalSettings/Linker node" $
         goToChild ["Linker"]
     forM_ libPaths $ \libPath -> do
-        errorIfFailed "Couldn't insert library path" $
+        errorIfFailed "Couldn't insert LibraryPath tag" $
             insertLastChild $ Elem $ mkElem "LibraryPath" [("Value", libPath)]
         modifyFromJust parent -- <Linker>
     forM_ libs $ \lib -> do
-        errorIfFailed "Couldn't insert library" $
+        errorIfFailed "Couldn't insert Library tag" $
             insertLastChild $ Elem $ mkElem "Library" [("Value", lib)]
         modifyFromJust parent -- <Linker>
 
@@ -153,15 +177,15 @@ generateWorkspaceXml projects activeProblem = do
     modifyFromJust $ findRight (isTag "Codelite_Workspace")
     removeChildren (isTag "project")
 
-    errorIfFailed "BuildMatrix not found" $ goToChild ["BuildMatrix"]
+    errorIfFailed "BuildMatrix tag not found" $ goToChild ["BuildMatrix"]
     forM_ projects $ \projectName -> modify (insertLeft $ Elem $ makeProjectElem projectName)
 
     removeChildren (isTag "WorkspaceConfiguration")
     forM_ ["Debug", "Release"] $ \conf -> do
-        errorIfFailed "Coudln't insert WorkspaceConfiguration" $
+        errorIfFailed "Couldn't insert WorkspaceConfiguration tag" $
             insertLastChild $ Elem $ mkElem "WorkspaceConfiguration" [("Name", conf), ("Selected", "yes")]
         forM_ projects $ \projectName -> do
-            errorIfFailed "Coudln't insert Project" $
+            errorIfFailed "Couldn't insert Project tag" $
                 insertLastChild $ Elem $ mkElem "Project" [("Name", projectName), ("ConfigName", conf)]
             modifyFromJust parent -- go to WorkspaceConfiguration
         modifyFromJust parent -- go to BuildMatrix

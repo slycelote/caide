@@ -3,6 +3,7 @@ module Caide.Xml (
     , goToChild
     , goToDocRoot
     , removeChildren
+    , forEachChild
     , insertLastChild
     , mkElem
     , mkText
@@ -18,7 +19,7 @@ module Caide.Xml (
 import Control.Monad.State.Strict (get, put, modify, MonadState, State, runState, gets)
 import Data.Char (toLower)
 import Data.List (find)
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, fromJust)
 
 import Text.XML.Light (Content(..), QName(..), Element(..), Attr(..), blank_element, unqual, showContent)
 import Text.XML.Light.Cursor
@@ -80,10 +81,27 @@ mkText text = Text CData{cdVerbatim = CDataRaw, cdData = text, cdLine = Nothing}
 
 -- | Removes children of current element that satisfy the condition.
 removeChildren :: (Cursor -> Bool) -> State Cursor ()
-removeChildren predicate = maybeDo firstChild go $ return ()
-    where go = maybeDo removeOrRight go $ modifyFromJust parent
-          removeOrRight c | predicate c = removeGoRight c
-                          | otherwise   = right c
+removeChildren predicate = do
+    c <- gets (findChild predicate)
+    case c of
+        Nothing    -> return ()
+        Just child -> do
+            put $ fromJust $ removeGoUp child
+            removeChildren predicate
+
+forEachChild :: (Cursor -> Bool) -> State Cursor a -> State Cursor [a]
+forEachChild predicate action = do
+    c <- gets (findChild predicate)
+    case c of
+        Nothing -> return []
+        Just child -> put child >> go []
+  where
+    go results = do
+        ret <- action
+        cur <- get
+        case findLeft predicate cur of
+            Nothing -> modifyFromJust parent >> return (reverse (ret:results))
+            Just c  -> put c >> go (ret:results)
 
 goToChild' :: [String] -> State Cursor Bool
 goToChild' [] = return True
@@ -119,8 +137,15 @@ insertLastChild cont = do
 attribHasName :: String -> Attr -> Bool
 attribHasName name = (== unqual name) . attrKey
 
-changeAttr :: String -> String -> State Cursor ()
-changeAttr name value = modify $ modifyContent change
+changeAttr :: String -> String -> State Cursor Bool
+changeAttr key value = do
+    noChange <- gets (hasAttrEqualTo key value)
+    if noChange
+    then return False
+    else changeAttr' key value >> return True
+
+changeAttr' :: String -> String -> State Cursor ()
+changeAttr' name value = modify $ modifyContent change
     where change (Elem el) = Elem (el {elAttribs = changeAttribs (elAttribs el)})
           change _ = error "Only Element can have attributes"
           changeAttribs attrs = mkAttr name value : filter (not . attribHasName name) attrs

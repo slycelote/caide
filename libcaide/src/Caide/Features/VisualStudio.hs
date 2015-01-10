@@ -40,9 +40,8 @@ getGuidForProblem = map toUpper . toString . generateNamed caideUuid . map (from
 
 -- | Deprecated: use VsCaide extension instead
 feature :: Feature
-feature  = Feature
-    { onProblemCreated     = \_ -> return ()
-    , onProblemCodeCreated = generateProject
+feature  = noOpFeature
+    { onProblemCodeCreated = generateProject
     , onProblemCheckedOut  = const generateSolution
     }
 
