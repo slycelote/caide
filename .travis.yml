@@ -1,0 +1,6 @@
+language: haskell
+ghc: 7.6
+before_install:
+  - cd libcaide
+notifications:
+  email: true
