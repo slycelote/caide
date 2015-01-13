@@ -45,10 +45,6 @@ main = do
       }
 
 
-libclangSharedLibraries :: [String]
-libclangSharedLibraries = ["clang", "LLVM-3.4"]
-
-
 canonicalizePath :: FilePath -> IO FilePath
 canonicalizePath path = do
   canonicalPath <- inDir path $
@@ -96,8 +92,8 @@ libClangConfHook (pkg, pbi) flags = do
                            -- https://ghc.haskell.org/trac/ghc/ticket/9657
                            , "--disable-pic"
                            , "--enable-bindings=none"
-                           {-, "--disable-clang-arcmt"-}
-                           {-, "--disable-clang-static-analyzer"-}
+                           , "--disable-clang-arcmt"
+                           , "--disable-clang-static-analyzer"
                            {-, "--disable-clang-rewriter"-}
                            , "--disable-assertions"
                            , "--disable-keep-symbols"
@@ -192,20 +188,19 @@ libClangBuildHook pkg lbi usrHooks flags = do
             llvmLibDir = llvmPrefixDir </> "lib"
 
             addCWrapper bi = bi {
-              extraLibs = ["chelper", "cpphelper", "clang", "clangTooling", "clangFrontendTool", "clangFrontend", "clangDriver", "clangSerialization", "clangCodeGen", "clangParse", "clangSema", "clangStaticAnalyzerFrontend", "clangStaticAnalyzerCheckers", "clangStaticAnalyzerCore", "clangAnalysis", "clangARCMigrate", "clangRewriteFrontend", "clangRewriteCore", "clangEdit", "clangAST", "clangLex", "clangBasic", "LLVMInstrumentation", "LLVMIRReader", "LLVMAsmParser", "LLVMDebugInfo", "LLVMOption", "LLVMLTO", "LLVMLinker", "LLVMipo", "LLVMVectorize", "LLVMBitWriter", "LLVMBitReader", "LLVMTableGen", "LLVMX86Disassembler", "LLVMX86AsmParser", "LLVMX86CodeGen", "LLVMSelectionDAG", "LLVMAsmPrinter", "LLVMX86Desc", "LLVMX86Info", "LLVMX86AsmPrinter", "LLVMX86Utils", "LLVMMCDisassembler", "LLVMMCParser", "LLVMInterpreter", "LLVMMCJIT", "LLVMJIT", "LLVMCodeGen", "LLVMObjCARCOpts", "LLVMScalarOpts", "LLVMInstCombine", "LLVMTransformUtils", "LLVMipa", "LLVMAnalysis", "LLVMRuntimeDyld", "LLVMExecutionEngine", "LLVMTarget", "LLVMMC", "LLVMObject", "LLVMCore", "LLVMSupport", linkCPPStdLib] ++
+              extraLibs = ["chelper", "cpphelper", "clangTooling", "clangFrontendTool", "clangFrontend", "clangDriver", "clangSerialization", "clangCodeGen", "clangParse", "clangSema", "clangAnalysis", "clangRewriteFrontend", "clangRewriteCore", "clangEdit", "clangAST", "clangLex", "clangBasic", "LLVMInstrumentation", "LLVMIRReader", "LLVMAsmParser", "LLVMDebugInfo", "LLVMOption", "LLVMLTO", "LLVMLinker", "LLVMipo", "LLVMVectorize", "LLVMBitWriter", "LLVMBitReader", "LLVMTableGen", "LLVMX86Disassembler", "LLVMX86AsmParser", "LLVMX86CodeGen", "LLVMSelectionDAG", "LLVMAsmPrinter", "LLVMX86Desc", "LLVMX86Info", "LLVMX86AsmPrinter", "LLVMX86Utils", "LLVMMCDisassembler", "LLVMMCParser", "LLVMInterpreter", "LLVMMCJIT", "LLVMJIT", "LLVMCodeGen", "LLVMObjCARCOpts", "LLVMScalarOpts", "LLVMInstCombine", "LLVMTransformUtils", "LLVMipa", "LLVMAnalysis", "LLVMRuntimeDyld", "LLVMExecutionEngine", "LLVMTarget", "LLVMMC", "LLVMObject", "LLVMCore", "LLVMSupport", linkCPPStdLib] ++
                             ["imagehlp" | buildOS == Windows]
             }
 
             addGHCArgs = onProgram ghcProgram
                        . onProgramOverrideArgs
-                       $ (++ (["-optl-static" | buildOS == Windows]
-                              ++ ["-optl-Wl,-rpath," ++ libdir (absoluteInstallDirs pkg lbi NoCopyDest)])
+                       $ (++ ["-optl-Wl,-rpath," ++ libdir (absoluteInstallDirs pkg lbi NoCopyDest)])
                         )
 
             lbi' = onLocalLibBuildInfo addCWrapper . onPrograms addGHCArgs $ lbi
 
 
-        libclangExists <- doesFileExist $ llvmLibDir </> "libclang.a"
+        libclangExists <- doesFileExist $ llvmLibDir </> "libclangTooling.a"
         unless libclangExists $ do
             notice verbosity "Building LLVM and Clang..."
 
@@ -228,12 +223,6 @@ libClangBuildHook pkg lbi usrHooks flags = do
                 rawSystemExit verbosity "make"   ["-j4" | buildOS /= Windows]
               rawSystemExit verbosity "make" $ ["-j4" | buildOS /= Windows] ++ ["install"]
 
-            -- OS X's linker _really_ wants to link dynamically, and it doesn't support
-            -- the options you'd usually use to control that on Linux. We rename the
-            -- libclang library to make sure the linker does what we intend.
-            copyFileVerbose verbosity (llvmLibDir </> mkStaticLib "clang")
-                                      (llvmLibDir </> mkStaticLib "clang_static")
-
 
         notice verbosity "Building C wrapper library..."
         inDir (curDir </> "cbits") $
@@ -250,45 +239,26 @@ libClangBuildHook pkg lbi usrHooks flags = do
         buildHook simpleUserHooks (localPkgDescr lbi) lbi usrHooks flags
 
 
-libClangCopyHook :: PackageDescription -> LocalBuildInfo -> UserHooks -> CopyFlags -> IO ()
-libClangCopyHook pkg lbi hooks flags = do
-  copyHook simpleUserHooks pkg lbi hooks flags
-
-  curDir <- getCurrentDirectory
-  let verbosity = fromFlag (copyVerbosity flags)
-      lookupConfFlag flagName defaultValue = fromMaybe defaultValue $
-            lookup (FlagName flagName) (configConfigurationsFlags $ configFlags lbi)
-      debug = lookupConfFlag "debug" False
-      llvmLibDir = curDir </> "cbits" </> (if debug then "clangbuilddebug" else "clangbuild") </> "out" </> "lib"
-      libCopyDir = libdir $ absoluteInstallDirs pkg lbi NoCopyDest
-
-  notice verbosity "Installing libclang shared libraries..."
-  copyFiles verbosity libCopyDir $ map ((llvmLibDir,) . mkSharedLib) libclangSharedLibraries
-
-
 libClangCleanHook :: PackageDescription -> () -> UserHooks -> CleanFlags -> IO ()
 libClangCleanHook pkg v hooks flags = do
   curDir <- getCurrentDirectory
   let verbosity = fromFlag (cleanVerbosity flags)
       buildDir = curDir </> "cbits" </> "build"
-      headersZipFile = curDir </> "res" </> "headers.zip"
+      resourcesZipFile = curDir </> "res" </> "init.zip"
   buildDirExists <- doesDirectoryExist buildDir
   when buildDirExists $ removeDirectoryRecursive buildDir
-  headersZipFileExists <- doesFileExist headersZipFile
-  when headersZipFileExists $ removeFile headersZipFile
+  resourcesZipFileExists <- doesFileExist resourcesZipFile
+  when resourcesZipFileExists $ removeFile resourcesZipFile
 
   cleanHook simpleUserHooks pkg v hooks flags
 
-  notice verbosity "LLVM and Clang are NOT cleaned! Remove clangbuild folders manually to trigger their rebuild"
+  notice verbosity "LLVM and Clang were NOT cleaned! Remove clangbuild folders manually to trigger their rebuild"
 
 
 
 mkStaticLib :: String -> String
 --mkStaticLib lname = mkLibName (LibraryName lname)
 mkStaticLib lname = "lib" ++ lname <.> "a"
-
-mkSharedLib :: String -> String
-mkSharedLib lname = "lib" ++ lname <.> dllExtension
 
 
 confProgram, makeProgram, swVersProgram :: Program
