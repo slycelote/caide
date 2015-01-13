@@ -195,7 +195,6 @@ libClangBuildHook pkg lbi usrHooks flags = do
             addGHCArgs = onProgram ghcProgram
                        . onProgramOverrideArgs
                        $ (++ ["-optl-Wl,-rpath," ++ libdir (absoluteInstallDirs pkg lbi NoCopyDest)])
-                        )
 
             lbi' = onLocalLibBuildInfo addCWrapper . onPrograms addGHCArgs $ lbi
 
