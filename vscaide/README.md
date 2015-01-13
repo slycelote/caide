@@ -2,7 +2,7 @@ VsCaide is a Visual Studio extension which serves as caide frontend. Rather than
 
 # Installation
 
-Visual Studio 2013 Community Edition (free) or higher is required. To install, locate VsCaide in extensions manager. Alternatively, double click downloaded \*.vsix file.
+[Visual Studio 2013 Community Edition](http://www.visualstudio.com/en-us/news/vs2013-community-vs.aspx) (free) or higher is required. To install, locate VsCaide in extensions manager. Alternatively, double click downloaded \*.vsix file.
 
 # Quick start
 
@@ -14,5 +14,5 @@ You can run/debug tests by clicking corresponding buttons in Caide window or by 
 
 # Configuration
 
-You can use most configuration options described in [libcaide README](https://github.com/slycelote/caide/tree/master/libcaide/README.md). In addition, if a [property file](http://msdn.microsoft.com/en-us/library/669zx6zc.aspx) named `vs_common.props` exists in root caide directory, it will be included into all generated projects.
+You can use most configuration options described in [libcaide README](https://github.com/slycelote/caide/tree/master/libcaide/README.md#configuration). Make sure to read the section on [C++ inliner](https://github.com/slycelote/caide/tree/master/libcaide/README.md#inliner) too. In addition, if a [property file](http://msdn.microsoft.com/en-us/library/669zx6zc.aspx) named `vs_common.props` exists in root caide directory, it will be included into all generated projects.
 

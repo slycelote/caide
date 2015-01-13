@@ -66,6 +66,7 @@ caide core contains limited support for [Codelite IDE](http://codelite.org). To 
 
 You can edit template Codelite project in [templates](#templates) directory. In particular, you may want to set compiler to something that exists in your setup, instead of clang++.
 
+<a name="inliner"/>
 # C++ code inliner
 Online judges typically require that you send a single code file. It makes using prewritten code more difficult: you have to copy and paste it into your solution. You could also put all your prewritten code in one giant template, but some online judges have a rule forbidding unused code.
 caide lets you use your library of prewritten code in a normal way: put \*.h and \*.cpp files into `cpplib` directory and #include necessary headers. `caide make` command then will then generate a single submission file from your solution and library - this is referred to as 'inlining' the code.
