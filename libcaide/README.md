@@ -3,6 +3,8 @@ caide is a command line application which is the core of caide software suite.
 # Installation
 Simply unpack caide executable to your hard drive. Optionally, put it into a directory in your PATH for easier access.
 
+On linux you will need to ensure certain libraries are installed: libstdc++6, zlib1g, libgmp10. On a 64-bit system append `:i386` to package names.
+
 # Quick start
 1. Run `caide init` in an empty directory to initialize caide project.
 2. Edit `caide.ini` file if you want to modify some settings.
