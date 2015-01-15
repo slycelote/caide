@@ -197,11 +197,10 @@ defaultCaideConf root = forceEither $
         ]
 
 
-defaultCaideState :: String -> ConfigParser
-defaultCaideState caideExe = forceEither $
+defaultCaideState :: ConfigParser
+defaultCaideState = forceEither $
     addSection "core" emptyCP >>=
-    setValue "core" "problem" "" >>=
-    setValue "core" "caide_exe" caideExe
+    setValue "core" "problem" ""
 
 defaultProblemConfig :: ConfigParser
 defaultProblemConfig = forceEither $

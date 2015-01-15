@@ -14,8 +14,6 @@ import Data.FileEmbed (embedFile)
 import Filesystem.Path.CurrentOS (encodeString)
 import qualified Filesystem.Path as FSP
 
-import System.Environment (getExecutablePath)
-
 import Caide.Configuration (writeCaideConf, writeCaideState, defaultCaideConf, defaultCaideState)
 import Caide.Types
 
@@ -30,9 +28,8 @@ cmd = CommandHandler
 initialize :: [String] -> CaideIO ()
 initialize _ = do
     curDir <- caideRoot
-    caideExe <- liftIO getExecutablePath
     _ <- writeCaideConf $ defaultCaideConf curDir
-    _ <- writeCaideState $ defaultCaideState caideExe
+    _ <- writeCaideState defaultCaideState
     liftIO $ do
         unpackResources curDir
         putStrLn $ "Initialized caide directory at " ++ encodeString curDir

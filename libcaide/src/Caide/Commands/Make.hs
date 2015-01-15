@@ -18,7 +18,9 @@ import Filesystem (isDirectory, listDirectory, createTree, removeFile, copyFile,
 import Filesystem.Path.CurrentOS (FilePath, decodeString, encodeString,
     hasExtension, replaceExtension, basename, filename, (</>))
 
-import Caide.Configuration (getActiveProblem, readProblemState, readCaideState)
+import System.Environment (getExecutablePath)
+
+import Caide.Configuration (getActiveProblem, readProblemState)
 import Caide.Registry (findLanguage)
 import Caide.Types
 import Caide.Util (copyFileToDir)
@@ -65,14 +67,12 @@ make :: [String] -> CaideIO ()
 make _ = withProblem $ \_ _ -> makeProblem
 
 updateTests :: CaideIO ()
-updateTests = withProblem $ \_ problemDir -> do
-    hState <- readCaideState
-    caideExe <- getProp hState "core" "caide_exe"
-    liftIO $ do
-        copyTestInputs problemDir
-        updateTestList problemDir
-        let testDir = problemDir </> decodeString ".caideproblem" </> decodeString "test"
-        writeTextFile (testDir </> decodeString "caideExe.txt") $ T.pack caideExe
+updateTests = withProblem $ \_ problemDir -> liftIO $ do
+    caideExe <- getExecutablePath
+    copyTestInputs problemDir
+    updateTestList problemDir
+    let testDir = problemDir </> decodeString ".caideproblem" </> decodeString "test"
+    writeTextFile (testDir </> decodeString "caideExe.txt") $ T.pack caideExe
 
 prepareSubmission :: CaideIO ()
 prepareSubmission = withProblem $ \probId problemDir -> do
