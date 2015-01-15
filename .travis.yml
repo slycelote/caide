@@ -2,3 +2,10 @@ language: haskell
 ghc: 7.8
 before_install:
   - cd libcaide
+script:
+  - cabal configure && cabal build
+  - regression-tests/run-tests.sh
+notifications:
+  email:
+    on_success: always
+    on_failure: always
