@@ -17,7 +17,15 @@ int main() {
     string caideExe;
     {
         ifstream caidePath("caideExe.txt");
-        caidePath >> caideExe;
+        std::getline(caidePath, caideExe);
+#ifdef _WIN32
+        const char* quotes = "\"\"";
+#else
+        const char* quotes = "\"";
+#endif
+        ostringstream strstream;
+        strstream << quotes << caideExe << quotes;
+        caideExe = strstream.str();
     }
 
     // Prepare the list of test cases in correct order; add recently created test cases too.
