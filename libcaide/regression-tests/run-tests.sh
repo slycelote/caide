@@ -2,8 +2,8 @@
 set -e
 set -u
 
-cur_dir=$(readlink -e $(dirname $0))
-[ -d $cur_dir ] || exit 42
+cur_dir=$( cd $(dirname "${BASH_SOURCE[0]}") ; pwd )
+[ -d $cur_dir ] || exit 420
 
 tmp_dir=$cur_dir/tmp
 export caide=$cur_dir/../dist/build/caide/caide
@@ -14,7 +14,7 @@ mkdir -p $tmp_dir
 failed=0
 passed=0
 shopt -s nullglob
-for f in *.test
+for f in $( cd $cur_dir ; ls *.test )
 do
     echo " == Running $f... =="
     full_test_path=$cur_dir/$f

@@ -1,0 +1,14 @@
+#!/bin/bash
+mkdir "sp ace"
+cp $caide "sp ace"
+caid="$PWD/sp ace/caide"
+mkdir repo
+cd repo
+"$caid" init
+"$caid" problem prob
+"$caid" make
+cd prob
+g++ prob*.cpp
+cd .caideproblem/test
+../../a
+

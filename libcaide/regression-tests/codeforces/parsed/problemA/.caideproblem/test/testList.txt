@@ -1,3 +1,0 @@
-case1 Run
-case2 Run
-case3 Run

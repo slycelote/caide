@@ -1,5 +1,10 @@
 function compare_with {
     local etalon_dir=$etalon_dir/$1
-    diff -wBqr . $etalon_dir && return 0 || return 1
+    shift 1
+    for file in "$@"
+    do
+        diff -wBq ./$file $etalon_dir/$file || return 1
+    done
+    return 0
 }
 
