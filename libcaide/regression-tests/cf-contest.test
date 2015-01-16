@@ -1,0 +1,5 @@
+#!/bin/bash
+"$caide" init
+"$caide" contest http://codeforces.com/contest/1
+compare_with parsed cf1{A..C}/case1.{in,out}
+
