@@ -29,7 +29,11 @@ do
     work_dir=$tmp_dir/${f%.test}
     rm -rf $work_dir
 
-    [ -d $etalon_dir/init ] && cp -R $etalon_dir/init $work_dir || mkdir -p $work_dir
+    if [ -d $etalon_dir/init ] ; then
+        cp -R $etalon_dir/init $work_dir
+    else
+        mkdir -p $work_dir
+    fi
 
     cd $work_dir
 

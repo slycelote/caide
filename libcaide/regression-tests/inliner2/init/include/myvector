@@ -1,0 +1,22 @@
+namespace mystd {
+    template<typename T>
+    class vector {
+        T* arr;
+        int size;
+    public:
+        vector()
+            : arr(0)
+            , size(0)
+        {}
+        void resize(int newSize) {
+            if (newSize > size) {
+                T* newArr = new T[newSize];
+                for (int i = 0; i < size; ++i)
+                    newArr[i] = arr[i];
+                delete[] arr;
+                arr = newArr;
+                size = newSize;
+            }
+        }
+    };
+}

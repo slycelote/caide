@@ -1,0 +1,23 @@
+#!/bin/bash
+"$caide" init
+"$caide" problem prob
+cd prob
+g++ prob*.cpp -o prob.exe
+"$caide" make
+
+echo 1 >case1.in
+
+rm -rf .caideproblem
+"$caide" update_tests
+
+cd ..
+compare_with after-update-tests prob/.caideproblem/test/{case1.in,testList.txt}
+
+cd prob/.caideproblem/test
+../../prob.exe
+
+cd ../../..
+
+#rm -rf .caide
+#"$caide" checkout prob
+
