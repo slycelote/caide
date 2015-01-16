@@ -1,0 +1,10 @@
+namespace mystd {
+    template<typename T>
+    class vector {
+        T* arr;
+    public:
+        vector()
+            : arr(0)
+        {}
+    };
+}

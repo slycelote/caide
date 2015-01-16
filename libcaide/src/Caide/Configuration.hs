@@ -49,7 +49,7 @@ import Filesystem.Path (FilePath, (</>))
 
 
 import Caide.Types
-import Caide.Util (forceEither, splitString)
+import Caide.Util (forceEither, splitString, trimString)
 
 
 setProperties :: Monad m => ConfigFileHandle -> [(String, String, String)] -> CaideM m ()
@@ -57,7 +57,7 @@ setProperties handle properties = forM_ properties $ \(section, key, value) ->
     setProp handle section key value
 
 getListProp :: (Functor m, Monad m) => ConfigFileHandle -> String -> String -> CaideM m [String]
-getListProp h section key = splitString ",\r\n " <$> getProp h section key
+getListProp h section key = map trimString . splitString "," <$> getProp h section key
 
 orDefault :: Monad m => CaideM m a -> a -> CaideM m a
 orDefault getter defaultValue = getter `catchError` const (return defaultValue)

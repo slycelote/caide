@@ -8,9 +8,11 @@ module Caide.Util(
     , copyFileToDir
     , copyTreeToDir
     , splitString
+    , trimString
 ) where
 
 import Control.Monad (forM_)
+import Data.Char (isSpace)
 import Data.Maybe (fromJust)
 import qualified Data.Text as T
 import Filesystem (copyFile, listDirectory, isFile, isDirectory, createDirectory)
@@ -90,3 +92,5 @@ splitString separators s = reverse (go s []) where
                        (word, rest') = break (`elem` separators) rest
                    in go rest' $ if null word then parts else word:parts
 
+trimString :: String -> String
+trimString = reverse . dropWhile isSpace . reverse . dropWhile isSpace
