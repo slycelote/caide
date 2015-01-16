@@ -1,9 +1,13 @@
 module Text.HTML.TagSoup.Utils (
       (~~==)
     , (~~/==)
+    , isTagName
+    , mergeTextTags
 ) where
 
-import Text.StringLike (StringLike, toString)
+import Data.List (groupBy)
+
+import Text.StringLike (StringLike, toString, strConcat)
 import Text.HTML.TagSoup
 
 -- | Like '(~==)', but splits values of attributes on whitespace. Useful mainly for `class` attribute,
@@ -28,3 +32,17 @@ splitOn c str = go str ([], "")
     go "" (res, acc) = res `seq` res ++ [acc | not (null acc)]
     go (h:t) (res, acc) | h == c    = res `seq` go t (res ++ [acc | not (null acc)], "")
                         | otherwise = acc `seq` go t (res, acc ++ [h])
+
+
+isTagName :: Eq str => str -> Tag str -> Bool
+isTagName name tag = isTagOpenName name tag || isTagCloseName name tag
+
+mergeTextTags :: (StringLike str, Show str) => [Tag str] -> [Tag str]
+mergeTextTags = map merge . groupBy cmp
+  where
+    cmp t1 t2 = isTagText t1 && isTagText t2
+
+    merge tags@(TagText _ : _) = TagText . strConcat . map fromTagText $ tags
+    merge [t] = t
+    merge _ = error "mergeTextTags"
+

@@ -6,10 +6,12 @@ import qualified Data.Text as T
 
 import Network.URI (parseURI, uriAuthority, uriRegName)
 
-import Text.HTML.TagSoup (Tag, innerText, parseTags, sections, (~==), (~/=))
+import Text.HTML.TagSoup (Tag(..), innerText, fromTagText, parseTags,
+                         isTagCloseName, isTagOpenName, (~/=))
 
 import Caide.Types
 import Caide.Util (downloadDocument)
+import Text.HTML.TagSoup.Utils ((~~/==), isTagName, mergeTextTags)
 
 
 codeChefParser :: ProblemParser
@@ -40,17 +42,39 @@ doParse url = do
 
                 -- test cases
                 problemPage = dropWhile (~/= "<div id=problem-page>") tags
-                content = takeWhile (~/= "</div>") . dropWhile (~/= "<div class=content>") $ problemPage
-                samples = sections (~== "<pre>") content
-                parseSample pre = TestCase (T.strip $ innerText input) (T.strip $ innerText output)
-                    where input = takeWhile (~/= "<b>") . skipTag "b" $ pre
-                          output = takeWhile (~/= "</pre>") . skipTag "b" . skipTag "b" $ pre
-                testCases = map parseSample samples
+                content = dropWhile (~~/== "<div class=content>") problemPage
+                testsContainer = drop 1 . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>") $ content
+                rootTextNodes = extractCurrentLevelTextNodes . mergeTextTags . replaceBr $ testsContainer
+                inputsAndOutputs = filter (not . T.null) . map (T.strip . fromTagText) $ rootTextNodes
+                testCases = [TestCase (inputsAndOutputs!!i) (inputsAndOutputs!!(i+1)) |
+                                i <- [0, 2 .. length inputsAndOutputs-2]]
 
             if null problemCode
                 then return . Left $ "Couldn't parse problem statement"
                 else return . Right $ (Problem title probId, testCases)
 
-skipTag :: String -> [Tag T.Text] -> [Tag T.Text]
-skipTag tagName = drop 1 . dropWhile (~/= ("</" ++ tagName ++ ">")) . dropWhile (~/= ("<" ++ tagName ++ ">"))
+extractCurrentLevelTextNodes :: Eq a => [Tag a] -> [Tag a]
+extractCurrentLevelTextNodes tags = go tags []
+  where
+    go [] nodes = reverse nodes
+    go (TagText s:rest) nodes = go rest (TagText s:nodes)
+    go (TagOpen name _ : rest) nodes = go (dropWhile (not . isTagCloseName name) rest) nodes
+    go (_:rest) nodes = go rest nodes
+
+replaceBr :: [Tag T.Text] -> [Tag T.Text]
+replaceBr [] = []
+
+replaceBr (o:c:rest)
+    | isTagOpenName br o && isTagCloseName br c   = TagText lineFeed : replaceBr rest
+
+replaceBr (t:rest)
+    | isTagName br t = TagText lineFeed : replaceBr rest
+    | otherwise      = t : replaceBr rest
+
+
+br :: T.Text
+br = T.pack "br"
+
+lineFeed :: T.Text
+lineFeed = T.pack "\n"
 

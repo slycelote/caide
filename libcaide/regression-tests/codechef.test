@@ -1,0 +1,8 @@
+#!/bin/bash
+"$caide" init
+"$caide" problem http://www.codechef.com/problems/MAXCIR
+"$caide" problem http://www.codechef.com/problems/POWERMUL
+"$caide" problem http://www.codechef.com/problems/MX
+
+compare_with parsed chefMAXCIR/case{1,2}.{in,out} chef{MX,POWERMUL}/case1.{in,out}
+
