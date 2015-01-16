@@ -14,7 +14,14 @@ mkdir -p $tmp_dir
 failed=0
 passed=0
 shopt -s nullglob
-for f in $( cd $cur_dir ; ls *.test )
+
+if [ "$#" -eq 0 ]; then
+    tests=($( cd $cur_dir ; ls *.test ))
+else
+    tests=( "$@" )
+fi
+
+for f in "${tests[@]}"
 do
     echo " == Running $f... =="
     full_test_path=$cur_dir/$f
