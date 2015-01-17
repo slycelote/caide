@@ -1,11 +1,24 @@
 language: haskell
 ghc: 7.8
+
 before_install:
   - cd libcaide
+  - g++ --version
+  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+  - sudo apt-get update -qq
+
+install:
+  - sudo apt-get install -qq gcc-4.8 g++-4.8
+  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 90
+  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90
+  - g++ --version
+  - gcc --version
+
 script:
-  - cabal configure && cabal build
-  - regression-tests/run-tests.sh
+  - cabal configure && cabal build && regression-tests/run-tests.sh
+
 notifications:
   email:
     on_success: always
     on_failure: always
+
