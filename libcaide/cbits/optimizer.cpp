@@ -181,7 +181,7 @@ public:
     bool VisitClassTemplateSpecializationDecl(ClassTemplateSpecializationDecl* specDecl) {
         dbg() << CAIDE_FUNC;
         llvm::PointerUnion<ClassTemplateDecl*, ClassTemplatePartialSpecializationDecl*>
-            instantiatedFrom = specDecl->getInstantiatedFrom();
+            instantiatedFrom = specDecl->getSpecializedTemplateOrPartial();
 
         if (instantiatedFrom.is<ClassTemplateDecl*>())
             insertReference(specDecl, instantiatedFrom.get<ClassTemplateDecl*>());

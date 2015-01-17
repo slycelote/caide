@@ -1,4 +1,5 @@
 #!/bin/bash
 "$caide" make
 compare_with inlined submission.cpp
+g++ -isystem include submission.cpp
 

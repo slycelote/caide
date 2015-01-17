@@ -1,3 +1,6 @@
+template<typename T>
+struct TC {
+};
 
 template<typename T>
 struct TC<T*> {
