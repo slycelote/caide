@@ -479,13 +479,13 @@ public:
         , result(_result)
     {}
 
-    virtual ASTConsumer* CreateASTConsumer(CompilerInstance& compiler, StringRef /*file*/)
+    virtual std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance& compiler, StringRef /*file*/)
     {
         if (!compiler.hasSourceManager()) {
             throw "No source manager";
         }
         rewriter.setSourceMgr(compiler.getSourceManager(), compiler.getLangOpts());
-        return new OptimizerConsumer(compiler.getSourceManager(), rewriter, result);
+        return std::unique_ptr<OptimizerConsumer>(new OptimizerConsumer(compiler.getSourceManager(), rewriter, result));
     }
 };
 

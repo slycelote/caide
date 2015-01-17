@@ -293,11 +293,11 @@ public:
         , includedHeaders(_includedHeaders)
     {}
 
-    virtual ASTConsumer* CreateASTConsumer(CompilerInstance& compiler, StringRef /*file*/) {
-        compiler.getPreprocessor().addPPCallbacks(new TrackMacro(
-                compiler.getSourceManager(), includedHeaders, replacementStack));
+    virtual std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance& compiler, StringRef /*file*/) {
+        compiler.getPreprocessor().addPPCallbacks(std::unique_ptr<TrackMacro>(new TrackMacro(
+                compiler.getSourceManager(), includedHeaders, replacementStack)));
 
-        return new InlinerConsumer();
+        return std::unique_ptr<InlinerConsumer>(new InlinerConsumer());
     }
 };
 

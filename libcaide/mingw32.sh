@@ -1,1 +1,3 @@
-PATH="/c/bin/cabal/.cabal-sandbox/bin:/c/python27:/c/bin/HaskellPlatform/2014.2.0.0/bin:/c/bin/HaskellPlatform/2014.2.0.0/lib/extralibs/bin:/c/bin/HaskellPlatform/2014.2.0.0/mingw/bin:/c/bin/mingw/bin:$PATH"
+HPVER=with-new-mingw
+PATH="/c/bin/cabal/.cabal-sandbox/bin:/c/python27:/c/bin/HaskellPlatform/$HPVER/bin:/c/bin/HaskellPlatform/$HPVER/lib/extralibs/bin:/c/bin/HaskellPlatform/$HPVER/mingw/bin:/c/bin/mingw/bin:$PATH"
+

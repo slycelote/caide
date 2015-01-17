@@ -108,8 +108,14 @@ libClangConfHook (pkg, pbi) flags = do
                            , "--enable-bindings=none"
                            , "--enable-libcpp=" ++ confCPPStdLib
                            , "--prefix=" ++ llvmPrefixDirCanonical
---                           , "CXXFLAGS=-D_GLIBCXX_HAVE_FENV_H=1"
                            ] ++
+
+                           (if buildOS == Windows
+                                then ["CXXFLAGS=-D_GLIBCXX_HAVE_FENV_H=1 -D_WINVER=0x0502 -D_WIN32_WINNT=0x0502"]
+                                else []
+                           ) ++
+
+
                            {-
                            -- mingw can't handle files this large
                            if debug
@@ -161,7 +167,7 @@ zipResources curDir verbosity llvmPrefixDir = do
         case llvmPrefixDir of
             Nothing -> B.writeFile initFile $ fromArchive archive
             Just dir -> do
-                archive' <- addFilesToZipFile archive $ dir </> "lib" </> "clang" </> "3.4.2"
+                archive' <- addFilesToZipFile archive $ dir </> "lib" </> "clang" </> "3.6.0"
                 B.writeFile initFile $ fromArchive archive'
 
 
@@ -188,7 +194,7 @@ libClangBuildHook pkg lbi usrHooks flags = do
             llvmLibDir = llvmPrefixDir </> "lib"
 
             addCWrapper bi = bi {
-              extraLibs = ["chelper", "cpphelper", "clangTooling", "clangFrontendTool", "clangFrontend", "clangDriver", "clangSerialization", "clangCodeGen", "clangParse", "clangSema", "clangAnalysis", "clangRewriteFrontend", "clangRewriteCore", "clangEdit", "clangAST", "clangLex", "clangBasic", "LLVMInstrumentation", "LLVMIRReader", "LLVMAsmParser", "LLVMDebugInfo", "LLVMOption", "LLVMLTO", "LLVMLinker", "LLVMipo", "LLVMVectorize", "LLVMBitWriter", "LLVMBitReader", "LLVMTableGen", "LLVMX86Disassembler", "LLVMX86AsmParser", "LLVMX86CodeGen", "LLVMSelectionDAG", "LLVMAsmPrinter", "LLVMX86Desc", "LLVMX86Info", "LLVMX86AsmPrinter", "LLVMX86Utils", "LLVMMCDisassembler", "LLVMMCParser", "LLVMInterpreter", "LLVMMCJIT", "LLVMJIT", "LLVMCodeGen", "LLVMObjCARCOpts", "LLVMScalarOpts", "LLVMInstCombine", "LLVMTransformUtils", "LLVMipa", "LLVMAnalysis", "LLVMRuntimeDyld", "LLVMExecutionEngine", "LLVMTarget", "LLVMMC", "LLVMObject", "LLVMCore", "LLVMSupport", linkCPPStdLib] ++
+              extraLibs = ["chelper", "cpphelper", "clangTooling", "clangFrontendTool", "clangFrontend", "clangDriver", "clangSerialization", "clangCodeGen", "clangParse", "clangSema", "clangAnalysis", "clangRewriteFrontend", "clangRewrite", "clangEdit", "clangAST", "clangLex", "clangBasic", "LLVMInstrumentation", "LLVMIRReader", "LLVMAsmParser", "LLVMDebugInfo", "LLVMOption", "LLVMLTO", "LLVMLinker", "LLVMipo", "LLVMVectorize", "LLVMBitWriter", "LLVMBitReader", "LLVMTableGen", "LLVMX86Disassembler", "LLVMX86AsmParser", "LLVMX86CodeGen", "LLVMSelectionDAG", "LLVMAsmPrinter", "LLVMX86Desc", "LLVMX86Info", "LLVMX86AsmPrinter", "LLVMX86Utils", "LLVMMCDisassembler", "LLVMMCParser", "LLVMInterpreter", "LLVMMCJIT", "LLVMCodeGen", "LLVMObjCARCOpts", "LLVMScalarOpts", "LLVMInstCombine", "LLVMTransformUtils", "LLVMipa", "LLVMAnalysis", "LLVMRuntimeDyld", "LLVMExecutionEngine", "LLVMTarget", "LLVMMC", "LLVMObject", "LLVMCore", "LLVMSupport", linkCPPStdLib] ++
                             ["imagehlp" | buildOS == Windows]
             }
 

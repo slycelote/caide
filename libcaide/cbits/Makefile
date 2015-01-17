@@ -29,6 +29,8 @@ ifdef CAIDE_DEBUG
 else
 	CXXFLAGS += -O2
 endif
+CXXFLAGS += -std=c++11
+
 ARCHIVER := ar
 
 LLVM_CXXFLAGS := $($(LLVM_BIN_PATH)/llvm-config --cxxflags)
