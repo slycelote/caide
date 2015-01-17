@@ -26,12 +26,28 @@ public:
     Vertex() {}
 };
 
+struct Y {
+    bool operator ++ (int x) {
+        return true;
+    }
+};
+
+bool operator + (Y a, Y b) {
+    return true;
+}
+
 int main() {
     int x;
     spcppl::f(x);
     goF(X());
+
     mystd::vector<Vertex> v;
     v.resize(100);
+
+    Y y;
+    y++;
+    y + y;
+
     return 0;
 };
 
