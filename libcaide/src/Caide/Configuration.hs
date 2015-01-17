@@ -42,11 +42,12 @@ import Control.Monad.Except (catchError)
 import Control.Monad.Trans (liftIO)
 import Data.ConfigFile (ConfigParser, CPError, CPErrorData(OtherProblem), SectionSpec, OptionSpec,
                         set, emptyCP, add_section)
-import Data.List (intercalate)
+import Data.List (intercalate, isPrefixOf)
 import Filesystem (isDirectory)
 import Filesystem.Path.CurrentOS (encodeString, decodeString)
 import Filesystem.Path (FilePath, (</>))
 
+import System.Info (arch, os)
 
 import Caide.Types
 import Caide.Util (forceEither, splitString, trimString)
@@ -167,34 +168,48 @@ addSection section conf = add_section conf section
 setValue :: SectionSpec -> OptionSpec -> String -> ConfigParser -> Either CPError ConfigParser
 setValue section key value conf = set conf section key value
 
-defaultCaideConf :: FilePath -> ConfigParser
-defaultCaideConf root = forceEither $
+defaultCaideConf :: FilePath -> Bool -> ConfigParser
+defaultCaideConf root useSystemHeaders = forceEither $
     addSection "core" emptyCP >>=
     setValue "core" "language" "cpp" >>=
     setValue "core" "features" "" >>=
     setValue "core" "builder" "none" >>=
     addSection "cpp" >>=
-    setValue "cpp" "clang_options" (intercalate ",\n  " clangOptions)
+    setValue "cpp" "clang_options" (intercalate ",\n  " $ clangOptions root useSystemHeaders)
 
-  where
-    clangOptions = [
-        "-target",
-        "i386-pc-mingw32",
-        "-nostdinc",
-        "-isystem",
-        encodeString $ root </> decodeString "include" </> decodeString "mingw-4.8.1",
-        "-isystem",
-        encodeString $ root </> decodeString "include" </> decodeString "mingw-4.8.1" </> decodeString "c++",
-        "-isystem",
-        encodeString $ root </> decodeString "include" </> decodeString "mingw-4.8.1" </> decodeString "c++" </> decodeString "mingw32",
-        "-isystem",
-        encodeString $ root </> decodeString "include",
-        "-I",
-        encodeString $ root </> decodeString "cpplib",
-        "-std=c++11",
-        "-D__MSVCRT__=1",
-        "_D__declspec="
-        ]
+clangOptions :: FilePath -> Bool -> [String]
+clangOptions root False = [
+    "-target",
+    "i386-pc-mingw32",
+    "-nostdinc",
+    "-isystem",
+    encodeString $ root </> decodeString "include" </> decodeString "mingw-4.8.1",
+    "-isystem",
+    encodeString $ root </> decodeString "include" </> decodeString "mingw-4.8.1" </> decodeString "c++",
+    "-isystem",
+    encodeString $ root </> decodeString "include" </> decodeString "mingw-4.8.1" </> decodeString "c++" </> decodeString "mingw32",
+    "-isystem",
+    encodeString $ root </> decodeString "include",
+    "-I",
+    encodeString $ root </> decodeString "cpplib",
+    "-std=c++11",
+    "-D__MSVCRT__=1",
+    "_D__declspec="
+    ]
+
+clangOptions root True | "mingw" `isPrefixOf` os = [
+    "-target",
+    "i386-pc-windows-msvc",
+    "-I",
+    encodeString $ root </> decodeString "cpplib"
+    ]
+
+clangOptions root True = [
+    "-target",
+    arch ++ "-" ++ os,
+    "-I",
+    encodeString $ root </> decodeString "cpplib"
+    ]
 
 
 defaultCaideState :: ConfigParser

@@ -26,9 +26,10 @@ cmd = CommandHandler
     }
 
 initialize :: [String] -> CaideIO ()
-initialize _ = do
+initialize args = do
+    let useSystemHeaders = "--cpp-use-system-headers" `elem` args
     curDir <- caideRoot
-    _ <- writeCaideConf $ defaultCaideConf curDir
+    _ <- writeCaideConf $ defaultCaideConf curDir useSystemHeaders
     _ <- writeCaideState defaultCaideState
     liftIO $ do
         unpackResources curDir
