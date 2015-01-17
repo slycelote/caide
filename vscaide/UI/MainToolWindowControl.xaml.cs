@@ -100,7 +100,7 @@ namespace slycelote.VsCaide
                     solutionDir = folderBrowserDialog.SelectedPath;
                 }
 
-                if (null == RunCaideExe(new[] { "init" }, loud: true, solutionDir: solutionDir))
+                if (null == RunCaideExe(new[] { "init", "--cpp-use-system-headers" }, loud: true, solutionDir: solutionDir))
                 {
                     return;
                 }
