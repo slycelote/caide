@@ -109,11 +109,7 @@ libClangConfHook (pkg, pbi) flags = do
                            , "--enable-libcpp=" ++ confCPPStdLib
                            , "--prefix=" ++ llvmPrefixDirCanonical
                            ] ++
-
-                           (if buildOS == Windows
-                                then ["CXXFLAGS=-D_GLIBCXX_HAVE_FENV_H=1 -D_WINVER=0x0502 -D_WIN32_WINNT=0x0502"]
-                                else []
-                           ) ++
+                           ["CXXFLAGS=-D_GLIBCXX_HAVE_FENV_H=1 -D_WINVER=0x0502 -D_WIN32_WINNT=0x0502" | buildOS == Windows] ++
 
 
                            {-
@@ -194,8 +190,64 @@ libClangBuildHook pkg lbi usrHooks flags = do
             llvmLibDir = llvmPrefixDir </> "lib"
 
             addCWrapper bi = bi {
-              extraLibs = ["chelper", "cpphelper", "clangTooling", "clangFrontendTool", "clangFrontend", "clangDriver", "clangSerialization", "clangCodeGen", "clangParse", "clangSema", "clangAnalysis", "clangRewriteFrontend", "clangRewrite", "clangEdit", "clangAST", "clangLex", "clangBasic", "LLVMInstrumentation", "LLVMIRReader", "LLVMAsmParser", "LLVMDebugInfo", "LLVMOption", "LLVMLTO", "LLVMLinker", "LLVMipo", "LLVMVectorize", "LLVMBitWriter", "LLVMBitReader", "LLVMTableGen", "LLVMX86Disassembler", "LLVMX86AsmParser", "LLVMX86CodeGen", "LLVMSelectionDAG", "LLVMAsmPrinter", "LLVMX86Desc", "LLVMX86Info", "LLVMX86AsmPrinter", "LLVMX86Utils", "LLVMMCDisassembler", "LLVMMCParser", "LLVMInterpreter", "LLVMMCJIT", "LLVMCodeGen", "LLVMObjCARCOpts", "LLVMScalarOpts", "LLVMInstCombine", "LLVMTransformUtils", "LLVMipa", "LLVMAnalysis", "LLVMRuntimeDyld", "LLVMExecutionEngine", "LLVMTarget", "LLVMMC", "LLVMObject", "LLVMCore", "LLVMSupport", linkCPPStdLib] ++
-                            ["imagehlp" | buildOS == Windows]
+              extraLibs = ["chelper",
+                           "cpphelper",
+                           "clangTooling",
+                           "clangFrontendTool",
+                           "clangFrontend",
+                           "clangDriver",
+                           "clangSerialization",
+                           "clangCodeGen",
+                           "clangParse",
+                           "clangSema",
+                           "clangAnalysis",
+                           "clangRewriteFrontend",
+                           "clangRewrite",
+                           "clangEdit",
+                           "clangAST",
+                           "clangLex",
+                           "clangBasic",
+                           "LLVMInstrumentation",
+                           "LLVMIRReader",
+                           "LLVMAsmParser",
+                           "LLVMDebugInfo",
+                           "LLVMOption",
+                           "LLVMLTO",
+                           "LLVMLinker",
+                           "LLVMipo",
+                           "LLVMVectorize",
+                           "LLVMBitWriter",
+                           "LLVMBitReader",
+                           "LLVMTableGen",
+                           "LLVMX86Disassembler",
+                           "LLVMX86AsmParser",
+                           "LLVMX86CodeGen",
+                           "LLVMSelectionDAG",
+                           "LLVMAsmPrinter",
+                           "LLVMX86Desc",
+                           "LLVMX86Info",
+                           "LLVMX86AsmPrinter",
+                           "LLVMX86Utils",
+                           "LLVMMCDisassembler",
+                           "LLVMMCParser",
+                           "LLVMInterpreter",
+                           "LLVMMCJIT",
+                           "LLVMCodeGen",
+                           "LLVMObjCARCOpts",
+                           "LLVMScalarOpts",
+                           "LLVMInstCombine",
+                           "LLVMTransformUtils",
+                           "LLVMipa",
+                           "LLVMAnalysis",
+                           "LLVMRuntimeDyld",
+                           "LLVMExecutionEngine",
+                           "LLVMTarget",
+                           "LLVMMC",
+                           "LLVMObject",
+                           "LLVMCore",
+                           "LLVMSupport",
+                           linkCPPStdLib] ++
+                           ["imagehlp" | buildOS == Windows]
             }
 
             addGHCArgs = onProgram ghcProgram
@@ -214,19 +266,22 @@ libClangBuildHook pkg lbi usrHooks flags = do
             -- 'cabal install --make-option=-j4', but see
             -- https://github.com/haskell/cabal/issues/1380 for why this doesn't work.
             -- For now we hardcore "-j4".
+
+            -- -j4 hangs in MinGW on 64bit windows
+            let threadFlags = ["-j4" | buildOS /= Windows]
+            --let threadFlags = ["-j4"]
             inDir llvmBuildDir $ do
-              -- Temporary HACK for MinGW
+              -- Workaround for 'make not found' in MinGW
               buildMade <- case buildOS of
                   Windows   -> do
-                    (exitCode, _, _) <- readProcessWithExitCode "make" [] ""
+                    (exitCode, _, _) <- readProcessWithExitCode "make" threadFlags ""
                     return $ exitCode == ExitSuccess
                   otherwise -> return False
 
-              --runDbProgram verbosity makeProgram (withPrograms lbi) ["-j4" | buildOS /= Windows]
-              -- -j4 hangs in MinGW on 64bit windows
+              --runDbProgram verbosity makeProgram (withPrograms lbi) threadFlags
               unless buildMade $
-                rawSystemExit verbosity "make"   ["-j4" | buildOS /= Windows]
-              rawSystemExit verbosity "make" $ ["-j4" | buildOS /= Windows] ++ ["install"]
+                rawSystemExit verbosity "make" threadFlags
+              rawSystemExit verbosity "make" $ threadFlags ++ ["install"]
 
 
         notice verbosity "Building C wrapper library..."

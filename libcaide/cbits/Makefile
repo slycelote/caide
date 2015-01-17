@@ -23,13 +23,12 @@ LLVM_BIN_PATH := $(LLVM_BUILD_PATH)/bin
 
 # It's recommended that CXX matches the compiler you used to build LLVM itself.
 CXX := g++
-CXXFLAGS := -c -fno-rtti -static -Wall -Wextra -Wshadow -Wlogical-op -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS
+CXXFLAGS := -c -fno-rtti -static -std=c++11 -Wall -Wextra -Wshadow -Wlogical-op -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS
 ifdef CAIDE_DEBUG
 	CXXFLAGS += -g
 else
 	CXXFLAGS += -O2
 endif
-CXXFLAGS += -std=c++11
 
 ARCHIVER := ar
 
