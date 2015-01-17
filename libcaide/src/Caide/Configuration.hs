@@ -207,6 +207,8 @@ clangOptions root True | "mingw" `isPrefixOf` os = [
 clangOptions root True = [
     "-target",
     arch ++ "-" ++ os,
+    "-isystem",
+    encodeString $ root </> decodeString "include",
     "-I",
     encodeString $ root </> decodeString "cpplib"
     ]
