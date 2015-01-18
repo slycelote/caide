@@ -30,7 +30,7 @@ doParseContest [url] = case findContestParser (T.pack url) of
         case parserRet of
             Left  err  -> throw err
             Right urls -> do
-                results <- mapM tryParseProblem urls
+                results <- mapM tryParseProblem $ reverse urls
                 let errors = catMaybes results
                 unless (null errors) $
                     throw $ unlines ("Some problems failed to parse: ": errors)
