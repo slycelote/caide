@@ -2,9 +2,12 @@
 #include "inliner.h"
 #include "optimizer.h"
 
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
+
+#include <cctype>
 
 std::vector<std::string> fromCharArrays(const char** a, int n) {
     if (!a)
@@ -18,6 +21,13 @@ std::vector<std::string> fromCharArrays(const char** a, int n) {
     return res;
 }
 
+std::string trim(const std::string& s)
+{
+    auto isspace = [](char c) { return std::isspace(c) != 0; };
+    auto wsfront = std::find_if_not(s.begin(), s.end(), isspace);
+    auto wsback  = std::find_if_not(s.rbegin(), s.rend(), isspace).base();
+    return wsback <= wsfront ? "" : std::string(wsfront, wsback);
+}
 
 FL_EXPORT_C(int, inline_code)(const char** cppFiles, int numCppFiles,
        const char** cmdLineOptions, int numCmdLineOptions,
@@ -27,8 +37,12 @@ FL_EXPORT_C(int, inline_code)(const char** cppFiles, int numCppFiles,
     try {
         const std::vector<std::string> cmdLineOptions_ = fromCharArrays(cmdLineOptions, numCmdLineOptions);
         Inliner inliner(cmdLineOptions_);
-        for (int i = 0; i < numCppFiles; ++i)
-            out << inliner.doInline(cppFiles[i]) << "\n";
+        for (int i = 0; i < numCppFiles; ++i) {
+            std::string result = inliner.doInline(cppFiles[i]);
+            result = trim(result);
+            if (!result.empty())
+                out << result << "\n";
+        }
         return 0;
     } catch (const std::exception& e) {
         out << "Exception: " << e.what() << std::endl;
