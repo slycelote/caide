@@ -110,6 +110,8 @@ namespace slycelote.VsCaide
                     ErrorHandler.ThrowOnFailure(
                         Services.Solution.CreateSolution(solutionDir, "VsCaide", 0)
                     );
+                    File.Copy(Path.Combine(solutionDir, "templates", "vs_common.props"),
+                              Path.Combine(solutionDir, "vs_common.props"), overwrite: true);
                     SolutionUtilities.SaveSolution();
                 }
             }
