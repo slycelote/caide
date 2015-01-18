@@ -33,6 +33,11 @@ Most settings are stored in `caide.ini` file in the project root.
 [cpp] section contains settings for C++ language.
 
 * `clang_options` is a comma separated list of command line options for clang parser. (Defaults should always work.) Most important of them are:
+  - `-target <target>` sets up compiler whose headers you want to use. This option, if set correctly, should eliminate the need to list system headers manually. `<target>` should be:
+    * `<arch>-linux` on Linux, where `<arch>` is either `i386` or `x86_64`, depending on your system's architecture.
+    * `i386-mingw32` on Windows with MinGW compiler.
+    * `i386-pc-windows-msvc` on Windows with Visual Studio compiler.
+
   - `-isystem <path>` adds a location of system headers such as `<algorithm>` or `<time.h>`.
   - `-I <path>` adds a location for user headers. `cpplib` is most likely the only directory that should be specified here.
   - `-std=c++11` - you can remove this if you feel nostalgic.
@@ -77,7 +82,7 @@ C++ code inlining is experimental. If you have troubles with it, change the lang
 
 1. caide comes with a specific set of system headers (a MinGW implementation). You have to write standards-complying code to make sure both caide inliner and your compiler can parse it. In particular, avoid using compiler specific functions.
 
-   You can [setup](#cpp) caide to use your system headers instead.
+   You can [setup](#cpp) caide to use your system headers instead. VsCaide will do this automatically.
 
 2. You can think of inliner as roughly the following algorithm:
 
