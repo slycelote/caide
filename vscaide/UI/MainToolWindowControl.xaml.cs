@@ -229,6 +229,8 @@ namespace slycelote.VsCaide
                         project.ProjectItems.AddFromFile(submissionFile);
                     }
 
+
+                    vcProject = (VCProject)project.Object;
                     var workingDirectory = "$(ProjectDir)";
                     var submissionConfigs = (IVCCollection)vcProject.Configurations;
                     foreach (var conf in submissionConfigs.OfType<VCConfiguration>())

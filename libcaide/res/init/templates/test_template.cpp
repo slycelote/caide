@@ -31,7 +31,7 @@ int main() {
     // Prepare the list of test cases in correct order; add recently created test cases too.
     int ret = std::system((caideExe + " update_tests").c_str());
     if (ret != 0) {
-        cerr << "caide make returned non-zero error code " << ret << endl;
+        cerr << "caide update_tests returned non-zero error code " << ret << endl;
     }
 
     // Process each test case described in a file in current directory
@@ -58,8 +58,10 @@ int main() {
 
             // save program output
             string result = out.str();
-            ofstream resFile((testName + ".out").c_str());
-            resFile << result;
+            {
+                ofstream resFile((testName + ".out").c_str());
+                resFile << result;
+            }
 
             // optional: print program output to stderr
             if (result.size() > 100)
