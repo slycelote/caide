@@ -307,6 +307,16 @@ public:
             // A method in an instantiated class template; will be processed as a method in ClassTemplateDecl
             return true;
         }
+
+        if (CXXDestructorDecl* destructor = dyn_cast<CXXDestructorDecl>(functionDecl)) {
+            // Destructor should be removed iff the class is unused
+            CXXRecordDecl* classDecl = destructor->getParent();
+            if (classDecl && used.find(classDecl->getCanonicalDecl()) == used.end()) {
+                removeDecl(destructor);
+            }
+            return true;
+        }
+
         FunctionDecl* canonicalDecl = functionDecl->getCanonicalDecl();
         const bool funcIsUnused = used.find(canonicalDecl) == used.end();
         const bool thisIsRedeclaration = !functionDecl->doesThisDeclarationHaveABody() && declared.find(canonicalDecl) != declared.end();

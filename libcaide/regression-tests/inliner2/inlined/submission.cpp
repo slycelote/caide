@@ -36,17 +36,36 @@ bool operator + (Y a, Y b) {
     return true;
 }
 
-int main() {
+struct Used {
     int x;
-    spcppl::f(x);
-    goF(X());
 
-    mystd::vector<Vertex> v;
-    v.resize(100);
+    ~Used() {
+        x = 2;
+    }
+};
 
-    Y y;
-    y++;
-    y + y;
+
+int main() {
+    {
+        int x;
+        spcppl::f(x);
+        goF(X());
+    }
+
+    {
+        mystd::vector<Vertex> v;
+        v.resize(100);
+    }
+
+    {
+        Y y;
+        y++;
+        y + y;
+    }
+
+    {
+        Used used;
+    }
 
     return 0;
 };
