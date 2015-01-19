@@ -14,5 +14,5 @@ You can run/debug tests by clicking corresponding buttons in Caide window or by 
 
 # Configuration
 
-You can use most configuration options described in [libcaide README](https://github.com/slycelote/caide/tree/master/libcaide/README.md#configuration). Make sure to read the section on [C++ inliner](https://github.com/slycelote/caide/tree/master/libcaide/README.md#inliner) too. In addition, if a [property file](http://msdn.microsoft.com/en-us/library/669zx6zc.aspx) named `vs_common.props` exists in root caide directory, it will be included into all generated projects.
+You can use most configuration options described in [libcaide README](https://github.com/slycelote/caide/tree/master/libcaide/README.md#configuration). Make sure to read the section on [C++ inliner](https://github.com/slycelote/caide/tree/master/libcaide/README.md#inliner) too. In addition, the [property file](http://msdn.microsoft.com/en-us/library/669zx6zc.aspx) `vs_common.props` in solution root directory is included into all generated projects. You can modify this file in Property Manager window.
 
