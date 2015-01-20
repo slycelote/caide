@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Caide.CPP.CPP (
       language
 ) where
@@ -9,7 +10,7 @@ import qualified Data.Text as T
 
 import Prelude hiding (FilePath)
 import Filesystem (copyFile, readTextFile, writeTextFile, isDirectory)
-import Filesystem.Path.CurrentOS (decodeString)
+import Filesystem.Path.CurrentOS (fromText)
 import Filesystem.Path ((</>), FilePath, hasExtension)
 
 import Text.Regex.TDFA.Text (Regex)
@@ -21,7 +22,7 @@ import qualified Caide.CPP.CPPSimple as CPPSimple
 import Caide.Configuration (getListProp, readCaideConf)
 import Caide.CPP.CBinding
 import Caide.Types
-import Caide.Util (getProblemID, listDir)
+import Caide.Util (getProblemID, listDir, tshow)
 
 
 language :: ProgrammingLanguage
@@ -31,12 +32,12 @@ inlineCPPCode :: FilePath -> CaideIO ()
 inlineCPPCode problemDir = do
     root <- caideRoot
     let probID = getProblemID problemDir
-        solutionPath = problemDir </> decodeString (probID ++ ".cpp")
-        inlinedTemplatePath =  root </> decodeString "templates" </> decodeString "main_template.cpp"
-        inlinedCodePath = problemDir </> decodeString ".caideproblem" </> decodeString "inlined.cpp"
-        inlinedNoPragmaOnceCodePath = problemDir </> decodeString ".caideproblem" </> decodeString "inlinedNoPragmaOnce.cpp"
-        finalCodePath = problemDir </> decodeString "submission.cpp"
-        libraryDirectory = root </> decodeString "cpplib"
+        solutionPath = problemDir </> fromText (T.append probID ".cpp")
+        inlinedTemplatePath =  root </> "templates" </> "main_template.cpp"
+        inlinedCodePath = problemDir </> ".caideproblem" </> "inlined.cpp"
+        inlinedNoPragmaOnceCodePath = problemDir </> ".caideproblem" </> "inlinedNoPragmaOnce.cpp"
+        finalCodePath = problemDir </> "submission.cpp"
+        libraryDirectory = root </> "cpplib"
 
     hConf <- readCaideConf
     cmdLineOptions <- getListProp hConf "cpp" "clang_options"
@@ -48,12 +49,12 @@ inlineCPPCode problemDir = do
 
     retInliner <- liftIO $ inlineLibraryCode (solutionPath:inlinedTemplatePath:libraryCPPFiles) cmdLineOptions inlinedCodePath
     when (retInliner /= 0) $
-        throw $ "C++ library code inliner failed with error code " ++ show retInliner
+        throw $ T.concat ["C++ library code inliner failed with error code ", tshow retInliner]
     liftIO $ removePragmaOnceFromFile inlinedCodePath inlinedNoPragmaOnceCodePath
     retOptimizer <- liftIO $ removeUnusedCode inlinedNoPragmaOnceCodePath cmdLineOptions finalCodePath
     when (retOptimizer /= 0) $
-        throw $ "C++ library code inliner failed with error code " ++ show retOptimizer
-    liftIO $ copyFile finalCodePath $ root </> decodeString "submission.cpp"
+        throw $ T.concat ["C++ library code inliner failed with error code ", tshow retOptimizer]
+    liftIO $ copyFile finalCodePath $ root </> "submission.cpp"
 
 
 listDirectoryRecursively :: FilePath -> IO [FilePath]

@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Caide.Commands.GetOpt (
       cmd
     , cmdState
@@ -6,6 +7,8 @@ module Caide.Commands.GetOpt (
 ) where
 
 import Control.Monad.State (liftIO)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
 
 import Caide.Configuration (readProblemConfig, readProblemState, readCaideConf, readCaideState)
 import Caide.Types
@@ -19,11 +22,11 @@ cmd = CommandHandler
     }
 
 
-getOpt :: [String] -> CaideIO ()
+getOpt :: [T.Text] -> CaideIO ()
 getOpt [section, key] = do
     h <- readCaideConf
-    val <- getProp h section key
-    liftIO $ putStrLn val
+    val <- getProp h (T.unpack section) (T.unpack key)
+    liftIO $ T.putStrLn val
 getOpt _ = throw $ usage cmd
 
 cmdState :: CommandHandler
@@ -34,11 +37,11 @@ cmdState = CommandHandler
     , action = getState
     }
 
-getState :: [String] -> CaideIO ()
+getState :: [T.Text] -> CaideIO ()
 getState [section, key] = do
     h <- readCaideState
-    val <- getProp h section key
-    liftIO $ putStrLn val
+    val <- getProp h (T.unpack section) (T.unpack key)
+    liftIO $ T.putStrLn val
 getState _ = throw $ usage cmdState
 
 
@@ -50,11 +53,11 @@ cmdProblem = CommandHandler
     , action = getProbOpt
     }
 
-getProbOpt :: [String] -> CaideIO ()
+getProbOpt :: [T.Text] -> CaideIO ()
 getProbOpt [problem, section, key] = do
     h <- readProblemConfig problem
-    val <- getProp h section key
-    liftIO $ putStrLn val
+    val <- getProp h (T.unpack section) (T.unpack key)
+    liftIO $ T.putStrLn val
 getProbOpt _ = throw $ usage cmdProblem
 
 cmdProblemState :: CommandHandler
@@ -65,10 +68,10 @@ cmdProblemState = CommandHandler
     , action = getProbState
     }
 
-getProbState :: [String] -> CaideIO ()
+getProbState :: [T.Text] -> CaideIO ()
 getProbState [problem, section, key] = do
     h <- readProblemState problem
-    val <- getProp h section key
-    liftIO $ putStrLn val
+    val <- getProp h (T.unpack section) (T.unpack key)
+    liftIO $ T.putStrLn val
 getProbState _ = throw $ usage cmdProblemState
 

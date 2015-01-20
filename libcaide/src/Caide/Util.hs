@@ -1,8 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
 {- | Common utilities
 -}
-module Caide.Util(
+module Caide.Util (
       downloadDocument
     , getProblemID
+    , pathToText
+    , tshow
     , forceEither
     , listDir
     , copyFileToDir
@@ -18,7 +21,7 @@ import qualified Data.Text as T
 import Filesystem (copyFile, listDirectory, isFile, isDirectory, createDirectory)
 import qualified Filesystem.Path as F
 import Filesystem.Path (basename, filename, (</>))
-import Filesystem.Path.CurrentOS (encodeString)
+import Filesystem.Path.CurrentOS (toText)
 import Network.HTTP
 import Network.URI (parseURI)
 import System.IO.Error (catchIOError, ioeGetErrorString)
@@ -31,13 +34,14 @@ import Caide.Types (ProblemID, URL)
 Based on code snippet from 'Real World Haskell'.
 -}
 -- TODO: retry download if anything wrong
-downloadDocument :: URL -> IO (Either String T.Text)
+downloadDocument :: URL -> IO (Either T.Text T.Text)
 downloadDocument url
-    | T.pack "http" `T.isPrefixOf` url  =  result
+    | "http" `T.isPrefixOf` url  =  result
     | otherwise = mkLiftedError "Not implemented"
   where
     mkLiftedError = return . Left
-    result = downloader `catchIOError` (mkLiftedError . ioeGetErrorString)
+    result = downloader `catchIOError` (mkLiftedError . T.pack . ioeGetErrorString)
+    downloader :: IO (Either T.Text T.Text)
     downloader = do
         let request = Request {rqURI = fromJust . parseURI $ T.unpack url,
                                rqMethod = GET,
@@ -46,18 +50,26 @@ downloadDocument url
 
         resp <- simpleHTTP request
         case resp of
-            Left x  -> mkLiftedError $ "Error connecting: " ++ show x
+            Left x  -> mkLiftedError $ T.concat ["Error connecting: ", tshow x]
             Right r -> case rspCode r of
                 (2,_,_) -> return . Right . T.pack $ rspBody r
                 (3,_,_) -> -- An HTTP redirect
                     case findHeader HdrLocation r of
-                        Nothing   -> mkLiftedError $ show r
+                        Nothing   -> mkLiftedError $ tshow r
                         -- FIXME: avoid infinite recursion
                         Just url' -> downloadDocument $ T.pack url'
-                _ -> mkLiftedError $ show r
+                _ -> mkLiftedError $ tshow r
+
+tshow :: Show a => a -> T.Text
+tshow = T.pack . show
+
+pathToText :: F.FilePath -> T.Text
+pathToText path = case toText path of
+    Left  s -> s
+    Right s -> s
 
 getProblemID :: F.FilePath -> ProblemID
-getProblemID problemDir = encodeString . basename $ problemDir
+getProblemID = pathToText . basename
 
 forceEither :: Either a c -> c
 forceEither = either (error "Left in forceEither") id

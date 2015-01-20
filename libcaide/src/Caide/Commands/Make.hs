@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Caide.Commands.Make (
       cmd
     , cmdUpdateTests
@@ -15,7 +16,7 @@ import qualified Data.Text as T
 
 import Prelude hiding (FilePath)
 import Filesystem (isDirectory, listDirectory, createTree, removeFile, copyFile, writeTextFile)
-import Filesystem.Path.CurrentOS (FilePath, decodeString, encodeString,
+import Filesystem.Path.CurrentOS (FilePath, fromText, encodeString,
     hasExtension, replaceExtension, basename, filename, (</>))
 
 import System.Environment (getExecutablePath)
@@ -23,7 +24,7 @@ import System.Environment (getExecutablePath)
 import Caide.Configuration (getActiveProblem, readProblemState)
 import Caide.Registry (findLanguage)
 import Caide.Types
-import Caide.Util (copyFileToDir)
+import Caide.Util (copyFileToDir, pathToText)
 import Caide.TestCases.Types
 
 
@@ -57,13 +58,13 @@ withProblem ::  (ProblemID -> FilePath -> CaideM IO a) -> CaideM IO a
 withProblem processProblem = do
     probId <- getActiveProblem
     root <- caideRoot
-    let problemDir = root </> decodeString probId
+    let problemDir = root </> fromText probId
     problemExists <- liftIO $ isDirectory problemDir
     if problemExists
     then processProblem probId problemDir
-    else throw $ "Problem " ++ probId ++ " doesn't exist"
+    else throw . T.concat $ ["Problem ", probId, " doesn't exist"]
 
-make :: [String] -> CaideIO ()
+make :: [T.Text] -> CaideIO ()
 make _ = withProblem $ \_ _ -> makeProblem
 
 updateTests :: CaideIO ()
@@ -71,15 +72,15 @@ updateTests = withProblem $ \_ problemDir -> liftIO $ do
     caideExe <- getExecutablePath
     copyTestInputs problemDir
     updateTestList problemDir
-    let testDir = problemDir </> decodeString ".caideproblem" </> decodeString "test"
-    writeTextFile (testDir </> decodeString "caideExe.txt") $ T.pack caideExe
+    let testDir = problemDir </> ".caideproblem" </> "test"
+    writeTextFile (testDir </> "caideExe.txt") $ T.pack caideExe
 
 prepareSubmission :: CaideIO ()
 prepareSubmission = withProblem $ \probId problemDir -> do
     hProblem <- readProblemState probId
     lang <- getProp hProblem "problem" "language"
     case findLanguage lang of
-        Nothing       -> throw $ "Unsupported programming language " ++ lang
+        Nothing       -> throw . T.concat $ ["Unsupported programming language ", lang]
         Just language -> inlineCode language problemDir
 
 makeProblem :: CaideIO ()
@@ -87,7 +88,7 @@ makeProblem = updateTests >> prepareSubmission
 
 copyTestInputs :: FilePath -> IO ()
 copyTestInputs problemDir = do
-    let tempTestDir = problemDir </> decodeString ".caideproblem" </> decodeString "test"
+    let tempTestDir = problemDir </> ".caideproblem" </> "test"
     createTree tempTestDir
 
     -- Cleanup output from previous test run
@@ -97,12 +98,12 @@ copyTestInputs problemDir = do
 
     fileList <- listDirectory problemDir
     -- Copy input files
-    let testInputs = filter (`hasExtension` T.pack "in") fileList
+    let testInputs = filter (`hasExtension` "in") fileList
     forM_ testInputs $ \inFile -> copyFileToDir inFile tempTestDir
 
     -- Copy output files
-    let testEtalons = filter (`hasExtension` T.pack "out") fileList
-        outPathToEtalonPath etalonFile = tempTestDir </> replaceExtension (filename etalonFile) (T.pack "etalon")
+    let testEtalons = filter (`hasExtension` "out") fileList
+        outPathToEtalonPath etalonFile = tempTestDir </> replaceExtension (filename etalonFile) "etalon"
     forM_ testEtalons $ \etalonFile -> copyFile etalonFile $ outPathToEtalonPath etalonFile
 
 
@@ -114,18 +115,18 @@ copyTestInputs problemDir = do
 --    * makes sure previously failed tests (if any) come first
 updateTestList :: FilePath -> IO ()
 updateTestList problemDir = do
-    let testDir = problemDir </> decodeString ".caideproblem" </> decodeString "test"
-        previousRunFile = testDir </> decodeString "report.txt"
+    let testDir = problemDir </> ".caideproblem" </> "test"
+        previousRunFile = testDir </> "report.txt"
     report <- readTestReport previousRunFile
     allFiles <- listDirectory problemDir
-    let allTests    = map (encodeString . basename) . filter (`hasExtension` T.pack "in") $ allFiles
-        testsToSkip = map (encodeString . basename) . filter (`hasExtension` T.pack "skip") $ allFiles
+    let allTests    = map (pathToText . basename) . filter (`hasExtension` "in") $ allFiles
+        testsToSkip = map (pathToText . basename) . filter (`hasExtension` "skip") $ allFiles
         testState testName = if testName `elem` testsToSkip then Skip else Run
         testList = zip allTests (map testState allTests)
         succeededAndName (testName, _) = case lookup testName report of
             Just (Error _) -> (False, testName)
             _              -> (True,  testName)
         sortedTests = sortBy (comparing succeededAndName) testList
-        testListFile = testDir </> decodeString "testList.txt"
+        testListFile = testDir </> "testList.txt"
     writeTests sortedTests testListFile
 

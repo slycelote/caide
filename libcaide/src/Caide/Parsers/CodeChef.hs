@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Caide.Parsers.CodeChef (
     codeChefParser
 ) where
@@ -7,11 +8,11 @@ import qualified Data.Text as T
 import Network.URI (parseURI, uriAuthority, uriRegName)
 
 import Text.HTML.TagSoup (Tag(..), innerText, fromTagText, parseTags,
-                         isTagCloseName, isTagOpenName, (~/=))
+                         isTagCloseName, isTagOpenName)
 
 import Caide.Types
 import Caide.Util (downloadDocument)
-import Text.HTML.TagSoup.Utils ((~~/==), isTagName, mergeTextTags)
+import Text.HTML.TagSoup.Utils ((~/=), (~~/==), isTagName, mergeTextTags)
 
 
 codeChefParser :: ProblemParser
@@ -25,7 +26,7 @@ isCodeChefUrl url = case parseURI (T.unpack url) >>= uriAuthority of
     Nothing   -> False
     Just auth -> uriRegName auth `elem` ["codechef.com", "www.codechef.com"]
 
-doParse :: URL -> IO (Either String (Problem, [TestCase]))
+doParse :: URL -> IO (Either T.Text (Problem, [TestCase]))
 doParse url = do
     doc' <- downloadDocument url
     case doc' of
@@ -38,7 +39,7 @@ doParse url = do
                 spanContents = takeWhile (~/= "</span>") problemCode
                 -- TODO title
                 title = T.strip $ innerText spanContents
-                probId = "chef" ++ T.unpack title
+                probId = T.append "chef" title
 
                 -- test cases
                 problemPage = dropWhile (~/= "<div id=problem-page>") tags
@@ -65,16 +66,10 @@ replaceBr :: [Tag T.Text] -> [Tag T.Text]
 replaceBr [] = []
 
 replaceBr (o:c:rest)
-    | isTagOpenName br o && isTagCloseName br c   = TagText lineFeed : replaceBr rest
+    | isTagOpenName "br" o && isTagCloseName "br" c   = TagText "\n" : replaceBr rest
 
 replaceBr (t:rest)
-    | isTagName br t = TagText lineFeed : replaceBr rest
-    | otherwise      = t : replaceBr rest
+    | isTagName "br" t = TagText "\n" : replaceBr rest
+    | otherwise        = t : replaceBr rest
 
-
-br :: T.Text
-br = T.pack "br"
-
-lineFeed :: T.Text
-lineFeed = T.pack "\n"
 

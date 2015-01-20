@@ -1,4 +1,5 @@
-{-# LANGUAGE Rank2Types, FlexibleInstances, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE Rank2Types, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Caide.Types(
       Problem (..)
@@ -34,26 +35,28 @@ module Caide.Types(
     , noOpFeature
 ) where
 
-import Control.Applicative (Applicative)
+import Control.Applicative (Applicative, (<$>))
 import Control.Monad (forM_, unless, when)
 import Control.Monad.Except (ExceptT, MonadError, runExceptT, throwError)
 import Control.Monad.State (StateT, MonadState, runStateT, gets, modify')
 import Control.Monad.Trans (MonadIO, liftIO)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Text (Text, pack)
+import Data.Text (Text, pack, unpack)
+import qualified Data.Text as T
 import qualified Data.ConfigFile as C
 
 import qualified Filesystem as F
 import qualified Filesystem.Path as F
 import qualified Filesystem.Path.CurrentOS as F
 
+
 data TestCase = TestCase
     { testCaseInput  :: !Text
     , testCaseOutput :: !Text
     } deriving (Show)
 
-type ProblemID = String
+type ProblemID = Text
 
 data Problem = Problem
     { problemName :: !Text      -- ^ Human readable identifier, used for displaying in GUI
@@ -65,12 +68,12 @@ type URL = Text
 -- | Downloads problem data
 data ProblemParser = ProblemParser
     { problemUrlMatches :: URL -> Bool
-    , parseProblem      :: URL -> IO (Either String (Problem, [TestCase]))
+    , parseProblem      :: URL -> IO (Either Text (Problem, [TestCase]))
     }
 
 data ContestParser = ContestParser
     { contestUrlMatches :: URL -> Bool
-    , parseContest      :: URL -> IO (Either String [URL])
+    , parseContest      :: URL -> IO (Either Text [URL])
     }
 
 
@@ -85,16 +88,27 @@ data ProgrammingLanguage = ProgrammingLanguage
 
 class C.Get_C a => Option a where
     optionToString :: a -> String
+    optionFromString :: String -> a
 
 instance Option Bool where
     optionToString False = "no"
     optionToString True  = "yes"
 
-instance Option [Char] where
-    optionToString = id
+    optionFromString "yes" = True
+    optionFromString "true" = True
+    optionFromString "enabled" = True
+    optionFromString "on" = True
+    optionFromString "1" = True
+
+    optionFromString _ = False
+
+instance Option Text where
+    optionToString = unpack
+    optionFromString = pack
 
 instance Option Double where
     optionToString = show
+    optionFromString = read
 
 
 type Config = C.ConfigParser
@@ -120,10 +134,10 @@ runInDirectory dir caideAction = do
 -- | File handle through which it's possible to access options. See 'setProp', 'getProp'
 newtype ConfigFileHandle = FileHandle F.FilePath
 
-throw :: Monad m => String -> CaideM m a
-throw desc = throwError (C.OtherProblem desc, "")
+throw :: Monad m => Text -> CaideM m a
+throw desc = throwError (C.OtherProblem $ unpack desc, "")
 
-assert :: Monad m => Bool -> String -> CaideM m ()
+assert :: Monad m => Bool -> Text -> CaideM m ()
 assert condition message = unless condition $ throw message
 
 -- | Return root caide directory
@@ -135,7 +149,7 @@ createConf :: Monad m => F.FilePath -> C.ConfigParser -> CaideM m ConfigFileHand
 createConf filePath cp = do
     fileMap <- gets files
     when (M.member filePath fileMap) $
-        throw $ "File " ++ F.encodeString filePath ++ " already exists"
+        throw $ T.concat ["File ", toText filePath, " already exists"]
     modifyWithFiles $ M.insert filePath ConfigInMemory{ configParser=cp, modified=True }
     return $ FileHandle filePath
 
@@ -153,7 +167,7 @@ flushConf :: ConfigFileHandle -> CaideIO ()
 flushConf (FileHandle filePath) = do
     fileMap <- gets files
     case M.lookup filePath fileMap of
-        Nothing   -> throw $ "File " ++ F.encodeString filePath ++ " doesn't exist"
+        Nothing   -> throw $ T.concat ["File ", toText filePath, " doesn't exist"]
         Just conf -> liftIO $ writeConfigParser filePath conf
 
 
@@ -161,14 +175,14 @@ getProp :: (Monad m, Option a) => ConfigFileHandle -> String -> String -> CaideM
 getProp (FileHandle path) section key = do
     mf <- gets (M.lookup path . files)
     case mf of
-        Nothing -> throw $ "Unknown file handle " ++ F.encodeString path
-        Just f  -> convertToCaide $ C.get (configParser f) section key
+        Nothing -> throw $ T.concat ["Unknown file handle ", toText path]
+        Just f  -> convertToCaide $ optionFromString <$> C.get (configParser f) section key
 
 setProp :: (Monad m, Option a) => ConfigFileHandle -> String -> String -> a -> CaideM m ()
 setProp (FileHandle path) section key value = do
     mf <- gets (M.lookup path . files)
     case mf of
-        Nothing -> throw $ "Unknown file handle " ++ F.encodeString path
+        Nothing -> throw $ T.append "Unknown file handle " $ toText path
         Just f  -> do
             newConf <- convertToCaide $ C.set (configParser f) section key (optionToString value)
             let newFile = ConfigInMemory { configParser = newConf, modified = True}
@@ -177,10 +191,10 @@ setProp (FileHandle path) section key value = do
 
 -- | Describes caide command requested by the user, such as `init` or `test`
 data CommandHandler = CommandHandler
-    { command      :: String
-    , description  :: String
-    , usage        :: String
-    , action       :: [String] -> CaideIO ()
+    { command      :: Text
+    , description  :: Text
+    , usage        :: Text
+    , action       :: [Text] -> CaideIO ()
     }
 
 -- | 'Builder' result
@@ -246,4 +260,9 @@ writeConfigParser :: F.FilePath -> ConfigInMemory -> IO ()
 writeConfigParser file cp = do
     F.createTree $ F.directory file
     F.writeTextFile file . pack . C.to_string $ configParser cp
+
+toText :: F.FilePath -> Text
+toText path = case F.toText path of
+    Left  s -> s
+    Right s -> s
 

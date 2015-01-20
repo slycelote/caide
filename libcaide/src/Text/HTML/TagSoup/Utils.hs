@@ -1,5 +1,7 @@
 module Text.HTML.TagSoup.Utils (
-      (~~==)
+      (~==)
+    , (~/=)
+    , (~~==)
     , (~~/==)
     , isTagName
     , mergeTextTags
@@ -8,15 +10,24 @@ module Text.HTML.TagSoup.Utils (
 import Data.List (groupBy)
 
 import Text.StringLike (StringLike, toString, strConcat)
-import Text.HTML.TagSoup
+import qualified Text.HTML.TagSoup as S
+import Text.HTML.TagSoup hiding ((~==), (~/=))
+
+-- | Constrained version of TagSoup operator
+(~==) :: StringLike str => Tag str -> String -> Bool
+(~==) = (S.~==)
+
+-- | Constrained version of TagSoup operator
+(~/=) :: StringLike str => Tag str -> String -> Bool
+(~/=) = (S.~/=)
 
 -- | Like '(~==)', but splits values of attributes on whitespace. Useful mainly for `class` attribute,
 -- so that `TagOpen "table" [("class", "class1 class2")] ~~== "<table class=class1>"`.
-(~~==) :: (StringLike str, TagRep t) => Tag str -> t -> Bool
-tag ~~== desc = expandAttributes tag ~== expandAttributes (toTagRep desc :: Tag String)
+(~~==) :: StringLike str => Tag str -> String -> Bool
+tag ~~== desc = expandAttributes tag S.~== expandAttributes (toTagRep desc :: Tag String)
 
 -- | Negation of '~~=='.
-(~~/==) :: (StringLike str, TagRep t) => Tag str -> t -> Bool
+(~~/==) :: StringLike str => Tag str -> String -> Bool
 tag ~~/== desc = not $ tag ~~== desc
 
 expandAttributes :: StringLike str => Tag str -> Tag String

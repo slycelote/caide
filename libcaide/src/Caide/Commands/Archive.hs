@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Caide.Commands.Archive (
       cmd
 ) where
@@ -7,15 +8,16 @@ import Control.Applicative ((<$>))
 import Control.Monad (unless, when, forM_, forM)
 import Control.Monad.State (liftIO)
 import Data.List (sort)
+import qualified Data.Text as T
 import Data.Time (getZonedTime, formatTime)
 import Filesystem (isDirectory, createTree, removeTree, listDirectory, isDirectory)
-import Filesystem.Path.CurrentOS ((</>), decodeString, encodeString, basename, FilePath)
+import Filesystem.Path.CurrentOS ((</>), fromText, decodeString, basename, FilePath)
 import System.Locale (defaultTimeLocale)
 
 import qualified Caide.Commands.Checkout as Checkout
 import Caide.Configuration (getActiveProblem)
 import Caide.Types
-import Caide.Util (copyTreeToDir, copyFileToDir, listDir)
+import Caide.Util (copyTreeToDir, copyFileToDir, listDir, pathToText)
 
 cmd :: CommandHandler
 cmd = CommandHandler
@@ -25,20 +27,21 @@ cmd = CommandHandler
     , action       = archive
     }
 
-archive :: [String] -> CaideIO ()
+archive :: [T.Text] -> CaideIO ()
 archive [probId] = do
     root <- caideRoot
-    let problemDir = root </> decodeString probId
-        problemStateDir = problemDir </> decodeString ".caideproblem"
+    let problemDir = root </> fromText probId
+        problemStateDir = problemDir </> ".caideproblem"
     problemExists <- liftIO $ isDirectory problemStateDir
-    unless problemExists $ throw $ "Problem " ++ probId ++ " doesn't exist"
+    unless problemExists $ throw . T.concat $ ["Problem ", probId, " doesn't exist"]
 
     -- Prepare archive directory
     now <- liftIO getZonedTime
     let formattedDate = formatTime defaultTimeLocale "%F" now
-        archiveDir = root </> decodeString "caide_archive" </> decodeString formattedDate </> decodeString probId
+        archiveDir = root </> "caide_archive" </> decodeString formattedDate </> fromText probId
     archiveDirExists <- liftIO $ isDirectory archiveDir
-    when archiveDirExists $ throw $ "Archive directory for this problem already exists: " ++ encodeString archiveDir
+    when archiveDirExists $ throw . T.concat $
+        ["Archive directory for this problem already exists: ", pathToText archiveDir]
 
     liftIO $ do
         createTree archiveDir
@@ -59,11 +62,11 @@ archive [probId] = do
         action Checkout.cmd [newActiveProblem]
 
 
-archive _ = throw $ "Usage: " ++ usage cmd
+archive _ = throw . T.concat $ ["Usage: ", usage cmd]
 
 caideProblems :: FilePath -> IO [ProblemID]
 caideProblems rootDir = do
     dirs <- listDirectory rootDir
-    isCaideProblem <- forM dirs $ \dir -> isDirectory (dir </> decodeString ".caideproblem")
-    return $ sort [encodeString (basename dir) | (dir, True) <- zip dirs isCaideProblem]
+    isCaideProblem <- forM dirs $ \dir -> isDirectory (dir </> ".caideproblem")
+    return $ sort [pathToText (basename dir) | (dir, True) <- zip dirs isCaideProblem]
 

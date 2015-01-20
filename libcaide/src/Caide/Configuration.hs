@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleContexts, Rank2Types #-}
+--{-# LANGUAGE FlexibleContexts, Rank2Types #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Caide.Configuration (
       -- * General utilities
@@ -43,22 +44,24 @@ import Control.Monad.Trans (liftIO)
 import Data.ConfigFile (ConfigParser, CPError, CPErrorData(OtherProblem), SectionSpec, OptionSpec,
                         set, emptyCP, add_section)
 import Data.List (intercalate, isPrefixOf)
+import Data.Text (Text)
+import qualified Data.Text as T
 import Filesystem (isDirectory)
-import Filesystem.Path.CurrentOS (encodeString, decodeString)
+import Filesystem.Path.CurrentOS (encodeString, fromText)
 import Filesystem.Path (FilePath, (</>))
 
 import System.Info (arch, os)
 
 import Caide.Types
-import Caide.Util (forceEither, splitString, trimString)
+import Caide.Util (forceEither)
 
 
-setProperties :: Monad m => ConfigFileHandle -> [(String, String, String)] -> CaideM m ()
+setProperties :: Monad m => ConfigFileHandle -> [(String, String, Text)] -> CaideM m ()
 setProperties handle properties = forM_ properties $ \(section, key, value) ->
     setProp handle section key value
 
-getListProp :: (Functor m, Monad m) => ConfigFileHandle -> String -> String -> CaideM m [String]
-getListProp h section key = map trimString . splitString "," <$> getProp h section key
+getListProp :: (Functor m, Monad m) => ConfigFileHandle -> String -> String -> CaideM m [Text]
+getListProp h section key = map T.strip . T.splitOn "," <$> getProp h section key
 
 orDefault :: Monad m => CaideM m a -> a -> CaideM m a
 orDefault getter defaultValue = getter `catchError` const (return defaultValue)
@@ -72,12 +75,12 @@ describeError e                     = "Config parser error: " ++ show e
 getProblemStateFile :: Monad m => ProblemID -> CaideM m FilePath
 getProblemStateFile probId = do
     root <- caideRoot
-    return $ root </> decodeString probId </> decodeString ".caideproblem" </> decodeString "config"
+    return $ root </> fromText probId </> ".caideproblem" </> "config"
 
 readProblemState :: ProblemID -> CaideIO ConfigFileHandle
 readProblemState probId = do
     root <- caideRoot
-    problemExists <- liftIO $ isDirectory $ root </> decodeString probId </> decodeString ".caideproblem"
+    problemExists <- liftIO $ isDirectory $ root </> fromText probId </> ".caideproblem"
     if problemExists
     then getProblemStateFile probId >>= readConf
     else throw "No such problem"
@@ -85,12 +88,12 @@ readProblemState probId = do
 getProblemConfigFile :: Monad m => ProblemID -> CaideM m FilePath
 getProblemConfigFile probId = do
     root <- caideRoot
-    return $ root </> decodeString probId </> decodeString "problem.ini"
+    return $ root </> fromText probId </> "problem.ini"
 
 readProblemConfig :: ProblemID -> CaideIO ConfigFileHandle
 readProblemConfig probId = do
     root <- caideRoot
-    problemExists <- liftIO $ isDirectory $ root </> decodeString probId </> decodeString ".caideproblem"
+    problemExists <- liftIO $ isDirectory $ root </> fromText probId </> ".caideproblem"
     if problemExists
     then getProblemConfigFile probId >>= readConf
     else throw "No such problem"
@@ -109,12 +112,12 @@ writeProblemState probId = do
 caideConfFile :: Monad m => CaideM m FilePath
 caideConfFile = do
     root <- caideRoot
-    return $ root </> decodeString "caide.ini"
+    return $ root </> "caide.ini"
 
 caideStateFile :: Monad m => CaideM m FilePath
 caideStateFile = do
     root <- caideRoot
-    return $ root </> decodeString ".caide" </> decodeString "config"
+    return $ root </> ".caide" </> "config"
 
 readCaideConf :: CaideIO ConfigFileHandle
 readCaideConf = caideConfFile >>= readConf
@@ -136,7 +139,7 @@ getActiveProblem :: CaideIO ProblemID
 getActiveProblem = do
     h <- readCaideState
     res <- getProp h "core" "problem" `orDefault` ""
-    if null res
+    if T.null res
     then throw "No active problem. Switch to an existing problem with `caide checkout <problemID>`"
     else return res
 
@@ -145,17 +148,17 @@ setActiveProblem probId = do
     h <- readCaideState
     setProp h "core" "problem" probId
 
-getBuilder :: CaideIO String
+getBuilder :: CaideIO Text
 getBuilder = do
     h <- readCaideConf
     getProp h "core" "builder"
 
-getDefaultLanguage :: CaideIO String
+getDefaultLanguage :: CaideIO Text
 getDefaultLanguage = do
     h <- readCaideConf
     getProp h "core" "language"
 
-getFeatures :: CaideIO [String]
+getFeatures :: CaideIO [Text]
 getFeatures = do
     h <- readCaideConf
     getListProp h "core" "features"
@@ -183,15 +186,15 @@ clangOptions root False = [
     "i386-pc-mingw32",
     "-nostdinc",
     "-isystem",
-    encodeString $ root </> decodeString "include" </> decodeString "mingw-4.8.1",
+    encodeString $ root </> "include" </> "mingw-4.8.1",
     "-isystem",
-    encodeString $ root </> decodeString "include" </> decodeString "mingw-4.8.1" </> decodeString "c++",
+    encodeString $ root </> "include" </> "mingw-4.8.1" </> "c++",
     "-isystem",
-    encodeString $ root </> decodeString "include" </> decodeString "mingw-4.8.1" </> decodeString "c++" </> decodeString "mingw32",
+    encodeString $ root </> "include" </> "mingw-4.8.1" </> "c++" </> "mingw32",
     "-isystem",
-    encodeString $ root </> decodeString "include",
+    encodeString $ root </> "include",
     "-I",
-    encodeString $ root </> decodeString "cpplib",
+    encodeString $ root </> "cpplib",
     "-std=c++11",
     "-D__MSVCRT__=1",
     "_D__declspec="
@@ -201,16 +204,16 @@ clangOptions root True | "mingw" `isPrefixOf` os = [
     "-target",
     "i386-pc-windows-msvc",
     "-I",
-    encodeString $ root </> decodeString "cpplib"
+    encodeString $ root </> "cpplib"
     ]
 
 clangOptions root True = [
     "-target",
     arch ++ "-" ++ os,
     "-isystem",
-    encodeString $ root </> decodeString "include",
+    encodeString $ root </> "include",
     "-I",
-    encodeString $ root </> decodeString "cpplib"
+    encodeString $ root </> "cpplib"
     ]
 
 

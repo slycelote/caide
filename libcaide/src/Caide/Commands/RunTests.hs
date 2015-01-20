@@ -20,12 +20,13 @@ import qualified Data.Text.IO as T
 import Prelude hiding (FilePath)
 import Filesystem (listDirectory, readTextFile, writeTextFile)
 import Filesystem.Path (FilePath, (</>),  replaceExtension)
-import Filesystem.Path.CurrentOS (decodeString)
+import Filesystem.Path.CurrentOS (fromText)
 
 import Caide.Configuration (getActiveProblem, getBuilder, readProblemConfig)
 import Caide.Registry (findBuilder)
 import Caide.Types
 import Caide.TestCases.Types
+import Caide.Util (tshow)
 
 cmd :: CommandHandler
 cmd =  CommandHandler
@@ -46,7 +47,7 @@ cmdEvaluate =  CommandHandler
 
 humanReadableReport :: TestReport Text -> Text
 humanReadableReport = T.unlines .
-            map (\(testName, res) -> T.concat [T.pack testName, ": ", humanReadable res])
+            map (\(testName, res) -> T.concat [testName, ": ", humanReadable res])
 
 humanReadableSummary :: TestReport Text -> Text
 humanReadableSummary = T.unlines . map toText . group . sort . map (fromComparisonResult . snd)
@@ -54,7 +55,7 @@ humanReadableSummary = T.unlines . map toText . group . sort . map (fromComparis
           fromComparisonResult (Error _) = "Error"
           fromComparisonResult r = tshow r
 
-runTests :: [String] -> CaideIO ()
+runTests :: [T.Text] -> CaideIO ()
 runTests _ = do
     probId <- getActiveProblem
     builderName <- getBuilder
@@ -66,13 +67,13 @@ runTests _ = do
         TestsPassed -> return ()
         NoEvalTests -> evalTests []
 
-evalTests :: [String] -> CaideIO ()
+evalTests :: [T.Text] -> CaideIO ()
 evalTests _ = do
     probId <- getActiveProblem
     root <- caideRoot
     hProblem <- readProblemConfig probId
     precision <- getProp hProblem "problem" "double_precision"
-    let testsDir = root </> decodeString probId </> ".caideproblem" </> "test"
+    let testsDir = root </> fromText probId </> ".caideproblem" </> "test"
         reportFile = testsDir </> "report.txt"
         cmpOptions = ComparisonOptions { doublePrecision = precision }
 
@@ -84,7 +85,7 @@ evalTests _ = do
         return [r | r@(_, Error _) <- report]
 
     unless (null errors) $
-        throw $ T.unpack $ humanReadableReport errors
+        throw $ humanReadableReport errors
 
 
 generateReport :: ComparisonOptions -> FilePath -> IO (TestReport Text)
@@ -92,7 +93,7 @@ generateReport cmpOptions testDir = do
     testList <- readTests $ testDir </> "testList.txt"
     allFiles <- listDirectory testDir
     let (testNames, inputFiles) = unzip [(testName, inputFile) | (testName, _) <- testList,
-                                          let inputFile = testDir </> decodeString (testName ++ ".in")
+                                          let inputFile = testDir </> fromText (T.append testName ".in")
                                         ]
     results <- mapM (testResult cmpOptions allFiles) inputFiles
     return $ zip testNames results
@@ -151,7 +152,3 @@ areEqualDoubles precision expected actual = isRight expectedParsed && isRight ac
     actualParsed = TextRead.double actual
     Right (actualDouble, actualRest) = actualParsed
 
-
-
-tshow :: (Show a) => a -> Text
-tshow = T.pack . show

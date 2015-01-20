@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Caide.Commands.Checkout (
       cmd
 ) where
@@ -7,8 +8,11 @@ import Control.Monad (forM_, unless)
 import Control.Monad.State (liftIO)
 import Data.Maybe (mapMaybe)
 
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+
 import Filesystem (isDirectory)
-import Filesystem.Path.CurrentOS (decodeString, (</>))
+import Filesystem.Path.CurrentOS (fromText, (</>))
 
 import Caide.Configuration (setActiveProblem, getActiveProblem, getFeatures, orDefault)
 import Caide.Registry (findFeature)
@@ -22,22 +26,22 @@ cmd = CommandHandler
     , action = checkoutProblem
     }
 
-checkoutProblem :: [String] -> CaideIO ()
+checkoutProblem :: [T.Text] -> CaideIO ()
 checkoutProblem [probId] = do
     root <- caideRoot
-    let problemDir = root </> decodeString probId
+    let problemDir = root </> fromText probId
     problemExists <- liftIO $ isDirectory problemDir
 
-    unless problemExists $ throw $ "Problem " ++ probId ++ " doesn't exist"
+    unless problemExists $ throw . T.concat $ ["Problem ", probId, " doesn't exist"]
 
     currentProbId <- getActiveProblem `orDefault` ""
     if currentProbId == probId
-        then liftIO $ putStrLn $ probId ++ ": already checked out"
+        then liftIO $ T.putStrLn . T.concat $ [probId, ": already checked out"]
         else do
             setActiveProblem probId
-            liftIO $ putStrLn $ "Checked out problem " ++ probId
+            liftIO $ T.putStrLn . T.concat $ ["Checked out problem ", probId]
             features <- mapMaybe findFeature <$> getFeatures
             forM_ features (`onProblemCheckedOut` probId)
 
-checkoutProblem _ = throw $ "Usage: " ++ usage cmd
+checkoutProblem _ = throw . T.concat $ ["Usage: ", usage cmd]
 

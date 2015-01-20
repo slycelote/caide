@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 
 module Caide.Registry (
       languages
@@ -13,6 +13,8 @@ module Caide.Registry (
 import Control.Applicative ((<$>))
 import Data.Char (toLower)
 import Data.List (find)
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Caide.Types
 import qualified Caide.CPP.CPPSimple as CPPSimple
@@ -23,13 +25,12 @@ import qualified Caide.Builders.None as None
 import qualified Caide.Builders.Custom as Custom
 
 import qualified Caide.Features.Codelite as Codelite
-import qualified Caide.Features.VisualStudio as VS
 import Caide.Parsers.Codeforces (codeforcesParser, codeforcesContestParser)
 import Caide.Parsers.CodeChef (codeChefParser)
 
 
-findLanguage :: String -> Maybe ProgrammingLanguage
-findLanguage name = snd <$> find (\(names, _) -> map toLower name `elem` names) languages
+findLanguage :: Text -> Maybe ProgrammingLanguage
+findLanguage name = snd <$> find (\(names, _) -> T.map toLower name `elem` names) languages
 
 problemParsers :: [ProblemParser]
 problemParsers = [codeforcesParser, codeChefParser]
@@ -44,23 +45,22 @@ findContestParser :: URL -> Maybe ContestParser
 findContestParser url = find (`contestUrlMatches` url) contestParsers
 
 
-builders :: [(String, Builder)]
+builders :: [(Text, Builder)]
 builders = [("none", None.builder)]
 
-findBuilder :: String -> Builder
-findBuilder name = case find ((== map toLower name) . fst) builders of
+findBuilder :: T.Text -> Builder
+findBuilder name = case find ((== T.map toLower name) . fst) builders of
     Just (_, builder) -> builder
     Nothing           -> Custom.builder name
 
-features :: [(String, Feature)]
+features :: [(Text, Feature)]
 features = [ ("codelite", Codelite.feature)
-           , ("vs", VS.feature)
            ]
 
-findFeature :: String -> Maybe Feature
-findFeature name = snd <$> find ((== map toLower name). fst) features
+findFeature :: Text -> Maybe Feature
+findFeature name = snd <$> find ((== T.map toLower name). fst) features
 
-languages :: [([String], ProgrammingLanguage)]
+languages :: [([Text], ProgrammingLanguage)]
 languages = [ (["simplecpp", "simplec++"], CPPSimple.language)
 #ifdef CLANG_INLINER
             , (["cpp", "c++"], CPP.language)

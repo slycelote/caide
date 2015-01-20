@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Caide.Commands.ParseContest (
       cmd
 ) where
@@ -22,23 +23,24 @@ cmd = CommandHandler
     , action = doParseContest
     }
 
-doParseContest :: [String] -> CaideIO ()
-doParseContest [url] = case findContestParser (T.pack url) of
-    Nothing -> throw $ url ++ " is not recognized as a supported contest URL"
+doParseContest :: [T.Text] -> CaideIO ()
+doParseContest [url] = case findContestParser url of
+    Nothing -> throw . T.concat $ [url, " is not recognized as a supported contest URL"]
     Just contestParser -> do
-        parserRet <- liftIO $ contestParser `parseContest` T.pack url
+        parserRet <- liftIO $ contestParser `parseContest` url
         case parserRet of
             Left  err  -> throw err
             Right urls -> do
                 results <- mapM tryParseProblem $ reverse urls
                 let errors = catMaybes results
                 unless (null errors) $
-                    throw $ unlines ("Some problems failed to parse: ": errors)
+                    throw $ T.unlines ("Some problems failed to parse: ": errors)
 
-doParseContest _ = throw $ "Usage: " ++ usage cmd
+doParseContest _ = throw . T.concat $ ["Usage: ", usage cmd]
 
-tryParseProblem :: URL -> CaideIO (Maybe String)
+tryParseProblem :: URL -> CaideIO (Maybe T.Text)
 tryParseProblem url = case findProblemParser url of
-    Nothing -> return . Just $ "Couldn't find problem parser for URL: " ++ T.unpack url
-    Just parser -> (parseExistingProblem url parser >> return Nothing) `catchError` (return . Just . describeError)
+    Nothing -> return . Just . T.concat $ ["Couldn't find problem parser for URL: ", url]
+    Just parser -> (parseExistingProblem url parser >> return Nothing) `catchError`
+                   (return . Just . T.pack . describeError)
 

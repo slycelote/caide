@@ -1,8 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main where
 
 import Control.Monad (forM_)
 import Data.List (find)
 import Data.Maybe (isJust, isNothing, fromMaybe)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+
 import Filesystem (getWorkingDirectory, isDirectory)
 import qualified Filesystem.Path as F
 import Filesystem.Path.CurrentOS (decodeString, encodeString, parent, (</>))
@@ -41,14 +45,14 @@ commands = [Init.cmd, ParseProblem.cmd, BuildScaffold.cmd, Checkout.cmd, Make.cm
             GetOpt.cmd, GetOpt.cmdState, GetOpt.cmdProblem, GetOpt.cmdProblemState, RunTests.cmdEvaluate,
             Make.cmdUpdateTests]
 
-findCommand :: String -> Maybe CommandHandler
+findCommand :: T.Text -> Maybe CommandHandler
 findCommand cmdName = find ((== cmdName) . command) commands
 
 printUsage :: IO ()
 printUsage = do
-    putStrLn "Usage: caide [cmd] ..."
+    T.putStrLn "Usage: caide [cmd] ..."
     forM_ commands $ \cmd ->
-        putStrLn $ "  caide " ++ command cmd ++ ": " ++ description cmd
+        T.putStrLn . T.concat $ ["  caide ", command cmd, ": ", description cmd]
 
 main :: IO ()
 main = do
@@ -57,7 +61,7 @@ main = do
     workDir <- getWorkingDirectory
     if null args
         then printUsage >> halt
-        else case findCommand cmd of
+        else case findCommand (T.pack cmd) of
             Nothing -> printUsage >> halt
             Just c  -> do
                 caideDir <- findRootCaideDir workDir
@@ -73,7 +77,7 @@ main = do
 
 runAction :: CommandHandler -> F.FilePath -> [String] -> IO ()
 runAction cmd root args = do
-    ret <- runInDirectory root $ action cmd args
+    ret <- runInDirectory root $ action cmd (map T.pack args)
     case ret of
         Left err -> putStrLn (describeError err) >> halt
         _        -> return ()

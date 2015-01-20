@@ -27,6 +27,7 @@ import qualified Data.Text as T
 import Prelude hiding (FilePath)
 import Filesystem.Path (FilePath)
 import Filesystem (isFile, readTextFile, writeTextFile)
+import Caide.Util (tshow)
 
 
 data ComparisonOptions = ComparisonOptions
@@ -47,19 +48,19 @@ machineReadable (Error _) = "failed"
 machineReadable res = humanReadable res
 
 
-type TestReport a = [(String, ComparisonResult a)]
+type TestReport a = [(Text, ComparisonResult a)]
 
 serializeTestReport :: TestReport Text -> Text
 serializeTestReport = T.unlines .
-            map (\(testName, res) -> T.concat [T.pack testName, " ", machineReadable res])
+            map (\(testName, res) -> T.concat [testName, " ", machineReadable res])
 
 deserializeTestReport :: Text -> TestReport ()
 deserializeTestReport text = map (parseTest . T.words) reportLines
   where
     reportLines = T.lines text
 
-    parseTest :: [Text] -> (String, ComparisonResult ())
-    parseTest [testName, testStatus] = (T.unpack testName, if testStatus == "failed" then Error () else Success)
+    parseTest :: [Text] -> (Text, ComparisonResult ())
+    parseTest [testName, testStatus] = (testName, if testStatus == "failed" then Error () else Success)
     parseTest _ = error "Corrupted test report"
 
 readTestReport :: FilePath -> IO (TestReport ())
@@ -71,17 +72,17 @@ readTestReport reportFile = do
 
 data TestState = Run | Skip deriving (Read, Show)
 
-type TestList = [(String, TestState)]
+type TestList = [(Text, TestState)]
 
 serializeTestList :: TestList -> Text
-serializeTestList = T.pack . unlines . map (\(name, state) -> name ++ " " ++ show state)
+serializeTestList = T.unlines . map (\(name, state) -> T.concat [name, " ", tshow state])
 
 deserializeTestList :: Text -> TestList
 deserializeTestList text = map toTest testLines
   where
-    testLines = map (words . T.unpack) . T.lines $ text
+    testLines = map T.words . T.lines $ text
 
-    toTest [name, state] = (name, read state)
+    toTest [name, state] = (name, read $ T.unpack state)
     toTest _ = error "Corrupted testList file"
 
 readTests :: FilePath -> IO TestList
