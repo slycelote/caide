@@ -21,6 +21,7 @@ import qualified Caide.CPP.CPPSimple as CPPSimple
 #ifdef CLANG_INLINER
 import qualified Caide.CPP.CPP as CPP
 #endif
+import qualified Caide.CSharp.CSharpSimple as CSharpSimple
 import qualified Caide.Builders.None as None
 import qualified Caide.Builders.Custom as Custom
 
@@ -65,5 +66,6 @@ languages = [ (["simplecpp", "simplec++"], CPPSimple.language)
 #ifdef CLANG_INLINER
             , (["cpp", "c++"], CPP.language)
 #endif
+            , (["c#", "csharp"], CSharpSimple.language)
             ]
 
