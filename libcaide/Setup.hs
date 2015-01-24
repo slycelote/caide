@@ -5,7 +5,6 @@ import Control.Exception
 import Control.Monad
 import Control.Applicative
 import qualified Data.ByteString.Lazy as B
-import qualified Data.ByteString as BS
 import Data.Char(isSpace)
 import Data.List (isPrefixOf, intersperse, nub)
 import Data.Maybe (fromMaybe)
@@ -146,29 +145,17 @@ libClangConfHook (pkg, pbi) flags = do
 
   return lbi
 
--- A version of readEntry that uses strict ByteStrings to read the file
+-- A strict version of readEntry
 readEntry' :: [ZipOption] -> FilePath -> IO Entry
 readEntry' opts path = do
-    isDir <- doesDirectoryExist path
-    -- make sure directories end in / and deal with the OptLocation option
-    let path' = let p = path ++ (case reverse path of
-                                    ('/':_)       -> ""
-                                    _ | isDir     -> "/"
-                                      | otherwise -> "") in
-                    (case [(l,a) | OptLocation l a <- opts] of
-                        ((l,a):_) -> if a then l </> p else l
-                        _ -> p)
-    contents <- if isDir
-                then return B.empty
-                else B.fromStrict <$> BS.readFile path
-    modEpochTime <- fmap (floor . utcTimeToPOSIXSeconds) $ getModificationTime path
-    return $ toEntry path' modEpochTime contents
+    e <- readEntry opts path
+    eUncompressedSize e `seq` return e
 
--- A version of addFilesToArchive that uses strict ByteStrings to read files
+-- A version of addFilesToArchive that uses a strict version of readEntry
 addFilesToArchive' :: [ZipOption] -> Archive -> [FilePath] -> IO Archive
 addFilesToArchive' opts archive files = do
     filesAndChildren <- if OptRecursive `elem` opts
-        then mapM getDirectoryContentsRecursive files >>= return . nub . concat
+        then (nub . concat) <$> mapM getDirectoryContentsRecursive files
         else return files
     entries <- mapM (readEntry' opts) filesAndChildren
     return $ foldr addEntryToArchive archive entries
