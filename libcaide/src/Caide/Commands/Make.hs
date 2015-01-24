@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Caide.Commands.Make (
+module Caide.Commands.Make(
       cmd
     , cmdUpdateTests
     , updateTests
@@ -76,12 +76,12 @@ updateTests = withProblem $ \_ problemDir -> liftIO $ do
     writeTextFile (testDir </> "caideExe.txt") $ T.pack caideExe
 
 prepareSubmission :: CaideIO ()
-prepareSubmission = withProblem $ \probId problemDir -> do
+prepareSubmission = withProblem $ \probId _ -> do
     hProblem <- readProblemState probId
     lang <- getProp hProblem "problem" "language"
     case findLanguage lang of
         Nothing       -> throw . T.concat $ ["Unsupported programming language ", lang]
-        Just language -> inlineCode language problemDir
+        Just language -> inlineCode language probId
 
 makeProblem :: CaideIO ()
 makeProblem = updateTests >> prepareSubmission

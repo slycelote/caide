@@ -50,9 +50,11 @@ doParse url = do
                 testCases = [TestCase (inputsAndOutputs!!i) (inputsAndOutputs!!(i+1)) |
                                 i <- [0, 2 .. length inputsAndOutputs-2]]
 
+                probType = Stream StdIn StdOut
+
             if null problemCode
                 then return . Left $ "Couldn't parse problem statement"
-                else return . Right $ (Problem title probId, testCases)
+                else return . Right $ (Problem title probId probType, testCases)
 
 extractCurrentLevelTextNodes :: Eq a => [Tag a] -> [Tag a]
 extractCurrentLevelTextNodes tags = go tags []

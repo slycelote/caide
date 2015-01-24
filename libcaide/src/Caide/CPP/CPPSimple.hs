@@ -8,13 +8,13 @@ import Control.Monad.State (liftIO)
 
 import qualified Data.Text as T
 
-import Filesystem (appendTextFile, copyFile, readTextFile, isFile)
-import qualified Filesystem.Path as F
+import Filesystem (appendTextFile, copyFile, readTextFile, writeTextFile, isFile)
 import Filesystem.Path ((</>))
 import Filesystem.Path.CurrentOS (fromText)
 
+import Caide.Configuration (readProblemConfig)
 import Caide.Types
-import Caide.Util (getProblemID)
+import Caide.Util (pathToText)
 
 language :: ProgrammingLanguage
 language = ProgrammingLanguage
@@ -22,27 +22,47 @@ language = ProgrammingLanguage
     , inlineCode = inlineCPPCode
     }
 
-generateCPPScaffold :: F.FilePath -> CaideIO ()
-generateCPPScaffold problemDir = do
-    let probID = getProblemID problemDir
-        scaffoldPath = problemDir </> fromText (T.append probID ".cpp")
-        scaffoldTemplatePath = F.parent problemDir </> "templates" </> "solution_template.cpp"
+generateCPPScaffold :: ProblemID -> CaideIO ()
+generateCPPScaffold probID = do
+    root <- caideRoot
+    hConf <- readProblemConfig probID
+    probType <- getProp hConf "problem" "type"
+
+    let problemDir = root </> fromText probID
+        scaffoldPath    = problemDir </> fromText (T.append probID ".cpp")
         testProgramPath = problemDir </> fromText (T.append probID "_test.cpp")
-        testTemplatePath = F.parent problemDir </> "templates" </> "test_template.cpp"
+        mainProgramPath = problemDir </> "main.cpp"
+        scaffoldTemplatePath = root </> "templates" </> "solution_template.cpp"
+        testTemplatePath     = root </> "templates" </> "test_template.cpp"
+        mainTemplatePath     = root </> "templates" </> "main_template.cpp"
+        inputPreamble = case probType of
+            Stream StdIn _ -> ["#define CAIDE_STDIN 1"]
+            Stream (FileInput fileName) _ -> [T.concat ["const char* CAIDE_IN_FILE = \"", pathToText fileName, "\";"]]
+            _ -> []
+        outputPreamble = case probType of
+            Stream _ StdOut -> ["#define CAIDE_STDOUT 1"]
+            Stream _ (FileOutput fileName) -> [T.concat ["const char* CAIDE_OUT_FILE = \"", pathToText fileName, "\";"]]
+            _ -> []
+
     liftIO $ do
         solutionFileExists <- isFile scaffoldPath
         unless solutionFileExists $ copyFile scaffoldTemplatePath scaffoldPath
         testFileExists <- isFile testProgramPath
         unless testFileExists $ copyFile testTemplatePath testProgramPath
+        mainFileExists <- isFile mainProgramPath
+        unless mainFileExists $ do
+            mainTemplate <- readTextFile mainTemplatePath
+            writeTextFile mainProgramPath $ T.unlines $ inputPreamble ++ outputPreamble ++ [mainTemplate]
 
-inlineCPPCode :: F.FilePath -> CaideIO ()
-inlineCPPCode problemDir = do
-    let probID = getProblemID problemDir
+inlineCPPCode :: ProblemID -> CaideIO ()
+inlineCPPCode probID = do
+    root <- caideRoot
+    let problemDir = root </> fromText probID
         solutionPath = problemDir </> fromText (T.append probID ".cpp")
-        inlinedTemplatePath = F.parent problemDir </> "templates" </> "main_template.cpp"
         inlinedCodePath = problemDir </> "submission.cpp"
+        mainProgramPath = problemDir </> "main.cpp"
     liftIO $ do
         copyFile solutionPath inlinedCodePath
-        mainCode <- readTextFile inlinedTemplatePath
+        mainCode <- readTextFile mainProgramPath
         appendTextFile inlinedCodePath mainCode
 

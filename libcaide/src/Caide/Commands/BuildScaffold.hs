@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Caide.Commands.BuildScaffold (
+module Caide.Commands.BuildScaffold(
       cmd
     , generateScaffoldSolution
 ) where
@@ -8,7 +8,6 @@ import Control.Applicative ((<$>))
 import Control.Monad (forM_)
 import Data.Maybe (mapMaybe)
 import qualified Data.Text as T
-import Filesystem.Path.CurrentOS (fromText, (</>))
 
 import Caide.Types
 import Caide.Registry (findLanguage, findFeature)
@@ -27,11 +26,9 @@ generateScaffoldSolution :: [T.Text] -> CaideIO ()
 generateScaffoldSolution [lang] = case findLanguage lang of
     Nothing -> throw . T.concat $ ["Unknown or unsupported language: ", lang]
     Just language -> do
-        root <- caideRoot
         problem <- getActiveProblem
 
-        let problemDir = root </> fromText problem
-        generateScaffold language problemDir
+        generateScaffold language problem
 
         hProblem <- readProblemState problem
         setProp hProblem "problem" "language" lang

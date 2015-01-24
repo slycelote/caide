@@ -22,9 +22,10 @@ language = ProgrammingLanguage
     , inlineCode = inlineCSharpCode
     }
 
-generateCSharpScaffold :: F.FilePath -> CaideIO ()
-generateCSharpScaffold problemDir = do
-    let probID = getProblemID problemDir
+generateCSharpScaffold :: ProblemID -> CaideIO ()
+generateCSharpScaffold probID = do
+    root <- caideRoot
+    let problemDir = root </> fromText probID
         scaffoldPath = problemDir </> fromText (T.append probID ".cs")
         scaffoldTemplatePath = F.parent problemDir </> "templates" </> "solution_template.cs"
         testProgramPath = problemDir </> fromText (T.append probID "_test.cs")
@@ -35,9 +36,10 @@ generateCSharpScaffold problemDir = do
         testFileExists <- isFile testProgramPath
         unless testFileExists $ copyFile testTemplatePath testProgramPath
 
-inlineCSharpCode :: F.FilePath -> CaideIO ()
-inlineCSharpCode problemDir = do
-    let probID = getProblemID problemDir
+inlineCSharpCode :: ProblemID -> CaideIO ()
+inlineCSharpCode probID = do
+    root <- caideRoot
+    let problemDir = root </> fromText probID
         solutionPath = problemDir </> fromText (T.append probID ".cs")
         inlinedTemplatePath = F.parent problemDir </> "templates" </> "main_template.cs"
         inlinedCodePath = problemDir </> "submission.cs"

@@ -14,7 +14,7 @@ import Filesystem (createDirectory, createTree, writeTextFile, isDirectory)
 import Filesystem.Path.CurrentOS (fromText, decodeString, (</>))
 
 import Caide.Types
-import Caide.Configuration (getDefaultLanguage, setActiveProblem, writeProblemConf, writeProblemState)
+import Caide.Configuration (getDefaultLanguage, setActiveProblem, getProblemConfigFile, getProblemStateFile, defaultProblemConfig, defaultProblemState)
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
 import Caide.Registry (findProblemParser)
@@ -30,6 +30,7 @@ cmd = CommandHandler
     }
 
 
+-- TODO: allow specifying problem type via 'file,stdin,stdout' syntax
 doParseProblem :: [T.Text] -> CaideIO ()
 doParseProblem [url] = case findProblemParser url of
     Just parser -> parseExistingProblem url parser
@@ -37,15 +38,20 @@ doParseProblem [url] = case findProblemParser url of
 
 doParseProblem _ = throw . T.concat $ ["Usage: ", usage cmd]
 
-initializeProblem :: ProblemID -> CaideIO ()
-initializeProblem probId = do
+initializeProblem :: Problem -> CaideIO ()
+initializeProblem problem = do
     root <- caideRoot
-    let testDir = root </> fromText probId </> ".caideproblem" </> "test"
+    let probId = problemId problem
+        testDir = root </> fromText probId </> ".caideproblem" </> "test"
+    problemConfPath  <- getProblemConfigFile probId
+    problemStatePath <- getProblemStateFile probId
 
     liftIO $ createTree testDir
 
-    _ <- writeProblemState probId
-    _ <- writeProblemConf probId
+    hProblemConf <- createConf problemConfPath defaultProblemConfig
+    setProp hProblemConf "problem" "name" $ problemName problem
+    setProp hProblemConf "problem" "type" $ problemType problem
+    _ <- createConf problemStatePath defaultProblemState
 
     lang <- getDefaultLanguage
     updateTests
@@ -60,6 +66,11 @@ createNewProblem probId = do
 
     root <- caideRoot
     let problemDir = root </> fromText probId
+        problem = Problem
+            { problemId = probId
+            , problemName = probId
+            , problemType = Stream StdIn StdOut
+            }
 
     -- Prepare problem directory
     liftIO $ createDirectory False problemDir
@@ -67,7 +78,7 @@ createNewProblem probId = do
     -- Set active problem
     setActiveProblem probId
     liftIO $ T.putStrLn . T.concat $ ["Problem successfully created in folder ", probId]
-    initializeProblem probId
+    initializeProblem problem
 
 
 parseExistingProblem :: URL -> ProblemParser -> CaideIO ()
@@ -100,5 +111,5 @@ parseExistingProblem url parser = do
             setActiveProblem probId
             liftIO $ T.putStrLn . T.concat $ ["Problem successfully parsed into folder ", probId]
 
-            initializeProblem probId
+            initializeProblem problem
 

@@ -4,7 +4,6 @@
 module Caide.Configuration (
       -- * General utilities
       setProperties
-    , getListProp
     , orDefault
     , describeError
 
@@ -30,8 +29,6 @@ module Caide.Configuration (
     , readProblemState
     , defaultProblemConfig
     , defaultProblemState
-    , writeProblemState
-    , writeProblemConf
 
 ) where
 
@@ -59,9 +56,6 @@ import Caide.Util (forceEither)
 setProperties :: Monad m => ConfigFileHandle -> [(String, String, Text)] -> CaideM m ()
 setProperties handle properties = forM_ properties $ \(section, key, value) ->
     setProp handle section key value
-
-getListProp :: (Functor m, Monad m) => ConfigFileHandle -> String -> String -> CaideM m [Text]
-getListProp h section key = map T.strip . T.splitOn "," <$> getProp h section key
 
 orDefault :: Monad m => CaideM m a -> a -> CaideM m a
 orDefault getter defaultValue = getter `catchError` const (return defaultValue)
@@ -98,15 +92,6 @@ readProblemConfig probId = do
     then getProblemConfigFile probId >>= readConf
     else throw "No such problem"
 
-writeProblemConf :: Monad m => ProblemID -> CaideM m ConfigFileHandle
-writeProblemConf probId = do
-    filePath <- getProblemConfigFile probId
-    createConf filePath defaultProblemConfig
-
-writeProblemState :: Monad m => ProblemID -> CaideM m ConfigFileHandle
-writeProblemState probId = do
-    filePath <- getProblemStateFile probId
-    createConf filePath defaultProblemState
 
 {--------------------------- Global options and state ----------------------------}
 caideConfFile :: Monad m => CaideM m FilePath
@@ -161,7 +146,7 @@ getDefaultLanguage = do
 getFeatures :: CaideIO [Text]
 getFeatures = do
     h <- readCaideConf
-    getListProp h "core" "features"
+    getProp h "core" "features"
 
 {--------------------------- Internals -----------------------------}
 

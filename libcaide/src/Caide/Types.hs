@@ -1,9 +1,13 @@
 {-# LANGUAGE Rank2Types, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Caide.Types(
       Problem (..)
     , ProblemID
+    , ProblemType (..)
+    , InputSource (..)
+    , OutputTarget (..)
 
     , CaideIO
     , CaideM
@@ -35,11 +39,12 @@ module Caide.Types(
     , noOpFeature
 ) where
 
-import Control.Applicative (Applicative, (<$>))
+import Control.Applicative (Applicative)
 import Control.Monad (forM_, unless, when)
 import Control.Monad.Except (ExceptT, MonadError, runExceptT, throwError)
 import Control.Monad.State (StateT, MonadState, runStateT, gets, modify')
 import Control.Monad.Trans (MonadIO, liftIO)
+import Data.Char (toLower)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Text (Text, pack, unpack)
@@ -49,6 +54,8 @@ import qualified Data.ConfigFile as C
 import qualified Filesystem as F
 import qualified Filesystem.Path as F
 import qualified Filesystem.Path.CurrentOS as F
+
+import Text.Read (readMaybe)
 
 
 data TestCase = TestCase
@@ -61,7 +68,15 @@ type ProblemID = Text
 data Problem = Problem
     { problemName :: !Text      -- ^ Human readable identifier, used for displaying in GUI
     , problemId   :: !ProblemID -- ^ ID used for folder names, code generation etc.
+    , problemType :: !ProblemType
     } deriving (Show)
+
+data ProblemType = Topcoder | Stream !InputSource !OutputTarget
+    deriving (Show)
+data InputSource = StdIn | FileInput !F.FilePath
+    deriving (Show)
+data OutputTarget = StdOut | FileOutput !F.FilePath
+    deriving (Show)
 
 type URL = Text
 
@@ -81,35 +96,14 @@ data ContestParser = ContestParser
 -- programming language. The second argument to all functions is the path to directory
 -- where the problem is located.
 data ProgrammingLanguage = ProgrammingLanguage
-    { generateScaffold   :: F.FilePath -> CaideIO ()
-    , inlineCode         :: F.FilePath -> CaideIO ()
+    { generateScaffold   :: ProblemID -> CaideIO ()
+    , inlineCode         :: ProblemID -> CaideIO ()
     }
 
 
-class C.Get_C a => Option a where
+class Option a where
     optionToString :: a -> String
-    optionFromString :: String -> a
-
-instance Option Bool where
-    optionToString False = "no"
-    optionToString True  = "yes"
-
-    optionFromString "yes" = True
-    optionFromString "true" = True
-    optionFromString "enabled" = True
-    optionFromString "on" = True
-    optionFromString "1" = True
-
-    optionFromString _ = False
-
-instance Option Text where
-    optionToString = unpack
-    optionFromString = pack
-
-instance Option Double where
-    optionToString = show
-    optionFromString = read
-
+    optionFromString :: String -> Maybe a
 
 type Config = C.ConfigParser
 
@@ -176,7 +170,11 @@ getProp (FileHandle path) section key = do
     mf <- gets (M.lookup path . files)
     case mf of
         Nothing -> throw $ T.concat ["Unknown file handle ", toText path]
-        Just f  -> convertToCaide $ optionFromString <$> C.get (configParser f) section key
+        Just f  -> do
+            opt <- convertToCaide $ C.get (configParser f) section key
+            case optionFromString opt of
+                Just a  -> return a
+                Nothing -> throw $ T.concat ["Couldn't parse option ", pack opt]
 
 setProp :: (Monad m, Option a) => ConfigFileHandle -> String -> String -> a -> CaideM m ()
 setProp (FileHandle path) section key value = do
@@ -227,6 +225,40 @@ noOpFeature =  Feature
 
 {------------------ Implementation ---------------------}
 
+instance Option Bool where
+    optionToString False = "no"
+    optionToString True  = "yes"
+
+    optionFromString s
+        | s' `elem` ["yes", "true", "enabled", "on", "1"]   = Just True
+        | s' `elem` ["no", "false", "disabled", "off", "0"] = Just False
+        | otherwise = Nothing
+      where s' = map toLower s
+
+instance Option Text where
+    optionToString = unpack
+    optionFromString = Just . pack
+
+instance Option Double where
+    optionToString = show
+    optionFromString = readMaybe
+
+instance Option [Text] where
+    optionToString = unpack . T.intercalate ","
+    optionFromString = Just . map T.strip . T.splitOn "," . pack
+
+instance Option ProblemType where
+    optionToString Topcoder = "topcoder"
+    optionToString (Stream input output) =
+        "file," ++ inputSourceToString input ++ "," ++ outputTargetToString output
+
+    optionFromString s
+        | map toLower s == "topcoder" = Just Topcoder
+    optionFromString s = case optionFromString s of
+        Just [probType, inputSource, outputSource]
+            | T.map toLower probType == "file" -> Just $ Stream (parseInput inputSource) (parseOutput outputSource)
+        _ -> Nothing
+
 
 data ConfigInMemory = ConfigInMemory
     { configParser :: C.ConfigParser
@@ -265,4 +297,21 @@ toText :: F.FilePath -> Text
 toText path = case F.toText path of
     Left  s -> s
     Right s -> s
+
+inputSourceToString :: InputSource -> String
+inputSourceToString StdIn = "stdin"
+inputSourceToString (FileInput f) = F.encodeString f
+
+outputTargetToString :: OutputTarget -> String
+outputTargetToString StdOut = "stdout"
+outputTargetToString (FileOutput f) = F.encodeString f
+
+parseInput :: Text -> InputSource
+parseInput "stdin" = StdIn
+parseInput f = FileInput . F.fromText $ f
+
+parseOutput :: Text -> OutputTarget
+parseOutput "stdout" = StdOut
+parseOutput f = FileOutput . F.fromText $ f
+
 

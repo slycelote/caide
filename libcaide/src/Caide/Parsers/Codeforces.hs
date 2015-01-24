@@ -73,9 +73,11 @@ doParseTagSoup url = do
                                then T.append "cf" (head contestIds)
                                else "cfproblem"
                 probId = T.snoc probIdPrefix (T.head title)
+
+                probType = Stream StdIn StdOut
             if null beforeTitleDiv
                 then return . Left $ "Couldn't parse problem statement"
-                else return . Right $ (Problem title probId, testCases)
+                else return . Right $ (Problem title probId probType, testCases)
 
 
 contestUrlRegex :: Regex
