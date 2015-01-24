@@ -36,6 +36,7 @@ executable caide
                    bytestring,
                    ConfigFile,
                    containers >= 0.5.0.0,
+                   directory >= 1.2.0,
                    file-embed,
                    filepath,
                    HTTP >= 4000.2.11,
