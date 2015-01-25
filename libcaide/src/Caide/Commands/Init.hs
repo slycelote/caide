@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, TemplateHaskell, OverloadedStrings #-}
 
 module Caide.Commands.Init(
-      cmd
+      initialize
 ) where
 
 import Control.Monad.State (liftIO)
@@ -19,19 +19,10 @@ import Caide.Configuration (writeCaideConf, writeCaideState, defaultCaideConf, d
 import Caide.Types
 import Caide.Util (pathToText)
 
-cmd :: CommandHandler
-cmd = CommandHandler
-    { command = "init"
-    , description = "Initialize current caide directory"
-    , usage = "caide init [--cpp-use-system-headers]"
-    , action = initialize
-    }
-
-initialize :: [T.Text] -> CaideIO ()
-initialize args = do
-    let useSystemHeaders = "--cpp-use-system-headers" `elem` args
+initialize :: Bool -> CaideIO ()
+initialize useSystemCppHeaders = do
     curDir <- caideRoot
-    _ <- writeCaideConf $ defaultCaideConf curDir useSystemHeaders
+    _ <- writeCaideConf $ defaultCaideConf curDir useSystemCppHeaders
     _ <- writeCaideState defaultCaideState
     liftIO $ do
         unpackResources curDir

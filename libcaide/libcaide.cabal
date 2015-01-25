@@ -44,6 +44,7 @@ executable caide
                    network >= 2.6,
                    network-uri >= 2.6,
                    old-locale,
+                   optparse-applicative,
                    process,
                    system-fileio >= 0.3.16,
                    system-filepath,

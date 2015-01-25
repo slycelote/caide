@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Caide.Commands.RunTests (
-      cmd
-    , cmdEvaluate
+      runTests
+    , evalTests
 ) where
 
 
@@ -28,22 +28,6 @@ import Caide.Types
 import Caide.TestCases.Types
 import Caide.Util (tshow)
 
-cmd :: CommandHandler
-cmd =  CommandHandler
-    { command = "test"
-    , description = "Run tests and generate test report"
-    , usage = "caide test"
-    , action = runTests
-    }
-
-cmdEvaluate :: CommandHandler
-cmdEvaluate =  CommandHandler
-    { command = "eval_tests"
-    , description = "(Internal) Generate test report"
-    , usage = "caide eval_tests"
-    , action = evalTests
-    }
-
 
 humanReadableReport :: TestReport Text -> Text
 humanReadableReport = T.unlines .
@@ -55,8 +39,8 @@ humanReadableSummary = T.unlines . map toText . group . sort . map (fromComparis
           fromComparisonResult (Error _) = "Error"
           fromComparisonResult r = tshow r
 
-runTests :: [T.Text] -> CaideIO ()
-runTests _ = do
+runTests :: CaideIO ()
+runTests = do
     probId <- getActiveProblem
     builderName <- getBuilder
     let builder = findBuilder builderName
@@ -65,10 +49,10 @@ runTests _ = do
         BuildFailed -> throw "Build failed"
         TestsFailed -> throw "Tests failed"
         TestsPassed -> return ()
-        NoEvalTests -> evalTests []
+        NoEvalTests -> evalTests
 
-evalTests :: [T.Text] -> CaideIO ()
-evalTests _ = do
+evalTests :: CaideIO ()
+evalTests = do
     probId <- getActiveProblem
     root <- caideRoot
     hProblem <- readProblemConfig probId

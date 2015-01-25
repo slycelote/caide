@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Caide.Commands.ParseContest (
-      cmd
+module Caide.Commands.ParseContest(
+      createContest
 ) where
 
 import Control.Monad (unless)
@@ -15,16 +15,8 @@ import Caide.Registry (findProblemParser, findContestParser)
 import Caide.Types
 
 
-cmd :: CommandHandler
-cmd = CommandHandler
-    { command = "contest"
-    , description = "Parse a contest"
-    , usage = "caide contest <URL>"
-    , action = doParseContest
-    }
-
-doParseContest :: [T.Text] -> CaideIO ()
-doParseContest [url] = case findContestParser url of
+createContest :: URL -> CaideIO ()
+createContest url = case findContestParser url of
     Nothing -> throw . T.concat $ [url, " is not recognized as a supported contest URL"]
     Just contestParser -> do
         parserRet <- liftIO $ contestParser `parseContest` url
@@ -35,8 +27,6 @@ doParseContest [url] = case findContestParser url of
                 let errors = catMaybes results
                 unless (null errors) $
                     throw $ T.unlines ("Some problems failed to parse: ": errors)
-
-doParseContest _ = throw . T.concat $ ["Usage: ", usage cmd]
 
 tryParseProblem :: URL -> CaideIO (Maybe T.Text)
 tryParseProblem url = case findProblemParser url of

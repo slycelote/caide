@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Caide.Commands.Checkout (
-      cmd
+      checkoutProblem
 ) where
 
 import Control.Applicative ((<$>))
@@ -18,16 +18,8 @@ import Caide.Configuration (setActiveProblem, getActiveProblem, getFeatures, orD
 import Caide.Registry (findFeature)
 import Caide.Types
 
-cmd :: CommandHandler
-cmd = CommandHandler
-    { command = "checkout"
-    , description = "Change active problem"
-    , usage = "caide checkout <problem id>"
-    , action = checkoutProblem
-    }
-
-checkoutProblem :: [T.Text] -> CaideIO ()
-checkoutProblem [probId] = do
+checkoutProblem :: ProblemID -> CaideIO ()
+checkoutProblem probId = do
     root <- caideRoot
     let problemDir = root </> fromText probId
     problemExists <- liftIO $ isDirectory problemDir
@@ -42,6 +34,4 @@ checkoutProblem [probId] = do
             liftIO $ T.putStrLn . T.concat $ ["Checked out problem ", probId]
             features <- mapMaybe findFeature <$> getFeatures
             forM_ features (`onProblemCheckedOut` probId)
-
-checkoutProblem _ = throw . T.concat $ ["Usage: ", usage cmd]
 

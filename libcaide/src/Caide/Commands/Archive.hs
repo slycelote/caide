@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Caide.Commands.Archive (
-      cmd
+module Caide.Commands.Archive(
+      archiveProblem
 ) where
 
 import Prelude hiding (FilePath)
@@ -14,21 +14,14 @@ import Filesystem (isDirectory, createTree, removeTree, listDirectory, isDirecto
 import Filesystem.Path.CurrentOS ((</>), fromText, decodeString, basename, FilePath)
 import System.Locale (defaultTimeLocale)
 
-import qualified Caide.Commands.Checkout as Checkout
+import Caide.Commands.Checkout (checkoutProblem)
 import Caide.Configuration (getActiveProblem)
 import Caide.Types
 import Caide.Util (copyTreeToDir, copyFileToDir, listDir, pathToText)
 
-cmd :: CommandHandler
-cmd = CommandHandler
-    { command      = "archive"
-    , description  = "Archive a problem"
-    , usage        = "caide archive <problemID>"
-    , action       = archive
-    }
 
-archive :: [T.Text] -> CaideIO ()
-archive [probId] = do
+archiveProblem :: ProblemID -> CaideIO ()
+archiveProblem probId = do
     root <- caideRoot
     let problemDir = root </> fromText probId
         problemStateDir = problemDir </> ".caideproblem"
@@ -59,10 +52,8 @@ archive [probId] = do
     when (activeProblem == probId) $ do
         allProblems <- liftIO $ caideProblems root
         let newActiveProblem = if null allProblems then "" else head allProblems
-        action Checkout.cmd [newActiveProblem]
+        checkoutProblem newActiveProblem
 
-
-archive _ = throw . T.concat $ ["Usage: ", usage cmd]
 
 caideProblems :: FilePath -> IO [ProblemID]
 caideProblems rootDir = do

@@ -1,9 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Caide.Commands.Make(
-      cmd
-    , cmdUpdateTests
-    , updateTests
-    --, cmdPrepareSubmission
+      updateTests
+    , make
 ) where
 
 import Control.Applicative ((<$>))
@@ -28,31 +26,6 @@ import Caide.Util (copyFileToDir, pathToText)
 import Caide.TestCases.Types
 
 
-cmd :: CommandHandler
-cmd = CommandHandler
-    { command = "make"
-    , description = "Prepares submission file and updates test list"
-    , usage = "caide make"
-    , action = make
-    }
-
-cmdUpdateTests :: CommandHandler
-cmdUpdateTests = CommandHandler
-    { command = "update_tests"
-    , description = "(Internal) Updates test list"
-    , usage = "caide update_tests"
-    , action = const updateTests
-    }
-
-{-
-cmdPrepareSubmission :: CommandHandler
-cmdPrepareSubmission = CommandHandler
-    { command = "prepare_submission"
-    , description = "(Internal) Prepares code for submission"
-    , usage = "caide prepare_submission"
-    , action = \env _ -> prepareSubmission env
-    }
--}
 
 withProblem ::  (ProblemID -> FilePath -> CaideM IO a) -> CaideM IO a
 withProblem processProblem = do
@@ -64,8 +37,8 @@ withProblem processProblem = do
     then processProblem probId problemDir
     else throw . T.concat $ ["Problem ", probId, " doesn't exist"]
 
-make :: [T.Text] -> CaideIO ()
-make _ = withProblem $ \_ _ -> makeProblem
+make :: CaideIO ()
+make = withProblem $ \_ _ -> makeProblem
 
 updateTests :: CaideIO ()
 updateTests = withProblem $ \_ problemDir -> liftIO $ do

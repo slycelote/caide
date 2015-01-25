@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Caide.Commands.ParseProblem(
-      cmd
+      createProblem
     , parseExistingProblem
 ) where
 
@@ -21,22 +21,12 @@ import Caide.Registry (findProblemParser)
 import Caide.Util (pathToText)
 
 
-cmd :: CommandHandler
-cmd = CommandHandler
-    { command = "problem"
-    , description = "Parse problem description or create a new problem"
-    , usage = "caide problem <URL or problem ID>"
-    , action = doParseProblem
-    }
-
 
 -- TODO: allow specifying problem type via 'file,stdin,stdout' syntax
-doParseProblem :: [T.Text] -> CaideIO ()
-doParseProblem [url] = case findProblemParser url of
+createProblem :: URL -> CaideIO ()
+createProblem url = case findProblemParser url of
     Just parser -> parseExistingProblem url parser
     Nothing     -> createNewProblem url
-
-doParseProblem _ = throw . T.concat $ ["Usage: ", usage cmd]
 
 initializeProblem :: Problem -> CaideIO ()
 initializeProblem problem = do
@@ -55,7 +45,7 @@ initializeProblem problem = do
 
     lang <- getDefaultLanguage
     updateTests
-    generateScaffoldSolution [lang]
+    generateScaffoldSolution lang
 
 
 createNewProblem :: ProblemID -> CaideIO ()
