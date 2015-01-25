@@ -9,7 +9,7 @@ import Options.Applicative
 
 import Caide.Types (CaideIO)
 import qualified Caide.Commands.Init as Init
-import Caide.Commands.ParseProblem
+import Caide.Commands.ParseProblem (createProblem)
 import Caide.Commands.ParseContest
 import Caide.Commands.BuildScaffold
 import Caide.Commands.Checkout
@@ -39,15 +39,21 @@ commands =
     , ("probgetstate", "(Internal) print problem state", probOptionsCmd getProbState)
     , ("update_tests", "(Internal) Update test list and status", pure updateTests)
     , ("eval_tests", "(Internal) Generate test report", pure evalTests)
+    , ("printRoot", "(Internal) Show caide root directory", pure printRoot)
     ]
 
 initOpts :: Parser (CaideIO ())
 initOpts = Init.initialize <$>
-    switch (long "cpp-use-system-headers" <> help "Use system headers for C++ code inliner, instead of builtin MinGW headers")
+    switch (long "cpp-use-system-headers" <>
+        help "Use system headers for C++ code inliner, instead of builtin MinGW headers")
 
 problemOpts :: Parser (CaideIO ())
 problemOpts = createProblem <$>
-    txtArgument (metavar "URL-OR-NAME" <> help "Either problem URL to parse or problem name to create from scratch")
+    txtArgument (metavar "URL-OR-NAME" <>
+        help "Either problem URL to parse or problem name to create from scratch") <*>
+    txtArgument (metavar "PROBLEM-TYPE" <>
+        help "Problem type, e.g.: 'topcoder', 'file,stdin,stdout' or 'file,input.txt,output.txt'. Ignored when parsing an existing problem." <>
+        value "file,stdin,stdout" <> showDefault)
 
 contestOpts :: Parser (CaideIO ())
 contestOpts = createContest <$>

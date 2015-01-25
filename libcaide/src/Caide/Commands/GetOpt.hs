@@ -3,6 +3,7 @@ module Caide.Commands.GetOpt(
     , getState
     , getProbOpt
     , getProbState
+    , printRoot
 ) where
 
 import Control.Monad.State (liftIO)
@@ -11,6 +12,7 @@ import qualified Data.Text.IO as T
 
 import Caide.Configuration (readProblemConfig, readProblemState, readCaideConf, readCaideState)
 import Caide.Types
+import Caide.Util (pathToText)
 
 getOpt :: T.Text -> T.Text -> CaideIO ()
 getOpt section key = do
@@ -36,4 +38,8 @@ getProbState problem section key = do
     h <- readProblemState problem
     val <- getProp h (T.unpack section) (T.unpack key)
     liftIO $ T.putStrLn val
+
+
+printRoot :: CaideIO ()
+printRoot = caideRoot >>= liftIO . T.putStrLn . pathToText
 

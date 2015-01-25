@@ -34,7 +34,6 @@ module Caide.Configuration (
 
 import Prelude hiding (readFile, FilePath)
 
-import Control.Applicative ((<$>))
 import Control.Monad (forM_)
 import Control.Monad.Except (catchError)
 import Control.Monad.Trans (liftIO)

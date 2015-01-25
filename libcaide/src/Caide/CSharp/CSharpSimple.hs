@@ -14,7 +14,7 @@ import Filesystem.Path ((</>))
 import Filesystem.Path.CurrentOS (fromText)
 
 import Caide.Types
-import Caide.Util (getProblemID)
+
 
 language :: ProgrammingLanguage
 language = ProgrammingLanguage

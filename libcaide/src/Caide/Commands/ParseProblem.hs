@@ -23,10 +23,12 @@ import Caide.Util (pathToText)
 
 
 -- TODO: allow specifying problem type via 'file,stdin,stdout' syntax
-createProblem :: URL -> CaideIO ()
-createProblem url = case findProblemParser url of
+createProblem :: URL -> T.Text -> CaideIO ()
+createProblem url problemTypeStr = case findProblemParser url of
     Just parser -> parseExistingProblem url parser
-    Nothing     -> createNewProblem url
+    Nothing     -> case optionFromString (T.unpack problemTypeStr) of
+        Nothing    -> throw . T.concat $ ["Incorrect problem type: ", problemTypeStr]
+        Just pType -> createNewProblem url pType
 
 initializeProblem :: Problem -> CaideIO ()
 initializeProblem problem = do
@@ -48,8 +50,8 @@ initializeProblem problem = do
     generateScaffoldSolution lang
 
 
-createNewProblem :: ProblemID -> CaideIO ()
-createNewProblem probId = do
+createNewProblem :: ProblemID -> ProblemType -> CaideIO ()
+createNewProblem probId probType = do
     when (T.any (\c -> not (isAscii c) || not (isAlphaNum c)) probId) $
         throw . T.concat $ [probId, " is not recognized as a supported URL. ",
             "To create an empty problem, input a valid problem ID (a string of alphanumeric characters)"]
@@ -59,7 +61,7 @@ createNewProblem probId = do
         problem = Problem
             { problemId = probId
             , problemName = probId
-            , problemType = Stream StdIn StdOut
+            , problemType = probType
             }
 
     -- Prepare problem directory

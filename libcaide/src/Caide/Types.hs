@@ -17,7 +17,7 @@ module Caide.Types(
     , throw
     , assert
 
-    , Option
+    , Option (..)
     , Config
     , ConfigFileHandle
     , readConf
