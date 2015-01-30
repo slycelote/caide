@@ -1,0 +1,10 @@
+#!/bin/bash
+"$caide" problem prob1
+compare_with create-prob1 caide.workspace cpplib/cpplib.project prob1/prob1.project submission/submission.project
+"$caide" problem prob2
+compare_with create-prob2 caide.workspace prob2/prob2.project
+"$caide" checkout prob1
+compare_with checkout-prob1 caide.workspace
+"$caide" archive prob1
+compare_with archive-prob1 caide.workspace
+

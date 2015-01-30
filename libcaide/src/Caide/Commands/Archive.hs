@@ -8,6 +8,7 @@ import Control.Applicative ((<$>))
 import Control.Monad (unless, when, forM_, forM)
 import Control.Monad.State (liftIO)
 import Data.List (sort)
+import Data.Maybe (mapMaybe)
 import qualified Data.Text as T
 import Data.Time (getZonedTime, formatTime)
 import Filesystem (isDirectory, createTree, removeTree, listDirectory, isDirectory)
@@ -15,7 +16,8 @@ import Filesystem.Path.CurrentOS ((</>), fromText, decodeString, basename, FileP
 import System.Locale (defaultTimeLocale)
 
 import Caide.Commands.Checkout (checkoutProblem)
-import Caide.Configuration (getActiveProblem)
+import Caide.Configuration (getActiveProblem, getFeatures)
+import Caide.Registry (findFeature)
 import Caide.Types
 import Caide.Util (copyTreeToDir, copyFileToDir, listDir, pathToText)
 
@@ -45,14 +47,16 @@ archiveProblem probId = do
         -- Remove problem directory
         removeTree problemDir
 
-    -- TODO Notify features about archiving event
-
     -- Change active problem, if necessary
     activeProblem <- getActiveProblem
     when (activeProblem == probId) $ do
         allProblems <- liftIO $ caideProblems root
         let newActiveProblem = if null allProblems then "" else head allProblems
         checkoutProblem newActiveProblem
+
+    featureNames <- getFeatures
+    let features = mapMaybe findFeature featureNames
+    forM_ features (`onProblemRemoved` probId)
 
 
 caideProblems :: FilePath -> IO [ProblemID]

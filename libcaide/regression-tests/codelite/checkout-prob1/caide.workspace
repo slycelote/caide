@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+
+
+
+
+
+<CodeLite_Workspace Name="caide" Database="">
+  
+  <Project Name="submission" Path="submission/submission.project" /><Project Name="prob2" Path="prob2/prob2.project" /><Project Name="prob1" Path="prob1/prob1.project" Active="Yes" /><Project Name="cpplib" Path="cpplib/cpplib.project" /><BuildMatrix>
+    
+    
+  <WorkspaceConfiguration Name="Debug" Selected="yes"><Project Name="submission" ConfigName="Debug" /><Project Name="prob2" ConfigName="Debug" /><Project Name="prob1" ConfigName="Debug" /><Project Name="cpplib" ConfigName="Debug" /></WorkspaceConfiguration><WorkspaceConfiguration Name="Release" Selected="yes"><Project Name="submission" ConfigName="Release" /><Project Name="prob2" ConfigName="Release" /><Project Name="prob1" ConfigName="Release" /><Project Name="cpplib" ConfigName="Release" /></WorkspaceConfiguration></BuildMatrix>
+  <Environment>
+    <![CDATA[]]>
+  </Environment>
+</CodeLite_Workspace>
+
+
+
+
+
+
