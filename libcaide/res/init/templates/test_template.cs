@@ -67,7 +67,8 @@ public class Test {
         Process evalTestsProcess = Process.Start (caideExe, "eval_tests");
         evalTestsProcess.WaitForExit ();
         if (evalTestsProcess.ExitCode != 0) {
-            throw new Exception ("Tests failed (exit code: " + evalTestsProcess.ExitCode + " )");
+            Console.Error.WriteLine("Tests failed (exit code: " + evalTestsProcess.ExitCode + " )");
+            Environment.Exit(evalTestsProcess.ExitCode);
         }
     }
 }

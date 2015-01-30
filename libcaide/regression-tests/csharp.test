@@ -1,16 +1,18 @@
 #!/bin/bash
 
+CSC=${CSC:-gmcs}
+
 "$caide" init
 "$caide" problem prob
 "$caide" lang csharp
 compare_with after-lang prob/{prob,prob_test}.cs
 cd prob
-gmcs prob*.cs -out:prob.exe
+"$CSC" -out:prob.exe prob*.cs
 echo 1 >case1.in
 ./prob.exe
 "$caide" make
 cd ..
 compare_with after-make prob/submission.cs prob/.caideproblem/test/report.txt
 cd prob
-gmcs submission.cs
+"$CSC" submission.cs
 
