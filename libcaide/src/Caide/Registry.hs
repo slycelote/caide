@@ -26,15 +26,16 @@ import qualified Caide.Builders.None as None
 import qualified Caide.Builders.Custom as Custom
 
 import qualified Caide.Features.Codelite as Codelite
-import Caide.Parsers.Codeforces (codeforcesParser, codeforcesContestParser)
-import Caide.Parsers.CodeChef (codeChefParser, codeChefContestParser)
+import Caide.Parsers.Codeforces
+import Caide.Parsers.CodeChef
+import Caide.Parsers.Timus
 
 
 findLanguage :: Text -> Maybe ProgrammingLanguage
 findLanguage name = snd <$> find (\(names, _) -> T.map toLower name `elem` names) languages
 
 problemParsers :: [ProblemParser]
-problemParsers = [codeforcesParser, codeChefParser]
+problemParsers = [codeforcesParser, codeChefParser, timusParser]
 
 findProblemParser :: URL -> Maybe ProblemParser
 findProblemParser url = find (`problemUrlMatches` url) problemParsers

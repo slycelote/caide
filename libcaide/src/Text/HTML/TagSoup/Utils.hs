@@ -7,6 +7,8 @@ module Text.HTML.TagSoup.Utils (
     , mergeTextTags
 ) where
 
+import Control.Applicative ((<$>))
+import Data.Char (toLower)
 import Data.List (groupBy)
 
 import Text.StringLike (StringLike, toString, strConcat)
@@ -24,7 +26,7 @@ import Text.HTML.TagSoup hiding ((~==), (~/=))
 -- | Like '(~==)', but splits values of attributes on whitespace. Useful mainly for `class` attribute,
 -- so that `TagOpen "table" [("class", "class1 class2")] ~~== "<table class=class1>"`.
 (~~==) :: StringLike str => Tag str -> String -> Bool
-tag ~~== desc = expandAttributes tag S.~== expandAttributes (toTagRep desc :: Tag String)
+tag ~~== desc = (map toLower <$> expandAttributes tag) S.~== expandAttributes (map toLower <$> toTagRep desc :: Tag String)
 
 -- | Negation of '~~=='.
 (~~/==) :: StringLike str => Tag str -> String -> Bool
