@@ -1,24 +1,33 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Caide.Parsers.CodeChef (
-    codeChefParser
+module Caide.Parsers.CodeChef(
+      codeChefParser
+    , codeChefContestParser
 ) where
 
+import Control.Applicative ((<$>))
+import Data.Maybe (mapMaybe)
 import qualified Data.Text as T
 
 import Network.URI (parseURI, uriAuthority, uriRegName)
 
-import Text.HTML.TagSoup (Tag(..), innerText, fromTagText, parseTags,
-                         isTagCloseName, isTagOpenName)
+import Text.HTML.TagSoup (Tag(..), innerText, fromAttrib, fromTagText, parseTags,
+                         isTagCloseName, isTagOpenName, sections)
 
 import Caide.Types
 import Caide.Util (downloadDocument)
-import Text.HTML.TagSoup.Utils ((~/=), (~~/==), isTagName, mergeTextTags)
+import Text.HTML.TagSoup.Utils ((~==), (~/=), (~~/==), (~~==), isTagName, mergeTextTags)
 
 
 codeChefParser :: ProblemParser
 codeChefParser = ProblemParser
     { problemUrlMatches = isCodeChefUrl
     , parseProblem = doParse
+    }
+
+codeChefContestParser :: ContestParser
+codeChefContestParser = ContestParser
+    { contestUrlMatches = isCodeChefUrl
+    , parseContest = doParseContest
     }
 
 isCodeChefUrl :: URL -> Bool
@@ -43,8 +52,9 @@ doParse url = do
 
                 -- test cases
                 problemPage = dropWhile (~/= "<div id=problem-page>") tags
-                content = dropWhile (~~/== "<div class=content>") problemPage
-                testsContainer = drop 1 . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>") $ content
+                content = takeWhile (~/= "</div>") . dropWhile (~~/== "<div class=content>") $ problemPage
+                pres = sections (~== "<pre>") content
+                testsContainer = drop 1 . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>") . last $ pres
                 rootTextNodes = extractCurrentLevelTextNodes . mergeTextTags . replaceBr $ testsContainer
                 inputsAndOutputs = filter (not . T.null) . map (T.strip . fromTagText) $ rootTextNodes
                 testCases = [TestCase (inputsAndOutputs!!i) (inputsAndOutputs!!(i+1)) |
@@ -52,7 +62,7 @@ doParse url = do
 
                 probType = Stream StdIn StdOut
 
-            if null problemCode
+            if null pres || null problemCode
                 then return . Left $ "Couldn't parse problem statement"
                 else return . Right $ (Problem title probId probType, testCases)
 
@@ -74,4 +84,25 @@ replaceBr (t:rest)
     | isTagName "br" t = TagText "\n" : replaceBr rest
     | otherwise        = t : replaceBr rest
 
+doParseContest :: URL -> IO (Either T.Text [URL])
+doParseContest url = parseChefContest <$> downloadDocument url
+
+parseChefContest :: Either T.Text URL -> Either T.Text [T.Text]
+parseChefContest (Left err)   = Left err
+parseChefContest (Right cont) = if null problemsTable
+                                    then Left "Couldn't parse contest"
+                                    else Right problems
+  where
+    tags = parseTags cont
+    problemsTable = takeWhile (~/= "</table>") . dropWhile (~~/== "<table class=problems>") $ tags
+    problemCells = sections (~~== "<div class=problemname>") problemsTable
+    problems = mapMaybe extractUrl problemCells
+
+
+extractUrl :: [Tag T.Text] -> Maybe T.Text
+extractUrl cell = T.append "http://codechef.com" <$> if null anchors then Nothing else Just url
+  where
+    anchors = dropWhile (~/= "<a>") cell
+    anchor = head anchors
+    url = fromAttrib (T.pack "href") anchor
 

@@ -27,7 +27,7 @@ import qualified Caide.Builders.Custom as Custom
 
 import qualified Caide.Features.Codelite as Codelite
 import Caide.Parsers.Codeforces (codeforcesParser, codeforcesContestParser)
-import Caide.Parsers.CodeChef (codeChefParser)
+import Caide.Parsers.CodeChef (codeChefParser, codeChefContestParser)
 
 
 findLanguage :: Text -> Maybe ProgrammingLanguage
@@ -40,7 +40,7 @@ findProblemParser :: URL -> Maybe ProblemParser
 findProblemParser url = find (`problemUrlMatches` url) problemParsers
 
 contestParsers :: [ContestParser]
-contestParsers = [codeforcesContestParser]
+contestParsers = [codeforcesContestParser, codeChefContestParser]
 
 findContestParser :: URL -> Maybe ContestParser
 findContestParser url = find (`contestUrlMatches` url) contestParsers
