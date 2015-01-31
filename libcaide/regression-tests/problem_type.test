@@ -1,0 +1,27 @@
+#!/bin/bash
+"$caide" init
+"$caide" problem prob file,input.txt,output.txt
+cd prob
+cat <<EOF >prob.cpp
+#include <istream>
+#include <ostream>
+using namespace std;
+void solve(istream& in, ostream& out) {
+    int n;
+    while (in >> n)
+        out << n << endl;
+}
+EOF
+"$caide" make
+g++ submission.cpp -o submission.exe
+cat <<EOF >input.txt
+1
+2
+3
+EOF
+./submission.exe
+if ! diff -bBq --strip-trailing-cr input.txt output.txt ; then
+    echo "Output is different"
+    exit 100
+fi
+

@@ -9,15 +9,17 @@ import Control.Applicative ((<$>))
 import Control.Monad (forM_, when)
 import Control.Monad.State.Strict (modify, gets)
 import Control.Monad.State (liftIO)
-import Data.List ((\\))
+import Data.List ((\\), sort)
 import Data.Maybe (catMaybes)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 import Filesystem (isFile, readTextFile, writeTextFile, listDirectory, createDirectory)
-import Filesystem.Path.CurrentOS (fromText, encodeString)
+import Filesystem.Path.CurrentOS (fromText, decodeString, encodeString)
 import Filesystem.Path ((</>), basename, hasExtension)
 import qualified Filesystem.Path as F
+
+import qualified System.FilePath
 
 import Text.XML.Light (parseXML, Content(..))
 import Text.XML.Light.Cursor
@@ -74,7 +76,7 @@ generateProject probId = do
                             return xml
 
             liftIO $ do
-                allFiles <- fst <$> listDir libProjectDir
+                allFiles <- map (makeRelative libProjectDir) . fst <$> listDir libProjectDir
                 let files = map pathToText . filter (\f -> f `hasExtension` "h" || f `hasExtension` "cpp") $ allFiles
                     transformed = runXmlTransformation (setSourceFiles files) xmlCursor
                 case transformed of
@@ -97,7 +99,12 @@ generateProject probId = do
 
         generateWorkspace
 
+replace :: Eq a => a -> a -> [a] -> [a]
+replace with what = map $ \x -> if x == what then with else x
 
+makeRelative :: F.FilePath -> F.FilePath -> F.FilePath
+makeRelative wrt what = decodeString . replace '/' '\\' $
+    System.FilePath.makeRelative (encodeString wrt) (encodeString what)
 
 generateProjectUnlessExists :: F.FilePath -> T.Text
                                  -> [T.Text]
@@ -228,7 +235,7 @@ getCodeliteProjects = do
         let problemIds = map (pathToText . basename) dirs
             haveCodelite probId = isFile $ croot </> fromText probId </> fromText (T.append probId ".project")
         projectExists <- mapM haveCodelite problemIds
-        return [probId | (probId, True) <- zip problemIds projectExists]
+        return $ sort [probId | (probId, True) <- zip problemIds projectExists]
 
 
 goToWorkspaceTag :: XmlState ()

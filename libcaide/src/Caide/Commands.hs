@@ -84,7 +84,9 @@ probOptionsCmd handler = handler <$>
 
 opts :: ParserInfo (CaideIO ())
 opts = info (helper <*> (subparser . mconcat . map createSubCommand $ commands)) $
-    fullDesc <> header "Caide -- programming competitions tool"
+    fullDesc <> header "Caide -- programming competitions tool" <>
+    progDesc "Additional help is available with 'caide -h' or 'caide COMMAND -h'" <>
+    footer "http://github.com/slycelote/caide"
 
 runMain :: [String] -> Either (IO ()) (CaideIO ())
 runMain args = case parseResult of
