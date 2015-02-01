@@ -1,5 +1,4 @@
 #!/bin/bash
-"$caide" init
 "$caide" problem http://www.codechef.com/problems/MAXCIR
 "$caide" problem http://www.codechef.com/problems/POWERMUL
 "$caide" problem http://www.codechef.com/problems/MX
