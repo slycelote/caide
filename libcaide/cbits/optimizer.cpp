@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <iostream>
+#include <stack>
 #include <stdexcept>
 #include <string>
 #include <sstream>
@@ -19,6 +20,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Parse/ParseAST.h"
 #include "clang/Rewrite/Core/Rewriter.h"
+#include "clang/Sema/Sema.h"
 
 #include "clang/Tooling/CompilationDatabase.h"
 #include "clang/Tooling/Tooling.h"
@@ -60,7 +62,9 @@ private:
 
     References& uses;
 
-    // Current function. FIXME: this doesn't handle top-level declarations correctly.
+    vector<FunctionDecl*>& delayedParsedFunctions;
+
+    // Current function. FIXME: this doesn't handle non-function top-level declarations (like global variables) correctly.
     Decl* currentDecl;
     FunctionDecl* mainFunctionDecl;
 
@@ -118,9 +122,10 @@ public:
         return mainFunctionDecl;
     }
 
-    DependenciesCollector(SourceManager& srcMgr, References& _uses)
+    DependenciesCollector(SourceManager& srcMgr, References& _uses, vector<FunctionDecl*>& delayedParsedFunctions_)
         : sourceManager(srcMgr)
         , uses(_uses)
+        , delayedParsedFunctions(delayedParsedFunctions_)
         , currentDecl(0)
         , mainFunctionDecl(0)
     {}
@@ -192,20 +197,26 @@ public:
     }
 
     bool VisitFunctionDecl(FunctionDecl* f) {
-        if (f->isMain()) {
+        if (f->isMain())
             mainFunctionDecl = f;
-        }
+
+        if (sourceManager.isInMainFile(f->getLocStart()) && f->isLateTemplateParsed())
+            delayedParsedFunctions.push_back(f);
+
         if (f->getTemplatedKind() == FunctionDecl::TK_FunctionTemplate) {
             // skip non-instantiated template function
             return true;
         }
+
         //dbg() << CAIDE_FUNC;
         FunctionTemplateSpecializationInfo* specInfo = f->getTemplateSpecializationInfo();
         if (specInfo)
             insertReference(f, specInfo->getTemplate());
+
         if (FunctionDecl* instantiatedFrom = f->getInstantiatedFromMemberFunction()) {
             insertReference(f, instantiatedFrom);
         }
+
         if (f->hasBody()) {
             currentDecl = f;
 
@@ -215,6 +226,7 @@ public:
             if (sourceManager.isInMainFile(f->getLocStart()))
                 dbg() << "Moving to " << FuncName << " at " << toString(f->getLocation()) << std::endl;
         }
+
         return true;
     }
 
@@ -232,13 +244,47 @@ public:
 };
 
 
+struct IfDefClause {
+    // Locations of #if, #ifdef, #ifndef, #else, #elif tokens of this clause
+    vector<SourceLocation> locations;
+
+    // Index of selected branch in locations list; -1 if no branch was selected
+    int selectedBranch;
+
+    explicit IfDefClause(const SourceLocation& ifLocation)
+        : selectedBranch(-1)
+    {
+        locations.push_back(ifLocation);
+    }
+};
+
+class RemoveInactivePreprocessorBlocks: public PPCallbacks {
+private:
+    SourceManager& sourceManager;
+    SmartRewriter& rewriter;
+    stack<IfDefClause> activeClauses;
+    set<string> definedMacros;
+
+public:
+    RemoveInactivePreprocessorBlocks(SourceManager& _sourceManager, SmartRewriter& _rewriter)
+        : sourceManager(_sourceManager)
+        , rewriter(_rewriter)
+    {
+    }
+
+    //void MacroDefined(const Token& MacroNameTok, const MacroDirective* [>MD<]) {
+        //dbg() << MacroNameTok.getName() << endl;
+    //}
+
+};
+
 class OptimizerVisitor: public RecursiveASTVisitor<OptimizerVisitor> {
 private:
     SourceManager& sourceManager;
     const std::set<Decl*>& used;
     std::set<Decl*> declared;
     std::set<NamespaceDecl*> usedNamespaces;
-    SmartRewriter rewriter;
+    SmartRewriter& rewriter;
 
     std::string toString(const Decl* decl) const {
         if (!decl)
@@ -256,7 +302,7 @@ private:
     }
 
 public:
-    OptimizerVisitor(SourceManager& srcManager, const std::set<Decl*>& _used, Rewriter& _rewriter)
+    OptimizerVisitor(SourceManager& srcManager, const std::set<Decl*>& _used, SmartRewriter& _rewriter)
         : sourceManager(srcManager)
         , used(_used)
         , rewriter(_rewriter)
@@ -405,16 +451,29 @@ private:
 
 class OptimizerConsumer: public ASTConsumer {
 public:
-    explicit OptimizerConsumer(SourceManager& srcMgr, Rewriter& _rewriter, std::string& _result)
-        : sourceManager(srcMgr)
+    explicit OptimizerConsumer(CompilerInstance& compiler_, SmartRewriter& _rewriter, std::string& _result)
+        : compiler(compiler_)
+        , sourceManager(compiler.getSourceManager())
         , rewriter(_rewriter)
         , result(_result)
     {}
 
     virtual void HandleTranslationUnit(ASTContext& Ctx) {
         //cerr << "Build dependency graph" << std::endl;
-        DependenciesCollector depsVisitor(sourceManager, uses);
+        vector<FunctionDecl*> delayedParsedFunctions;
+        DependenciesCollector depsVisitor(sourceManager, uses, delayedParsedFunctions);
         depsVisitor.TraverseDecl(Ctx.getTranslationUnitDecl());
+
+        // Source range of delayed-parsed template functions includes only declaration part.
+        //     Force their parsing to get correct source ranges.
+        // Note that this essentially disables -fdelayed-template-parsing flag for user code
+        //     and may lead to incompatible results when, e.g., code compiles in VS
+        //     but not in the inliner. TODO: find another way to get correct source ranges.
+        for (auto it = delayedParsedFunctions.begin(); it != delayedParsedFunctions.end(); ++it) {
+            clang::Sema& sema = compiler.getSema();
+            clang::LateParsedTemplate* lpt = sema.LateParsedTemplateMap[*it];
+            sema.LateTemplateParser(sema.OpaqueParser, *lpt);
+        }
 
         FunctionDecl* mainFunction = depsVisitor.getMainFunction();
         if (!mainFunction) {
@@ -472,8 +531,9 @@ public:
     }
 
 private:
+    CompilerInstance& compiler;
     SourceManager& sourceManager;
-    Rewriter& rewriter;
+    SmartRewriter& rewriter;
     References uses;
     std::string& result;
 };
@@ -482,10 +542,12 @@ private:
 class OptimizerFrontendAction : public ASTFrontendAction {
 private:
     Rewriter& rewriter;
+    SmartRewriter& smartRewriter;
     string& result;
 public:
-    OptimizerFrontendAction(Rewriter& _rewriter, string& _result)
+    OptimizerFrontendAction(Rewriter& _rewriter, SmartRewriter& _smartRewriter, string& _result)
         : rewriter(_rewriter)
+        , smartRewriter(_smartRewriter)
         , result(_result)
     {}
 
@@ -495,21 +557,25 @@ public:
             throw "No source manager";
         }
         rewriter.setSourceMgr(compiler.getSourceManager(), compiler.getLangOpts());
-        return std::unique_ptr<OptimizerConsumer>(new OptimizerConsumer(compiler.getSourceManager(), rewriter, result));
+        compiler.getPreprocessor().addPPCallbacks(std::unique_ptr<RemoveInactivePreprocessorBlocks>(
+            new RemoveInactivePreprocessorBlocks(compiler.getSourceManager(), smartRewriter)));
+        return std::unique_ptr<OptimizerConsumer>(new OptimizerConsumer(compiler, smartRewriter, result));
     }
 };
 
 class OptimizerFrontendActionFactory: public tooling::FrontendActionFactory {
 private:
     Rewriter& rewriter;
+    SmartRewriter smartRewriter;
     string& result;
 public:
     OptimizerFrontendActionFactory(Rewriter& _rewriter, string& _result)
         : rewriter(_rewriter)
+        , smartRewriter(_rewriter)
         , result(_result)
     {}
     FrontendAction* create() {
-        return new OptimizerFrontendAction(rewriter, result);
+        return new OptimizerFrontendAction(rewriter, smartRewriter, result);
     }
 };
 

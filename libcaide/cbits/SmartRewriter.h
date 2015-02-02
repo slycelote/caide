@@ -14,6 +14,7 @@ public:
 
     bool canRemoveRange(const clang::SourceRange& range) const;
     bool removeRange(const clang::SourceRange& range, clang::Rewriter::RewriteOptions opts);
+    const clang::RewriteBuffer* getRewriteBufferFor(clang::FileID fileID) const;
 
 private:
     clang::Rewriter& rewriter;

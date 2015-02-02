@@ -28,3 +28,7 @@ bool SmartRewriter::canRemoveRange(const SourceRange& range) const {
     return true;
 }
 
+const RewriteBuffer* SmartRewriter::getRewriteBufferFor(FileID fileID) const {
+    return rewriter.getRewriteBufferFor(fileID);
+}
+
