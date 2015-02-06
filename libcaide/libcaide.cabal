@@ -1,5 +1,5 @@
 name:           caide
-version:        1.0.3
+version:        1.1.0
 cabal-version:  >= 1.14
 build-type:     Custom
 license:        BSD3
