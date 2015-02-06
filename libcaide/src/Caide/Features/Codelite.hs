@@ -77,7 +77,7 @@ generateProject probId = do
 
             liftIO $ do
                 allFiles <- map (makeRelative libProjectDir) . fst <$> listDir libProjectDir
-                let files = map pathToText . filter (\f -> f `hasExtension` "h" || f `hasExtension` "cpp") $ allFiles
+                let files = sort . map pathToText . filter (\f -> f `hasExtension` "h" || f `hasExtension` "cpp") $ allFiles
                     transformed = runXmlTransformation (setSourceFiles files) xmlCursor
                 case transformed of
                     Left errorMessage -> do
