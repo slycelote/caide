@@ -262,7 +262,7 @@ class RemoveInactivePreprocessorBlocks: public PPCallbacks {
 private:
     SourceManager& sourceManager;
     SmartRewriter& rewriter;
-    stack<IfDefClause> activeClauses;
+    vector<IfDefClause> activeClauses;
     set<string> definedMacros;
 
 public:
@@ -272,10 +272,95 @@ public:
     {
     }
 
-    //void MacroDefined(const Token& MacroNameTok, const MacroDirective* [>MD<]) {
-        //dbg() << MacroNameTok.getName() << endl;
-    //}
+    void MacroDefined(const Token& MacroNameTok, const MacroDirective* /*MD*/) {
+        definedMacros.insert(getTokenName(MacroNameTok));
+    }
 
+    void MacroUnDefined(const Token& MacroNameTok, const MacroDirective* /*MD*/) {
+        definedMacros.erase(getTokenName(MacroNameTok));
+    }
+
+    void If(SourceLocation Loc, SourceRange /*ConditionRange*/, ConditionValueKind ConditionValue) {
+        if (!sourceManager.isInMainFile(Loc))
+            return;
+        activeClauses.push_back(IfDefClause(Loc));
+        if (ConditionValue == CVK_True)
+            activeClauses.back().selectedBranch = 0;
+    }
+
+    void Ifdef(SourceLocation Loc, const Token& MacroNameTok, const MacroDirective* /*MD*/) {
+        if (!sourceManager.isInMainFile(Loc))
+            return;
+        activeClauses.push_back(IfDefClause(Loc));
+        if (definedMacros.find(getTokenName(MacroNameTok)) != definedMacros.end()) {
+            activeClauses.back().selectedBranch = 0;
+        }
+    }
+
+    void Ifndef(SourceLocation Loc, const Token& MacroNameTok, const MacroDirective* /*MD*/) {
+        if (!sourceManager.isInMainFile(Loc))
+            return;
+        activeClauses.push_back(IfDefClause(Loc));
+        if (definedMacros.find(getTokenName(MacroNameTok)) == definedMacros.end()) {
+            activeClauses.back().selectedBranch = 0;
+        }
+    }
+
+    void Elif(SourceLocation Loc, SourceRange /*ConditionRange*/, ConditionValueKind ConditionValue, SourceLocation /*IfLoc*/ ) {
+        if (!sourceManager.isInMainFile(Loc))
+            return;
+        if (ConditionValue == CVK_True)
+            activeClauses.back().selectedBranch = activeClauses.back().locations.size();
+        activeClauses.back().locations.push_back(Loc);
+    }
+
+    void Else(SourceLocation Loc, SourceLocation /*IfLoc*/) {
+        if (!sourceManager.isInMainFile(Loc))
+            return;
+        if (activeClauses.back().selectedBranch < 0)
+            activeClauses.back().selectedBranch = activeClauses.back().locations.size();
+        activeClauses.back().locations.push_back(Loc);
+    }
+
+    void Endif(SourceLocation Loc, SourceLocation /*IfLoc*/) {
+        if (!sourceManager.isInMainFile(Loc))
+            return;
+        IfDefClause& clause = activeClauses.back();
+        clause.locations.push_back(Loc);
+
+        Rewriter::RewriteOptions opts;
+        opts.RemoveLineIfEmpty = true;
+
+        if (clause.selectedBranch < 0) {
+            SourceLocation b = changeColumn(clause.locations.front(), 1);
+            SourceLocation e = changeColumn(clause.locations.back(), 10000);
+            rewriter.removeRange(SourceRange(b, e), opts);
+        } else {
+            SourceLocation b = changeColumn(clause.locations.front(), 1);
+            SourceLocation e = changeColumn(clause.locations[clause.selectedBranch], 10000);
+            rewriter.removeRange(SourceRange(b, e), opts);
+
+            b = changeColumn(clause.locations[clause.selectedBranch + 1], 1);
+            e = changeColumn(clause.locations.back(), 10000);
+            rewriter.removeRange(SourceRange(b, e), opts);
+        }
+
+        activeClauses.pop_back();
+    }
+
+private:
+    string getTokenName(const Token& token) const {
+        const char* b = sourceManager.getCharacterData(token.getLocation(), 0);
+        const char* e = b + token.getLength();
+        return string(b, e);
+    }
+    SourceLocation changeColumn(SourceLocation loc, unsigned col) const {
+        pair<FileID, unsigned> decomposedLoc = sourceManager.getDecomposedLoc(loc);
+        FileID fileId = decomposedLoc.first;
+        unsigned filePos = decomposedLoc.second;
+        unsigned line = sourceManager.getLineNumber(fileId, filePos);
+        return sourceManager.translateLineCol(fileId, line, col);
+    }
 };
 
 class OptimizerVisitor: public RecursiveASTVisitor<OptimizerVisitor> {
@@ -497,6 +582,9 @@ public:
         OptimizerVisitor visitor(sourceManager, used, rewriter);
         visitor.TraverseDecl(Ctx.getTranslationUnitDecl());
 
+        rewriter.applyChanges();
+
+        //cerr << "Done!" << std::endl;
         result = getResult();
     }
 

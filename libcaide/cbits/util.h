@@ -16,3 +16,6 @@ clang::SourceLocation findLocationAfterSemi(clang::SourceLocation loc, clang::AS
 
 clang::tooling::FixedCompilationDatabase* createCompilationDatabaseFromCommandLine(const std::vector<std::string> cmdLine);
 
+std::string rangeToString(clang::SourceManager& sourceManager,
+        const clang::SourceLocation& start, const clang::SourceLocation& end);
+

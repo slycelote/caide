@@ -70,3 +70,17 @@ clang::tooling::FixedCompilationDatabase* createCompilationDatabaseFromCommandLi
     return clang::tooling::FixedCompilationDatabase::loadFromCommandLine(argc, &argv[0]);
 }
 
+std::string rangeToString(SourceManager& sourceManager, const SourceLocation& start, const SourceLocation& end) {
+    bool invalid;
+    const char* b = sourceManager.getCharacterData(start, &invalid);
+    if (invalid || !b)
+        return "<invalid>";
+    const char* e = sourceManager.getCharacterData(end, &invalid);
+    if (invalid || !e)
+        return "<invalid>";
+    if (e < b + 30)
+        return std::string(b, e);
+    else
+        return std::string(b, b+30) + "[...]";
+}
+

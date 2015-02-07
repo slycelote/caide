@@ -2,33 +2,62 @@
 
 #include "clang/Basic/SourceManager.h"
 
+#include <stdexcept>
+
 using namespace clang;
+
+bool RewriteItemComparer::operator() (const RewriteItem& lhs, const RewriteItem& rhs) const {
+    return rewriter->getSourceMgr().isBeforeInTranslationUnit(lhs.range.getBegin(), rhs.range.getBegin());
+}
+
+SmartRewriter::SmartRewriter(clang::Rewriter& rewriter_)
+    : rewriter(rewriter_)
+    , changesApplied(false)
+{
+    comparer.rewriter = &rewriter_;
+    removed = std::set<RewriteItem, RewriteItemComparer>(comparer);
+}
 
 bool SmartRewriter::removeRange(const SourceRange& range, Rewriter::RewriteOptions opts) {
     if (!canRemoveRange(range))
         return false;
-    rewriter.RemoveText(range, opts);
-    removed.push_back(range);
+    removed.insert({range, opts});
     return true;
 }
 
 bool SmartRewriter::canRemoveRange(const SourceRange& range) const {
+    if (removed.empty())
+        return true;
+
+    RewriteItem ri;
+    ri.range = range;
+
+    auto i = removed.lower_bound(ri);
+    // i->range.getBegin() >= range.getBegin()
+
     const SourceManager& srcManager = rewriter.getSourceMgr();
-    const SourceLocation& b1 = range.getBegin(), e1 = range.getEnd();
-    // FIXME do better than linear search
-    for (size_t i = 0; i < removed.size(); ++i) {
-        const SourceRange& r = removed[i];
-        const SourceLocation& b2 = r.getBegin(), e2 = r.getEnd();
-        if (!srcManager.isBeforeInTranslationUnit(e2, b1)
-            && !srcManager.isBeforeInTranslationUnit(e1, b2))
-        {
-            return false;
-        }
-    }
-    return true;
+
+    if (i != removed.end() && !srcManager.isBeforeInTranslationUnit(range.getEnd(), i->range.getBegin()))
+        return false;
+
+    if (i == removed.begin())
+        return true;
+
+    --i;
+    // i->range.getBegin() < range.getBegin()
+
+    return srcManager.isBeforeInTranslationUnit(i->range.getEnd(), range.getBegin());
 }
 
 const RewriteBuffer* SmartRewriter::getRewriteBufferFor(FileID fileID) const {
     return rewriter.getRewriteBufferFor(fileID);
+}
+
+void SmartRewriter::applyChanges() {
+    if (changesApplied)
+        throw std::logic_error("Rewriter changes have already been applied");
+    changesApplied = true;
+    for (const RewriteItem& ri : removed)
+        rewriter.RemoveText(ri.range, ri.opts);
 }
 

@@ -33,6 +33,18 @@ int main() {
 
     func<int>();
     func<int*>();
+
+
+#define FOO
+
+
+
+
+
+
+    if (*ti.temp() == 'a') return 0;
+
+
 };
 
 
