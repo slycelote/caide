@@ -64,11 +64,21 @@ private:
 
     vector<FunctionDecl*>& delayedParsedFunctions;
 
-    // Current function. FIXME: this doesn't handle non-function top-level declarations (like global variables) correctly.
-    Decl* currentDecl;
     FunctionDecl* mainFunctionDecl;
 
+    /*
+     'Declaration context' for Stmt's. Updated each time a Decl is visited.
+     This works because a Stmt cannot be defined immediately after a Decl is exited.
+     For Decl's, however, this won't work and we use getLexicalDeclContext() instead.
+    */
+    Decl* currentDecl;
+
 private:
+    FunctionDecl* getCurrentFunction(Decl* decl) const {
+        DeclContext* declCtx = decl->getLexicalDeclContext();
+        return declCtx ? dyn_cast<FunctionDecl>(declCtx) : 0;
+    }
+
     std::string toString(SourceLocation loc) const {
         //return loc.printToString(sourceManager);
         std::string fileName = sourceManager.getFilename(loc).str();
@@ -81,9 +91,11 @@ private:
             sourceManager.getSpellingColumnNumber(loc);
         return os.str();
     }
+
     std::string toString(SourceRange range) const {
         return toString(range.getBegin()) + " -- " + toString(range.getEnd());
     }
+
     std::string toString(const Decl* decl) const {
         if (!decl)
             return "<invalid>";
@@ -97,10 +109,6 @@ private:
         if (invalid || !e)
             return "<invalid>";
         return std::string(b, std::min(b+30, e));
-    }
-
-    bool isUserFile(SourceLocation loc) const {
-        return !sourceManager.isInSystemHeader(loc) && loc.isValid();
     }
 
     void insertReference(Decl* from, Decl* to) {
@@ -126,22 +134,30 @@ public:
         : sourceManager(srcMgr)
         , uses(_uses)
         , delayedParsedFunctions(delayedParsedFunctions_)
-        , currentDecl(0)
         , mainFunctionDecl(0)
+        , currentDecl(0)
     {}
+
     bool shouldVisitImplicitCode() const { return true; }
     bool shouldVisitTemplateInstantiations() const { return true; }
 
-    //bool VisitDecl(Decl* decl) { dbg() << decl->getDeclKindName() << " " << decl << endl; return true; }
+    bool VisitDecl(Decl* decl) {
+        // Mark any function as depending on its content.
+        // TODO: detect unused local variables.
+        insertReference(getCurrentFunction(decl), decl);
+        currentDecl = decl;
+        return true;
+    }
 
     bool VisitCallExpr(CallExpr* callExpr) {
         dbg() << CAIDE_FUNC;
         Expr* callee = callExpr->getCallee();
         Decl* calleeDecl = callExpr->getCalleeDecl();
+
         if (!callee || !calleeDecl || isa<UnresolvedMemberExpr>(callee) || isa<CXXDependentScopeMemberExpr>(callee))
             return true;
-        if (isUserFile(calleeDecl->getCanonicalDecl()->getSourceRange().getBegin()))
-            insertReference(currentDecl, calleeDecl);
+
+        insertReference(currentDecl, calleeDecl);
         return true;
     }
 
@@ -159,9 +175,16 @@ public:
 
     bool VisitValueDecl(ValueDecl* valueDecl) {
         dbg() << CAIDE_FUNC;
+
         const Type* valueType = valueDecl->getType().getTypePtrOrNull();
-        if (valueType)
-            insertReference(valueDecl, valueType->getAsCXXRecordDecl());
+        if (!valueType)
+            return true;
+
+        insertReference(valueDecl, valueType->getAsTagDecl());
+
+        if (const TypedefType* typedefType = dyn_cast<TypedefType>(valueType))
+            insertReference(valueDecl, typedefType->getDecl());
+
         return true;
     }
 
@@ -174,6 +197,17 @@ public:
     bool VisitFieldDecl(FieldDecl* field) {
         dbg() << CAIDE_FUNC;
         insertReference(field, field->getParent());
+        return true;
+    }
+
+    bool VisitTypedefDecl(TypedefDecl* typedefDecl) {
+        dbg() << CAIDE_FUNC;
+        const Type* underlyingType = typedefDecl->getUnderlyingType().getTypePtrOrNull();
+        if (underlyingType) {
+            insertReference(typedefDecl, underlyingType->getAsCXXRecordDecl());
+            if (const TypedefType* typedefType = dyn_cast<TypedefType>(underlyingType))
+                insertReference(typedefDecl, typedefType->getDecl());
+        }
         return true;
     }
 
@@ -208,7 +242,6 @@ public:
             return true;
         }
 
-        //dbg() << CAIDE_FUNC;
         FunctionTemplateSpecializationInfo* specInfo = f->getTemplateSpecializationInfo();
         if (specInfo)
             insertReference(f, specInfo->getTemplate());
@@ -218,8 +251,6 @@ public:
         }
 
         if (f->hasBody()) {
-            currentDecl = f;
-
             DeclarationName DeclName = f->getNameInfo().getName();
             string FuncName = DeclName.getAsString();
 
@@ -354,6 +385,7 @@ private:
         const char* e = b + token.getLength();
         return string(b, e);
     }
+
     SourceLocation changeColumn(SourceLocation loc, unsigned col) const {
         pair<FileID, unsigned> decomposedLoc = sourceManager.getDecomposedLoc(loc);
         FileID fileId = decomposedLoc.first;
@@ -502,6 +534,18 @@ public:
         return true;
     }
 
+    bool VisitTypedefDecl(TypedefDecl* typedefDecl) {
+        if (!sourceManager.isInMainFile(typedefDecl->getLocStart()))
+            return true;
+
+        Decl* canonicalDecl = typedefDecl->getCanonicalDecl();
+        if (used.find(canonicalDecl) == used.end()) {
+            removeDecl(typedefDecl);
+        }
+
+        return true;
+    }
+
     bool VisitUsingDirectiveDecl(UsingDirectiveDecl* usingDecl) {
         if (!sourceManager.isInMainFile(usingDecl->getLocStart()))
             return true;
@@ -526,9 +570,11 @@ private:
         opts.RemoveLineIfEmpty = true;
         rewriter.removeRange(SourceRange(start, end), opts);
     }
+
     bool isDeclUsed(Decl* decl) const {
         return used.find(decl->getCanonicalDecl()) != used.end();
     }
+
     std::string toString(const SourceLocation& loc) const {
         return loc.printToString(sourceManager);
     }

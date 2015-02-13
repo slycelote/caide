@@ -54,6 +54,32 @@ struct Unused {
     }
 };
 
+struct UsedTypedefedStruct {
+    int a;
+};
+
+typedef UsedTypedefedStruct UsedTypedef;
+
+struct UnusedTypedefedStruct {
+    int a;
+};
+
+typedef UnusedTypedefedStruct UnusedTypedef;
+typedef UsedTypedefedStruct UnusedTypedef2;
+
+struct UsedTypedefedStruct2 {
+    int a;
+};
+
+typedef UsedTypedefedStruct2 UsedTypedef2;
+typedef UsedTypedef2 RecursiveUsedTypedef2;
+
+void unused_global_func() {}
+
+struct UsedCall {
+    static void staticCall() {}
+};
+
 int main() {
     {
         int x;
@@ -76,5 +102,15 @@ int main() {
         Used used;
     }
 
+    {
+        UsedTypedef f;
+        RecursiveUsedTypedef2 g;
+    }
+
+    {
+        mystd::vector<UsedCall>::callIntoTemplate();
+    }
+
     return 0;
-};
+}
+

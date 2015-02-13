@@ -133,7 +133,6 @@ public:
     }
 
     // Documentation seems to be wrong: the first parameter is included file rather than parent
-    // TODO: move detection of double inclusion to optimizer step?
     virtual void FileSkipped(const FileEntry &IncludedFile, const Token &FilenameTok,
                              SrcMgr::CharacteristicKind /*FileType*/)
     {

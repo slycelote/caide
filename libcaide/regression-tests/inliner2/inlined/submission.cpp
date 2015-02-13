@@ -1,6 +1,5 @@
 #include <myvector>
 
-
 namespace spcppl {
 
     template <typename T>
@@ -45,6 +44,26 @@ struct Used {
 };
 
 
+struct UsedTypedefedStruct {
+    int a;
+};
+
+typedef UsedTypedefedStruct UsedTypedef;
+
+
+
+struct UsedTypedefedStruct2 {
+    int a;
+};
+
+typedef UsedTypedefedStruct2 UsedTypedef2;
+typedef UsedTypedef2 RecursiveUsedTypedef2;
+
+
+struct UsedCall {
+    static void staticCall() {}
+};
+
 int main() {
     {
         int x;
@@ -67,10 +86,15 @@ int main() {
         Used used;
     }
 
+    {
+        UsedTypedef f;
+        RecursiveUsedTypedef2 g;
+    }
+
+    {
+        mystd::vector<UsedCall>::callIntoTemplate();
+    }
+
     return 0;
-};
-
-
-
-
+}
 

@@ -18,5 +18,10 @@ namespace mystd {
                 size = newSize;
             }
         }
+
+        static void callIntoTemplate() {
+            T::staticCall();
+        }
     };
 }
+

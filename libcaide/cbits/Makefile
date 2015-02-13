@@ -72,37 +72,28 @@ clean:
 	rm -rf $(BUILDDIR)/* *.dot
 
 ######## Test targets
+console_test: $(BUILDDIR)/cmd.exe
+
 LLVM_LDFLAGS := $($(LLVM_BIN_PATH)/llvm-config --libs)
 
-# List of Clang libraries to link. The proper -L will be provided by the
-# call to llvm-config
-# Note that I'm using -Wl,--{start|end}-group around the Clang libs; this is
-# because there are circular dependencies that make the correct order difficult
-# to specify and maintain. The linker group options make the linking somewhat
-# slower, but IMHO they're still perfectly fine for tools that link with Clang.
 CLANG_LIBS := \
-	-lclang \
+	-lchelper \
+	-lcpphelper \
 	-lclangTooling \
-	-lclangFrontendTool  \
-	-lclangFrontend  \
-	-lclangDriver  \
-	-lclangSerialization  \
-	-lclangCodeGen  \
-	-lclangParse  \
-	-lclangSema  \
-	-lclangStaticAnalyzerFrontend  \
-	-lclangStaticAnalyzerCheckers  \
-	-lclangStaticAnalyzerCore  \
-	-lclangAnalysis  \
-	-lclangARCMigrate  \
-	-lclangRewriteFrontend  \
-	-lclangRewriteCore  \
-	-lclangEdit  \
-	-lclangAST  \
-	-lclangLex  \
+	-lclangFrontendTool \
+	-lclangFrontend \
+	-lclangDriver \
+	-lclangSerialization \
+	-lclangCodeGen \
+	-lclangParse \
+	-lclangSema \
+	-lclangAnalysis \
+	-lclangRewriteFrontend \
+	-lclangRewrite \
+	-lclangEdit \
+	-lclangAST \
+	-lclangLex \
 	-lclangBasic \
-
-LLVM_LIBS := \
 	-lLLVMInstrumentation \
 	-lLLVMIRReader \
 	-lLLVMAsmParser \
@@ -128,7 +119,6 @@ LLVM_LIBS := \
 	-lLLVMMCParser \
 	-lLLVMInterpreter \
 	-lLLVMMCJIT \
-	-lLLVMJIT \
 	-lLLVMCodeGen \
 	-lLLVMObjCARCOpts \
 	-lLLVMScalarOpts \
@@ -144,9 +134,9 @@ LLVM_LIBS := \
 	-lLLVMCore \
 	-lLLVMSupport
 
-test_c.exe: $(BUILDDIR)/libcpphelper.a $(BUILDDIR)/libchelper.a test_c.o
-	$(CXX) -static -Lbuild -L$(LLVM_BUILD_PATH)/lib test_c.o -lchelper -lcpphelper $(CLANG_LIBS) $(LLVM_LIBS) -lstdc++ -limagehlp -o test_c.exe
+$(BUILDDIR)/cmd.exe: $(BUILDDIR)/libcpphelper.a $(BUILDDIR)/libchelper.a $(BUILDDIR)/cmd.o
+	$(CXX) -static -Lbuild -L$(LLVM_BUILD_PATH)/lib $(BUILDDIR)/cmd.o $(CLANG_LIBS) -lstdc++ -ldl -o $(BUILDDIR)/cmd.exe
 
-test_c.o: test_c.cpp
-	$(CXX) $(CXXFLAGS) test_c.cpp -o test_c.o
+$(BUILDDIR)/cmd.o: cmd.cpp
+	$(CXX) $(CXXFLAGS) cmd.cpp -o $(BUILDDIR)/cmd.o
 
