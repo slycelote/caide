@@ -162,7 +162,9 @@ flushConf (FileHandle filePath) = do
     fileMap <- gets files
     case M.lookup filePath fileMap of
         Nothing   -> throw $ T.concat ["File ", toText filePath, " doesn't exist"]
-        Just conf -> liftIO $ writeConfigParser filePath conf
+        Just conf -> do
+            liftIO $ writeConfigParser filePath conf
+            modifyWithFiles $ M.adjust (\c -> c{modified=False}) filePath
 
 
 getProp :: (Monad m, Option a) => ConfigFileHandle -> String -> String -> CaideM m a

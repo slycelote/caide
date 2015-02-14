@@ -22,7 +22,6 @@ import Caide.Util (pathToText)
 
 
 
--- TODO: allow specifying problem type via 'file,stdin,stdout' syntax
 createProblem :: URL -> T.Text -> CaideIO ()
 createProblem url problemTypeStr = case findProblemParser url of
     Just parser -> parseExistingProblem url parser
@@ -43,7 +42,10 @@ initializeProblem problem = do
     hProblemConf <- createConf problemConfPath defaultProblemConfig
     setProp hProblemConf "problem" "name" $ problemName problem
     setProp hProblemConf "problem" "type" $ problemType problem
-    _ <- createConf problemStatePath defaultProblemState
+    hProblemState <- createConf problemStatePath defaultProblemState
+
+    flushConf hProblemConf
+    flushConf hProblemState
 
     lang <- getDefaultLanguage
     updateTests
@@ -67,10 +69,11 @@ createNewProblem probId probType = do
     -- Prepare problem directory
     liftIO $ createDirectory False problemDir
 
+
     -- Set active problem
     setActiveProblem probId
-    liftIO $ T.putStrLn . T.concat $ ["Problem successfully created in folder ", probId]
     initializeProblem problem
+    liftIO $ T.putStrLn . T.concat $ ["Problem successfully created in folder ", probId]
 
 
 parseExistingProblem :: URL -> ProblemParser -> CaideIO ()
@@ -99,9 +102,10 @@ parseExistingProblem url parser = do
                     writeTextFile inFile  $ testCaseInput sample
                     writeTextFile outFile $ testCaseOutput sample
 
+
             -- Set active problem
             setActiveProblem probId
+            initializeProblem problem
             liftIO $ T.putStrLn . T.concat $ ["Problem successfully parsed into folder ", probId]
 
-            initializeProblem problem
 
