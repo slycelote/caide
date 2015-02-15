@@ -1,10 +1,10 @@
---{-# LANGUAGE FlexibleContexts, Rank2Types #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Caide.Configuration (
+module Caide.Configuration(
       -- * General utilities
       setProperties
     , orDefault
+    , withDefault
     , describeError
 
       -- * Caide configuration
@@ -19,7 +19,6 @@ module Caide.Configuration (
     , getActiveProblem
     , setActiveProblem
     , getDefaultLanguage
-    , getBuilder
     , getFeatures
 
       -- * Problem configuration
@@ -58,6 +57,9 @@ setProperties handle properties = forM_ properties $ \(section, key, value) ->
 
 orDefault :: Monad m => CaideM m a -> a -> CaideM m a
 orDefault getter defaultValue = getter `catchError` const (return defaultValue)
+
+withDefault :: Monad m => a -> CaideM m a -> CaideM m a
+withDefault = flip orDefault
 
 describeError :: CPError -> String
 describeError (OtherProblem err, _) = err
@@ -132,11 +134,6 @@ setActiveProblem probId = do
     h <- readCaideState
     setProp h "core" "problem" probId
 
-getBuilder :: CaideIO Text
-getBuilder = do
-    h <- readCaideConf
-    getProp h "core" "builder"
-
 getDefaultLanguage :: CaideIO Text
 getDefaultLanguage = do
     h <- readCaideConf
@@ -160,7 +157,6 @@ defaultCaideConf root useSystemHeaders = forceEither $
     addSection "core" emptyCP >>=
     setValue "core" "language" "cpp" >>=
     setValue "core" "features" "" >>=
-    setValue "core" "builder" "none" >>=
     addSection "cpp" >>=
     setValue "cpp" "clang_options" (intercalate ",\n  " $ clangOptions root useSystemHeaders)
 
@@ -214,5 +210,5 @@ defaultProblemConfig = forceEither $
 defaultProblemState :: ConfigParser
 defaultProblemState = forceEither $
     addSection "problem" emptyCP >>=
-    setValue "problem" "language" "simplecpp"
+    setValue "problem" "language" "c++"
 

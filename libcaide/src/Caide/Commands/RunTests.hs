@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Caide.Commands.RunTests (
+module Caide.Commands.RunTests(
       runTests
     , evalTests
 ) where
@@ -12,6 +12,7 @@ import Control.Monad.State (liftIO)
 
 import Data.Either (isRight)
 import Data.List (group, sort)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Text.Read as TextRead
 import qualified Data.Text as T
@@ -22,8 +23,10 @@ import Filesystem (listDirectory, readTextFile, writeTextFile)
 import Filesystem.Path (FilePath, (</>),  replaceExtension)
 import Filesystem.Path.CurrentOS (fromText)
 
-import Caide.Configuration (getActiveProblem, getBuilder, readProblemConfig)
-import Caide.Registry (findBuilder)
+import qualified Caide.Builders.None as None
+import qualified Caide.Builders.Custom as Custom
+import Caide.Configuration (getActiveProblem, readProblemConfig, readProblemState, readCaideConf, withDefault)
+import Caide.Registry (findLanguage)
 import Caide.Types
 import Caide.TestCases.Types
 import Caide.Util (tshow)
@@ -39,11 +42,26 @@ humanReadableSummary = T.unlines . map toText . group . sort . map (fromComparis
           fromComparisonResult (Error _) = "Error"
           fromComparisonResult r = tshow r
 
+getBuilder :: Text -> CaideIO Builder
+getBuilder language = do
+    h <- readCaideConf
+    let builderExists builderName = withDefault False $
+            (getProp h builderName "build_and_run_tests" :: CaideIO Text) >> return True
+        languageNames = fromMaybe [] $ fst <$> findLanguage language
+        builderNames  = map (`T.append` "_builder") languageNames
+    buildersExist <- mapM (builderExists . T.unpack) builderNames
+    let existingBuilderNames = [name | (name, True) <- zip builderNames buildersExist]
+    return $ case existingBuilderNames of
+        [] -> None.builder
+        (name:_) -> Custom.builder name
+
+
 runTests :: CaideIO ()
 runTests = do
     probId <- getActiveProblem
-    builderName <- getBuilder
-    let builder = findBuilder builderName
+    h <- readProblemState probId
+    lang <- getProp h "problem" "language"
+    builder <- getBuilder lang
     buildResult <- builder probId
     case buildResult of
         BuildFailed -> throw "Build failed"

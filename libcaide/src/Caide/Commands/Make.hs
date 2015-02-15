@@ -53,8 +53,8 @@ prepareSubmission = withProblem $ \probId _ -> do
     hProblem <- readProblemState probId
     lang <- getProp hProblem "problem" "language"
     case findLanguage lang of
-        Nothing       -> throw . T.concat $ ["Unsupported programming language ", lang]
-        Just language -> inlineCode language probId
+        Nothing            -> throw . T.concat $ ["Unsupported programming language ", lang]
+        Just (_, language) -> inlineCode language probId
 
 makeProblem :: CaideIO ()
 makeProblem = updateTests >> prepareSubmission

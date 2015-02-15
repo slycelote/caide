@@ -1,10 +1,8 @@
 {-# LANGUAGE CPP, OverloadedStrings #-}
 
-module Caide.Registry (
+module Caide.Registry(
       languages
     , findLanguage
-    , builders
-    , findBuilder
     , findFeature
     , findProblemParser
     , findContestParser
@@ -22,17 +20,12 @@ import qualified Caide.CPP.CPPSimple as CPPSimple
 import qualified Caide.CPP.CPP as CPP
 #endif
 import qualified Caide.CSharp.CSharpSimple as CSharpSimple
-import qualified Caide.Builders.None as None
-import qualified Caide.Builders.Custom as Custom
 
 import qualified Caide.Features.Codelite as Codelite
 import Caide.Parsers.Codeforces
 import Caide.Parsers.CodeChef
 import Caide.Parsers.Timus
 
-
-findLanguage :: Text -> Maybe ProgrammingLanguage
-findLanguage name = snd <$> find (\(names, _) -> T.map toLower name `elem` names) languages
 
 problemParsers :: [ProblemParser]
 problemParsers = [codeforcesParser, codeChefParser, timusParser]
@@ -46,15 +39,6 @@ contestParsers = [codeforcesContestParser, codeChefContestParser]
 findContestParser :: URL -> Maybe ContestParser
 findContestParser url = find (`contestUrlMatches` url) contestParsers
 
-
-builders :: [(Text, Builder)]
-builders = [("none", None.builder)]
-
-findBuilder :: T.Text -> Builder
-findBuilder name = case find ((== T.map toLower name) . fst) builders of
-    Just (_, builder) -> builder
-    Nothing           -> Custom.builder name
-
 features :: [(Text, Feature)]
 features = [ ("codelite", Codelite.feature)
            ]
@@ -63,10 +47,13 @@ findFeature :: Text -> Maybe Feature
 findFeature name = snd <$> find ((== T.map toLower name). fst) features
 
 languages :: [([Text], ProgrammingLanguage)]
-languages = [ (["simplecpp", "simplec++"], CPPSimple.language)
+languages = [ (["simplec++", "simplecpp"], CPPSimple.language)
 #ifdef CLANG_INLINER
-            , (["cpp", "c++"], CPP.language)
+            , (["c++", "cpp"], CPP.language)
 #endif
-            , (["c#", "csharp"], CSharpSimple.language)
+            , (["c#", "csharp", "cs"], CSharpSimple.language)
             ]
+
+findLanguage :: Text -> Maybe ([Text], ProgrammingLanguage)
+findLanguage name = find (\(names, _) -> T.map toLower name `elem` names) languages
 

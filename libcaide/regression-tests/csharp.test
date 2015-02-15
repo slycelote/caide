@@ -1,7 +1,5 @@
 #!/bin/bash
 
-CSC=${CSC:-gmcs}
-
 "$caide" init
 "$caide" problem prob
 "$caide" lang csharp

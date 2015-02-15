@@ -173,7 +173,7 @@ getProp (FileHandle path) section key = do
     case mf of
         Nothing -> throw $ T.concat ["Unknown file handle ", toText path]
         Just f  -> do
-            opt <- convertToCaide $ C.get (configParser f) section key
+            opt <- convertToCaide $ C.get (configParser f) (map toLower section) key
             case optionFromString opt of
                 Just a  -> return a
                 Nothing -> throw $ T.concat ["Couldn't parse option ", pack opt]

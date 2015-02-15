@@ -14,7 +14,8 @@ import Filesystem (createDirectory, createTree, writeTextFile, isDirectory)
 import Filesystem.Path.CurrentOS (fromText, decodeString, (</>))
 
 import Caide.Types
-import Caide.Configuration (getDefaultLanguage, setActiveProblem, getProblemConfigFile, getProblemStateFile, defaultProblemConfig, defaultProblemState)
+import Caide.Configuration (getDefaultLanguage, setActiveProblem, getProblemConfigFile,
+                            getProblemStateFile, defaultProblemConfig, defaultProblemState)
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
 import Caide.Registry (findProblemParser)

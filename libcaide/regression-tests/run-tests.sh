@@ -7,6 +7,10 @@ cur_dir=$( cd $(dirname "${BASH_SOURCE[0]}") ; pwd )
 
 tmp_dir=$cur_dir/tmp
 export caide=$cur_dir/../dist/build/caide/caide
+# On Windows use something like CSC=/c/Windows/Microsoft.NET/Framework/v4.0.30319/csc.exe ./run-tests.sh
+CSC=${CSC:-gmcs}
+export CSC
+
 functions_file=$cur_dir/test-functions.sh
 
 mkdir -p $tmp_dir
