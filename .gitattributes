@@ -1,3 +1,4 @@
+/libcaide/res/* linguist-vendored
 /libcaide/cbits/clang/* linguist-vendored
 /libcaide/cbits/llvm/* linguist-vendored
 
