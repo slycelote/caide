@@ -1,7 +1,7 @@
-/libcaide/res/** linguist-documentation
-/libcaide/res/init/templates/** linguist-documentation=false
-/libcaide/regression-tests/** linguist-documentation
+/libcaide/res/ linguist-documentation
+/libcaide/res/init/templates/ linguist-documentation=false
+/libcaide/regression-tests/ linguist-documentation
 /libcaide/regression-tests/*.sh linguist-documentation=false
-/libcaide/cbits/clang/** linguist-vendored
-/libcaide/cbits/llvm/** linguist-vendored
+/libcaide/cbits/clang/ linguist-vendored
+/libcaide/cbits/llvm/ linguist-vendored
 
