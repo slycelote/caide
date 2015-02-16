@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Caide.Builders.Custom (
+module Caide.Builders.Custom(
       builder
 ) where
 
@@ -13,7 +13,7 @@ import Filesystem.Path.CurrentOS (encodeString, fromText)
 import System.Exit (ExitCode(..))
 import System.Process (shell, createProcess, waitForProcess, cwd)
 
-import Caide.Configuration (readCaideConf)
+import Caide.Configuration (readCaideConf, withDefault)
 import Caide.Types
 import Caide.Util (tshow)
 
@@ -22,7 +22,7 @@ builder name probId = do
     root <- caideRoot
     hConf <- readCaideConf
     cmd <- getProp hConf (T.unpack name) "build_and_run_tests"
-    evaluatesTests <- getProp hConf (T.unpack name) "evaluates_tests"
+    evaluatesTests <- withDefault True $ getProp hConf (T.unpack name) "evaluates_tests"
     let probDir = root </> fromText probId
         process = shell $ T.unpack cmd
 

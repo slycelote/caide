@@ -45,12 +45,11 @@ humanReadableSummary = T.unlines . map toText . group . sort . map (fromComparis
 getBuilder :: Text -> CaideIO Builder
 getBuilder language = do
     h <- readCaideConf
-    let builderExists builderName = withDefault False $
-            (getProp h builderName "build_and_run_tests" :: CaideIO Text) >> return True
+    let builderExists langName = withDefault False $
+            (getProp h langName "build_and_run_tests" :: CaideIO Text) >> return True
         languageNames = fromMaybe [] $ fst <$> findLanguage language
-        builderNames  = map (`T.append` "_builder") languageNames
-    buildersExist <- mapM (builderExists . T.unpack) builderNames
-    let existingBuilderNames = [name | (name, True) <- zip builderNames buildersExist]
+    buildersExist <- mapM (builderExists . T.unpack) languageNames
+    let existingBuilderNames = [name | (name, True) <- zip languageNames buildersExist]
     return $ case existingBuilderNames of
         [] -> None.builder
         (name:_) -> Custom.builder name

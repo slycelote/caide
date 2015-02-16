@@ -3,18 +3,19 @@
 export CAIDE="$caide"
 
 "$caide" problem prob
-cd prob
-cat <<EOF >case1.in
+cat <<EOF >prob/case1.in
 1
 2
 3
 EOF
-cp case1.in case1.out
+cp prob/case1.in prob/case1.out
+
+echo "    bash `pwd`/templates/cpp-builder.sh" >>caide.ini
 
 "$caide" lang cpp
 
 
-cat <<EOF >prob.cpp
+cat <<EOF >prob/prob.cpp
 #include <istream>
 #include <ostream>
 using namespace std;
@@ -25,19 +26,16 @@ void solve(istream& in, ostream& out) {
 }
 EOF
 
-echo "    bash `pwd`/../templates/cpp-builder.sh" >>../caide.ini
 "$caide" test
-cd ..
 compare_with after-test prob/.caideproblem/test/report.txt
-cd prob
 
-echo "[csharp_builder]" >>../caide.ini
-echo "evaluates_tests: yes" >>../caide.ini
-echo "build_and_run_tests: bash `pwd`/../templates/cs-builder.sh" >>../caide.ini
+echo >>caide.ini
+echo "[csharp]" >>caide.ini
+echo "build_and_run_tests: bash `pwd`/templates/cs-builder.sh" >>caide.ini
 
 "$caide" lang csharp
 
-cat <<EOF >prob.cs
+cat <<EOF >prob/prob.cs
 using System;
 using System.IO;
 class Solution {
@@ -50,8 +48,8 @@ class Solution {
 }
 EOF
 
-rm .caideproblem/test/report.txt
+rm prob/.caideproblem/test/{report.txt,*.in,*.out}
 
 "$caide" test
-cd ..
 compare_with after-test prob/.caideproblem/test/report.txt
+
