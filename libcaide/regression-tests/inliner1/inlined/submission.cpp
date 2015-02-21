@@ -25,6 +25,9 @@ const char* func<int>() {return "int";}
 template<>
 const char* func<int*>() { return "int*"; }
 
+#define DEF_C 'a'
+#define DEF_I 0
+
 int main() {
     TC<int> ti;
     ti.temp();
@@ -35,18 +38,16 @@ int main() {
     func<int*>();
 
 
-#define FOO
 
 
 
 
-
-
-    if (*ti.temp() == 'a') return 0;
+    if (*ti.temp() == DEF_C) return DEF_I;
 
 
 };
 
+#undef DEF_I
 
 
 

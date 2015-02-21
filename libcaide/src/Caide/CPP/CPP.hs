@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Caide.CPP.CPP (
+module Caide.CPP.CPP(
       language
 ) where
 
@@ -36,6 +36,7 @@ inlineCPPCode probID = do
         mainFilePath = problemDir </> "main.cpp"
         inlinedCodePath = problemDir </> ".caideproblem" </> "inlined.cpp"
         inlinedNoPragmaOnceCodePath = problemDir </> ".caideproblem" </> "inlinedNoPragmaOnce.cpp"
+        optimizedPass1Path = problemDir </> ".caideproblem" </> "optimizedPass1.cpp"
         finalCodePath = problemDir </> "submission.cpp"
         libraryDirectory = root </> "cpplib"
 
@@ -50,10 +51,17 @@ inlineCPPCode probID = do
     retInliner <- liftIO $ inlineLibraryCode (solutionPath:mainFilePath:libraryCPPFiles) cmdLineOptions inlinedCodePath
     when (retInliner /= 0) $
         throw $ T.concat ["C++ library code inliner failed with error code ", tshow retInliner]
+
     liftIO $ removePragmaOnceFromFile inlinedCodePath inlinedNoPragmaOnceCodePath
-    retOptimizer <- liftIO $ removeUnusedCode inlinedNoPragmaOnceCodePath cmdLineOptions finalCodePath
-    when (retOptimizer /= 0) $
-        throw $ T.concat ["C++ library code inliner failed with error code ", tshow retOptimizer]
+
+    retOptimizer1 <- liftIO $ removeUnusedCode inlinedNoPragmaOnceCodePath cmdLineOptions optimizedPass1Path
+    when (retOptimizer1 /= 0) $
+        throw $ T.concat ["C++ library code inliner (pass 1) failed with error code ", tshow retOptimizer1]
+
+    retOptimizer2 <- liftIO $ removeUnusedCode optimizedPass1Path cmdLineOptions finalCodePath
+    when (retOptimizer2 /= 0) $
+        throw $ T.concat ["C++ library code inliner (pass 2) failed with error code ", tshow retOptimizer2]
+
     liftIO $ copyFile finalCodePath $ root </> "submission.cpp"
 
 

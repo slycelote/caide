@@ -28,6 +28,15 @@ const char* func<int>() {return "int";}
 template<>
 const char* func<int*>() { return "int*"; }
 
+#define DEF_C 'a'
+#define DEF_I 0
+#define DEF_I2 2
+#define DEF_I3 3
+
+int unused_func() {
+    return DEF_I3;
+}
+
 int main() {
     TC<int> ti;
     ti.temp();
@@ -39,6 +48,7 @@ int main() {
 
 #if 1 > 2
     ti.temp();
+    return DEF_I2;
 #elif 1 > 3
     tip.temp();
 #elif defined(FOO)
@@ -55,10 +65,11 @@ int main() {
     ti.temp();
 #else
 # ifdef FOO
-    if (*ti.temp() == 'a') return 0;
+    if (*ti.temp() == DEF_C) return DEF_I;
 # else
     ti.temp();
 # endif
 #endif
 };
+#undef DEF_I
 

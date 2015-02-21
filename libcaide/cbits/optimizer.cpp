@@ -296,6 +296,45 @@ private:
     vector<IfDefClause> activeClauses;
     set<string> definedMacros;
 
+    // maps MacroDirective corresponding to a macro definition to a set of its usages
+    typedef map<const MacroDirective*, vector<SourceRange> > MacroUsages;
+    MacroUsages usages;
+
+private:
+    bool tryRemoveMacroDefinition(MacroUsages::const_iterator it) {
+        if (it == usages.end())
+            return false;
+
+        bool isUsed = false;
+        for (const SourceRange& usageRange : it->second) {
+            // Check whether the usage of the macro has been removed
+            if (rewriter.canRemoveRange(usageRange)) {
+                isUsed = true;
+                break;
+            }
+        }
+
+        if (!isUsed) {
+            SourceLocation defLocation = it->first->getLocation();
+            removeLine(defLocation);
+            return true;
+        }
+        return false;
+    }
+
+    void removeLine(SourceLocation loc) {
+        Rewriter::RewriteOptions opts;
+        opts.RemoveLineIfEmpty = true;
+        SourceLocation b = changeColumn(loc, 1);
+        SourceLocation e = changeColumn(loc, 10000);
+        rewriter.removeRange(SourceRange(b, e), opts);
+    }
+
+    bool isInMainFile(SourceLocation loc) const {
+        // sourceManager.isInMainFile returns true for builtin defines
+        return sourceManager.getFileID(loc) == sourceManager.getMainFileID();
+    }
+
 public:
     RemoveInactivePreprocessorBlocks(SourceManager& _sourceManager, SmartRewriter& _rewriter)
         : sourceManager(_sourceManager)
@@ -303,16 +342,48 @@ public:
     {
     }
 
-    void MacroDefined(const Token& MacroNameTok, const MacroDirective* /*MD*/) {
+    void MacroDefined(const Token& MacroNameTok, const MacroDirective* MD) {
         definedMacros.insert(getTokenName(MacroNameTok));
+        if (MD && isInMainFile(MD->getLocation()))
+            usages[MD].clear();
     }
 
-    void MacroUnDefined(const Token& MacroNameTok, const MacroDirective* /*MD*/) {
+    void MacroUndefined(const Token& MacroNameTok, const MacroDirective* MD) {
         definedMacros.erase(getTokenName(MacroNameTok));
+
+        if (!MD || !isInMainFile(MD->getLocation()))
+            return;
+
+        MacroUsages::const_iterator it = usages.find(MD);
+        if (tryRemoveMacroDefinition(it)) {
+            // Removed the #define, so remove this #undef too
+            SourceLocation undefLoc = MacroNameTok.getLocation();
+            removeLine(undefLoc);
+        }
+
+        if (it != usages.end()) {
+            usages.erase(it);
+        }
+    }
+
+    void MacroExpands(const Token& /*MacroNameTok*/, const MacroDirective* MD,
+                      SourceRange Range, const MacroArgs* /*Args*/)
+    {
+        if (!MD || !isInMainFile(MD->getLocation()))
+            return;
+
+        usages[MD].push_back(Range);
+    }
+
+    // EndOfMainFile() is called too late; instead, we call this one manually in the consumer.
+    void Finalize() {
+        // Remove unused #defines that don't have a corresponding #undef
+        for (auto it = usages.begin(); it != usages.end(); ++it)
+            tryRemoveMacroDefinition(it);
     }
 
     void If(SourceLocation Loc, SourceRange /*ConditionRange*/, ConditionValueKind ConditionValue) {
-        if (!sourceManager.isInMainFile(Loc))
+        if (!isInMainFile(Loc))
             return;
         activeClauses.push_back(IfDefClause(Loc));
         if (ConditionValue == CVK_True)
@@ -320,7 +391,7 @@ public:
     }
 
     void Ifdef(SourceLocation Loc, const Token& MacroNameTok, const MacroDirective* /*MD*/) {
-        if (!sourceManager.isInMainFile(Loc))
+        if (!isInMainFile(Loc))
             return;
         activeClauses.push_back(IfDefClause(Loc));
         if (definedMacros.find(getTokenName(MacroNameTok)) != definedMacros.end()) {
@@ -329,7 +400,7 @@ public:
     }
 
     void Ifndef(SourceLocation Loc, const Token& MacroNameTok, const MacroDirective* /*MD*/) {
-        if (!sourceManager.isInMainFile(Loc))
+        if (!isInMainFile(Loc))
             return;
         activeClauses.push_back(IfDefClause(Loc));
         if (definedMacros.find(getTokenName(MacroNameTok)) == definedMacros.end()) {
@@ -338,7 +409,7 @@ public:
     }
 
     void Elif(SourceLocation Loc, SourceRange /*ConditionRange*/, ConditionValueKind ConditionValue, SourceLocation /*IfLoc*/ ) {
-        if (!sourceManager.isInMainFile(Loc))
+        if (!isInMainFile(Loc))
             return;
         if (ConditionValue == CVK_True)
             activeClauses.back().selectedBranch = activeClauses.back().locations.size();
@@ -346,7 +417,7 @@ public:
     }
 
     void Else(SourceLocation Loc, SourceLocation /*IfLoc*/) {
-        if (!sourceManager.isInMainFile(Loc))
+        if (!isInMainFile(Loc))
             return;
         if (activeClauses.back().selectedBranch < 0)
             activeClauses.back().selectedBranch = activeClauses.back().locations.size();
@@ -354,7 +425,7 @@ public:
     }
 
     void Endif(SourceLocation Loc, SourceLocation /*IfLoc*/) {
-        if (!sourceManager.isInMainFile(Loc))
+        if (!isInMainFile(Loc))
             return;
         IfDefClause& clause = activeClauses.back();
         clause.locations.push_back(Loc);
@@ -378,6 +449,7 @@ public:
 
         activeClauses.pop_back();
     }
+
 
 private:
     string getTokenName(const Token& token) const {
@@ -582,14 +654,18 @@ private:
 
 class OptimizerConsumer: public ASTConsumer {
 public:
-    explicit OptimizerConsumer(CompilerInstance& compiler_, SmartRewriter& _rewriter, std::string& _result)
+    explicit OptimizerConsumer(CompilerInstance& compiler_, SmartRewriter& _rewriter,
+               RemoveInactivePreprocessorBlocks& ppCallbacks_, std::string& _result)
         : compiler(compiler_)
         , sourceManager(compiler.getSourceManager())
         , rewriter(_rewriter)
+        , ppCallbacks(ppCallbacks_)
         , result(_result)
     {}
 
     virtual void HandleTranslationUnit(ASTContext& Ctx) {
+        ppCallbacks.Finalize();
+
         //cerr << "Build dependency graph" << std::endl;
         vector<FunctionDecl*> delayedParsedFunctions;
         DependenciesCollector depsVisitor(sourceManager, uses, delayedParsedFunctions);
@@ -669,6 +745,7 @@ private:
     SourceManager& sourceManager;
     SmartRewriter& rewriter;
     References uses;
+    RemoveInactivePreprocessorBlocks& ppCallbacks;
     std::string& result;
 };
 
@@ -691,9 +768,11 @@ public:
             throw "No source manager";
         }
         rewriter.setSourceMgr(compiler.getSourceManager(), compiler.getLangOpts());
-        compiler.getPreprocessor().addPPCallbacks(std::unique_ptr<RemoveInactivePreprocessorBlocks>(
-            new RemoveInactivePreprocessorBlocks(compiler.getSourceManager(), smartRewriter)));
-        return std::unique_ptr<OptimizerConsumer>(new OptimizerConsumer(compiler, smartRewriter, result));
+        auto ppCallbacks = std::unique_ptr<RemoveInactivePreprocessorBlocks>(
+            new RemoveInactivePreprocessorBlocks(compiler.getSourceManager(), smartRewriter));
+        auto consumer = std::unique_ptr<OptimizerConsumer>(new OptimizerConsumer(compiler, smartRewriter, *ppCallbacks, result));
+        compiler.getPreprocessor().addPPCallbacks(std::move(ppCallbacks));
+        return std::move(consumer);
     }
 };
 
@@ -712,6 +791,8 @@ public:
         return new OptimizerFrontendAction(rewriter, smartRewriter, result);
     }
 };
+
+
 
 Optimizer::Optimizer(const std::vector<std::string>& _cmdLineOptions):
     cmdLineOptions(_cmdLineOptions)
