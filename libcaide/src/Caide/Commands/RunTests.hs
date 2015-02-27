@@ -118,8 +118,8 @@ compareFiles cmpOptions etalon out = case () of
       | length actual == length expected -> Success
       | otherwise -> Error $ T.concat ["Expected ", tshow (length expected), " line(s)"]
   where
-    expected = T.lines etalon
-    actual   = T.lines out
+    expected = T.lines . T.strip $ etalon
+    actual   = T.lines . T.strip $ out
     lineComparison = zipWith (compareLines cmpOptions) expected actual
     errors = [e | e@(_, Error _) <- zip [1::Int ..] lineComparison]
     (line, Error err) = head errors
