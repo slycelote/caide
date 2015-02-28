@@ -246,9 +246,7 @@ public:
         if (specInfo)
             insertReference(f, specInfo->getTemplate());
 
-        if (FunctionDecl* instantiatedFrom = f->getInstantiatedFromMemberFunction()) {
-            insertReference(f, instantiatedFrom);
-        }
+        insertReference(f, f->getInstantiatedFromMemberFunction());
 
         if (f->hasBody()) {
             DeclarationName DeclName = f->getNameInfo().getName();
@@ -258,6 +256,12 @@ public:
                 dbg() << "Moving to " << FuncName << " at " << toString(f->getLocation()) << std::endl;
         }
 
+        return true;
+    }
+
+    bool VisitFunctionTemplateDecl(FunctionTemplateDecl* functionTemplate) {
+        insertReference(functionTemplate,
+                functionTemplate->getInstantiatedFromMemberTemplate());
         return true;
     }
 
@@ -496,6 +500,11 @@ public:
         , used(_used)
         , rewriter(_rewriter)
     {}
+
+    bool VisitEmptyDecl(EmptyDecl* decl) {
+        removeDecl(decl);
+        return true;
+    }
 
     /*
      Here's how template functions and classes are represented in the AST.

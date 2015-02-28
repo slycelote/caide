@@ -33,9 +33,7 @@ int main() {
 
     func<int>();
     func<int*>();
-};
-
-
+}
 
 
 

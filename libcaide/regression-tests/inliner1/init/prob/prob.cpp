@@ -37,6 +37,16 @@ int unused_func() {
     return DEF_I3;
 }
 
+template<typename T>
+class TemplateMethodInTemplateClass {
+public:
+    template<typename It>
+    TemplateMethodInTemplateClass(It a, It b) {}
+
+    template<typename It>
+    void print(It a) {}
+};
+
 int main() {
     TC<int> ti;
     ti.temp();
@@ -45,6 +55,12 @@ int main() {
 
     func<int>();
     func<int*>();
+
+    if (true)
+        ;
+
+    TemplateMethodInTemplateClass<double> c(1, 2);
+    c.print(3);
 
 #if 1 > 2
     ti.temp();
