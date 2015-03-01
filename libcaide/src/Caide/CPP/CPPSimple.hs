@@ -65,4 +65,5 @@ inlineCPPCode probID = do
         copyFile solutionPath inlinedCodePath
         mainCode <- readTextFile mainProgramPath
         appendTextFile inlinedCodePath mainCode
+        copyFile inlinedCodePath $ root </> "submission.cpp"
 
