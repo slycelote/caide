@@ -12,6 +12,10 @@ void solve(istream& in, ostream& out) {
         out << n << endl;
 }
 EOF
+
+# Check that testing code compiles
+g++ prob*.cpp -o /dev/null
+
 "$caide" make
 g++ submission.cpp -o submission.exe
 cat <<EOF >input.txt
@@ -19,9 +23,35 @@ cat <<EOF >input.txt
 2
 3
 EOF
-./submission.exe
+./submission.exe </dev/null
 if ! diff -bBq --strip-trailing-cr input.txt output.txt ; then
-    echo "Output is different"
+    echo "C++: Output is different"
     exit 100
+fi
+
+"$caide" lang 'c#'
+cat <<EOF >prob.cs
+using System;
+using System.Linq;
+using System.IO;
+class Solution {
+    public void solve(TextReader input, TextWriter output) {
+        string s;
+        while ((s = input.ReadLine()) != null)
+            output.WriteLine(s);
+    }
+}
+EOF
+
+# Check that testing code compiles
+"$CSC" -out:test.exe prob*.cs
+rm test.exe
+
+"$caide" make
+"$CSC" -out:submission.exe submission.cs
+./submission.exe </dev/null
+if ! diff -bBq --strip-trailing-cr input.txt output.txt ; then
+    echo "C#: Output is different"
+    exit 101
 fi
 
