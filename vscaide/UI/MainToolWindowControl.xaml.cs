@@ -35,7 +35,7 @@ namespace slycelote.VsCaide
         {
             InitializeComponent();
             SkipLanguageChangedEvent = true;
-            cbProgrammingLanguage.Items.Add("cpp");
+            cbProgrammingLanguage.Items.Add("c++");
             cbProgrammingLanguage.Items.Add("simplecpp");
             SkipLanguageChangedEvent = false;
             EnableAll(false);
@@ -56,7 +56,8 @@ namespace slycelote.VsCaide
 
             foreach (var subdir in Directory.EnumerateDirectories(SolutionUtilities.GetSolutionDir()))
             {
-                if (Directory.Exists(Path.Combine(subdir, ".caideproblem")))
+                if (Directory.Exists(Path.Combine(subdir, ".caideproblem")) && 
+                    File.Exists(Path.Combine(subdir, "problem.ini")))
                 {
                     problemNames.Add(Path.GetFileName(subdir.TrimEnd(Path.DirectorySeparatorChar)));
                 }
@@ -269,7 +270,14 @@ namespace slycelote.VsCaide
 
         private void cbProblems_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            UpdateCurrentProject();
+            try
+            {
+                UpdateCurrentProject();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Error: {0}", ex);
+            }
         }
 
         private void UpdateCurrentProject()
@@ -292,7 +300,7 @@ namespace slycelote.VsCaide
             string language = stdout.Trim();
             SetCurrentLanguage(language);
 
-            string[] cppLanguages = new[] { "simplecpp", "cpp" };
+            string[] cppLanguages = new[] { "simplecpp", "cpp", "c++" };
             if (cppLanguages.Contains(language))
             {
                 AfterProjectsLoaded(() =>
@@ -339,7 +347,7 @@ namespace slycelote.VsCaide
                         var references = (VSLangProj.References)vcProject.References;
                         var cpplibReference = references.OfType<VSLangProj.Reference>().SingleOrDefault(r =>
                                 r.SourceProject != null && r.SourceProject.UniqueName == cpplibProject.UniqueName);
-                        if (language == "cpp")
+                        if (language != "simplecpp")
                         {
                             if (cpplibReference == null)
                             {
@@ -371,7 +379,7 @@ namespace slycelote.VsCaide
                         var compileTool = (VCCLCompilerTool)tools.Item("VCCLCompilerTool");
                         var postBuildEventTool = (VCPostBuildEventTool)tools.Item("VCPostBuildEventTool");
 
-                        if (language == "cpp")
+                        if (language != "simplecpp")
                         {
                             compileTool.AdditionalIncludeDirectories = Path.Combine("$(SolutionDir)", "cpplib");
                             postBuildEventTool.CommandLine = Paths.CaideExe + " make";

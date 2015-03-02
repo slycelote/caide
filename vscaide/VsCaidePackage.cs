@@ -256,7 +256,14 @@ namespace slycelote.VsCaide
         #region IVsSolutionLoadEvents members
         public int OnAfterBackgroundSolutionLoadComplete()
         {
-            LocateMainToolWindow().Control.AllProjects_Loaded();
+            try
+            {
+                LocateMainToolWindow().Control.AllProjects_Loaded();
+            }
+            catch (Exception e)
+            {
+                Logger.LogError("{0}", e);
+            }
             return VSConstants.S_OK;
         }
 
