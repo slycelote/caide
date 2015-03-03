@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {- | Common utilities
 -}
-module Caide.Util (
+module Caide.Util(
       downloadDocument
     , getProblemID
     , pathToText
@@ -14,51 +14,46 @@ module Caide.Util (
     , trimString
 ) where
 
+import Control.Applicative ((<$>))
 import Control.Monad (forM_)
 import Data.Char (isSpace)
-import Data.Maybe (fromJust)
+import Data.Maybe (isNothing)
 import qualified Data.Text as T
 import Filesystem (copyFile, listDirectory, isFile, isDirectory, createDirectory)
 import qualified Filesystem.Path as F
 import Filesystem.Path (basename, filename, (</>))
 import Filesystem.Path.CurrentOS (toText)
-import Network.HTTP
-import Network.URI (parseURI)
+import Network.Browser (browse, request, setAllowRedirects, setOutHandler)
+import Network.HTTP (mkRequest, RequestMethod(GET), rspBody)
+import Network.URI (parseURI, uriScheme, URI)
 import System.IO.Error (catchIOError, ioeGetErrorString)
 
 import Caide.Types (ProblemID, URL)
 
 
 {- | Download a URL. Return (Left errorMessage) in case of an error,
-(Right doc) in case of success.
-Based on code snippet from 'Real World Haskell'.
+     (Right doc) in case of success.
 -}
--- TODO: retry download if anything wrong
 downloadDocument :: URL -> IO (Either T.Text T.Text)
 downloadDocument url
-    | "http" `T.isPrefixOf` url  =  result
-    | otherwise = mkLiftedError "Not implemented"
+    | isNothing maybeUri        = mkLiftedError "URL not supported"
+    | "http:" == uriScheme uri  = result
+    | otherwise                 = mkLiftedError "URL not supported"
   where
+    maybeUri = parseURI $ T.unpack url
+    Just uri = maybeUri
     mkLiftedError = return . Left
-    result = downloader `catchIOError` (mkLiftedError . T.pack . ioeGetErrorString)
-    downloader :: IO (Either T.Text T.Text)
-    downloader = do
-        let request = Request {rqURI = fromJust . parseURI $ T.unpack url,
-                               rqMethod = GET,
-                               rqHeaders = [],
-                               rqBody = ""}
+    errorHandler = mkLiftedError . T.pack . ioeGetErrorString
+    result = (Right <$> httpDownloader uri) `catchIOError` errorHandler
 
-        resp <- simpleHTTP request
-        case resp of
-            Left x  -> mkLiftedError $ T.concat ["Error connecting: ", tshow x]
-            Right r -> case rspCode r of
-                (2,_,_) -> return . Right . T.pack $ rspBody r
-                (3,_,_) -> -- An HTTP redirect
-                    case findHeader HdrLocation r of
-                        Nothing   -> mkLiftedError $ tshow r
-                        -- FIXME: avoid infinite recursion
-                        Just url' -> downloadDocument $ T.pack url'
-                _ -> mkLiftedError $ tshow r
+httpDownloader :: URI -> IO T.Text
+httpDownloader uri = do
+    (_, rsp) <- browse $ do
+        -- setErrHandler $ const $ return ()
+        setOutHandler $ const $ return ()
+        setAllowRedirects True
+        request $ mkRequest GET uri
+    return . T.pack $ rspBody rsp
 
 tshow :: Show a => a -> T.Text
 tshow = T.pack . show
