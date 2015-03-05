@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Caide.Commands.ParseProblem(
       createProblem
-    , parseExistingProblem
+    , saveProblem
 ) where
 
 import Control.Monad (forM_, when)
@@ -29,6 +29,7 @@ createProblem url problemTypeStr = case findProblemParser url of
     Nothing     -> case optionFromString (T.unpack problemTypeStr) of
         Nothing    -> throw . T.concat $ ["Incorrect problem type: ", problemTypeStr]
         Just pType -> createNewProblem url pType
+
 
 initializeProblem :: Problem -> CaideIO ()
 initializeProblem problem = do
@@ -77,36 +78,38 @@ createNewProblem probId probType = do
     liftIO $ T.putStrLn . T.concat $ ["Problem successfully created in folder ", probId]
 
 
+saveProblem :: Problem -> [TestCase] -> CaideIO()
+saveProblem problem samples = do
+    root <- caideRoot
+
+    let probId = problemId problem
+        problemDir = root </> fromText probId
+
+    problemDirExists <- liftIO $ isDirectory problemDir
+    when problemDirExists $
+        throw . T.concat $ ["Problem directory already exists: ", pathToText problemDir]
+
+    liftIO $ do
+        -- Prepare problem directory
+        createDirectory False problemDir
+
+        -- Write test cases
+        forM_ (zip samples [1::Int ..]) $ \(sample, i) -> do
+            let inFile  = problemDir </> decodeString ("case" ++ show i ++ ".in")
+                outFile = problemDir </> decodeString ("case" ++ show i ++ ".out")
+            writeTextFile inFile  $ testCaseInput sample
+            writeTextFile outFile $ testCaseOutput sample
+
+    -- Set active problem
+    setActiveProblem probId
+    initializeProblem problem
+    liftIO $ T.putStrLn . T.concat $ ["Problem successfully parsed into folder ", probId]
+
+
 parseExistingProblem :: URL -> ProblemParser -> CaideIO ()
 parseExistingProblem url parser = do
     parseResult <- liftIO $ parser `parseProblem` url
     case parseResult of
         Left err -> throw . T.unlines $ ["Encountered a problem while parsing:", err]
-        Right (problem, samples) -> do
-            root <- caideRoot
-
-            let probId = problemId problem
-                problemDir = root </> fromText probId
-
-            problemDirExists <- liftIO $ isDirectory problemDir
-            when problemDirExists $
-                throw . T.concat $ ["Problem directory already exists: ", pathToText problemDir]
-
-            liftIO $ do
-                -- Prepare problem directory
-                createDirectory False problemDir
-
-                -- Write test cases
-                forM_ (zip samples [1::Int ..]) $ \(sample, i) -> do
-                    let inFile  = problemDir </> decodeString ("case" ++ show i ++ ".in")
-                        outFile = problemDir </> decodeString ("case" ++ show i ++ ".out")
-                    writeTextFile inFile  $ testCaseInput sample
-                    writeTextFile outFile $ testCaseOutput sample
-
-
-            -- Set active problem
-            setActiveProblem probId
-            initializeProblem problem
-            liftIO $ T.putStrLn . T.concat $ ["Problem successfully parsed into folder ", probId]
-
+        Right (problem, samples) -> saveProblem problem samples
 

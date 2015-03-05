@@ -23,7 +23,7 @@ import Filesystem (copyFile, listDirectory, isFile, isDirectory, createDirectory
 import qualified Filesystem.Path as F
 import Filesystem.Path (basename, filename, (</>))
 import Filesystem.Path.CurrentOS (toText)
-import Network.Browser (browse, request, setAllowRedirects, setOutHandler)
+import Network.Browser (browse, request, setAllowRedirects, setMaxErrorRetries, setOutHandler)
 import Network.HTTP (mkRequest, RequestMethod(GET), rspBody)
 import Network.URI (parseURI, uriScheme, URI)
 import System.IO.Error (catchIOError, ioeGetErrorString)
@@ -52,6 +52,7 @@ httpDownloader uri = do
         -- setErrHandler $ const $ return ()
         setOutHandler $ const $ return ()
         setAllowRedirects True
+        setMaxErrorRetries $ Just 5
         request $ mkRequest GET uri
     return . T.pack $ rspBody rsp
 

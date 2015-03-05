@@ -32,6 +32,7 @@ Flag debug
 executable caide
   build-depends:
                    array,
+                   async >= 2.0.1,
                    base >= 4.7 && < 6,
                    bytestring,
                    ConfigFile,
