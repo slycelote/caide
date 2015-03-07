@@ -48,7 +48,6 @@ import Filesystem.Path (FilePath, (</>))
 import System.Info (arch, os)
 
 import Caide.Types
-import Caide.Util (forceEither)
 
 
 setProperties :: Monad m => ConfigFileHandle -> [(String, String, Text)] -> CaideM m ()
@@ -196,6 +195,9 @@ clangOptions root True = [
     encodeString $ root </> "cpplib"
     ]
 
+
+forceEither :: Either a c -> c
+forceEither = either (error "Left in forceEither") id
 
 defaultCaideState :: ConfigParser
 defaultCaideState = forceEither $

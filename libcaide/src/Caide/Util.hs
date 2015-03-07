@@ -3,20 +3,14 @@
 -}
 module Caide.Util(
       downloadDocument
-    , getProblemID
     , pathToText
     , tshow
-    , forceEither
     , listDir
     , copyFileToDir
     , copyTreeToDir
-    , splitString
-    , trimString
 ) where
 
-import Control.Applicative ((<$>))
 import Control.Monad (forM_)
-import Data.Char (isSpace)
 import Data.Maybe (isNothing)
 import qualified Data.Text as T
 import Filesystem (copyFile, listDirectory, isFile, isDirectory, createDirectory)
@@ -24,11 +18,11 @@ import qualified Filesystem.Path as F
 import Filesystem.Path (basename, filename, (</>))
 import Filesystem.Path.CurrentOS (toText)
 import Network.Browser (browse, request, setAllowRedirects, setMaxErrorRetries, setOutHandler)
-import Network.HTTP (mkRequest, RequestMethod(GET), rspBody)
+import Network.HTTP (mkRequest, RequestMethod(GET), rspBody, rspCode, rspReason)
 import Network.URI (parseURI, uriScheme, URI)
 import System.IO.Error (catchIOError, ioeGetErrorString)
 
-import Caide.Types (ProblemID, URL)
+import Caide.Types (URL)
 
 
 {- | Download a URL. Return (Left errorMessage) in case of an error,
@@ -44,9 +38,9 @@ downloadDocument url
     Just uri = maybeUri
     mkLiftedError = return . Left
     errorHandler = mkLiftedError . T.pack . ioeGetErrorString
-    result = (Right <$> httpDownloader uri) `catchIOError` errorHandler
+    result = httpDownloader uri `catchIOError` errorHandler
 
-httpDownloader :: URI -> IO T.Text
+httpDownloader :: URI -> IO (Either T.Text T.Text)
 httpDownloader uri = do
     (_, rsp) <- browse $ do
         -- setErrHandler $ const $ return ()
@@ -54,7 +48,9 @@ httpDownloader uri = do
         setAllowRedirects True
         setMaxErrorRetries $ Just 5
         request $ mkRequest GET uri
-    return . T.pack $ rspBody rsp
+    case rspCode rsp of
+        (5,a,b) -> return . Left .  T.pack $ "5" ++ show a ++ show b ++ " " ++ rspReason rsp
+        _       -> return . Right . T.pack $ rspBody rsp
 
 tshow :: Show a => a -> T.Text
 tshow = T.pack . show
@@ -63,12 +59,6 @@ pathToText :: F.FilePath -> T.Text
 pathToText path = case toText path of
     Left  s -> s
     Right s -> s
-
-getProblemID :: F.FilePath -> ProblemID
-getProblemID = pathToText . basename
-
-forceEither :: Either a c -> c
-forceEither = either (error "Left in forceEither") id
 
 -- | Returns (file list, directory list)
 listDir :: F.FilePath -> IO ([F.FilePath], [F.FilePath])
@@ -92,13 +82,3 @@ copyTreeToDir srcTree dstDir = do
     forM_ files $ \file -> copyFileToDir file targetDir
     forM_ dirs $ \dir -> copyTreeToDir dir targetDir
 
-
-splitString :: String -> String -> [String]
-splitString separators s = reverse (go s []) where
-    go [] parts = parts
-    go str parts = let (_, rest)     = span (`elem` separators) str
-                       (word, rest') = break (`elem` separators) rest
-                   in go rest' $ if null word then parts else word:parts
-
-trimString :: String -> String
-trimString = reverse . dropWhile isSpace . reverse . dropWhile isSpace
