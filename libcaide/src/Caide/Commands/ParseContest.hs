@@ -3,7 +3,6 @@ module Caide.Commands.ParseContest(
       createContest
 ) where
 
-import Control.Concurrent.Async (mapConcurrently)
 import Control.Monad (forM_, unless)
 import Control.Monad.State (liftIO)
 import Data.Either (rights)
@@ -12,6 +11,7 @@ import qualified Data.Text as T
 import Caide.Commands.ParseProblem (saveProblem)
 import Caide.Registry (findProblemParser, findContestParser)
 import Caide.Types
+import Caide.Util (mapWithLimitedThreads)
 
 
 createContest :: URL -> CaideIO ()
@@ -22,7 +22,8 @@ createContest contestUrl = case findContestParser contestUrl of
         case parserRet of
             Left  err  -> throw err
             Right urls -> do
-                results <- liftIO $ mapConcurrently tryParseProblem urls
+                -- TODO thread limit depending on the host
+                results <- liftIO $ mapWithLimitedThreads 2 tryParseProblem urls
                 let errors = [T.concat [url, ": ", err] | (url, Left err) <- zip urls results]
                     problems = rights results
                 forM_ (reverse problems) $ uncurry saveProblem

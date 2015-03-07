@@ -3,6 +3,7 @@
 -}
 module Caide.Util(
       downloadDocument
+    , mapWithLimitedThreads
     , pathToText
     , tshow
     , listDir
@@ -10,6 +11,7 @@ module Caide.Util(
     , copyTreeToDir
 ) where
 
+import Control.Concurrent.Async (mapConcurrently)
 import Control.Monad (forM_)
 import Data.Maybe (isNothing)
 import qualified Data.Text as T
@@ -49,8 +51,17 @@ httpDownloader uri = do
         setMaxErrorRetries $ Just 5
         request $ mkRequest GET uri
     case rspCode rsp of
-        (5,a,b) -> return . Left .  T.pack $ "5" ++ show a ++ show b ++ " " ++ rspReason rsp
+        (5,a,b) -> return . Left .  T.pack $ show (500 + 10*a + b) ++ " " ++ rspReason rsp
         _       -> return . Right . T.pack $ rspBody rsp
+
+-- TODO a more efficient algorithm
+mapWithLimitedThreads :: Int -> (a -> IO b) -> [a] -> IO [b]
+mapWithLimitedThreads _ _ [] = return []
+mapWithLimitedThreads numThreads f tasks = do
+    let (firstChunk, rest) = splitAt numThreads tasks
+    firstRes <- mapConcurrently f firstChunk
+    restRes  <- mapWithLimitedThreads numThreads f rest
+    return $ firstRes ++ restRes
 
 tshow :: Show a => a -> T.Text
 tshow = T.pack . show
