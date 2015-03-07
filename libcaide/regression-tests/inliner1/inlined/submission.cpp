@@ -60,6 +60,17 @@ int main() {
 
     if (*ti.temp() == DEF_C) return DEF_I;
 
+#ifdef ONLINE_JUDGE
+    ti.temp();
+#else
+    tip.temp();
+#endif
+
+#if 1 < 2
+    ti.temp();
+#elif defined(ONLINE_JUDGE)
+    tip.temp();
+#endif
 
 }
 

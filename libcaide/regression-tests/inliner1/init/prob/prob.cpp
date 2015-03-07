@@ -86,6 +86,18 @@ int main() {
     ti.temp();
 # endif
 #endif
+
+#ifdef ONLINE_JUDGE
+    ti.temp();
+#else
+    tip.temp();
+#endif
+
+#if 1 < 2
+    ti.temp();
+#elif defined(ONLINE_JUDGE)
+    tip.temp();
+#endif
 };
 #undef DEF_I
 

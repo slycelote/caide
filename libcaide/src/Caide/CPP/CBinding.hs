@@ -1,6 +1,6 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module Caide.CPP.CBinding (
+module Caide.CPP.CBinding(
       inlineLibraryCode
     , removeUnusedCode
 ) where
@@ -27,14 +27,15 @@ inlineLibraryCode cppFiles cmdLineOptions outputFile =
     fromIntegral <$> c_inline_code cpp (len cppFiles) options (len cmdLineOptions) out
 
 foreign import ccall unsafe "cwrapper.h remove_unused_code"
-    c_remove_unused_code  :: CString -> Ptr CString -> CInt -> CString -> IO CInt
+    c_remove_unused_code  :: CString -> Ptr CString -> CInt -> Ptr CString -> CInt -> CString -> IO CInt
 
-removeUnusedCode :: FilePath -> [T.Text] -> FilePath -> IO Int
-removeUnusedCode cppFile cmdLineOptions outputFile =
+removeUnusedCode :: FilePath -> [T.Text] -> [T.Text] -> FilePath -> IO Int
+removeUnusedCode cppFile cmdLineOptions macrosToKeep outputFile =
     withCString (encodeString cppFile)                     $ \cpp ->
     withArrayOfStrings (map T.unpack cmdLineOptions)       $ \options ->
+    withArrayOfStrings (map T.unpack macrosToKeep)         $ \toKeep ->
     withCString (encodeString outputFile)                  $ \out ->
-    fromIntegral <$> c_remove_unused_code cpp options (len cmdLineOptions) out
+    fromIntegral <$> c_remove_unused_code cpp options (len cmdLineOptions) toKeep (len macrosToKeep) out
 
 withArrayOfStrings :: [String] -> (Ptr CString -> IO a) -> IO a
 withArrayOfStrings xs m = withMany withCString xs $ \ps -> withArray ps m

@@ -23,7 +23,8 @@ int main(int argc, const char* argv[]) {
             cout << inliner.doInline(f);
         }
     } else {
-        Optimizer optimizer(options);
+        std::vector<std::string> macrosToKeep;
+        Optimizer optimizer(options, macrosToKeep);
         for (const auto& f : files) {
             cout << optimizer.doOptimize(f);
         }

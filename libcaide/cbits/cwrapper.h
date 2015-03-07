@@ -30,6 +30,7 @@ EXPORT {
        const char* outputFile);
   FL_EXPORT_C(int, remove_unused_code)(const char* cppFile,
        const char** cmdLineOptions, int numCmdLineOptions,
+       const char** macrosToKeep, int numMacrosToKeep,
        const char* outputFile);
 #ifdef __cplusplus
 }

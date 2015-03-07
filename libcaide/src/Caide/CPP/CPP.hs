@@ -19,7 +19,7 @@ import Text.Regex.Base.RegexLike (makeRegex, match)
 
 import qualified Caide.CPP.CPPSimple as CPPSimple
 
-import Caide.Configuration (readCaideConf)
+import Caide.Configuration (readCaideConf, withDefault)
 import Caide.CPP.CBinding
 import Caide.Types
 import Caide.Util (listDir, tshow)
@@ -42,6 +42,7 @@ inlineCPPCode probID = do
 
     hConf <- readCaideConf
     cmdLineOptions <- getProp hConf "cpp" "clang_options"
+    macrosToKeep <- withDefault ["ONLINE_JUDGE"] $ getProp hConf "cpp" "keep_macros"
 
     libExists <- liftIO $ isDirectory libraryDirectory
     libraryCPPFiles <- if libExists
@@ -54,11 +55,11 @@ inlineCPPCode probID = do
 
     liftIO $ removePragmaOnceFromFile inlinedCodePath inlinedNoPragmaOnceCodePath
 
-    retOptimizer1 <- liftIO $ removeUnusedCode inlinedNoPragmaOnceCodePath cmdLineOptions optimizedPass1Path
+    retOptimizer1 <- liftIO $ removeUnusedCode inlinedNoPragmaOnceCodePath cmdLineOptions macrosToKeep optimizedPass1Path
     when (retOptimizer1 /= 0) $
         throw $ T.concat ["C++ library code inliner (pass 1) failed with error code ", tshow retOptimizer1]
 
-    retOptimizer2 <- liftIO $ removeUnusedCode optimizedPass1Path cmdLineOptions finalCodePath
+    retOptimizer2 <- liftIO $ removeUnusedCode optimizedPass1Path cmdLineOptions macrosToKeep finalCodePath
     when (retOptimizer2 /= 0) $
         throw $ T.concat ["C++ library code inliner (pass 2) failed with error code ", tshow retOptimizer2]
 

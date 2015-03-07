@@ -54,12 +54,14 @@ FL_EXPORT_C(int, inline_code)(const char** cppFiles, int numCppFiles,
 
 FL_EXPORT_C(int, remove_unused_code)(const char* cppFile,
        const char** cmdLineOptions, int numCmdLineOptions,
+       const char** macrosToKeep, int numMacrosToKeep,
        const char* outputFile)
 {
     std::ofstream out(outputFile, std::ios::binary);
     try {
         const std::vector<std::string> cmdLineOptions_ = fromCharArrays(cmdLineOptions, numCmdLineOptions);
-        Optimizer optimizer(cmdLineOptions_);
+        const std::vector<std::string> macrosToKeep_ = fromCharArrays(macrosToKeep, numMacrosToKeep);
+        Optimizer optimizer(cmdLineOptions_, macrosToKeep_);
         std::string result = optimizer.doOptimize(cppFile);
         result = trim(result);
         out << result << "\r\n";
