@@ -1,13 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Control.Monad (when)
 import Data.Maybe (isJust, isNothing, fromMaybe)
-import qualified Data.Text.IO as T
 
 import Filesystem (getWorkingDirectory, isDirectory)
 import qualified Filesystem.Path as F
-import Filesystem.Path.CurrentOS (decodeString, encodeString, parent, (</>))
+import Filesystem.Path.CurrentOS (encodeString, parent, (</>))
 import System.Environment (getArgs)
 import System.Exit (exitWith, ExitCode(ExitFailure))
 
@@ -19,15 +17,12 @@ import Caide.Commands (runMain)
 findRootCaideDir :: F.FilePath -> IO (Maybe F.FilePath)
 findRootCaideDir curDir | curDir == parent curDir  = return Nothing
 findRootCaideDir curDir = do
-    let caideDir = curDir </> decodeString ".caide"
+    let caideDir = curDir </> ".caide"
     rootIsHere <- isDirectory caideDir
     if rootIsHere
     then return $ Just curDir
     else findRootCaideDir $ parent curDir
 
-
-printUsage :: IO ()
-printUsage = T.putStrLn "Usage: caide <cmd> ..."
 
 main :: IO ()
 main = do
@@ -37,8 +32,7 @@ main = do
     case mainAction of
         Left ioAction -> ioAction
         Right caideCmd -> do
-            workDir <- getWorkingDirectory
-            when (null args) $ printUsage >> halt
+            workDir  <- getWorkingDirectory
             caideDir <- findRootCaideDir workDir
             case () of
               _ | cmd /= "init" && isNothing caideDir -> do
