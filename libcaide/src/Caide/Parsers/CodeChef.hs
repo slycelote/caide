@@ -11,11 +11,12 @@ import qualified Data.Text as T
 import Network.URI (parseURI, uriAuthority, uriRegName)
 
 import Text.HTML.TagSoup (Tag(..), innerText, fromAttrib, fromTagText, parseTags,
-                         isTagCloseName, isTagOpenName, sections)
+                         isTagCloseName, sections)
 
+import Caide.Parsers.Common (mergeTextTags, replaceBr)
 import Caide.Types
 import Caide.Util (downloadDocument)
-import Text.HTML.TagSoup.Utils ((~==), (~/=), (~~/==), (~~==), isTagName, mergeTextTags)
+import Text.HTML.TagSoup.Utils ((~==), (~/=), (~~/==), (~~==))
 
 
 codeChefParser :: HtmlParser
@@ -71,16 +72,6 @@ extractCurrentLevelTextNodes tags = go tags []
     go (TagText s:rest) nodes = go rest (TagText s:nodes)
     go (TagOpen name _ : rest) nodes = go (dropWhile (not . isTagCloseName name) rest) nodes
     go (_:rest) nodes = go rest nodes
-
-replaceBr :: [Tag T.Text] -> [Tag T.Text]
-replaceBr [] = []
-
-replaceBr (o:c:rest)
-    | isTagOpenName "br" o && isTagCloseName "br" c   = TagText "\n" : replaceBr rest
-
-replaceBr (t:rest)
-    | isTagName "br" t = TagText "\n" : replaceBr rest
-    | otherwise        = t : replaceBr rest
 
 doParseContest :: URL -> IO (Either T.Text [URL])
 doParseContest url = parseChefContest <$> downloadDocument url

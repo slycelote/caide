@@ -11,13 +11,14 @@ import qualified Data.Text as T
 
 import Network.URI (parseURI, uriAuthority, uriRegName)
 
-import Text.HTML.TagSoup (fromTagText, innerText, isTagOpenName, isTagCloseName, partitions,
-                          parseTags, sections, fromAttrib, Tag(TagText))
+import Text.HTML.TagSoup (fromTagText, innerText, partitions,
+                          parseTags, sections, fromAttrib, Tag)
 import Text.HTML.TagSoup.Utils
 
 import Text.Regex.TDFA.Text (Regex)
 import Text.Regex.Base.RegexLike (makeRegex, matchAllText)
 
+import Caide.Parsers.Common (replaceBr)
 import Caide.Types
 import Caide.Util (downloadDocument)
 
@@ -51,10 +52,6 @@ doParse tags =
     title = fromTagText $ head beforeTitleDiv
     inputDivs = sections (~~== "<div class=input>") statement
     outputDivs = sections (~~== "<div class=output>") statement
-    replaceBr = concatMap f
-        where f x | isTagOpenName "br" x = []
-                  | isTagCloseName "br" x = [TagText "\n"]
-                  | otherwise = [x]
 
     extractText = innerText . replaceBr . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>")
     inputs = map extractText inputDivs

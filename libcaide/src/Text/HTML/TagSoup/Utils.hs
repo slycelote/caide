@@ -4,14 +4,12 @@ module Text.HTML.TagSoup.Utils (
     , (~~==)
     , (~~/==)
     , isTagName
-    , mergeTextTags
 ) where
 
 import Control.Applicative ((<$>))
 import Data.Char (toLower)
-import Data.List (groupBy)
 
-import Text.StringLike (StringLike, toString, strConcat)
+import Text.StringLike (StringLike, toString)
 import qualified Text.HTML.TagSoup as S
 import Text.HTML.TagSoup hiding ((~==), (~/=))
 
@@ -49,13 +47,4 @@ splitOn c str = go str ([], "")
 
 isTagName :: Eq str => str -> Tag str -> Bool
 isTagName name tag = isTagOpenName name tag || isTagCloseName name tag
-
-mergeTextTags :: (StringLike str, Show str) => [Tag str] -> [Tag str]
-mergeTextTags = map merge . groupBy cmp
-  where
-    cmp t1 t2 = isTagText t1 && isTagText t2
-
-    merge tags@(TagText _ : _) = TagText . strConcat . map fromTagText $ tags
-    merge [t] = t
-    merge _ = error "mergeTextTags"
 
