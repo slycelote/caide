@@ -14,7 +14,7 @@ import Network
 import System.IO (hClose)
 import System.IO.Error (tryIOError)
 
-import Caide.Configuration (describeError)
+import Caide.Configuration (describeError, setActiveProblem)
 import Caide.Commands.ParseProblem (saveProblem)
 import Caide.Registry (findHtmlParser)
 import Caide.Types
@@ -50,7 +50,9 @@ process chid page root = case parseFromHtml <$> findHtmlParser chid <*> Just pag
     Just (Left err) -> T.putStrLn . T.concat $ ["Error while parsing the problem: ", err]
 
     Just (Right (problem, testCases)) -> do
-        ret <- runInDirectory root $ saveProblem problem testCases
+        ret <- runInDirectory root $ do
+            saveProblem problem testCases
+            setActiveProblem $ problemId problem
         case ret of
             Left err -> putStrLn $ describeError err
             _        -> return ()
