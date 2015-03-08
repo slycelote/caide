@@ -4,6 +4,7 @@ module Caide.Registry(
       languages
     , findLanguage
     , findFeature
+    , findHtmlParser
     , findProblemParser
     , findContestParser
 ) where
@@ -26,9 +27,24 @@ import Caide.Parsers.Codeforces
 import Caide.Parsers.CodeChef
 import Caide.Parsers.Timus
 
+import Caide.Util (runHtmlParser)
+
+
+
+htmlParserToProblemParser :: HtmlParser -> ProblemParser
+htmlParserToProblemParser htmlParser = ProblemParser
+    { problemUrlMatches = htmlParserUrlMatches htmlParser
+    , parseProblem = runHtmlParser (parseFromHtml htmlParser)
+    }
+
+htmlParsers :: [HtmlParser]
+htmlParsers = [codeforcesParser, codeChefParser, timusParser]
 
 problemParsers :: [ProblemParser]
-problemParsers = [codeforcesParser, codeChefParser, timusParser]
+problemParsers = map htmlParserToProblemParser htmlParsers
+
+findHtmlParser :: Text -> Maybe HtmlParser
+findHtmlParser chid = find ((== chid) . chelperId) htmlParsers
 
 findProblemParser :: URL -> Maybe ProblemParser
 findProblemParser url = find (`problemUrlMatches` url) problemParsers

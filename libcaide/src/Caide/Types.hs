@@ -27,6 +27,7 @@ module Caide.Types(
     , setProp
     , caideRoot
 
+    , HtmlParser (..)
     , ProblemParser (..)
     , ContestParser (..)
     , ProgrammingLanguage (..)
@@ -86,6 +87,12 @@ data ProblemParser = ProblemParser
     , parseProblem      :: URL -> IO (Either Text (Problem, [TestCase]))
     }
 
+data HtmlParser = HtmlParser
+    { chelperId            :: Text
+    , htmlParserUrlMatches :: URL -> Bool
+    , parseFromHtml        :: Text -> Either Text (Problem, [TestCase])
+    }
+
 data ContestParser = ContestParser
     { contestUrlMatches :: URL -> Bool
     , parseContest      :: URL -> IO (Either Text [URL])
@@ -93,8 +100,7 @@ data ContestParser = ContestParser
 
 
 -- | The type encapsulating functions required to support particular target
--- programming language. The second argument to all functions is the path to directory
--- where the problem is located.
+--   programming language.
 data ProgrammingLanguage = ProgrammingLanguage
     { generateScaffold   :: ProblemID -> CaideIO ()
     , inlineCode         :: ProblemID -> CaideIO ()

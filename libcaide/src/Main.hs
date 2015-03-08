@@ -9,8 +9,6 @@ import Filesystem.Path.CurrentOS (encodeString, parent, (</>))
 import System.Environment (getArgs)
 import System.Exit (exitWith, ExitCode(ExitFailure))
 
-import Caide.Configuration (describeError)
-import Caide.Types
 import Caide.Commands (runMain)
 
 
@@ -42,14 +40,7 @@ main = do
                     putStrLn "Caide directory already initialized"
                     halt
                 -- special case for init command: pass working directory as the first parameter
-                | otherwise -> runAction caideCmd $ fromMaybe workDir caideDir
-
-runAction :: CaideIO () -> F.FilePath -> IO ()
-runAction cmd root = do
-    ret <- runInDirectory root cmd
-    case ret of
-        Left err -> putStrLn (describeError err) >> halt
-        _        -> return ()
+                | otherwise -> caideCmd $ fromMaybe workDir caideDir
 
 halt :: IO ()
 halt = exitWith $ ExitFailure 0xCA1DE

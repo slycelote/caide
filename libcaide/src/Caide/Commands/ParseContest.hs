@@ -23,7 +23,7 @@ createContest contestUrl = case findContestParser contestUrl of
             Left  err  -> throw err
             Right urls -> do
                 -- TODO thread limit depending on the host
-                results <- liftIO $ mapWithLimitedThreads 2 tryParseProblem urls
+                results <- liftIO $ mapWithLimitedThreads 1 tryParseProblem urls
                 let errors = [T.concat [url, ": ", err] | (url, Left err) <- zip urls results]
                     problems = rights results
                 forM_ (reverse problems) $ uncurry saveProblem

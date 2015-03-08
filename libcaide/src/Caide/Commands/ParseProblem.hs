@@ -78,7 +78,7 @@ createNewProblem probId probType = do
     liftIO $ T.putStrLn . T.concat $ ["Problem successfully created in folder ", probId]
 
 
-saveProblem :: Problem -> [TestCase] -> CaideIO()
+saveProblem :: Problem -> [TestCase] -> CaideIO ()
 saveProblem problem samples = do
     root <- caideRoot
 

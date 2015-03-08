@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Caide.Parsers.Codeforces (
+module Caide.Parsers.Codeforces(
       codeforcesParser
     , codeforcesContestParser
 ) where
@@ -22,10 +22,11 @@ import Caide.Types
 import Caide.Util (downloadDocument)
 
 
-codeforcesParser :: ProblemParser
-codeforcesParser = ProblemParser
-    { problemUrlMatches = isCodeForcesUrl
-    , parseProblem = doParseTagSoup
+codeforcesParser :: HtmlParser
+codeforcesParser = HtmlParser
+    { chelperId = "codeforces"
+    , htmlParserUrlMatches = isCodeForcesUrl
+    , parseFromHtml = doParse . parseTags
     }
 
 codeforcesContestParser :: ContestParser
@@ -39,45 +40,41 @@ isCodeForcesUrl url = case parseURI (T.unpack url) >>= uriAuthority of
     Nothing   -> False
     Just auth -> uriRegName auth `elem` ["codeforces.com", "www.codeforces.com", "codeforces.ru", "www.codeforces.ru"]
 
-doParseTagSoup :: URL -> IO (Either T.Text (Problem, [TestCase]))
-doParseTagSoup url = do
-    doc' <- downloadDocument url
-    case doc' of
-        Left err -> return $ Left err
-        Right cont -> do
-            let tags = parseTags cont
-                statement = dropWhile (~~/== "<div class=problem-statement>") tags
-                beforeTitleDiv = drop 1 . dropWhile (~~/== "<div class=title>") $ statement
-                title = fromTagText $ head beforeTitleDiv
-                inputDivs = sections (~~== "<div class=input>") statement
-                outputDivs = sections (~~== "<div class=output>") statement
-                replaceBr = concatMap f
-                    where f x | isTagOpenName "br" x = []
-                              | isTagCloseName "br" x = [TagText "\n"]
-                              | otherwise = [x]
+doParse :: [Tag T.Text] -> Either T.Text (Problem, [TestCase])
+doParse tags =
+    if null beforeTitleDiv
+    then Left "Couldn't parse problem statement"
+    else Right (Problem title probId probType, testCases)
+  where
+    statement = dropWhile (~~/== "<div class=problem-statement>") tags
+    beforeTitleDiv = drop 1 . dropWhile (~~/== "<div class=title>") $ statement
+    title = fromTagText $ head beforeTitleDiv
+    inputDivs = sections (~~== "<div class=input>") statement
+    outputDivs = sections (~~== "<div class=output>") statement
+    replaceBr = concatMap f
+        where f x | isTagOpenName "br" x = []
+                  | isTagCloseName "br" x = [TagText "\n"]
+                  | otherwise = [x]
 
-                extractText = innerText . replaceBr . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>")
-                inputs = map extractText inputDivs
-                outputs = map extractText outputDivs
-                testCases = zipWith TestCase inputs outputs
+    extractText = innerText . replaceBr . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>")
+    inputs = map extractText inputDivs
+    outputs = map extractText outputDivs
+    testCases = zipWith TestCase inputs outputs
 
-                -- Contest
-                sidebar = dropWhile (~/= "<div id=sidebar>") tags
-                rtable = takeWhile (~/= "</table>") . dropWhile (~~/== "<table class=rtable>") $ sidebar
-                anchors = sections (~== "<a>") rtable
-                links = map (fromAttrib "href" . head) anchors
-                allMatches = concatMap (matchAllText contestUrlRegex) links
-                contestIds = map (fst . (!1)) allMatches
+    -- Contest
+    sidebar = dropWhile (~/= "<div id=sidebar>") tags
+    rtable = takeWhile (~/= "</table>") . dropWhile (~~/== "<table class=rtable>") $ sidebar
+    anchors = sections (~== "<a>") rtable
+    links = map (fromAttrib "href" . head) anchors
+    allMatches = concatMap (matchAllText contestUrlRegex) links
+    contestIds = map (fst . (!1)) allMatches
 
-                probIdPrefix = if length contestIds == 1
-                               then T.append "cf" (head contestIds)
-                               else "cfproblem"
-                probId = T.snoc probIdPrefix (T.head title)
+    probIdPrefix = if length contestIds == 1
+                   then T.append "cf" (head contestIds)
+                   else "cfproblem"
+    probId = T.snoc probIdPrefix (T.head title)
 
-                probType = Stream StdIn StdOut
-            if null beforeTitleDiv
-                then return . Left $ "Couldn't parse problem statement"
-                else return . Right $ (Problem title probId probType, testCases)
+    probType = Stream StdIn StdOut
 
 
 contestUrlRegex :: Regex

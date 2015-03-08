@@ -4,6 +4,7 @@
 module Caide.Util(
       downloadDocument
     , mapWithLimitedThreads
+    , runHtmlParser
     , pathToText
     , tshow
     , listDir
@@ -24,7 +25,7 @@ import Network.HTTP (mkRequest, RequestMethod(GET), rspBody, rspCode, rspReason)
 import Network.URI (parseURI, uriScheme, URI)
 import System.IO.Error (catchIOError, ioeGetErrorString)
 
-import Caide.Types (URL)
+import Caide.Types
 
 
 {- | Download a URL. Return (Left errorMessage) in case of an error,
@@ -53,6 +54,16 @@ httpDownloader uri = do
     case rspCode rsp of
         (5,a,b) -> return . Left .  T.pack $ show (500 + 10*a + b) ++ " " ++ rspReason rsp
         _       -> return . Right . T.pack $ rspBody rsp
+
+
+runHtmlParser :: (T.Text -> Either T.Text (Problem, [TestCase]))
+              -> URL -> IO (Either T.Text (Problem, [TestCase]))
+runHtmlParser parser url = do
+    doc <- downloadDocument url
+    case doc of
+        Left err   -> return $ Left err
+        Right cont -> return $ parser cont
+
 
 -- TODO a more efficient algorithm
 mapWithLimitedThreads :: Int -> (a -> IO b) -> [a] -> IO [b]

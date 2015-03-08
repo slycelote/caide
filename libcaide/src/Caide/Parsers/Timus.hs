@@ -12,12 +12,12 @@ import Text.HTML.TagSoup (maybeTagText, parseTags, sections)
 import Text.HTML.TagSoup.Utils
 
 import Caide.Types
-import Caide.Util (downloadDocument)
 
-timusParser :: ProblemParser
-timusParser = ProblemParser
-    { problemUrlMatches = isTimusUrl
-    , parseProblem = doParse
+timusParser :: HtmlParser
+timusParser = HtmlParser
+    { chelperId = "timus"
+    , htmlParserUrlMatches = isTimusUrl
+    , parseFromHtml = doParse
     }
 
 isTimusUrl :: URL -> Bool
@@ -26,14 +26,11 @@ isTimusUrl url = case parseURI (T.unpack url) >>= uriAuthority of
     Just auth -> uriRegName auth == "acm.timus.ru"
 
 
-doParse :: URL -> IO (Either T.Text (Problem, [TestCase]))
-doParse url = parseTimusProblem <$> downloadDocument url
-
-parseTimusProblem :: Either T.Text T.Text -> Either T.Text (Problem, [TestCase])
-parseTimusProblem (Left err)   = Left err
-parseTimusProblem (Right cont) = if null testCases
-                                     then Left "Couldn't parse problem"
-                                     else Right problem
+doParse :: T.Text -> Either T.Text (Problem, [TestCase])
+doParse cont =
+    if null testCases
+    then Left "Couldn't parse problem"
+    else Right problem
   where
     tags = parseTags cont
 
