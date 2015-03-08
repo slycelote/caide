@@ -14,7 +14,7 @@ void solve(istream& in, ostream& out) {
 EOF
 
 # Check that testing code compiles
-g++ prob*.cpp -o /dev/null
+g++ prob*.cpp
 
 "$caide" make
 g++ submission.cpp -o submission.exe
