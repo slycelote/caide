@@ -14,7 +14,7 @@ public class Test {
             caideExeFile = Path.Combine(testDir, "caideExe.txt");
         }
         if (!File.Exists(caideExeFile)) {
-            throw new InvalidOperationException("Test must be run from either program directory or .caideproblem/test subdirectory");
+            throw new InvalidOperationException("Test must be run from either problem directory or .caideproblem/test subdirectory");
         }
         string caideExe = File.ReadAllText (caideExeFile).Trim ();
 
@@ -41,9 +41,8 @@ public class Test {
                     try {
                         Solution solution = new Solution ();
                         solution.solve (input, output);
-                    } catch (Exception e) {
-                        Console.Error.WriteLine ("Test " + testName + " threw an exception:");
-                        Console.Error.WriteLine (e.Message);
+                    } catch {
+                        Console.Error.WriteLine ("Test " + testName + " threw an exception");
                         // mark test as failed
                         File.WriteAllText (Path.Combine (testDir, testName + ".failed"), "");
                     }

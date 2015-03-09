@@ -13,21 +13,42 @@ void solve(istream& in, ostream& out) {
 }
 EOF
 
-# Check that testing code compiles
-g++ prob*.cpp
-
-"$caide" make
-g++ submission.cpp -o submission.exe
-cat <<EOF >input.txt
+cat <<EOF >case1.in
 1
 2
 3
 EOF
+
+cp case1.in input.txt
+cp case1.in case1.out
+
+
+"$caide" make
+
+# Run tests
+g++ prob*.cpp -o test.exe
+./test.exe
+
+# Run submission
+g++ submission.cpp -o submission.exe
 ./submission.exe </dev/null
 if ! diff -bBq --strip-trailing-cr input.txt output.txt ; then
     echo "C++: Output is different"
     exit 100
 fi
+
+
+"$caide" lang simplecpp
+"$caide" make
+
+# Run submission
+g++ submission.cpp -o submission.exe
+./submission.exe </dev/null
+if ! diff -bBq --strip-trailing-cr input.txt output.txt ; then
+    echo "simplecpp: Output is different"
+    exit 102
+fi
+
 
 "$caide" lang 'c#'
 cat <<EOF >prob.cs
@@ -43,10 +64,12 @@ class Solution {
 }
 EOF
 
-# Check that testing code compiles
+# Run tests
 "$CSC" -out:test.exe prob*.cs
-rm test.exe
+./test.exe
 
+
+# Run submission
 "$caide" make
 "$CSC" -out:submission.exe submission.cs
 ./submission.exe </dev/null

@@ -10,6 +10,6 @@ CAIDE=caide
 ROOT=$($CAIDE printRoot)
 PROB=$($CAIDE getstate core problem)
 
-cd "$ROOT/$PROB/.caideproblem/test"
-gdb ../../"$PROB.exe"
+cd "$ROOT/$PROB"
+gdb "$PROB.exe"
 

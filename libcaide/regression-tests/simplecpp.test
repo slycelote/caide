@@ -6,10 +6,9 @@
 cd prob
 g++ prob*.cpp -o prob.exe
 echo 1 >case1.in
-cd .caideproblem/test
-../../prob.exe
+./prob.exe
 "$caide" make
-cd ../../../
+cd ..
 compare_with after-make prob/submission.cpp prob/.caideproblem/test/report.txt
 cd prob
 g++ submission.cpp -o submission.exe
