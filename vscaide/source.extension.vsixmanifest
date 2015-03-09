@@ -6,7 +6,7 @@
     <Description>Automates certain common tasks that you do during programming competitions: parsing, running and debugging problem tests, inlining library code.</Description>
     <MoreInfo>https://github.com/slycelote/caide</MoreInfo>
     <License>LICENSE.txt</License>
-    <GettingStartedGuide>https://github.com/slycelote/caide/blob/master/vscaide/README.md</GettingStartedGuide>
+    <GettingStartedGuide>https://github.com/slycelote/caide/releases</GettingStartedGuide>
     <ReleaseNotes>https://github.com/slycelote/caide/releases</ReleaseNotes>
     <Tags>Programming contests, Contests</Tags>
   </Metadata>
@@ -19,6 +19,5 @@
   </Dependencies>
   <Assets>
     <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
-    <Asset Type="Microsoft.VisualStudio.ProjectTemplate" d:Source="File" Path="ProjectTemplates" d:TargetPath="ProjectTemplates\vscaide_vc2013_template.zip" />
   </Assets>
 </PackageManifest>

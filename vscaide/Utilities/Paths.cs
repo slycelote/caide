@@ -13,21 +13,23 @@ namespace slycelote.VsCaide.Utilities
         {
             get
             {
-                return NormalizePath(Path.Combine(Path.GetDirectoryName(typeof(Paths).Assembly.Location), ".."));
+                return Path.GetDirectoryName(typeof(Paths).Assembly.Location);
             }
         }
 
-        private static string caideExePath;
         public static string CaideExe
         {
             get
             {
-                if (caideExePath == null)
-                {
-                    var executables = Directory.EnumerateFiles(PackageInstallationDir, "caide.exe", SearchOption.AllDirectories).Take(1).ToList();
-                    caideExePath = executables.Any() ? executables[0] : null;
-                }
-                return caideExePath;
+                return Path.Combine(PackageInstallationDir, "Resources", "caide.exe");
+            }
+        }
+
+        public static string CppProjectTemplate
+        {
+            get
+            {
+                return Path.Combine(PackageInstallationDir, "Resources", "MyTemplate.vstemplate");
             }
         }
 

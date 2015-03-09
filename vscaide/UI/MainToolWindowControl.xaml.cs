@@ -178,8 +178,7 @@ namespace slycelote.VsCaide
                     if (project == null)
                     {
                         // Create the project
-                        string projectTemplate = solution.GetProjectTemplate("vscaide_vc2013_template.zip", "VC");
-                        solution.AddFromTemplate(projectTemplate, Path.Combine(solutionDir, cpplib), cpplib,
+                        solution.AddFromTemplate(Paths.CppProjectTemplate, Path.Combine(solutionDir, cpplib), cpplib,
                             Exclusive: false);
                         allProjects = solution.Projects.OfType<Project>();
                         project = allProjects.SingleOrDefault(p => p.Name == cpplib);
@@ -210,8 +209,7 @@ namespace slycelote.VsCaide
                     project = allProjects.SingleOrDefault(p => p.Name == submission);
                     if (project == null)
                     {
-                        string projectTemplate = solution.GetProjectTemplate("vscaide_vc2013_template.zip", "VC");
-                        solution.AddFromTemplate(projectTemplate,
+                        solution.AddFromTemplate(Paths.CppProjectTemplate,
                             Destination: Path.Combine(SolutionUtilities.GetSolutionDir(), submission),
                             ProjectName: submission,
                             Exclusive: false);
@@ -313,8 +311,7 @@ namespace slycelote.VsCaide
                     if (project == null)
                     {
                         // Create the project
-                        string projectTemplate = solution.GetProjectTemplate("vscaide_vc2013_template.zip", "VC");
-                        solution.AddFromTemplate(projectTemplate,
+                        solution.AddFromTemplate(Paths.CppProjectTemplate,
                             Destination: Path.Combine(SolutionUtilities.GetSolutionDir(), selectedProblem),
                             ProjectName: selectedProblem,
                             Exclusive: false);
