@@ -94,5 +94,191 @@ namespace slycelote.VsCaide.Utilities
             return solutionDir != null && File.Exists(Path.Combine(solutionDir, "caide.ini"));
         }
 
+        public static void CreateAndActivateCppProject(string selectedProblem, string language)
+        {
+            var dte = Services.DTE;
+            var solution = dte.Solution as Solution2;
+
+            var allProjects = solution.Projects.OfType<Project>();
+            var project = allProjects.SingleOrDefault(p => p.Name == selectedProblem);
+            if (project == null)
+            {
+                // Create the project
+                solution.AddFromTemplate(Paths.CppProjectTemplate,
+                    Destination: Path.Combine(SolutionUtilities.GetSolutionDir(), selectedProblem),
+                    ProjectName: selectedProblem,
+                    Exclusive: false);
+                allProjects = solution.Projects.OfType<Project>();
+                project = allProjects.SingleOrDefault(p => p.Name == selectedProblem);
+                if (project == null)
+                {
+                    Logger.LogError("Couldn't create {0} project", selectedProblem);
+                    return;
+                }
+            }
+
+            // Ensure that the project contains necessary files
+            var solutionFile = string.Format(@"{0}.cpp", selectedProblem);
+            var testFile = string.Format(@"{0}_test.cpp", selectedProblem);
+
+            foreach (var fileName in new[]{solutionFile, testFile})
+            {
+                if (!project.ProjectItems.OfType<ProjectItem>().Any(item => item.Name.Equals(fileName, StringComparison.CurrentCultureIgnoreCase)))
+                {
+                    project.ProjectItems.AddFromFile(fileName);
+                }
+            }
+
+            var vcProject = (VCProject)project.Object;
+
+            var cpplibProject = solution.Projects.OfType<Project>().SingleOrDefault(p => p.Name == "cpplib");
+            if (cpplibProject != null)
+            {
+                var references = (VSLangProj.References)vcProject.References;
+                var cpplibReference = references.OfType<VSLangProj.Reference>().SingleOrDefault(r =>
+                        r.SourceProject != null && r.SourceProject.UniqueName == cpplibProject.UniqueName);
+                if (language != "simplecpp")
+                {
+                    if (cpplibReference == null)
+                    {
+                        vcProject.AddProjectReference(cpplibProject);
+                    }
+                }
+                else
+                {
+                    if (cpplibReference != null)
+                    {
+                        cpplibReference.Remove();
+                    }
+                }
+            }
+
+            // Ensure current directory of the program debugged is correct
+            var configs = (IVCCollection)vcProject.Configurations;
+            foreach (var conf in configs.OfType<VCConfiguration>())
+            {
+                conf.OutputDirectory = @"$(ProjectDir)\$(Configuration)\";
+                var debugSettings = (VCDebugSettings)conf.DebugSettings;
+                debugSettings.WorkingDirectory = "$(ProjectDir)";
+
+                var tools = (IVCCollection)conf.Tools; 
+                var linkerTool = (VCLinkerTool)tools.Item("VCLinkerTool");
+                linkerTool.SubSystem = subSystemOption.subSystemConsole;
+
+                var compileTool = (VCCLCompilerTool)tools.Item("VCCLCompilerTool");
+                var postBuildEventTool = (VCPostBuildEventTool)tools.Item("VCPostBuildEventTool");
+
+                if (language != "simplecpp")
+                {
+                    compileTool.AdditionalIncludeDirectories = Path.Combine("$(SolutionDir)", "cpplib");
+                    postBuildEventTool.CommandLine = Paths.CaideExe + " make";
+                    postBuildEventTool.Description = "Prepare final code for submission";
+                    postBuildEventTool.ExcludedFromBuild = false;
+                }
+                else
+                {
+                    compileTool.AdditionalIncludeDirectories = "";
+                    postBuildEventTool.CommandLine = postBuildEventTool.Description = "";
+                }
+            }
+
+            SolutionUtilities.SaveSolution();
+
+            dte.Solution.SolutionBuild.StartupProjects = project.UniqueName;
+
+            var allItems = project.ProjectItems.OfType<ProjectItem>();
+            var solutionCpp = allItems.Single(i => i.Name == solutionFile);
+            var solutionCppWindow = solutionCpp.Open(EnvDTE.Constants.vsViewKindCode);
+            solutionCppWindow.Visible = true;
+            solutionCppWindow.Activate();
+        }
+
+        // Creates cpplib and submission C++ projects
+        public static void CreateGeneralCppProjects()
+        {
+            var solutionDir = GetSolutionDir();
+            const string cpplib = "cpplib";
+            var cppLibraryDir = Path.Combine(solutionDir, cpplib);
+            if (!Directory.Exists(cppLibraryDir))
+                return;
+
+            var dte = Services.DTE;
+            var solution = dte.Solution as Solution2;
+
+            var allProjects = solution.Projects.OfType<Project>();
+            var project = allProjects.SingleOrDefault(p => p.Name == cpplib);
+            VCProject vcProject;
+            if (project == null)
+            {
+                // Create the project
+                solution.AddFromTemplate(Paths.CppProjectTemplate, Path.Combine(solutionDir, cpplib), cpplib,
+                    Exclusive: false);
+                allProjects = solution.Projects.OfType<Project>();
+                project = allProjects.SingleOrDefault(p => p.Name == cpplib);
+                if (project == null)
+                {
+                    Logger.LogError("Couldn't create {0} project", cpplib);
+                    return;
+                }
+
+                // Set to static library
+                vcProject = (VCProject)project.Object;
+                var configs = (IVCCollection)vcProject.Configurations;
+                foreach (var conf in configs.OfType<VCConfiguration>())
+                {
+                    conf.ConfigurationType = ConfigurationTypes.typeStaticLibrary;
+                    conf.OutputDirectory = @"$(ProjectDir)\$(Configuration)\";
+                }
+
+            }
+
+            vcProject = (VCProject)project.Object;
+
+            // Ensure that all files from the directory are added
+            SolutionUtilities.AddDirectoryRecursively(vcProject, cppLibraryDir);
+
+            // Create 'submission' project
+            const string submission = "submission";
+            project = allProjects.SingleOrDefault(p => p.Name == submission);
+            if (project == null)
+            {
+                solution.AddFromTemplate(Paths.CppProjectTemplate,
+                    Destination: Path.Combine(SolutionUtilities.GetSolutionDir(), submission),
+                    ProjectName: submission,
+                    Exclusive: false);
+                allProjects = solution.Projects.OfType<Project>();
+                project = allProjects.SingleOrDefault(p => p.Name == submission);
+                if (project == null)
+                {
+                    Logger.LogError("Couldn't create {0} project", submission);
+                    return;
+                }
+            }
+
+            var submissionFile = Path.Combine("..", "submission.cpp");
+
+            if (!project.ProjectItems.OfType<ProjectItem>().Any(item => 
+                item.Name.Equals(submissionFile, StringComparison.CurrentCultureIgnoreCase)))
+            {
+                project.ProjectItems.AddFromFile(submissionFile);
+            }
+
+
+            vcProject = (VCProject)project.Object;
+            var submissionConfigs = (IVCCollection)vcProject.Configurations;
+            foreach (var conf in submissionConfigs.OfType<VCConfiguration>())
+            {
+                conf.OutputDirectory = @"$(ProjectDir)\$(Configuration)\";
+                var debugSettings = (VCDebugSettings)conf.DebugSettings;
+                debugSettings.WorkingDirectory = "$(ProjectDir)";
+
+                var tools = (IVCCollection)conf.Tools; 
+                var linkerTool = (VCLinkerTool)tools.Item("VCLinkerTool");
+                linkerTool.SubSystem = subSystemOption.subSystemConsole;
+            }
+
+            
+            SolutionUtilities.SaveSolution();
+        }
     }
 }

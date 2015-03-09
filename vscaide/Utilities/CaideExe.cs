@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 
 namespace slycelote.VsCaide.Utilities
 {
+    using MessageBox = System.Windows.Forms.MessageBox;
+
     internal class ReadStreamToOutputWindow
     {
         private readonly StreamReader Reader;
@@ -42,11 +44,39 @@ namespace slycelote.VsCaide.Utilities
                 catch (OperationCanceledException) { }
             });
         }
-
     }
+
     public abstract class CaideExe
     {
         public const int EXIT_CODE_TIMEOUT = -4451;
+
+        public static string Run(string[] args, bool loud = false, string solutionDir = null)
+        {
+            if (solutionDir == null)
+            {
+                solutionDir = SolutionUtilities.GetSolutionDir();
+            }
+
+            string stdout, stderr;
+            int ret = CaideExe.Execute(args, solutionDir, out stdout, out stderr);
+            if (ret != 0)
+            {
+                Logger.LogError("caide.exe error. Return code {0}\n{1}\n{2}", ret, stdout, stderr);
+                if (loud)
+                {
+                    MessageBox.Show(string.Format("caide.exe error. Return code {0}\n{1}\n{2}", ret, stdout, stderr));
+                }
+                return null;
+            }
+
+            return stdout;
+        }
+
+        public static string Run(params string[] args)
+        {
+            return Run(args, loud: false);
+        }
+
 
         public static int Execute(string[] args, string directory, out string stdout, out string stderr)
         {

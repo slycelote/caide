@@ -44,7 +44,7 @@ namespace slycelote.VsCaide
 
         private void ReloadProblemList()
         {
-            string stdout = RunCaideExe("getstate", "core", "problem");
+            string stdout = CaideExe.Run("getstate", "core", "problem");
             string currentProblem = stdout == null ? null : stdout.Trim();
 
             var problemNames = new List<string>();
@@ -101,7 +101,7 @@ namespace slycelote.VsCaide
                     solutionDir = folderBrowserDialog.SelectedPath;
                 }
 
-                if (null == RunCaideExe(new[] { "init", "--cpp-use-system-headers" }, loud: true, solutionDir: solutionDir))
+                if (null == CaideExe.Run(new[] { "init", "--cpp-use-system-headers" }, loud: true, solutionDir: solutionDir))
                 {
                     return;
                 }
@@ -161,94 +161,7 @@ namespace slycelote.VsCaide
                 windowFrame.Show();
                 ReloadProblemList();
 
-                AfterProjectsLoaded(() =>
-                {
-                    var solutionDir = SolutionUtilities.GetSolutionDir();
-                    const string cpplib = "cpplib";
-                    var cppLibraryDir = Path.Combine(solutionDir, cpplib);
-                    if (!Directory.Exists(cppLibraryDir))
-                        return;
-
-                    var dte = Services.DTE;
-                    var solution = dte.Solution as Solution2;
-
-                    var allProjects = solution.Projects.OfType<Project>();
-                    var project = allProjects.SingleOrDefault(p => p.Name == cpplib);
-                    VCProject vcProject;
-                    if (project == null)
-                    {
-                        // Create the project
-                        solution.AddFromTemplate(Paths.CppProjectTemplate, Path.Combine(solutionDir, cpplib), cpplib,
-                            Exclusive: false);
-                        allProjects = solution.Projects.OfType<Project>();
-                        project = allProjects.SingleOrDefault(p => p.Name == cpplib);
-                        if (project == null)
-                        {
-                            Logger.LogError("Couldn't create {0} project", cpplib);
-                            return;
-                        }
-
-                        // Set to static library
-                        vcProject = (VCProject)project.Object;
-                        var configs = (IVCCollection)vcProject.Configurations;
-                        foreach (var conf in configs.OfType<VCConfiguration>())
-                        {
-                            conf.ConfigurationType = ConfigurationTypes.typeStaticLibrary;
-                            conf.OutputDirectory = @"$(ProjectDir)\$(Configuration)\";
-                        }
-
-                    }
-
-                    vcProject = (VCProject)project.Object;
-
-                    // Ensure that all files from the directory are added
-                    SolutionUtilities.AddDirectoryRecursively(vcProject, cppLibraryDir);
-
-                    // Create 'submission' project
-                    const string submission = "submission";
-                    project = allProjects.SingleOrDefault(p => p.Name == submission);
-                    if (project == null)
-                    {
-                        solution.AddFromTemplate(Paths.CppProjectTemplate,
-                            Destination: Path.Combine(SolutionUtilities.GetSolutionDir(), submission),
-                            ProjectName: submission,
-                            Exclusive: false);
-                        allProjects = solution.Projects.OfType<Project>();
-                        project = allProjects.SingleOrDefault(p => p.Name == submission);
-                        if (project == null)
-                        {
-                            Logger.LogError("Couldn't create {0} project", submission);
-                            return;
-                        }
-                    }
-
-                    var submissionFile = Path.Combine("..", "submission.cpp");
-
-                    if (!project.ProjectItems.OfType<ProjectItem>().Any(item => 
-                        item.Name.Equals(submissionFile, StringComparison.CurrentCultureIgnoreCase)))
-                    {
-                        project.ProjectItems.AddFromFile(submissionFile);
-                    }
-
-
-                    vcProject = (VCProject)project.Object;
-                    var workingDirectory = "$(ProjectDir)";
-                    var submissionConfigs = (IVCCollection)vcProject.Configurations;
-                    foreach (var conf in submissionConfigs.OfType<VCConfiguration>())
-                    {
-                        conf.OutputDirectory = @"$(ProjectDir)\$(Configuration)\";
-                        var debugSettings = (VCDebugSettings)conf.DebugSettings;
-                        debugSettings.WorkingDirectory = workingDirectory;
-
-                        var tools = (IVCCollection)conf.Tools; 
-                        var linkerTool = (VCLinkerTool)tools.Item("VCLinkerTool");
-                        linkerTool.SubSystem = subSystemOption.subSystemConsole;
-                    }
-
-                    
-                    SolutionUtilities.SaveSolution();
-                });
-
+                AfterProjectsLoaded(() => SolutionUtilities.CreateGeneralCppProjects());
             }
         }
 
@@ -284,12 +197,12 @@ namespace slycelote.VsCaide
             if (string.IsNullOrEmpty(selectedProblem))
                 return;
 
-            if (null == RunCaideExe("checkout", selectedProblem))
+            if (null == CaideExe.Run("checkout", selectedProblem))
             {
                 return;
             }
 
-            string stdout = RunCaideExe("probgetstate", selectedProblem, "problem", "language");
+            string stdout = CaideExe.Run("probgetstate", selectedProblem, "problem", "language");
             if (null == stdout)
             {
                 return;
@@ -301,107 +214,8 @@ namespace slycelote.VsCaide
             string[] cppLanguages = new[] { "simplecpp", "cpp", "c++" };
             if (cppLanguages.Contains(language))
             {
-                AfterProjectsLoaded(() =>
-                {
-                    var dte = Services.DTE;
-                    var solution = dte.Solution as Solution2;
-
-                    var allProjects = solution.Projects.OfType<Project>();
-                    var project = allProjects.SingleOrDefault(p => p.Name == selectedProblem);
-                    if (project == null)
-                    {
-                        // Create the project
-                        solution.AddFromTemplate(Paths.CppProjectTemplate,
-                            Destination: Path.Combine(SolutionUtilities.GetSolutionDir(), selectedProblem),
-                            ProjectName: selectedProblem,
-                            Exclusive: false);
-                        allProjects = solution.Projects.OfType<Project>();
-                        project = allProjects.SingleOrDefault(p => p.Name == selectedProblem);
-                        if (project == null)
-                        {
-                            Logger.LogError("Couldn't create {0} project", selectedProblem);
-                            return;
-                        }
-                    }
-
-                    // Ensure that the project contains necessary files
-                    var solutionFile = string.Format(@"{0}.cpp", selectedProblem);
-                    var testFile = string.Format(@"{0}_test.cpp", selectedProblem);
-
-                    foreach (var fileName in new[]{solutionFile, testFile})
-                    {
-                        if (!project.ProjectItems.OfType<ProjectItem>().Any(item => item.Name.Equals(fileName, StringComparison.CurrentCultureIgnoreCase)))
-                        {
-                            project.ProjectItems.AddFromFile(fileName);
-                        }
-                    }
-
-                    var vcProject = (VCProject)project.Object;
-
-                    var cpplibProject = solution.Projects.OfType<Project>().SingleOrDefault(p => p.Name == "cpplib");
-                    if (cpplibProject != null)
-                    {
-                        var references = (VSLangProj.References)vcProject.References;
-                        var cpplibReference = references.OfType<VSLangProj.Reference>().SingleOrDefault(r =>
-                                r.SourceProject != null && r.SourceProject.UniqueName == cpplibProject.UniqueName);
-                        if (language != "simplecpp")
-                        {
-                            if (cpplibReference == null)
-                            {
-                                vcProject.AddProjectReference(cpplibProject);
-                            }
-                        }
-                        else
-                        {
-                            if (cpplibReference != null)
-                            {
-                                cpplibReference.Remove();
-                            }
-                        }
-                    }
-
-                    // Ensure current directory of the program debugged is correct
-                    var workingDirectory = Path.Combine("$(ProjectDir)", ".caideproblem", "test");
-                    var configs = (IVCCollection)vcProject.Configurations;
-                    foreach (var conf in configs.OfType<VCConfiguration>())
-                    {
-                        conf.OutputDirectory = @"$(ProjectDir)\$(Configuration)\";
-                        var debugSettings = (VCDebugSettings)conf.DebugSettings;
-                        debugSettings.WorkingDirectory = workingDirectory;
-
-                        var tools = (IVCCollection)conf.Tools; 
-                        var linkerTool = (VCLinkerTool)tools.Item("VCLinkerTool");
-                        linkerTool.SubSystem = subSystemOption.subSystemConsole;
-
-                        var compileTool = (VCCLCompilerTool)tools.Item("VCCLCompilerTool");
-                        var postBuildEventTool = (VCPostBuildEventTool)tools.Item("VCPostBuildEventTool");
-
-                        if (language != "simplecpp")
-                        {
-                            compileTool.AdditionalIncludeDirectories = Path.Combine("$(SolutionDir)", "cpplib");
-                            postBuildEventTool.CommandLine = Paths.CaideExe + " make";
-                            postBuildEventTool.Description = "Prepare final code for submission";
-                            postBuildEventTool.ExcludedFromBuild = false;
-                        }
-                        else
-                        {
-                            compileTool.AdditionalIncludeDirectories = "";
-                            postBuildEventTool.CommandLine = postBuildEventTool.Description = "";
-                        }
-                    }
-
-                    SolutionUtilities.SaveSolution();
-
-                    dte.Solution.SolutionBuild.StartupProjects = project.UniqueName;
-
-                    var allItems = project.ProjectItems.OfType<ProjectItem>();
-                    var solutionCpp = allItems.Single(i => i.Name == solutionFile);
-                    var solutionCppWindow = solutionCpp.Open(EnvDTE.Constants.vsViewKindCode);
-                    solutionCppWindow.Visible = true;
-                    solutionCppWindow.Activate();
-                });
+                AfterProjectsLoaded(() => SolutionUtilities.CreateAndActivateCppProject(selectedProblem, language));
             }
-
         }
 
         private void btnAddNewProblem_Click(object sender, RoutedEventArgs e)
@@ -410,7 +224,7 @@ namespace slycelote.VsCaide
             if (problemUrl == null)
                 return;
 
-            if (null == RunCaideExe(new[] { "problem", problemUrl }, loud: true))
+            if (null == CaideExe.Run(new[] { "problem", problemUrl }, loud: true))
             {
                 return;
             }
@@ -434,7 +248,7 @@ namespace slycelote.VsCaide
                 return;
             }
 
-            if (null == RunCaideExe("checkout", projectName))
+            if (null == CaideExe.Run("checkout", projectName))
             {
                 return;
             }
@@ -450,7 +264,7 @@ namespace slycelote.VsCaide
             var projectName = project.Name;
             if (IsCaideProblem(projectName))
             {
-                RunCaideExe("archive", projectName);
+                CaideExe.Run("archive", projectName);
                 ReloadProblemList();
             }
         }
@@ -470,7 +284,7 @@ namespace slycelote.VsCaide
             string url = PromptDialog.Prompt("Enter contest URL: ", "Parse contest");
             if (url == null)
                 return;
-            RunCaideExe(new[] { "contest", url }, loud: true);
+            CaideExe.Run(new[] { "contest", url }, loud: true);
             ReloadProblemList();
         }
 
@@ -484,7 +298,7 @@ namespace slycelote.VsCaide
             if (project == null)
             {
                 // A problem not tracked by VsCaide
-                RunCaideExe(new[] { "archive", currentProblem }, loud: true);
+                CaideExe.Run(new[] { "archive", currentProblem }, loud: true);
                 ReloadProblemList();
             }
             else
@@ -524,7 +338,7 @@ namespace slycelote.VsCaide
             if (!SkipLanguageChangedEvent)
             {
                 var language = (string)cbProgrammingLanguage.SelectedItem;
-                if (null == RunCaideExe(new[] { "lang", language }, loud: true))
+                if (null == CaideExe.Run(new[] { "lang", language }, loud: true))
                 {
                     var previousLanguage = (string)e.RemovedItems[0];
                     SetCurrentLanguage(previousLanguage);
@@ -532,33 +346,6 @@ namespace slycelote.VsCaide
                 }
                 UpdateCurrentProject();
             }
-        }
-
-        private static string RunCaideExe(string[] args, bool loud = false, string solutionDir = null)
-        {
-            if (solutionDir == null)
-            {
-                solutionDir = SolutionUtilities.GetSolutionDir();
-            }
-
-            string stdout, stderr;
-            int ret = CaideExe.Execute(args, solutionDir, out stdout, out stderr);
-            if (ret != 0)
-            {
-                Logger.LogError("caide.exe error. Return code {0}\n{1}\n{2}", ret, stdout, stderr);
-                if (loud)
-                {
-                    MessageBox.Show(string.Format("caide.exe error. Return code {0}\n{1}\n{2}", ret, stdout, stderr));
-                }
-                return null;
-            }
-
-            return stdout;
-        }
-
-        private static string RunCaideExe(params string[] args)
-        {
-            return RunCaideExe(args, loud: false);
         }
 
         private bool IsCaideProblem(string projectName)
