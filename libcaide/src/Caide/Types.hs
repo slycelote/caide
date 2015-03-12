@@ -58,6 +58,7 @@ import qualified Filesystem.Path.CurrentOS as F
 
 import Text.Read (readMaybe)
 
+import Filesystem.Util (readTextFile, writeTextFile)
 
 data TestCase = TestCase
     { testCaseInput  :: !Text
@@ -118,6 +119,45 @@ newtype Monad m => CaideM m a = CaideM { unCaideM :: StateT CaideState (ExceptT 
 
 type CaideIO a = CaideM IO a
 
+-- | Describes caide command requested by the user, such as `init` or `test`
+data CommandHandler = CommandHandler
+    { command      :: Text
+    , description  :: Text
+    , usage        :: Text
+    , action       :: [Text] -> CaideIO ()
+    }
+
+-- | 'Builder' result
+data BuilderResult = BuildFailed  -- ^ Build failed or program under test exited unexpectedly
+                   | TestsFailed  -- ^ Build succeeded, tests have been evaluated and failed
+                   | NoEvalTests  -- ^ Build succeeded, tests have not been evaluated
+                   | TestsPassed  -- ^ Tests succeeded
+
+-- | Builder is responsible for building the code and running test program
+type Builder = ProblemID -> CaideIO BuilderResult
+
+-- | A feature is a piece of optional functionality that may be run
+--   at certain points, depending on the configuration. A feature doesn't
+--   run by itself, but only in response to certain events.
+--   The first parameter in all functions is ID of the problem that triggered the event.
+data Feature = Feature
+    { onProblemCreated     :: ProblemID -> CaideIO ()   -- ^ Run after `caide problem`
+    , onProblemCodeCreated :: ProblemID -> CaideIO ()   -- ^ Run after `caide lang`
+    , onProblemCheckedOut  :: ProblemID -> CaideIO ()   -- ^ Run after `caide checkout`
+    , onProblemRemoved     :: ProblemID -> CaideIO ()   -- ^ Run after `caide archive`
+    }
+
+noOpFeature :: Feature
+noOpFeature =  Feature
+    { onProblemCreated     = const $ return ()
+    , onProblemCodeCreated = const $ return ()
+    , onProblemCheckedOut  = const $ return ()
+    , onProblemRemoved     = const $ return ()
+    }
+
+-- | File handle through which it's possible to access options. See 'setProp', 'getProp'
+newtype ConfigFileHandle = FileHandle F.FilePath
+
 runCaideM :: Monad m => CaideM m a -> CaideState -> m (Either C.CPError (a, CaideState))
 runCaideM caideAction p = runExceptT $ runStateT (unCaideM caideAction) p
 
@@ -130,9 +170,6 @@ runInDirectory dir caideAction = do
         Right (a, finalState) -> do
             forM_ [f | f <- M.assocs (files finalState), modified (snd f)] $ uncurry writeConfigParser
             return $ Right a
-
--- | File handle through which it's possible to access options. See 'setProp', 'getProp'
-newtype ConfigFileHandle = FileHandle F.FilePath
 
 throw :: Monad m => Text -> CaideM m a
 throw desc = throwError (C.OtherProblem $ unpack desc, "")
@@ -195,43 +232,7 @@ setProp (FileHandle path) section key value = do
             modifyWithFiles $ M.insert path newFile
 
 
--- | Describes caide command requested by the user, such as `init` or `test`
-data CommandHandler = CommandHandler
-    { command      :: Text
-    , description  :: Text
-    , usage        :: Text
-    , action       :: [Text] -> CaideIO ()
-    }
-
--- | 'Builder' result
-data BuilderResult = BuildFailed  -- ^ Build failed or program under test exited unexpectedly
-                   | TestsFailed  -- ^ Build succeeded, tests have been evaluated and failed
-                   | NoEvalTests  -- ^ Build succeeded, tests have not been evaluated
-                   | TestsPassed  -- ^ Tests succeeded
-
--- | Builder is responsible for building the code and running test program
-type Builder = ProblemID -> CaideIO BuilderResult
-
--- | A feature is a piece of optional functionality that may be run
---   at certain points, depending on the configuration. A feature doesn't
---   run by itself, but only in response to certain events.
---   The first parameter in all functions is ID of the problem that triggered the event.
-data Feature = Feature
-    { onProblemCreated     :: ProblemID -> CaideIO ()   -- ^ Run after `caide problem`
-    , onProblemCodeCreated :: ProblemID -> CaideIO ()   -- ^ Run after `caide lang`
-    , onProblemCheckedOut  :: ProblemID -> CaideIO ()   -- ^ Run after `caide checkout`
-    , onProblemRemoved     :: ProblemID -> CaideIO ()   -- ^ Run after `caide archive`
-    }
-
-noOpFeature :: Feature
-noOpFeature =  Feature
-    { onProblemCreated     = const $ return ()
-    , onProblemCodeCreated = const $ return ()
-    , onProblemCheckedOut  = const $ return ()
-    , onProblemRemoved     = const $ return ()
-    }
-
-{------------------ Implementation ---------------------}
+{------------------ Internals ---------------------}
 
 instance Option Bool where
     optionToString False = "no"
@@ -280,16 +281,16 @@ data CaideState = CaideState
 
 
 -- Convert deprecated ErrorT style to ExceptT
-convertToCaideIO :: IO (Either C.CPError a) -> CaideIO a
-convertToCaideIO act = liftIO act >>= convertToCaide
-
--- Convert deprecated ErrorT style to ExceptT
 convertToCaide :: Monad m => Either C.CPError a -> CaideM m a
 convertToCaide (Left err) = throwError err
 convertToCaide (Right a)  = return a
 
 readConfigFile :: F.FilePath -> CaideIO C.ConfigParser
-readConfigFile filePath = convertToCaideIO $ C.readfile C.emptyCP (F.encodeString filePath)
+readConfigFile filePath = do
+    fileReadResult <- liftIO $ readTextFile filePath
+    case fileReadResult of
+        Left err   -> throw err
+        Right text -> convertToCaide $ C.readstring C.emptyCP $ T.unpack text
 
 modifyWithFiles :: Monad m =>
                    (Map F.FilePath ConfigInMemory -> Map F.FilePath ConfigInMemory)
@@ -299,7 +300,7 @@ modifyWithFiles f = modify' $ \s -> s{files = f (files s)}
 writeConfigParser :: F.FilePath -> ConfigInMemory -> IO ()
 writeConfigParser file cp = do
     F.createTree $ F.directory file
-    F.writeTextFile file . pack . C.to_string $ configParser cp
+    writeTextFile file . pack . C.to_string $ configParser cp
 
 toText :: F.FilePath -> Text
 toText path = case F.toText path of

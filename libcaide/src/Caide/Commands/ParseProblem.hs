@@ -8,7 +8,7 @@ import Control.Monad (forM_, when)
 import Control.Monad.State (liftIO)
 import Data.Char (isAlphaNum, isAscii)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import qualified Data.Text.IO.Util as T
 
 import Filesystem (createDirectory, createTree, writeTextFile, isDirectory)
 import Filesystem.Path.CurrentOS (fromText, decodeString, (</>))

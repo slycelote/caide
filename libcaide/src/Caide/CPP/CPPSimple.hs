@@ -8,13 +8,15 @@ import Control.Monad.State (liftIO)
 
 import qualified Data.Text as T
 
-import Filesystem (appendTextFile, copyFile, readTextFile, writeTextFile, isFile)
+import Filesystem (copyFile, isFile)
+import Filesystem.Util (appendTextFile, writeTextFile)
 import Filesystem.Path ((</>))
 import Filesystem.Path.CurrentOS (fromText)
 
 import Caide.Configuration (readProblemConfig)
 import Caide.Types
-import Caide.Util (pathToText)
+import Caide.Util (pathToText, readTextFile')
+
 
 language :: ProgrammingLanguage
 language = ProgrammingLanguage
@@ -44,15 +46,18 @@ generateCPPScaffold probID = do
             Stream _ (FileOutput fileName) -> [T.concat ["const char* CAIDE_OUT_FILE = \"", pathToText fileName, "\";"]]
             _ -> []
 
+    mainFileExists <- liftIO $ isFile mainProgramPath
+    unless mainFileExists $ do
+        mainTemplate <- readTextFile' mainTemplatePath
+        liftIO $ writeTextFile mainProgramPath $
+                T.unlines $ inputPreamble ++ outputPreamble ++ [mainTemplate]
+
     liftIO $ do
         solutionFileExists <- isFile scaffoldPath
         unless solutionFileExists $ copyFile scaffoldTemplatePath scaffoldPath
         testFileExists <- isFile testProgramPath
         unless testFileExists $ copyFile testTemplatePath testProgramPath
-        mainFileExists <- isFile mainProgramPath
-        unless mainFileExists $ do
-            mainTemplate <- readTextFile mainTemplatePath
-            writeTextFile mainProgramPath $ T.unlines $ inputPreamble ++ outputPreamble ++ [mainTemplate]
+
 
 inlineCPPCode :: ProblemID -> CaideIO ()
 inlineCPPCode probID = do
@@ -61,9 +66,11 @@ inlineCPPCode probID = do
         solutionPath = problemDir </> fromText (T.append probID ".cpp")
         inlinedCodePath = problemDir </> "submission.cpp"
         mainProgramPath = problemDir </> "main.cpp"
+
+    mainCode <- readTextFile' mainProgramPath
     liftIO $ do
         copyFile solutionPath inlinedCodePath
-        mainCode <- readTextFile mainProgramPath
         appendTextFile inlinedCodePath mainCode
         copyFile inlinedCodePath $ root </> "submission.cpp"
+
 

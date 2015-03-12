@@ -16,7 +16,7 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Text.Read as TextRead
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import qualified Data.Text.IO.Util as T
 
 import Prelude hiding (FilePath)
 import Filesystem (listDirectory, readTextFile, writeTextFile)

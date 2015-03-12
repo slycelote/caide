@@ -5,7 +5,7 @@ module Caide.Builders.Custom(
 
 import Control.Monad.State (liftIO)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import qualified Data.Text.IO.Util as T
 
 import Filesystem.Path ((</>))
 import Filesystem.Path.CurrentOS (encodeString, fromText)

@@ -9,20 +9,21 @@ import Control.Monad.State (liftIO)
 import qualified Data.Text as T
 
 import Prelude hiding (FilePath)
-import Filesystem (copyFile, readTextFile, writeTextFile, isDirectory)
+import Filesystem (copyFile, isDirectory)
 import Filesystem.Path.CurrentOS (fromText)
 import Filesystem.Path ((</>), FilePath, hasExtension)
 
 import Text.Regex.TDFA.Text (Regex)
 import Text.Regex.Base.RegexLike (makeRegex, match)
 
+import Filesystem.Util (writeTextFile)
 
 import qualified Caide.CPP.CPPSimple as CPPSimple
 
 import Caide.Configuration (readCaideConf, withDefault)
 import Caide.CPP.CBinding
 import Caide.Types
-import Caide.Util (listDir, tshow)
+import Caide.Util (listDir, readTextFile', tshow)
 
 
 language :: ProgrammingLanguage
@@ -53,7 +54,7 @@ inlineCPPCode probID = do
     when (retInliner /= 0) $
         throw $ T.concat ["C++ library code inliner failed with error code ", tshow retInliner]
 
-    liftIO $ removePragmaOnceFromFile inlinedCodePath inlinedNoPragmaOnceCodePath
+    removePragmaOnceFromFile inlinedCodePath inlinedNoPragmaOnceCodePath
 
     retOptimizer1 <- liftIO $ removeUnusedCode inlinedNoPragmaOnceCodePath cmdLineOptions macrosToKeep optimizedPass1Path
     when (retOptimizer1 /= 0) $
@@ -72,9 +73,10 @@ listDirectoryRecursively dir = do
     recList <- concat <$> mapM listDirectoryRecursively dirs
     return $ files ++ recList
 
-removePragmaOnceFromFile :: FilePath -> FilePath -> IO ()
-removePragmaOnceFromFile inputPath outputPath =
-    readTextFile inputPath >>= writeTextFile outputPath . removePragmaOnce
+removePragmaOnceFromFile :: FilePath -> FilePath -> CaideIO ()
+removePragmaOnceFromFile inputPath outputPath = do
+    contents <- readTextFile' inputPath
+    liftIO $ writeTextFile outputPath $ removePragmaOnce contents
 
 pragmaOnceRegex :: Regex
 pragmaOnceRegex = makeRegex ("^[[:space:]]*#[[:space:]]*pragma[[:space:]]+once[[:space:]]*$" :: T.Text)

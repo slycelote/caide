@@ -8,14 +8,15 @@ import Control.Monad.State (liftIO)
 
 import qualified Data.Text as T
 
-import Filesystem (appendTextFile, copyFile, readTextFile, writeTextFile, isFile)
+import Filesystem (copyFile, isFile)
+import Filesystem.Util (appendTextFile, writeTextFile)
 import qualified Filesystem.Path as F
 import Filesystem.Path ((</>))
 import Filesystem.Path.CurrentOS (fromText)
 
 import Caide.Configuration (readProblemConfig)
 import Caide.Types
-import Caide.Util (pathToText)
+import Caide.Util (pathToText, readTextFile')
 
 
 language :: ProgrammingLanguage
@@ -49,15 +50,17 @@ generateCSharpScaffold probID = do
             then ""
             else T.unlines ["class CaideConstants {", inputPreamble, outputPreamble, "}"]
 
+    mainFileExists <- liftIO $ isFile mainProgramPath
+    unless mainFileExists $ do
+        mainTemplate <- readTextFile' mainTemplatePath
+        liftIO $ writeTextFile mainProgramPath $ T.append caideConstants mainTemplate
+
     liftIO $ do
         solutionFileExists <- isFile scaffoldPath
         unless solutionFileExists $ copyFile scaffoldTemplatePath scaffoldPath
         testFileExists <- isFile testProgramPath
         unless testFileExists $ copyFile testTemplatePath testProgramPath
-        mainFileExists <- isFile mainProgramPath
-        unless mainFileExists $ do
-            mainTemplate <- readTextFile mainTemplatePath
-            writeTextFile mainProgramPath $ T.append caideConstants mainTemplate
+
 
 inlineCSharpCode :: ProblemID -> CaideIO ()
 inlineCSharpCode probID = do
@@ -66,9 +69,10 @@ inlineCSharpCode probID = do
         solutionPath = problemDir </> fromText (T.append probID ".cs")
         mainProgramPath = problemDir </> "main.cs"
         inlinedCodePath = problemDir </> "submission.cs"
+
+    mainCode <- readTextFile' mainProgramPath
     liftIO $ do
         copyFile solutionPath inlinedCodePath
-        mainCode <- readTextFile mainProgramPath
         appendTextFile inlinedCodePath mainCode
         copyFile inlinedCodePath $ root </> "submission.cs"
 

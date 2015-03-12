@@ -9,7 +9,7 @@ import Control.Monad.State (liftIO)
 import Data.Maybe (mapMaybe)
 
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import qualified Data.Text.IO.Util as T
 
 import Filesystem (isDirectory)
 import Filesystem.Path.CurrentOS (fromText, (</>))

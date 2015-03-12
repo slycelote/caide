@@ -7,12 +7,15 @@ module Caide.Commands.CHelperHttpServer(
 import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent (forkIO, killThread)
 import Control.Monad (void)
+import qualified Data.ByteString as BS
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
 import qualified Filesystem.Path as F
 import Network
 import System.IO (hClose)
 import System.IO.Error (tryIOError)
+
+import Data.Text.Encoding.Util (tryDecodeUtf8)
+import qualified Data.Text.IO.Util as T
 
 import Caide.Configuration (describeError, setActiveProblem)
 import Caide.Commands.ParseProblem (saveProblem)
@@ -32,15 +35,19 @@ runHttpServer root = withSocketsDo $ do
 processRequest :: Socket -> F.FilePath -> IO ()
 processRequest sock root = void . tryIOError $ do
     (h, _, _) <- accept sock
-    cont <- T.hGetContents h
-    let body = drop 1 . dropWhile (not . T.null . T.strip) $ T.lines cont
-        chid = T.strip $ head body
-        page = T.unlines $ drop 1 body
-    T.length page `seq` hClose h
+    decoded <- tryDecodeUtf8 <$> BS.hGetContents h
+    case decoded of
+        Left err -> T.putStrLn . T.concat $ ["Invalid request: ", err]
+        Right cont -> do
+            let body = drop 1 . dropWhile (not . T.null . T.strip) $ T.lines cont
+                chid = T.strip $ head body
+                page = T.unlines $ drop 1 body
 
-    if null body
-    then putStrLn "Invalid request!"
-    else process chid page root
+            T.length page `seq` hClose h
+
+            if null body
+            then putStrLn "Invalid request!"
+            else process chid page root
 
 
 process :: T.Text -> T.Text -> F.FilePath -> IO ()

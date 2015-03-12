@@ -12,7 +12,7 @@ import Control.Monad.State (liftIO)
 import Data.List ((\\), sort)
 import Data.Maybe (catMaybes)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import qualified Data.Text.IO.Util as T
 
 import Filesystem (isFile, readTextFile, writeTextFile, listDirectory, createDirectory)
 import Filesystem.Path.CurrentOS (fromText, decodeString, encodeString)

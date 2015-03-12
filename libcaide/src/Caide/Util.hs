@@ -10,50 +10,21 @@ module Caide.Util(
     , listDir
     , copyFileToDir
     , copyTreeToDir
+    , readTextFile'
 ) where
 
 import Control.Concurrent.Async (mapConcurrently)
 import Control.Monad (forM_)
-import Data.Maybe (isNothing)
+import Control.Monad.State (liftIO)
 import qualified Data.Text as T
 import Filesystem (copyFile, listDirectory, isFile, isDirectory, createDirectory)
 import qualified Filesystem.Path as F
 import Filesystem.Path (basename, filename, (</>))
 import Filesystem.Path.CurrentOS (toText)
-import Network.Browser (browse, request, setAllowRedirects, setMaxErrorRetries, setOutHandler)
-import Network.HTTP (mkRequest, RequestMethod(GET), rspBody, rspCode, rspReason)
-import Network.URI (parseURI, uriScheme, URI)
-import System.IO.Error (catchIOError, ioeGetErrorString)
 
+import Filesystem.Util (readTextFile)
+import Network.HTTP.Util (downloadDocument)
 import Caide.Types
-
-
-{- | Download a URL. Return (Left errorMessage) in case of an error,
-     (Right doc) in case of success.
--}
-downloadDocument :: URL -> IO (Either T.Text T.Text)
-downloadDocument url
-    | isNothing maybeUri        = mkLiftedError "URL not supported"
-    | "http:" == uriScheme uri  = result
-    | otherwise                 = mkLiftedError "URL not supported"
-  where
-    maybeUri = parseURI $ T.unpack url
-    Just uri = maybeUri
-    mkLiftedError = return . Left
-    errorHandler = mkLiftedError . T.pack . ioeGetErrorString
-    result = httpDownloader uri `catchIOError` errorHandler
-
-httpDownloader :: URI -> IO (Either T.Text T.Text)
-httpDownloader uri = do
-    (_, rsp) <- browse $ do
-        -- setErrHandler $ const $ return ()
-        setOutHandler $ const $ return ()
-        setAllowRedirects True
-        setMaxErrorRetries $ Just 5
-        request $ mkRequest GET uri
-    case rspCode rsp of
-        (5,a,b) -> return . Left .  T.pack $ show (500 + 10*a + b) ++ " " ++ rspReason rsp
-        _       -> return . Right . T.pack $ rspBody rsp
 
 
 runHtmlParser :: (T.Text -> Either T.Text (Problem, [TestCase]))
@@ -103,4 +74,13 @@ copyTreeToDir srcTree dstDir = do
     (files, dirs) <- listDir srcTree
     forM_ files $ \file -> copyFileToDir file targetDir
     forM_ dirs $ \dir -> copyTreeToDir dir targetDir
+
+
+readTextFile' :: F.FilePath -> CaideIO T.Text
+readTextFile' filePath = do
+    contents <- liftIO $ readTextFile filePath
+    case contents of
+        Left err   -> throw err
+        Right cont -> return cont
+
 
