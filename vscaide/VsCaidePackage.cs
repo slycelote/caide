@@ -180,7 +180,7 @@ namespace slycelote.VsCaide
         {
             try
             {
-                if (fRemoved != 0 && pHierarchy != unloadingProjectHier)
+                if (fRemoved != 0 && pHierarchy != unloadingProjectHier && !SolutionUtilities.IgnoreSolutionEvents)
                 {
                     LocateMainToolWindow().Control.Project_Removed(pHierarchy);
                 }
@@ -231,7 +231,7 @@ namespace slycelote.VsCaide
 
         public int OnElementValueChanged(uint elementid, object varValueOld, object varValueNew)
         {
-            if (elementid == (uint)VSConstants.VSSELELEMID.SEID_StartupProject)
+            if (elementid == (uint)VSConstants.VSSELELEMID.SEID_StartupProject && !SolutionUtilities.IgnoreSolutionEvents)
             {
                 var newStartupProjectHierarchy = (IVsHierarchy)varValueNew;
                 LocateMainToolWindow().Control.StartupProject_Changed(newStartupProjectHierarchy);

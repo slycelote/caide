@@ -29,9 +29,29 @@ namespace slycelote.VsCaide.Utilities
         {
             get
             {
-                return Path.Combine(PackageInstallationDir, "Resources", "MyTemplate.vstemplate");
+                return Path.Combine(PackageInstallationDir, "Resources", "CppTemplate.vstemplate");
             }
         }
+
+        public static string CSharpProjectTemplate
+        {
+            get
+            {
+                if (!cSharpTemplateProcessed)
+                {
+                    var csProj = Path.Combine(PackageInstallationDir, "Resources", "vscaide_vc2013_template.csproj");
+                    var template = File.ReadAllText(csProj);
+                    var newTemplate = template.Replace("CAIDE_EXE", Paths.CaideExe);
+                    if (newTemplate != template)
+                    {
+                        File.WriteAllText(csProj, newTemplate);
+                    }
+                    cSharpTemplateProcessed = true;
+                }
+                return Path.Combine(PackageInstallationDir, "Resources", "CsTemplate.vstemplate");
+            }
+        }
+        private static bool cSharpTemplateProcessed = false;
 
         public static string NormalizePath(string path)
         {

@@ -19,6 +19,9 @@
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>Key.snk</AssemblyOriginatorKeyFile>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <StartAction>Program</StartAction>
+    <StartProgram>$(DevEnvDir)\devenv.exe</StartProgram>
+    <StartArguments>/rootsuffix Exp</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -69,7 +72,7 @@
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="VSLangProj, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
     <Reference Include="WindowsBase" />
     <Reference Include="System.Xaml" />
@@ -151,6 +154,7 @@
     </Compile>
     <Compile Include="Utilities\CaideException.cs" />
     <Compile Include="Utilities\CaideExe.cs" />
+    <Compile Include="Utilities\FileUtility.cs" />
     <Compile Include="Utilities\Logger.cs" />
     <Compile Include="Utilities\Paths.cs" />
     <Compile Include="Utilities\Services.cs" />
@@ -179,13 +183,20 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
+    <Content Include="Resources\CsTemplate.vstemplate">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Resources\vscaide_vc2013_template.csproj">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <SubType>Designer</SubType>
+    </Content>
     <Content Include="Resources\vscaide_vc2013_template.vcxproj">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
-    <Content Include="Resources\MyTemplate.vstemplate">
+    <Content Include="Resources\CppTemplate.vstemplate">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <Content Include="Resources\__TemplateIcon.ico">

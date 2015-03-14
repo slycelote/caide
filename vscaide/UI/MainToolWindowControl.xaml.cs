@@ -37,6 +37,7 @@ namespace slycelote.VsCaide
             SkipLanguageChangedEvent = true;
             cbProgrammingLanguage.Items.Add("c++");
             cbProgrammingLanguage.Items.Add("simplecpp");
+            cbProgrammingLanguage.Items.Add("c#");
             SkipLanguageChangedEvent = false;
             EnableAll(false);
             this.mainToolWindow = owner;
@@ -165,7 +166,7 @@ namespace slycelote.VsCaide
                 windowFrame.Show();
                 ReloadProblemList();
 
-                AfterProjectsLoaded(() => SolutionUtilities.CreateGeneralCppProjects());
+                AfterProjectsLoaded(() => SolutionUtilities.CreateCppLibProject());
             }
         }
 
@@ -216,9 +217,14 @@ namespace slycelote.VsCaide
             SetCurrentLanguage(language);
 
             string[] cppLanguages = new[] { "simplecpp", "cpp", "c++" };
+            string[] csLanguages = new[] { "c#", "csharp" };
             if (cppLanguages.Contains(language))
             {
                 AfterProjectsLoaded(() => SolutionUtilities.CreateAndActivateCppProject(selectedProblem, language));
+            }
+            else if (csLanguages.Contains(language))
+            {
+                AfterProjectsLoaded(() => SolutionUtilities.CreateAndActivateCSharpProject(selectedProblem));
             }
         }
 

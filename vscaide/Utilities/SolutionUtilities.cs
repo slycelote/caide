@@ -1,5 +1,6 @@
 ﻿using EnvDTE;
 using EnvDTE80;
+using VSLangProj;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.VCProjectEngine;
@@ -9,11 +10,15 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace slycelote.VsCaide.Utilities
 {
     public abstract class SolutionUtilities
     {
+        public static volatile bool IgnoreSolutionEvents = false;
+
+
         public static void AddDirectoryRecursively(VCProject vcProject, string directory)
         {
             var requiredDirectories = new HashSet<string>(
@@ -94,28 +99,122 @@ namespace slycelote.VsCaide.Utilities
             return solutionDir != null && File.Exists(Path.Combine(solutionDir, "caide.ini"));
         }
 
-        public static void CreateAndActivateCppProject(string selectedProblem, string language)
+        private static Project RecreateProjectOfCorrectType(string projectName, ProjectType projectType)
         {
             var dte = Services.DTE;
             var solution = dte.Solution as Solution2;
+            var solutionDir = SolutionUtilities.GetSolutionDir();
+            var projectDir = Path.Combine(solutionDir, projectName);
 
             var allProjects = solution.Projects.OfType<Project>();
-            var project = allProjects.SingleOrDefault(p => p.Name == selectedProblem);
-            if (project == null)
+            var project = allProjects.SingleOrDefault(p => p.Name == projectName);
+            string tempDir = null;
+            try
             {
-                // Create the project
-                solution.AddFromTemplate(Paths.CppProjectTemplate,
-                    Destination: Path.Combine(SolutionUtilities.GetSolutionDir(), selectedProblem),
-                    ProjectName: selectedProblem,
-                    Exclusive: false);
-                allProjects = solution.Projects.OfType<Project>();
-                project = allProjects.SingleOrDefault(p => p.Name == selectedProblem);
+                if (project != null && !projectType.Belongs(project))
+                {
+                    tempDir = Path.Combine(Path.GetTempPath(), "vscaide", projectName);
+                    if (Directory.Exists(tempDir))
+                    {
+                        Directory.Delete(tempDir, recursive: true);
+                        //FileUtility.RemoveFiles(tempDir);
+                    }
+
+                    // Don't keep VS files
+                    var filesToDelete = new[] { ".vcproj", ".vcxproj", ".csproj", ".user", ".exe", ".pdb" };
+                    var foldersToDelete = new[] { "obj", "Release", "Debug" };
+                    Func<FileInfo, bool> filter = fi =>
+                        foldersToDelete.Any(f => fi.FullName.StartsWith(Path.Combine(projectDir, f), StringComparison.CurrentCultureIgnoreCase)) ||
+                        !filesToDelete.Contains(fi.Extension, StringComparer.CurrentCultureIgnoreCase);
+
+                    FileUtility.DirectoryCopy(projectDir, tempDir, copySubDirs: true, fileFilter: filter);
+
+                    IgnoreSolutionEvents = true;
+                    try
+                    {
+                        solution.Remove(project);
+                    }
+                    finally
+                    {
+                        IgnoreSolutionEvents = false;
+                    }
+                    project = null;
+                }
+
                 if (project == null)
                 {
-                    Logger.LogError("Couldn't create {0} project", selectedProblem);
-                    return;
+                    // Create the project
+                    if (projectType.RequiresEmptyDirectoryForCreation)
+                    {
+                        FileUtility.RemoveFiles(projectDir);
+                    }
+                    solution.AddFromTemplate(projectType.ProjectTemplate,
+                        Destination: Path.Combine(SolutionUtilities.GetSolutionDir(), projectName),
+                        ProjectName: projectName,
+                        Exclusive: false);
+
+                    allProjects = solution.Projects.OfType<Project>();
+                    project = allProjects.SingleOrDefault(p => p.Name == projectName);
+                    if (project == null)
+                    {
+                        Logger.LogError("Couldn't create {0} project", projectName);
+                    }
                 }
             }
+            finally
+            {
+                if (tempDir != null)
+                {
+                    FileUtility.DirectoryCopy(tempDir, projectDir, copySubDirs: true, fileFilter: null);
+                    Directory.Delete(tempDir, recursive: true);
+                }
+            }
+
+            return project;
+        }
+
+        public static void CreateAndActivateCSharpProject(string selectedProblem)
+        {
+            Project project = RecreateProjectOfCorrectType(selectedProblem, CSharpProjectType);
+            if (project == null)
+            {
+                return;
+            }
+
+            var vsProject = (VSProject)project.Object;
+
+            // Ensure that the project contains necessary files
+            var solutionFile = string.Format(@"{0}.cs", selectedProblem);
+            var testFile = string.Format(@"{0}_test.cs", selectedProblem);
+
+            var solutionDir = SolutionUtilities.GetSolutionDir();
+            var projectDir = Path.Combine(solutionDir, selectedProblem);
+            foreach (var fileName in new[]{solutionFile, testFile})
+            {
+                if (!project.ProjectItems.OfType<ProjectItem>().Any(item => item.Name.Equals(fileName, StringComparison.CurrentCultureIgnoreCase)))
+                {
+                    project.ProjectItems.AddFromFile(Path.Combine(projectDir, fileName));
+                }
+            }
+
+            var dte = Services.DTE;
+
+            dte.Solution.SolutionBuild.StartupProjects = project.UniqueName;
+
+            var allItems = project.ProjectItems.OfType<ProjectItem>();
+            var solutionCs = allItems.Single(i => i.Name == solutionFile);
+            var solutionCsWindow = solutionCs.Open(EnvDTE.Constants.vsViewKindCode);
+            solutionCsWindow.Visible = true;
+            solutionCsWindow.Activate();
+
+            CreateSubmissionCsProject();
+
+            SolutionUtilities.SaveSolution();
+        }
+
+        public static void CreateAndActivateCppProject(string selectedProblem, string language)
+        {
+            Project project = RecreateProjectOfCorrectType(selectedProblem, CppProjectType);
 
             // Ensure that the project contains necessary files
             var solutionFile = string.Format(@"{0}.cpp", selectedProblem);
@@ -130,6 +229,9 @@ namespace slycelote.VsCaide.Utilities
             }
 
             var vcProject = (VCProject)project.Object;
+
+            var dte = Services.DTE;
+            var solution = dte.Solution as Solution2;
 
             var cpplibProject = solution.Projects.OfType<Project>().SingleOrDefault(p => p.Name == "cpplib");
             if (cpplibProject != null)
@@ -168,21 +270,19 @@ namespace slycelote.VsCaide.Utilities
                 var compileTool = (VCCLCompilerTool)tools.Item("VCCLCompilerTool");
                 var postBuildEventTool = (VCPostBuildEventTool)tools.Item("VCPostBuildEventTool");
 
+                postBuildEventTool.CommandLine = Paths.CaideExe + " make";
+                postBuildEventTool.Description = "Prepare final code for submission";
+                postBuildEventTool.ExcludedFromBuild = false;
+
                 if (language != "simplecpp")
                 {
                     compileTool.AdditionalIncludeDirectories = Path.Combine("$(SolutionDir)", "cpplib");
-                    postBuildEventTool.CommandLine = Paths.CaideExe + " make";
-                    postBuildEventTool.Description = "Prepare final code for submission";
-                    postBuildEventTool.ExcludedFromBuild = false;
                 }
                 else
                 {
                     compileTool.AdditionalIncludeDirectories = "";
-                    postBuildEventTool.CommandLine = postBuildEventTool.Description = "";
                 }
             }
-
-            SolutionUtilities.SaveSolution();
 
             dte.Solution.SolutionBuild.StartupProjects = project.UniqueName;
 
@@ -191,10 +291,13 @@ namespace slycelote.VsCaide.Utilities
             var solutionCppWindow = solutionCpp.Open(EnvDTE.Constants.vsViewKindCode);
             solutionCppWindow.Visible = true;
             solutionCppWindow.Activate();
+
+            CreateSubmissionCppProject();
+
+            SolutionUtilities.SaveSolution();
         }
 
-        // Creates cpplib and submission C++ projects
-        public static void CreateGeneralCppProjects()
+        public static void CreateCppLibProject()
         {
             var solutionDir = GetSolutionDir();
             const string cpplib = "cpplib";
@@ -207,6 +310,7 @@ namespace slycelote.VsCaide.Utilities
 
             var allProjects = solution.Projects.OfType<Project>();
             var project = allProjects.SingleOrDefault(p => p.Name == cpplib);
+
             VCProject vcProject;
             if (project == null)
             {
@@ -237,34 +341,22 @@ namespace slycelote.VsCaide.Utilities
             // Ensure that all files from the directory are added
             SolutionUtilities.AddDirectoryRecursively(vcProject, cppLibraryDir);
 
-            // Create 'submission' project
-            const string submission = "submission";
-            project = allProjects.SingleOrDefault(p => p.Name == submission);
-            if (project == null)
-            {
-                solution.AddFromTemplate(Paths.CppProjectTemplate,
-                    Destination: Path.Combine(SolutionUtilities.GetSolutionDir(), submission),
-                    ProjectName: submission,
-                    Exclusive: false);
-                allProjects = solution.Projects.OfType<Project>();
-                project = allProjects.SingleOrDefault(p => p.Name == submission);
-                if (project == null)
-                {
-                    Logger.LogError("Couldn't create {0} project", submission);
-                    return;
-                }
-            }
+            SolutionUtilities.SaveSolution();
+        }
+
+        public static void CreateSubmissionCppProject()
+        {
+            Project project = RecreateProjectOfCorrectType("submission", CppProjectType);
 
             var submissionFile = Path.Combine("..", "submission.cpp");
 
             if (!project.ProjectItems.OfType<ProjectItem>().Any(item => 
-                item.Name.Equals(submissionFile, StringComparison.CurrentCultureIgnoreCase)))
+                submissionFile.Equals(item.Name, StringComparison.CurrentCultureIgnoreCase)))
             {
                 project.ProjectItems.AddFromFile(submissionFile);
             }
 
-
-            vcProject = (VCProject)project.Object;
+            var vcProject = (VCProject)project.Object;
             var submissionConfigs = (IVCCollection)vcProject.Configurations;
             foreach (var conf in submissionConfigs.OfType<VCConfiguration>())
             {
@@ -276,9 +368,46 @@ namespace slycelote.VsCaide.Utilities
                 var linkerTool = (VCLinkerTool)tools.Item("VCLinkerTool");
                 linkerTool.SubSystem = subSystemOption.subSystemConsole;
             }
-
-            
-            SolutionUtilities.SaveSolution();
         }
+
+        public static void CreateSubmissionCsProject()
+        {
+            Project project = RecreateProjectOfCorrectType("submission", CSharpProjectType);
+
+            // Create submission.cs file if it's missing.
+            var submissionCs = Path.Combine(SolutionUtilities.GetSolutionDir(), "submission.cs");
+            if (!File.Exists(submissionCs))
+            {
+                File.WriteAllText(submissionCs, "");
+            }
+
+            if (!project.ProjectItems.OfType<ProjectItem>().Any(item => 
+                "submission.cs".Equals(item.Name, StringComparison.CurrentCultureIgnoreCase)))
+            {
+                project.ProjectItems.AddFromFile(submissionCs);
+            }
+        }
+
+        private readonly static ProjectType CSharpProjectType = new ProjectType
+        {
+            Belongs = p => p.Kind == PrjKind.prjKindCSharpProject,
+            ProjectTemplate = Paths.CSharpProjectTemplate,
+            RequiresEmptyDirectoryForCreation = true,
+        };
+
+        private readonly static ProjectType CppProjectType = new ProjectType
+        {
+            Belongs = p => p.Object is VCProject,
+            ProjectTemplate = Paths.CppProjectTemplate,
+            RequiresEmptyDirectoryForCreation = false,
+        };
+
+    }
+
+    internal class ProjectType
+    {
+        public Func<Project, bool> Belongs {get;set;}
+        public string ProjectTemplate {get;set;}
+        public bool RequiresEmptyDirectoryForCreation { get; set; }
     }
 }
