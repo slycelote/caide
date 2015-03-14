@@ -19,7 +19,7 @@ import Caide.Commands.Checkout (checkoutProblem)
 import Caide.Configuration (getActiveProblem, getFeatures)
 import Caide.Registry (findFeature)
 import Caide.Types
-import Caide.Util (copyTreeToDir, copyFileToDir, listDir, pathToText)
+import Caide.Util (copyTreeToDir, copyFileToDir, listDir, pathToText, tshow)
 
 
 archiveProblem :: ProblemID -> CaideIO ()
@@ -33,12 +33,10 @@ archiveProblem probId = do
     -- Prepare archive directory
     now <- liftIO getZonedTime
     let formattedDate = formatTime defaultTimeLocale "%F" now
-        archiveDir = root </> "caide_archive" </> decodeString formattedDate </> fromText probId
-    archiveDirExists <- liftIO $ isDirectory archiveDir
-    when archiveDirExists $ throw . T.concat $
-        ["Archive directory for this problem already exists: ", pathToText archiveDir]
+        archiveDirToday = root </> "caide_archive" </> decodeString formattedDate
 
     liftIO $ do
+        archiveDir <- appendNumberIfExists archiveDirToday probId
         createTree archiveDir
         -- Copy necessary files
         files <- fst <$> listDir problemDir
@@ -64,4 +62,15 @@ caideProblems rootDir = do
     dirs <- listDirectory rootDir
     isCaideProblem <- forM dirs $ \dir -> isDirectory (dir </> ".caideproblem")
     return $ sort [pathToText (basename dir) | (dir, True) <- zip dirs isCaideProblem]
+
+appendNumberIfExists :: FilePath -> T.Text -> IO FilePath
+appendNumberIfExists dir subdir = go ("": map (T.cons '~' . tshow) [1::Int ..])
+  where
+    go (prefix:rest) = do
+        let fullPath = dir </> fromText (T.append subdir prefix)
+        pathExists <- isDirectory fullPath
+        if pathExists
+        then go rest
+        else return fullPath
+    go [] = error "appendNumberIfExists: impossible happened"
 
