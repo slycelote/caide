@@ -19,7 +19,7 @@ import Caide.Registry (findFeature)
 import Caide.Types
 
 checkoutProblem :: ProblemID -> CaideIO ()
-checkoutProblem probId = do
+checkoutProblem probId = unless (T.null probId) $ do
     root <- caideRoot
     let problemDir = root </> fromText probId
     problemExists <- liftIO $ isDirectory problemDir

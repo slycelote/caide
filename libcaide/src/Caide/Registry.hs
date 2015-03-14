@@ -25,6 +25,7 @@ import qualified Caide.CSharp.CSharpSimple as CSharpSimple
 import qualified Caide.Features.Codelite as Codelite
 import Caide.Parsers.Codeforces
 import Caide.Parsers.CodeChef
+import Caide.Parsers.GCJ
 import Caide.Parsers.Timus
 
 import Caide.Util (runHtmlParser)
@@ -38,10 +39,10 @@ htmlParserToProblemParser htmlParser = ProblemParser
     }
 
 htmlParsers :: [HtmlParser]
-htmlParsers = [codeforcesParser, codeChefParser, timusParser]
+htmlParsers = [codeforcesParser, codeChefParser, timusParser, gcjParser]
 
 problemParsers :: [ProblemParser]
-problemParsers = map htmlParserToProblemParser htmlParsers
+problemParsers = map htmlParserToProblemParser [codeforcesParser, codeChefParser, timusParser]
 
 findHtmlParser :: Text -> Maybe HtmlParser
 findHtmlParser chid = find ((== chid) . chelperId) htmlParsers
