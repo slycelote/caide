@@ -78,6 +78,8 @@ namespace slycelote.VsCaide
             cbProblems.SelectedItem = currentProblem;
         }
 
+        private string recentFolder = null;
+
         private void btnCreateSolution_Click(object sender, RoutedEventArgs e)
         {
             if (SolutionUtilities.IsCaideSolution())
@@ -94,11 +96,13 @@ namespace slycelote.VsCaide
                     {
                         Description = "Select solution folder",
                         ShowNewFolderButton = true,
+                        RootFolder = Environment.SpecialFolder.Desktop,
+                        SelectedPath = recentFolder,
                     };
                     var result = folderBrowserDialog.ShowDialog();
                     if (result != DialogResult.OK)
                         return;
-                    solutionDir = folderBrowserDialog.SelectedPath;
+                    solutionDir = recentFolder = folderBrowserDialog.SelectedPath;
                 }
 
                 if (null == CaideExe.Run(new[] { "init", "--cpp-use-system-headers" }, loud: true, solutionDir: solutionDir))
