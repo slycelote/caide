@@ -31,6 +31,27 @@ before the ones that passed.
    submission to an online judge.
 
 
+# Supported online judges
+
+Caide can parse problem definitions (problem name and sample tests)
+automatically. This is currently supported for
+[CodeChef](http://codechef.com), [Codeforces](http://codeforces.com) and
+[Timus](http://acm.timus.ru).
+
+## CHelper Chrome extension
+
+Caide is compatible with [chelper chrome
+extension](https://chrome.google.com/webstore/detail/chelper-extension/eicjndbmlajfjdhephbcjdeegmmoadip).
+(To parse a problem, click the plus sign that appears in tab bar for supported
+sites.) Because of how the extension works, you have to be running a local
+server that will accept requests from Chrome. This is done in command line
+with `caide httpServer`. Hit Return to stop the server.
+
+Supported online judges for the extension:
+[Codeforces](http://codeforces.com), [Google Code
+Jam](http://code.google.com/codejam).
+
+
 <a name="configuration" />
 # Configuration
 Most settings are stored in `caide.ini` file in the project root.
@@ -193,13 +214,46 @@ will do this automatically.
 identically named classes/variables, `#define`s with different meaning in
 different files etc.
 
-3. Some features (like partially specialized template classes) have been less
-   tested than others. Some unused code (like local variables) doesn't get
-removed yet.  Expect some rough edges and feel free to open issues.
+# Description of files in caide folder
+
+* `caide.ini` is a text file containing general caide settings.
+* Source code files named `submission` contain code of the latest problem you
+  built (ran `cade make` on) ready for submission to an online judge.
+* `caide_archive` directory contains archived problems, with solutions. To
+  restore a problem, move the corresponding directory from this folder to the
+top caide folder.
+* `cpplib` is the directory where you put your prewritten C++ code.
+* `include` directory contains an implementation of C++ standard library as a
+  fallback in case you can't [use your system's headers](#cpp).
+* `templates` directory generates solution scaffold and testing code. You can
+  tweak most of the code generated when a problem is created by modifying
+these source files.
+* `.caide` directory contains internal caide files. Don't modify them unless
+  you know what you're doing.
+
+Each problem has its own directory named after the problem ID. For instance,
+the [CodeChef TEST](http://www.codechef.com/problems/TEST) problem will have a
+directory named `chefTEST` containing the following files:
+
+* `*.in` and `*.out` files contain sample input and output. You can add your
+  own sample cases.
+* `problem.ini` contains problem settings.
+* Source code file named `chefTEST` where you implement solution to the
+  problem. Typically, this is the only file you need to edit.
+* Source code file named `chefTEST_test`. This file contains code running all
+  sample test cases. If the problem needs a custom checker, you can implement
+it here.
+* Source code file named `submission` contains the code ready for submission
+  to an online judge.
+* Source code file named `main`, together with `chefTEST` file, will be used
+  to generate submission file.
+* `.caideproblem` directory contains internal caide files. Don't modify them
+  unless you know what you're doing.
 
 
 # Command reference
- Run `caide -h` for the list of commands. Commands marked with (Internal) are
+
+Run `caide -h` for the list of commands. Commands marked with (Internal) are
 'plumbing layer' not meant for the end user but for use in scripts (such as
 [builders](#builder)), IDEs etc.
 
