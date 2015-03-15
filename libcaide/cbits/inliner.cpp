@@ -85,7 +85,7 @@ public:
         rep.includeDirectiveRange = SourceRange(HashLoc, end);
         rep.fileName = getCanonicalPath(srcManager.getFileEntryForID(srcManager.getFileID(HashLoc)));
         if (s && e)
-            rep.replaceWith = string(s, e) + "\n";
+            rep.replaceWith = string(s, e);
         else
             rep.replaceWith = "<Inliner error>\n";
         replacementStack.push_back(rep);
@@ -194,12 +194,12 @@ private:
             if (i == includedFrom + 1)
                 blockStart = srcManager.getLocForStartOfFile(currentFID);
             else
-                blockStart = replacementStack[i-1].includeDirectiveRange.getEnd().getLocWithOffset(1);
+                blockStart = replacementStack[i-1].includeDirectiveRange.getEnd();
 
             if (i == int(replacementStack.size()))
                 blockEnd = srcManager.getLocForEndOfFile(currentFID);
             else
-                blockEnd = replacementStack[i].includeDirectiveRange.getBegin().getLocWithOffset(-1);
+                blockEnd = replacementStack[i].includeDirectiveRange.getBegin();
 
             // skip cases when two include directives are adjacent
             //   or an include directive is in the beginning or end of file
@@ -213,7 +213,7 @@ private:
                 if (invalid || !b || !e)
                     result << "<Inliner error>\n";
                 else
-                    result << std::string(b, e) << "\n";
+                    result << std::string(b, e);
             }
 
             // Now output the result of file inclusion

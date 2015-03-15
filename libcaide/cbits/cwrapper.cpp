@@ -1,4 +1,5 @@
 #include "cwrapper.h"
+#include "eol.h"
 #include "inliner.h"
 #include "optimizer.h"
 
@@ -41,7 +42,7 @@ FL_EXPORT_C(int, inline_code)(const char** cppFiles, int numCppFiles,
             std::string result = inliner.doInline(cppFiles[i]);
             result = trim(result);
             if (!result.empty())
-                out << result << "\r\n";
+                out << result << EOL;
         }
         return 0;
     } catch (const std::exception& e) {
@@ -64,7 +65,7 @@ FL_EXPORT_C(int, remove_unused_code)(const char* cppFile,
         Optimizer optimizer(cmdLineOptions_, macrosToKeep_);
         std::string result = optimizer.doOptimize(cppFile);
         result = trim(result);
-        out << result << "\r\n";
+        out << result << EOL;
         return 0;
     } catch (const std::exception& e) {
         out << "Exception: " << e.what() << std::endl;

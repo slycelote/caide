@@ -51,8 +51,10 @@ make_builddir:
 $(BUILDDIR)/libcpphelper.a: $(BUILDDIR)/inliner.o $(BUILDDIR)/optimizer.o $(BUILDDIR)/SmartRewriter.o $(BUILDDIR)/util.o
 	$(ARCHIVER) rcs $(BUILDDIR)/libcpphelper.a $^
 
-$(BUILDDIR)/libchelper.a: $(BUILDDIR)/libcpphelper.a cwrapper.cpp inliner.h optimizer.h
+$(BUILDDIR)/cwrapper.o: cwrapper.cpp eol.h
 	$(CXX) $(CXXFLAGS) cwrapper.cpp -o $(BUILDDIR)/cwrapper.o -Lbuild -lcpphelper
+
+$(BUILDDIR)/libchelper.a: $(BUILDDIR)/libcpphelper.a $(BUILDDIR)/cwrapper.o
 	$(ARCHIVER) rcs $(BUILDDIR)/libchelper.a $(BUILDDIR)/cwrapper.o
 
 $(BUILDDIR)/inliner.o: inliner.cpp util.h inliner.h
