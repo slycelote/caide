@@ -14,7 +14,7 @@ import Network
 import System.IO (hClose)
 import System.IO.Error (tryIOError)
 
-import Data.Text.Encoding.Util (tryDecodeUtf8)
+import Data.Text.Encoding.Util (tryDecodeUtf8, universalNewlineConversionOnInput)
 import qualified Data.Text.IO.Util as T
 
 import Caide.Configuration (describeError, setActiveProblem)
@@ -39,7 +39,8 @@ processRequest sock root = void . tryIOError $ do
     case decoded of
         Left err -> T.putStrLn . T.concat $ ["Invalid request: ", err]
         Right cont -> do
-            let body = drop 1 . dropWhile (not . T.null . T.strip) $ T.lines cont
+            let body = drop 1 . dropWhile (not . T.null . T.strip) .
+                       T.lines . universalNewlineConversionOnInput $ cont
                 chid = T.strip $ head body
                 page = T.unlines $ drop 1 body
 
