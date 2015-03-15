@@ -35,8 +35,8 @@ before the ones that passed.
 
 Caide can parse problem definitions (problem name and sample tests)
 automatically. This is currently supported for
-[CodeChef](http://codechef.com), [Codeforces](http://codeforces.com) and
-[Timus](http://acm.timus.ru).
+[CodeChef](http://codechef.com), [Codeforces](http://codeforces.com), [Russian
+Code Cup](http://russiancodecup.ru) and [Timus](http://acm.timus.ru).
 
 ## CHelper Chrome extension
 
