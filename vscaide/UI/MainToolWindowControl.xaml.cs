@@ -36,7 +36,6 @@ namespace slycelote.VsCaide
             InitializeComponent();
             SkipLanguageChangedEvent = true;
             cbProgrammingLanguage.Items.Add("c++");
-            cbProgrammingLanguage.Items.Add("simplecpp");
             cbProgrammingLanguage.Items.Add("c#");
             SkipLanguageChangedEvent = false;
             EnableAll(false);
