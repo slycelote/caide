@@ -11,6 +11,7 @@ import Network.URI (parseURI, uriAuthority, uriRegName)
 import Text.HTML.TagSoup (maybeTagText, parseTags, sections)
 import Text.HTML.TagSoup.Utils
 
+import Caide.Parsers.Common (normalizeText)
 import Caide.Types
 
 timusParser :: HtmlParser
@@ -48,8 +49,4 @@ doParse cont =
 
     probType = Stream StdIn StdOut
     problem = (Problem title probId probType, testCases)
-
--- Replace \r\n with \n, strip
-normalizeText :: T.Text -> T.Text
-normalizeText = T.replace "\r\n" "\n" . T.strip
 

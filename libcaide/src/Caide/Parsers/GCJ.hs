@@ -12,6 +12,7 @@ import Network.URI (parseURI, uriAuthority, uriPath, uriRegName)
 import Text.HTML.TagSoup (maybeTagText, parseTags, sections)
 import Text.HTML.TagSoup.Utils
 
+import Caide.Parsers.Common (normalizeText)
 import Caide.Types
 
 gcjParser :: HtmlParser
@@ -54,8 +55,4 @@ doParse cont =
     -- TODO: a special problem type for GCJ-like judges
     probType = Stream StdIn StdOut
     problem = (Problem title probId probType, testCases)
-
--- Replace \r\n with \n, strip
-normalizeText :: T.Text -> T.Text
-normalizeText = T.replace "\r\n" "\n" . T.strip
 

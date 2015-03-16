@@ -2,6 +2,7 @@
 module Caide.Parsers.Common(
       replaceBr
     , mergeTextTags
+    , normalizeText
 ) where
 
 import Data.List (groupBy)
@@ -10,6 +11,10 @@ import qualified Data.Text as T
 import Text.HTML.TagSoup (Tag(..), isTagCloseName, isTagOpenName, isTagText, fromTagText)
 import Text.HTML.TagSoup.Utils (isTagName)
 import Text.StringLike (StringLike, strConcat)
+
+-- | Replace \r\n with \n, strip
+normalizeText :: T.Text -> T.Text
+normalizeText = T.replace "\r\n" "\n" . T.strip
 
 -- | Replaces <br> tags with newlines. Neighbor <br></br> pairs are replaced with a single newline.
 replaceBr :: [Tag T.Text] -> [Tag T.Text]

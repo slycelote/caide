@@ -26,6 +26,7 @@ import qualified Caide.Features.Codelite as Codelite
 import Caide.Parsers.Codeforces
 import Caide.Parsers.CodeChef
 import Caide.Parsers.GCJ
+import Caide.Parsers.HackerRank
 import Caide.Parsers.RCC
 import Caide.Parsers.Timus
 
@@ -40,7 +41,7 @@ htmlParserToProblemParser htmlParser = ProblemParser
     }
 
 htmlParsers :: [HtmlParser]
-htmlParsers = [codeforcesParser, codeChefParser, timusParser, gcjParser, rccParser]
+htmlParsers = [codeforcesParser, codeChefParser, timusParser, gcjParser, rccParser, hackerRankParser]
 
 problemParsers :: [ProblemParser]
 problemParsers = map htmlParserToProblemParser [codeforcesParser, codeChefParser, timusParser, rccParser]
