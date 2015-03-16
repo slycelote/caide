@@ -1,6 +1,6 @@
 (**Note**: this is documentation for development version of caide. README for
 the latest release is located
-[here](https://github.com/slycelote/caide/blob/v1.1.0/libcaide/README.md).)
+[here](https://github.com/slycelote/caide/blob/v1.2.0/libcaide/README.md).)
 
 caide is a command line application which is the core of caide software suite.
 
@@ -49,7 +49,7 @@ with `caide httpServer`. Hit Return to stop the server.
 
 Supported online judges for the extension:
 [Codeforces](http://codeforces.com), [Google Code
-Jam](http://code.google.com/codejam).
+Jam](http://code.google.com/codejam), [HackerRank](https://hackerrank.com).
 
 
 <a name="configuration" />
