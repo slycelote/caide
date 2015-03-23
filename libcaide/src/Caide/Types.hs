@@ -216,7 +216,8 @@ getProp (FileHandle path) section key = do
     case mf of
         Nothing -> throw $ T.concat ["Unknown file handle ", toText path]
         Just f  -> do
-            opt <- convertToCaide $ C.get (configParser f) (map toLower section) key
+            r <- caideRoot
+            opt <- convertToCaide $ C.get (extend r $ configParser f) (map toLower section) key
             case optionFromString opt of
                 Just a  -> return a
                 Nothing -> throw $ T.concat ["Couldn't parse option ", pack opt]
@@ -233,6 +234,10 @@ setProp (FileHandle path) section key value = do
 
 
 {------------------ Internals ---------------------}
+
+extend :: F.FilePath -> C.ConfigParser -> C.ConfigParser
+extend r conf = conf' { C.accessfunc = C.interpolatingAccess 10, C.usedefault = True }
+    where Right conf' = C.set conf "DEFAULT" "caideRoot" $ F.encodeString r
 
 instance Option Bool where
     optionToString False = "no"

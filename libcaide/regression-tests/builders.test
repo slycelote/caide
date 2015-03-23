@@ -10,8 +10,6 @@ cat <<EOF >prob/case1.in
 EOF
 cp prob/case1.in prob/case1.out
 
-echo "    bash `pwd`/templates/cpp-builder.sh" >>caide.ini
-
 "$caide" lang cpp
 
 
@@ -28,10 +26,6 @@ EOF
 
 "$caide" test
 compare_with after-test prob/.caideproblem/test/report.txt
-
-echo >>caide.ini
-echo "[csharp]" >>caide.ini
-echo "build_and_run_tests: bash `pwd`/templates/cs-builder.sh" >>caide.ini
 
 "$caide" lang csharp
 

@@ -34,10 +34,10 @@ module Caide.Configuration(
 import Prelude hiding (readFile, FilePath)
 
 import Control.Monad (forM_)
-import Control.Monad.Except (catchError)
+import Control.Monad.Except (catchError, throwError)
 import Control.Monad.Trans (liftIO)
-import Data.ConfigFile (ConfigParser, CPError, CPErrorData(OtherProblem), SectionSpec, OptionSpec,
-                        set, emptyCP, add_section)
+import Data.ConfigFile (ConfigParser, CPError, CPErrorData(OtherProblem, NoOption, NoSection),
+                        SectionSpec, OptionSpec, set, emptyCP, add_section)
 import Data.List (intercalate, isPrefixOf)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -54,8 +54,15 @@ setProperties :: Monad m => ConfigFileHandle -> [(String, String, Text)] -> Caid
 setProperties handle properties = forM_ properties $ \(section, key, value) ->
     setProp handle section key value
 
+rethrowIfFatal :: Monad m => CPError -> CaideM m ()
+rethrowIfFatal (NoSection _, _) = return ()
+rethrowIfFatal (NoOption _, _) = return ()
+rethrowIfFatal e = throwError e
+
 orDefault :: Monad m => CaideM m a -> a -> CaideM m a
-orDefault getter defaultValue = getter `catchError` const (return defaultValue)
+orDefault getter defaultValue = getter `catchError` \e -> do
+    rethrowIfFatal e
+    return defaultValue
 
 withDefault :: Monad m => a -> CaideM m a -> CaideM m a
 withDefault = flip orDefault
