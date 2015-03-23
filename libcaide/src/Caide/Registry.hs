@@ -27,6 +27,7 @@ import Caide.Parsers.Codeforces
 import Caide.Parsers.CodeChef
 import Caide.Parsers.GCJ
 import Caide.Parsers.HackerRank
+import Caide.Parsers.POJ
 import Caide.Parsers.RCC
 import Caide.Parsers.Timus
 
@@ -41,10 +42,11 @@ htmlParserToProblemParser htmlParser = ProblemParser
     }
 
 htmlParsers :: [HtmlParser]
-htmlParsers = [codeforcesParser, codeChefParser, timusParser, gcjParser, rccParser, hackerRankParser]
+htmlParsers = [codeforcesParser, codeChefParser, timusParser, gcjParser, pojParser, rccParser, hackerRankParser]
 
 problemParsers :: [ProblemParser]
-problemParsers = map htmlParserToProblemParser [codeforcesParser, codeChefParser, timusParser, rccParser]
+problemParsers = map htmlParserToProblemParser [codeforcesParser, codeChefParser, timusParser,
+    pojParser, rccParser]
 
 findHtmlParser :: Text -> Maybe HtmlParser
 findHtmlParser chid = find ((== chid) . chelperId) htmlParsers
