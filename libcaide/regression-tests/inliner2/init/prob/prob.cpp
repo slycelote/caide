@@ -80,6 +80,49 @@ struct UsedCall {
     static void staticCall() {}
 };
 
+template<typename T>
+struct V {
+    T t;
+};
+
+template<typename T>
+struct V2 {
+    T t;
+};
+
+
+template<typename T>
+struct V3 {
+    T t;
+};
+
+
+struct S1 {
+    typedef int type;
+};
+
+template<typename T>
+struct S2 {
+    typedef T type;
+};
+
+template<typename T>
+struct S3 {
+    typedef T type;
+    static type get() {
+        return type();
+    }
+};
+
+struct S4 {
+    typedef V2<int> type;
+};
+
+struct S5 {
+    typedef V3<int> type;
+};
+
+
 int main() {
     {
         int x;
@@ -109,6 +152,12 @@ int main() {
 
     {
         mystd::vector<UsedCall>::callIntoTemplate();
+    }
+
+    {
+        S1::type i;
+        auto v = S3<V<int> >::get();
+        S4::type v2;
     }
 
     return 0;

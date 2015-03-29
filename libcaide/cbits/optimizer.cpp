@@ -125,6 +125,25 @@ private:
                   << ">" << toString(to->getSourceRange()) << "\n";
     }
 
+    void insertReferenceToType(Decl* from, const Type* to) {
+        if (!to)
+            return;
+
+        if (const ElaboratedType* elaboratedType = dyn_cast<ElaboratedType>(to)) {
+            insertReferenceToType(from, elaboratedType->getNamedType());
+            return;
+        }
+
+        insertReference(from, to->getAsTagDecl());
+
+        if (const TypedefType* typedefType = dyn_cast<TypedefType>(to))
+            insertReference(from, typedefType->getDecl());
+    }
+
+    void insertReferenceToType(Decl* from, QualType to) {
+        insertReferenceToType(from, to.getTypePtrOrNull());
+    }
+
 public:
     FunctionDecl* getMainFunction() const {
         return mainFunctionDecl;
@@ -173,18 +192,15 @@ public:
         return true;
     }
 
+    bool VisitCXXScalarValueInitExpr(CXXScalarValueInitExpr* initExpr) {
+        if (TypeSourceInfo* tsi = initExpr->getTypeSourceInfo())
+            insertReferenceToType(currentDecl, tsi->getType());
+        return true;
+    }
+
     bool VisitValueDecl(ValueDecl* valueDecl) {
         dbg() << CAIDE_FUNC;
-
-        const Type* valueType = valueDecl->getType().getTypePtrOrNull();
-        if (!valueType)
-            return true;
-
-        insertReference(valueDecl, valueType->getAsTagDecl());
-
-        if (const TypedefType* typedefType = dyn_cast<TypedefType>(valueType))
-            insertReference(valueDecl, typedefType->getDecl());
-
+        insertReferenceToType(valueDecl, valueDecl->getType());
         return true;
     }
 
@@ -202,12 +218,9 @@ public:
 
     bool VisitTypedefDecl(TypedefDecl* typedefDecl) {
         dbg() << CAIDE_FUNC;
-        const Type* underlyingType = typedefDecl->getUnderlyingType().getTypePtrOrNull();
-        if (underlyingType) {
-            insertReference(typedefDecl, underlyingType->getAsCXXRecordDecl());
-            if (const TypedefType* typedefType = dyn_cast<TypedefType>(underlyingType))
-                insertReference(typedefDecl, typedefType->getDecl());
-        }
+        insertReferenceToType(typedefDecl, typedefDecl->getUnderlyingType());
+        if (TagDecl* tagDecl = dyn_cast<TagDecl>(typedefDecl->getLexicalDeclContext()))
+            insertReference(typedefDecl, tagDecl);
         return true;
     }
 
@@ -246,14 +259,15 @@ public:
         if (specInfo)
             insertReference(f, specInfo->getTemplate());
 
+        insertReferenceToType(f, f->getReturnType());
+
         insertReference(f, f->getInstantiatedFromMemberFunction());
 
-        if (f->hasBody()) {
+        if (f->hasBody() && sourceManager.isInMainFile(f->getLocStart())) {
             DeclarationName DeclName = f->getNameInfo().getName();
             string FuncName = DeclName.getAsString();
 
-            if (sourceManager.isInMainFile(f->getLocStart()))
-                dbg() << "Moving to " << FuncName << " at " << toString(f->getLocation()) << std::endl;
+            dbg() << "Moving to " << FuncName << " at " << toString(f->getLocation()) << std::endl;
         }
 
         return true;
