@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Caide.Parsers.RCC(
       rccParser
+    , parseRccProblem
 ) where
 
 import Control.Applicative ((<$>))
@@ -9,7 +10,7 @@ import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import qualified Data.Text as T
 import Network.URI (parseURI, uriAuthority, uriRegName)
 
-import Text.HTML.TagSoup (maybeTagText, parseTags, sections)
+import Text.HTML.TagSoup (Tag, maybeTagText, parseTags, sections)
 import Text.HTML.TagSoup.Utils
 
 import Caide.Parsers.Common (normalizeText)
@@ -19,7 +20,7 @@ rccParser :: HtmlParser
 rccParser = HtmlParser
     { chelperId = "rcc"
     , htmlParserUrlMatches = isRccUrl
-    , parseFromHtml = doParse
+    , parseFromHtml = parseRccProblem . parseTags
     }
 
 isRccUrl :: URL -> Bool
@@ -28,14 +29,12 @@ isRccUrl url = case parseURI (T.unpack url) of
     Just uri  -> (uriRegName <$> uriAuthority uri) `elem` map Just ["russiancodecup.ru", "www.russiancodecup.ru"]
 
 
-doParse :: T.Text -> Either T.Text (Problem, [TestCase])
-doParse cont =
+parseRccProblem :: [Tag T.Text] -> Either T.Text (Problem, [TestCase])
+parseRccProblem tags =
     if null testCases
     then Left "Couldn't parse problem"
     else Right problem
   where
-    tags = parseTags cont
-
     titleText = drop 1 . dropWhile (~~/== "<div class=container>") .
         dropWhile (~~/== "<div class='blueBlock hTask'>") $ tags
 
