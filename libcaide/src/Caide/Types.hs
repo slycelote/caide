@@ -96,7 +96,7 @@ data HtmlParser = HtmlParser
 
 data ContestParser = ContestParser
     { contestUrlMatches :: URL -> Bool
-    , parseContest      :: URL -> IO (Either Text [URL])
+    , parseContest      :: URL -> CaideIO ()
     }
 
 

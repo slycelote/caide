@@ -3,6 +3,7 @@ module Caide.Parsers.Common(
       replaceBr
     , mergeTextTags
     , normalizeText
+    , htmlParserToProblemParser
 ) where
 
 import Data.List (groupBy)
@@ -11,6 +12,10 @@ import qualified Data.Text as T
 import Text.HTML.TagSoup (Tag(..), isTagCloseName, isTagOpenName, isTagText, fromTagText)
 import Text.HTML.TagSoup.Utils (isTagName)
 import Text.StringLike (StringLike, strConcat)
+
+import Caide.Types
+import Caide.Util (runHtmlParser)
+
 
 -- | Replace \r\n with \n, strip
 normalizeText :: T.Text -> T.Text
@@ -37,4 +42,10 @@ mergeTextTags = map merge . groupBy cmp
     merge tags@(TagText _ : _) = TagText . strConcat . map fromTagText $ tags
     merge [t] = t
     merge _ = error "mergeTextTags"
+
+htmlParserToProblemParser :: HtmlParser -> ProblemParser
+htmlParserToProblemParser htmlParser = ProblemParser
+    { problemUrlMatches = htmlParserUrlMatches htmlParser
+    , parseProblem = runHtmlParser (parseFromHtml htmlParser)
+    }
 

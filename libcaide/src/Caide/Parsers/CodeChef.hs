@@ -1,22 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Caide.Parsers.CodeChef(
       codeChefParser
-    , codeChefContestParser
 ) where
 
-import Control.Applicative ((<$>))
-import Data.Maybe (mapMaybe)
 import qualified Data.Text as T
 
 import Network.URI (parseURI, uriAuthority, uriRegName)
 
-import Text.HTML.TagSoup (Tag(..), innerText, fromAttrib, fromTagText, parseTags,
+import Text.HTML.TagSoup (Tag(..), innerText, fromTagText, parseTags,
                          isTagCloseName, sections)
 
 import Caide.Parsers.Common (mergeTextTags, replaceBr)
 import Caide.Types
-import Caide.Util (downloadDocument)
-import Text.HTML.TagSoup.Utils ((~==), (~/=), (~~/==), (~~==))
+import Text.HTML.TagSoup.Utils ((~==), (~/=), (~~/==))
 
 
 codeChefParser :: HtmlParser
@@ -24,12 +20,6 @@ codeChefParser = HtmlParser
     { chelperId = "codechef"
     , htmlParserUrlMatches = isCodeChefUrl
     , parseFromHtml = doParse
-    }
-
-codeChefContestParser :: ContestParser
-codeChefContestParser = ContestParser
-    { contestUrlMatches = isCodeChefUrl
-    , parseContest = doParseContest
     }
 
 isCodeChefUrl :: URL -> Bool
@@ -72,26 +62,4 @@ extractCurrentLevelTextNodes tags = go tags []
     go (TagText s:rest) nodes = go rest (TagText s:nodes)
     go (TagOpen name _ : rest) nodes = go (dropWhile (not . isTagCloseName name) rest) nodes
     go (_:rest) nodes = go rest nodes
-
-doParseContest :: URL -> IO (Either T.Text [URL])
-doParseContest url = parseChefContest <$> downloadDocument url
-
-parseChefContest :: Either T.Text URL -> Either T.Text [T.Text]
-parseChefContest (Left err)   = Left err
-parseChefContest (Right cont) = if null problemsTable
-                                    then Left "Couldn't parse contest"
-                                    else Right problems
-  where
-    tags = parseTags cont
-    problemsTable = takeWhile (~/= "</table>") . dropWhile (~~/== "<table class=problems>") $ tags
-    problemCells = sections (~~== "<div class=problemname>") problemsTable
-    problems = mapMaybe extractUrl problemCells
-
-
-extractUrl :: [Tag T.Text] -> Maybe T.Text
-extractUrl cell = T.append "http://codechef.com" <$> if null anchors then Nothing else Just url
-  where
-    anchors = dropWhile (~/= "<a>") cell
-    anchor = head anchors
-    url = fromAttrib (T.pack "href") anchor
 

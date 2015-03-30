@@ -6,7 +6,6 @@ module Caide.Registry(
     , findFeature
     , findHtmlParser
     , findProblemParser
-    , findContestParser
 ) where
 
 import Control.Applicative ((<$>))
@@ -23,6 +22,8 @@ import qualified Caide.CPP.CPP as CPP
 import qualified Caide.CSharp.CSharpSimple as CSharpSimple
 
 import qualified Caide.Features.Codelite as Codelite
+
+import Caide.Parsers.Common (htmlParserToProblemParser)
 import Caide.Parsers.Codeforces
 import Caide.Parsers.CodeChef
 import Caide.Parsers.GCJ
@@ -31,15 +32,7 @@ import Caide.Parsers.POJ
 import Caide.Parsers.RCC
 import Caide.Parsers.Timus
 
-import Caide.Util (runHtmlParser)
 
-
-
-htmlParserToProblemParser :: HtmlParser -> ProblemParser
-htmlParserToProblemParser htmlParser = ProblemParser
-    { problemUrlMatches = htmlParserUrlMatches htmlParser
-    , parseProblem = runHtmlParser (parseFromHtml htmlParser)
-    }
 
 htmlParsers :: [HtmlParser]
 htmlParsers = [codeforcesParser, codeChefParser, timusParser, gcjParser, pojParser, rccParser, hackerRankParser]
@@ -53,12 +46,6 @@ findHtmlParser chid = find ((== chid) . chelperId) htmlParsers
 
 findProblemParser :: URL -> Maybe ProblemParser
 findProblemParser url = find (`problemUrlMatches` url) problemParsers
-
-contestParsers :: [ContestParser]
-contestParsers = [codeforcesContestParser, codeChefContestParser]
-
-findContestParser :: URL -> Maybe ContestParser
-findContestParser url = find (`contestUrlMatches` url) contestParsers
 
 features :: [(Text, Feature)]
 features = [ ("codelite", Codelite.feature)

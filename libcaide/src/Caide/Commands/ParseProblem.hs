@@ -2,11 +2,13 @@
 module Caide.Commands.ParseProblem(
       createProblem
     , saveProblem
+    , parseProblems
 ) where
 
-import Control.Monad (forM_, when)
+import Control.Monad (forM_, unless, when)
 import Control.Monad.State (liftIO)
 import Data.Char (isAlphaNum, isAscii)
+import Data.Either (rights)
 import qualified Data.Text as T
 import qualified Data.Text.IO.Util as T
 
@@ -19,7 +21,7 @@ import Caide.Configuration (getDefaultLanguage, setActiveProblem, getProblemConf
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
 import Caide.Registry (findProblemParser)
-import Caide.Util (pathToText)
+import Caide.Util (pathToText, mapWithLimitedThreads)
 
 
 
@@ -113,3 +115,16 @@ parseExistingProblem url parser = do
         Left err -> throw . T.unlines $ ["Encountered a problem while parsing:", err]
         Right (problem, samples) -> saveProblem problem samples
 
+parseProblems :: Int -> [URL] -> CaideIO ()
+parseProblems numThreads urls = do
+    results <- liftIO $ mapWithLimitedThreads numThreads tryParseProblem urls
+    let errors = [T.concat [url, ": ", err] | (url, Left err) <- zip urls results]
+        problems = rights results
+    forM_ (reverse problems) $ uncurry saveProblem
+    unless (null errors) $
+        throw $ T.unlines ("Some problems failed to parse.": errors)
+
+tryParseProblem :: URL -> IO (Either T.Text (Problem, [TestCase]))
+tryParseProblem url = case findProblemParser url of
+    Nothing -> return . Left . T.concat $ ["Couldn't find problem parser for URL: ", url]
+    Just parser -> parser `parseProblem` url
