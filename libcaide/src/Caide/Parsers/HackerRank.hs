@@ -43,12 +43,13 @@ doParse cont =
     title  = fromMaybe "Unknown" title'
     probId = T.append "hr" . fromMaybe "Unknown" $ probId'
 
-    problemStatement = dropWhile (~~/== "<div class=challenge-text>") tags
-    msBdivs = partitions (~~== "<div class=msB>") problemStatement
-    pres = concatMap (partitions (~~== "<pre>")) msBdivs
+    problemStatement = takeWhile (~~/== "<footer>") . dropWhile (~~/== "<div class=challenge-text>") $ tags
+
+    pres = partitions (~~== "<pre>") problemStatement
     codes = mapMaybe (listToMaybe . drop 1 . dropWhile (~~/== "<code>")) pres
     texts = map normalizeText . mapMaybe maybeTagText $ codes
-    testCases = [TestCase (texts!!i) (texts!!(i+1)) | i <- [0, 2 .. length texts-2]]
+    t = drop (length texts `mod` 2) texts
+    testCases = [TestCase (t!!i) (t!!(i+1)) | i <- [0, 2 .. length t-2]]
 
     probType = Stream StdIn StdOut
     problem = (Problem title probId probType, testCases)
