@@ -44,8 +44,7 @@ parseCfContest (Right cont) = if null problemsTable
                               else Right problems
   where
     tags = parseTags cont
-    content = dropWhile (~/= "<div id=content>") tags
-    problemsTable = takeWhile (~/= "</table>") . dropWhile (~~/== "<table class=problems>") $ content
+    problemsTable = takeWhile (~/= "</table>") . dropWhile (~~/== "<table class=problems>") $ tags
     trs = partitions (~== "<tr>") problemsTable
     problems = mapMaybe extractURL trs
 
