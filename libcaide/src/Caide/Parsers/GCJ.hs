@@ -10,6 +10,7 @@ import qualified Data.Text as T
 import Network.URI (parseURI, uriAuthority, uriPath, uriRegName)
 
 import Text.HTML.TagSoup (maybeTagText, parseTags, sections)
+import Text.HTML.TagSoup.Match (tagOpenAttrNameLit)
 import Text.HTML.TagSoup.Utils
 
 import Caide.Parsers.Common (normalizeText)
@@ -29,6 +30,7 @@ isGcjUrl url = case parseURI (T.unpack url) of
                  "/codejam/contest" `isPrefixOf` uriPath uri
 
 
+{-# ANN doParse ("HLint: ignore Use head" :: String) #-}
 doParse :: T.Text -> Either T.Text (Problem, [TestCase])
 doParse cont =
     if null testCases
@@ -45,12 +47,15 @@ doParse cont =
     title  = fromMaybe "Unknown" title'
     probId = T.append "gcj" . fromMaybe "Unknown" $ probId'
 
+    isActiveTab t = tagOpenAttrNameLit "div" "style" ("block" `T.isInfixOf`) t &&
+                    t ~~== "<div class=dsb-content-pages>"
+    activeTab = dropWhile (not . isActiveTab) . dropWhile (~~/== "<div id=dsb-problem-pages") $ tags
     texts = map normalizeText .
             mapMaybe (maybeTagText . (!!1)) .
             sections (~~== "<pre class=io-content>") .
             dropWhile (~~/== "<div class=problem-io-wrapper>") $
-            tags
-    testCases = [TestCase (texts!!i) (texts!!(i+1)) | i <- [0, 2 .. length texts-2]]
+            activeTab
+    testCases = [TestCase (texts!!0) (texts!!1) | length texts >= 2]
 
     -- TODO: a special problem type for GCJ-like judges
     probType = Stream StdIn StdOut
