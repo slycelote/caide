@@ -35,6 +35,7 @@ inlineCPPCode probID = do
     let problemDir = root </> fromText probID
         solutionPath = problemDir </> fromText (T.append probID ".cpp")
         mainFilePath = problemDir </> "main.cpp"
+        concatCodePath = problemDir </> ".caideproblem" </> "concat.cpp"
         inlinedCodePath = problemDir </> ".caideproblem" </> "inlined.cpp"
         inlinedNoPragmaOnceCodePath = problemDir </> ".caideproblem" </> "inlinedNoPragmaOnce.cpp"
         optimizedPass1Path = problemDir </> ".caideproblem" </> "optimizedPass1.cpp"
@@ -50,7 +51,10 @@ inlineCPPCode probID = do
                        then filter (`hasExtension` "cpp") <$> liftIO (listDirectoryRecursively libraryDirectory)
                        else return []
 
-    retInliner <- liftIO $ inlineLibraryCode (solutionPath:mainFilePath:libraryCPPFiles) cmdLineOptions inlinedCodePath
+    concatFiles <- T.concat <$> mapM readTextFile' (solutionPath:mainFilePath:libraryCPPFiles)
+    liftIO $ writeTextFile concatCodePath concatFiles
+
+    retInliner <- liftIO $ inlineLibraryCode [concatCodePath] cmdLineOptions inlinedCodePath
     when (retInliner /= 0) $
         throw $ T.concat ["C++ library code inliner failed with error code ", tshow retInliner]
 

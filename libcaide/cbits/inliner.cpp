@@ -266,20 +266,6 @@ private:
     }
 };
 
-class InlinerVisitor: public RecursiveASTVisitor<InlinerVisitor> {
-    // noop visitor, we only need PPCallbacks
-};
-
-class InlinerConsumer: public ASTConsumer {
-private:
-    InlinerVisitor visitor;
-
-public:
-    virtual void HandleTranslationUnit(ASTContext &Context) {
-        visitor.TraverseDecl(Context.getTranslationUnitDecl());
-    }
-};
-
 class InlinerFrontendAction : public ASTFrontendAction {
 private:
     std::vector<IncludeReplacement>& replacementStack;
@@ -296,7 +282,7 @@ public:
         compiler.getPreprocessor().addPPCallbacks(std::unique_ptr<TrackMacro>(new TrackMacro(
                 compiler.getSourceManager(), includedHeaders, replacementStack)));
 
-        return std::unique_ptr<InlinerConsumer>(new InlinerConsumer());
+        return std::unique_ptr<ASTConsumer>(new ASTConsumer());
     }
 };
 
