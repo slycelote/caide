@@ -125,8 +125,13 @@ private:
                   << ">" << toString(to->getSourceRange()) << "\n";
     }
 
-    void insertReferenceToType(Decl* from, const Type* to) {
+    void insertReferenceToType(Decl* from, const Type* to,
+            std::set<const Type*>& seen)
+    {
         if (!to)
+            return;
+
+        if (!seen.insert(to).second)
             return;
 
         if (const ElaboratedType* elaboratedType = dyn_cast<ElaboratedType>(to)) {
@@ -138,10 +143,28 @@ private:
 
         if (const TypedefType* typedefType = dyn_cast<TypedefType>(to))
             insertReference(from, typedefType->getDecl());
+
+        if (const TemplateSpecializationType* tempSpecType =
+                dyn_cast<TemplateSpecializationType>(to))
+        {
+            for (unsigned i = 0; i < tempSpecType->getNumArgs(); ++i) {
+                const TemplateArgument& arg = tempSpecType->getArg(i);
+                if (arg.getKind() == TemplateArgument::Type)
+                    insertReferenceToType(from, arg.getAsType(), seen);
+            }
+        }
     }
 
-    void insertReferenceToType(Decl* from, QualType to) {
-        insertReferenceToType(from, to.getTypePtrOrNull());
+    void insertReferenceToType(Decl* from, QualType to,
+            std::set<const Type*>& seen)
+    {
+        insertReferenceToType(from, to.getTypePtrOrNull(), seen);
+    }
+
+    void insertReferenceToType(Decl* from, QualType to)
+    {
+        std::set<const Type*> seen;
+        insertReferenceToType(from, to, seen);
     }
 
 public:

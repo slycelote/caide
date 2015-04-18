@@ -90,6 +90,13 @@ struct S4 {
     typedef V2<int> type;
 };
 
+template<typename T>
+struct S6 {
+};
+
+typedef long long ll;
+
+
 int main() {
     {
         int x;
@@ -126,6 +133,9 @@ int main() {
         auto v = S3<V<int> >::get();
         S4::type v2;
     }
+
+
+    S6<ll> s6;
 
     return 0;
 }
