@@ -42,17 +42,11 @@ using namespace std;
 #define Z(p) CLANG_Z(p, __FILE__, __LINE)
 */
 
-class null_stream: public ostream {
-    template<typename T> ostream& operator<<(const T&) { return *this; }
-};
-
-ostream& dbg() {
-    static null_stream null; return null;
-    //return std::cerr;
-}
-
-#define CAIDE_FUNC ""
+//#define dbg(vals) std::cerr << vals
 //#define CAIDE_FUNC __FUNCTION__ << endl
+
+#define dbg(vals)
+#define CAIDE_FUNC ""
 
 typedef std::map<Decl*, std::set<Decl*> > References;
 
@@ -117,12 +111,12 @@ private:
         from = from->getCanonicalDecl();
         to = to->getCanonicalDecl();
         uses[from].insert(to);
-        dbg() << "Reference from " << from->getDeclKindName() << " " << from << "<"
-                  << toString(from).substr(0, 20)
-                  << ">" << toString(from->getSourceRange())
-                  << " to " << to->getDeclKindName() << " " << to << "<"
-                  << toString(to).substr(0, 20)
-                  << ">" << toString(to->getSourceRange()) << "\n";
+        dbg("Reference from " << from->getDeclKindName() << " " << from << "<"
+            << toString(from).substr(0, 20)
+            << ">" << toString(from->getSourceRange())
+            << " to " << to->getDeclKindName() << " " << to << "<"
+            << toString(to).substr(0, 20)
+            << ">" << toString(to->getSourceRange()) << "\n");
     }
 
     void insertReferenceToType(Decl* from, const Type* to,
@@ -196,7 +190,7 @@ public:
     }
 
     bool VisitCallExpr(CallExpr* callExpr) {
-        dbg() << CAIDE_FUNC;
+        dbg(CAIDE_FUNC);
         Expr* callee = callExpr->getCallee();
         Decl* calleeDecl = callExpr->getCalleeDecl();
 
@@ -208,13 +202,13 @@ public:
     }
 
     bool VisitCXXConstructExpr(CXXConstructExpr* constructorExpr) {
-        dbg() << CAIDE_FUNC;
+        dbg(CAIDE_FUNC);
         insertReference(currentDecl, constructorExpr->getConstructor());
         return true;
     }
 
     bool VisitDeclRefExpr(DeclRefExpr* ref) {
-        dbg() << CAIDE_FUNC;
+        dbg(CAIDE_FUNC);
         insertReference(currentDecl, ref->getDecl());
         return true;
     }
@@ -226,37 +220,37 @@ public:
     }
 
     bool VisitValueDecl(ValueDecl* valueDecl) {
-        dbg() << CAIDE_FUNC;
+        dbg(CAIDE_FUNC);
         insertReferenceToType(valueDecl, valueDecl->getType());
         return true;
     }
 
     bool VisitMemberExpr(MemberExpr* memberExpr) {
-        dbg() << CAIDE_FUNC;
+        dbg(CAIDE_FUNC);
         insertReference(currentDecl, memberExpr->getMemberDecl());
         return true;
     }
 
     bool VisitFieldDecl(FieldDecl* field) {
-        dbg() << CAIDE_FUNC;
+        dbg(CAIDE_FUNC);
         insertReference(field, field->getParent());
         return true;
     }
 
     bool VisitTypedefDecl(TypedefDecl* typedefDecl) {
-        dbg() << CAIDE_FUNC;
+        dbg(CAIDE_FUNC);
         insertReferenceToType(typedefDecl, typedefDecl->getUnderlyingType());
         return true;
     }
 
     bool VisitClassTemplateDecl(ClassTemplateDecl* templateDecl) {
-        dbg() << CAIDE_FUNC;
+        dbg(CAIDE_FUNC);
         insertReference(templateDecl, templateDecl->getTemplatedDecl());
         return true;
     }
 
     bool VisitClassTemplateSpecializationDecl(ClassTemplateSpecializationDecl* specDecl) {
-        dbg() << CAIDE_FUNC;
+        dbg(CAIDE_FUNC);
         llvm::PointerUnion<ClassTemplateDecl*, ClassTemplatePartialSpecializationDecl*>
             instantiatedFrom = specDecl->getSpecializedTemplateOrPartial();
 
@@ -292,7 +286,7 @@ public:
             DeclarationName DeclName = f->getNameInfo().getName();
             string FuncName = DeclName.getAsString();
 
-            dbg() << "Moving to " << FuncName << " at " << toString(f->getLocation()) << std::endl;
+            dbg("Moving to " << FuncName << " at " << toString(f->getLocation()) << std::endl);
         }
 
         return true;
@@ -305,7 +299,7 @@ public:
     }
 
     bool VisitCXXMethodDecl(CXXMethodDecl* method) {
-        dbg() << CAIDE_FUNC;
+        dbg(CAIDE_FUNC);
         insertReference(method, method->getParent());
         return true;
     }
@@ -640,7 +634,7 @@ public:
         const bool funcIsUnused = used.find(canonicalDecl) == used.end();
         const bool thisIsRedeclaration = !functionDecl->doesThisDeclarationHaveABody() && declared.find(canonicalDecl) != declared.end();
         if (funcIsUnused || thisIsRedeclaration) {
-            dbg() << CAIDE_FUNC;
+            dbg(CAIDE_FUNC);
             removeDecl(functionDecl);
         }
         declared.insert(canonicalDecl);
@@ -650,7 +644,7 @@ public:
     bool VisitFunctionTemplateDecl(FunctionTemplateDecl* functionDecl) {
         if (!sourceManager.isInMainFile(functionDecl->getLocStart()))
             return true;
-        dbg() << CAIDE_FUNC;
+        dbg(CAIDE_FUNC);
         if (used.find(functionDecl) == used.end())
             removeDecl(functionDecl);
         return true;
@@ -678,7 +672,7 @@ public:
     bool VisitClassTemplateDecl(ClassTemplateDecl* templateDecl) {
         if (!sourceManager.isInMainFile(templateDecl->getLocStart()))
             return true;
-        dbg() << CAIDE_FUNC;
+        dbg(CAIDE_FUNC);
         ClassTemplateDecl* canonicalDecl = templateDecl->getCanonicalDecl();
         const bool classIsUnused = used.find(canonicalDecl) == used.end();
         const bool thisIsRedeclaration = !templateDecl->isThisDeclarationADefinition() && declared.find(canonicalDecl) != declared.end();
@@ -718,8 +712,9 @@ private:
         SourceLocation start = decl->getLocStart();
         SourceLocation end = decl->getLocEnd();
         SourceLocation semicolonAfterDefinition = findSemiAfterLocation(end, decl->getASTContext());
-        dbg() << "REMOVE " << decl->getDeclKindName() << " " << decl << ": " << toString(start) << " " << toString(end)
-              << " " << toString(semicolonAfterDefinition) << std::endl;
+        dbg("REMOVE " << decl->getDeclKindName() << " "
+            << decl << ": " << toString(start) << " " << toString(end)
+            << " " << toString(semicolonAfterDefinition) << std::endl);
         if (semicolonAfterDefinition.isValid())
             end = semicolonAfterDefinition;
         Rewriter::RewriteOptions opts;
