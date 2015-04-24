@@ -178,10 +178,6 @@ public:
     bool shouldVisitTemplateInstantiations() const { return true; }
 
     bool VisitDecl(Decl* decl) {
-        // Mark any function as depending on its content.
-        // TODO: detect unused local variables.
-        insertReference(getCurrentFunction(decl), decl);
-
         // Mark dependence on enclosing class/namespace.
         insertReference(decl, dyn_cast_or_null<Decl>(decl->getDeclContext()));
 
@@ -221,6 +217,10 @@ public:
 
     bool VisitValueDecl(ValueDecl* valueDecl) {
         dbg(CAIDE_FUNC);
+        // Mark any function as depending on its local variables.
+        // TODO: detect unused local variables.
+        insertReference(getCurrentFunction(valueDecl), valueDecl);
+
         insertReferenceToType(valueDecl, valueDecl->getType());
         return true;
     }

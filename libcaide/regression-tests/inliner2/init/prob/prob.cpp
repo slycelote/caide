@@ -181,6 +181,26 @@ int main() {
         IntTemplate<4>::val;
     }
 
+    {
+        typedef int ta;
+        typedef int tb;
+        ta i = 2;
+        struct LocalUsed {
+            typedef int tc;
+            void used() {}
+            void unused() {}
+        } lu;
+        lu.used();
+        struct LocalUnused {};
+    }
+
+    {
+        struct Outer {
+            struct Inner {};
+        };
+        Outer::Inner inner;
+    }
+
     return 0;
 }
 

@@ -151,6 +151,22 @@ int main() {
         IntTemplate<4>::val;
     }
 
+    {
+        typedef int ta;
+        ta i = 2;
+        struct LocalUsed {
+            void used() {}
+        } lu;
+        lu.used();
+    }
+
+    {
+        struct Outer {
+            struct Inner {};
+        };
+        Outer::Inner inner;
+    }
+
     return 0;
 }
 
