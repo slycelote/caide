@@ -126,6 +126,13 @@ template<typename T>
 struct S6 {
 };
 
+struct S7 {};
+
+template<int n>
+struct IntTemplate {
+    static const int val = n*n;
+};
+
 typedef long long ll;
 
 int main() {
@@ -165,7 +172,14 @@ int main() {
         S4::type v2;
     }
 
-    S6<ll> s6;
+    {
+        S6<ll> s6;
+        S6<S7> s6_s7;
+    }
+
+    {
+        IntTemplate<4>::val;
+    }
 
     return 0;
 }

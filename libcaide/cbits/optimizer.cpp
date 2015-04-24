@@ -76,7 +76,7 @@ private:
 private:
     FunctionDecl* getCurrentFunction(Decl* decl) const {
         DeclContext* declCtx = decl->getLexicalDeclContext();
-        return declCtx ? dyn_cast<FunctionDecl>(declCtx) : 0;
+        return dyn_cast_or_null<FunctionDecl>(declCtx);
     }
 
     std::string toString(SourceLocation loc) const {
@@ -187,6 +187,10 @@ public:
         // Mark any function as depending on its content.
         // TODO: detect unused local variables.
         insertReference(getCurrentFunction(decl), decl);
+
+        // Mark dependence on enclosing class/namespace.
+        insertReference(decl, dyn_cast_or_null<Decl>(decl->getDeclContext()));
+
         currentDecl = decl;
         return true;
     }
@@ -242,8 +246,6 @@ public:
     bool VisitTypedefDecl(TypedefDecl* typedefDecl) {
         dbg() << CAIDE_FUNC;
         insertReferenceToType(typedefDecl, typedefDecl->getUnderlyingType());
-        if (TagDecl* tagDecl = dyn_cast<TagDecl>(typedefDecl->getLexicalDeclContext()))
-            insertReference(typedefDecl, tagDecl);
         return true;
     }
 
