@@ -19,7 +19,7 @@ before_script:
     - sudo apt-get install -qq mono-gmcs
 
 script:
-    - cabal configure && cabal build && regression-tests/run-tests.sh
+    - cabal configure && cabal build && tests/run-tests.sh
 
 notifications:
     email:
