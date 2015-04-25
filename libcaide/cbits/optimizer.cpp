@@ -50,15 +50,23 @@ using namespace std;
 
 typedef std::map<Decl*, std::set<Decl*> > References;
 
+// Contains information that DependenciesCollectors passes to the next stage
+struct SourceInfo {
+    // key: Decl, value: what the key uses.
+    References uses;
+
+    // The function that must remain in the source code ('root of the dependency tree').
+    // int main(), or a special function (for Topcoder).
+    FunctionDecl* mainFunction;
+
+    // Delayed parsed functions.
+    vector<FunctionDecl*> delayedParsedFunctions;
+};
+
 class DependenciesCollector : public RecursiveASTVisitor<DependenciesCollector> {
 private:
     SourceManager& sourceManager;
-
-    References& uses;
-
-    vector<FunctionDecl*>& delayedParsedFunctions;
-
-    FunctionDecl* mainFunctionDecl;
+    SourceInfo& srcInfo;
 
     /*
      'Declaration context' for Stmt's. Updated each time a Decl is visited.
@@ -110,7 +118,7 @@ private:
             return;
         from = from->getCanonicalDecl();
         to = to->getCanonicalDecl();
-        uses[from].insert(to);
+        srcInfo.uses[from].insert(to);
         dbg("Reference from " << from->getDeclKindName() << " " << from << "<"
             << toString(from).substr(0, 20)
             << ">" << toString(from->getSourceRange())
@@ -162,17 +170,13 @@ private:
     }
 
 public:
-    FunctionDecl* getMainFunction() const {
-        return mainFunctionDecl;
-    }
-
-    DependenciesCollector(SourceManager& srcMgr, References& _uses, vector<FunctionDecl*>& delayedParsedFunctions_)
+    DependenciesCollector(SourceManager& srcMgr, SourceInfo& srcInfo_)
         : sourceManager(srcMgr)
-        , uses(_uses)
-        , delayedParsedFunctions(delayedParsedFunctions_)
-        , mainFunctionDecl(0)
-        , currentDecl(0)
-    {}
+        , srcInfo(srcInfo_)
+        , currentDecl(nullptr)
+    {
+        srcInfo.mainFunction = nullptr;
+    }
 
     bool shouldVisitImplicitCode() const { return true; }
     bool shouldVisitTemplateInstantiations() const { return true; }
@@ -264,10 +268,10 @@ public:
 
     bool VisitFunctionDecl(FunctionDecl* f) {
         if (f->isMain())
-            mainFunctionDecl = f;
+            srcInfo.mainFunction = f;
 
         if (sourceManager.isInMainFile(f->getLocStart()) && f->isLateTemplateParsed())
-            delayedParsedFunctions.push_back(f);
+            srcInfo.delayedParsedFunctions.push_back(f);
 
         if (f->getTemplatedKind() == FunctionDecl::TK_FunctionTemplate) {
             // skip non-instantiated template function
@@ -746,8 +750,8 @@ public:
         ppCallbacks.Finalize();
 
         //cerr << "Build dependency graph" << std::endl;
-        vector<FunctionDecl*> delayedParsedFunctions;
-        DependenciesCollector depsVisitor(sourceManager, uses, delayedParsedFunctions);
+        SourceInfo srcInfo;
+        DependenciesCollector depsVisitor(sourceManager, srcInfo);
         depsVisitor.TraverseDecl(Ctx.getTranslationUnitDecl());
 
         // Source range of delayed-parsed template functions includes only declaration part.
@@ -755,14 +759,13 @@ public:
         // Note that this essentially disables -fdelayed-template-parsing flag for user code
         //     and may lead to incompatible results when, e.g., code compiles in VS
         //     but not in the inliner. TODO: find another way to get correct source ranges.
-        for (auto it = delayedParsedFunctions.begin(); it != delayedParsedFunctions.end(); ++it) {
+        for (FunctionDecl* f : srcInfo.delayedParsedFunctions) {
             clang::Sema& sema = compiler.getSema();
-            clang::LateParsedTemplate* lpt = sema.LateParsedTemplateMap[*it];
+            clang::LateParsedTemplate* lpt = sema.LateParsedTemplateMap[f];
             sema.LateTemplateParser(sema.OpaqueParser, *lpt);
         }
 
-        FunctionDecl* mainFunction = depsVisitor.getMainFunction();
-        if (!mainFunction) {
+        if (!srcInfo.mainFunction) {
             cerr << "Error: no main function in the file!\n";
             return;
         }
@@ -770,12 +773,12 @@ public:
         //cerr << "Search for used decls" << std::endl;
         std::set<Decl*> used;
         std::set<Decl*> queue;
-        queue.insert(mainFunction->getCanonicalDecl());
+        queue.insert(srcInfo.mainFunction->getCanonicalDecl());
         while (!queue.empty()) {
             Decl* decl = *queue.begin();
             queue.erase(queue.begin());
             if (used.insert(decl).second) {
-                queue.insert(uses[decl].begin(), uses[decl].end());
+                queue.insert(srcInfo.uses[decl].begin(), srcInfo.uses[decl].end());
             }
         }
 
@@ -805,25 +808,23 @@ public:
     std::string getResult() const {
         // At this point the rewriter's buffer should be full with the rewritten
         // file contents.
-        const RewriteBuffer* RewriteBuf = rewriter.getRewriteBufferFor(sourceManager.getMainFileID());
-        if (RewriteBuf)
-            return std::string(RewriteBuf->begin(), RewriteBuf->end());
-        else {
-            // No changes
-            bool invalid;
-            const llvm::MemoryBuffer* buf = sourceManager.getBuffer(sourceManager.getMainFileID(), &invalid);
-            if (buf && !invalid)
-                return std::string(buf->getBufferStart(), buf->getBufferEnd());
-            else
-                return "Inliner error"; // something's wrong
-        }
+        if (const RewriteBuffer* rewriteBuf =
+                rewriter.getRewriteBufferFor(sourceManager.getMainFileID()))
+            return std::string(rewriteBuf->begin(), rewriteBuf->end());
+
+        // No changes
+        bool invalid;
+        const llvm::MemoryBuffer* buf = sourceManager.getBuffer(sourceManager.getMainFileID(), &invalid);
+        if (buf && !invalid)
+            return std::string(buf->getBufferStart(), buf->getBufferEnd());
+        else
+            return "Inliner error"; // something's wrong
     }
 
 private:
     CompilerInstance& compiler;
     SourceManager& sourceManager;
     SmartRewriter& rewriter;
-    References uses;
     RemoveInactivePreprocessorBlocks& ppCallbacks;
     std::string& result;
 };
