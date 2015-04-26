@@ -31,12 +31,6 @@
 using namespace clang;
 using namespace std;
 
-/*
-#define CLANG_Z(p, file, line) {if (!p) {errorMessage = "Null pointer at " file " " line; return false;}}
-
-#define Z(p) CLANG_Z(p, __FILE__, __LINE)
-*/
-
 //#define dbg(vals) std::cerr << vals
 //#define CAIDE_FUNC __FUNCTION__ << endl
 
@@ -50,12 +44,17 @@ struct SourceInfo {
     // key: Decl, value: what the key uses.
     References uses;
 
-    // The function that must remain in the source code ('root of the dependency tree').
-    // int main(), or a special function (for Topcoder).
-    FunctionDecl* mainFunction;
+    // 'Roots of the dependency tree':
+    // - int main(), or a special function (for Topcoder).
+    // - static variables with possible side effects.
+    set<Decl*> declsToKeep;
 
     // Delayed parsed functions.
     vector<FunctionDecl*> delayedParsedFunctions;
+
+    // Declarations of static variables, grouped by their start location
+    // (so comma separated declarations go into the same group).
+    map<SourceLocation, vector<VarDecl*> > staticVariables;
 };
 
 class DependenciesCollector : public RecursiveASTVisitor<DependenciesCollector> {
@@ -215,7 +214,6 @@ public:
         , srcInfo(srcInfo_)
         , lastVisitedDecl(nullptr)
     {
-        srcInfo.mainFunction = nullptr;
     }
 
     bool shouldVisitImplicitCode() const { return true; }
@@ -270,6 +268,21 @@ public:
         return true;
     }
 
+    bool VisitVarDecl(VarDecl* varDecl) {
+        SourceLocation startLocation = varDecl->getLocStart();
+        if (!varDecl->isLocalVarDeclOrParm() && sourceManager.isInMainFile(startLocation)) {
+            srcInfo.staticVariables[startLocation].push_back(varDecl);
+            /*
+            TODO: detect initializers with side effects
+            VarDecl* definition = varDecl->getDefinition();
+            Expr* initExpr = definition ? definition->getInit() : nullptr;
+            if (initExpr && initExpr->HasSideEffects(varDecl->getASTContext()))
+                srcInfo.declsToKeep.insert(varDecl);
+            */
+        }
+        return true;
+    }
+
     bool VisitMemberExpr(MemberExpr* memberExpr) {
         dbg(CAIDE_FUNC);
         insertReference(getParentDecl(memberExpr), memberExpr->getMemberDecl());
@@ -309,7 +322,7 @@ public:
 
     bool VisitFunctionDecl(FunctionDecl* f) {
         if (f->isMain())
-            srcInfo.mainFunction = f;
+            srcInfo.declsToKeep.insert(f);
 
         if (f->doesThisDeclarationHaveABody()) {
             // first rewind function stack
@@ -524,9 +537,9 @@ public:
         const bool classIsUnused = used.find(canonicalDecl) == used.end();
         const bool thisIsRedeclaration = !recordDecl->isCompleteDefinition() && declared.find(canonicalDecl) != declared.end();
 
-        if (classIsUnused || thisIsRedeclaration) {
+        if (classIsUnused || thisIsRedeclaration)
             removeDecl(recordDecl);
-        }
+
         declared.insert(canonicalDecl);
         return true;
     }
@@ -539,9 +552,9 @@ public:
         const bool classIsUnused = used.find(canonicalDecl) == used.end();
         const bool thisIsRedeclaration = !templateDecl->isThisDeclarationADefinition() && declared.find(canonicalDecl) != declared.end();
 
-        if (classIsUnused || thisIsRedeclaration) {
+        if (classIsUnused || thisIsRedeclaration)
             removeDecl(templateDecl);
-        }
+
         declared.insert(canonicalDecl);
         return true;
     }
@@ -551,9 +564,8 @@ public:
             return true;
 
         Decl* canonicalDecl = typedefDecl->getCanonicalDecl();
-        if (used.find(canonicalDecl) == used.end()) {
+        if (used.find(canonicalDecl) == used.end())
             removeDecl(typedefDecl);
-        }
 
         return true;
     }
@@ -608,7 +620,6 @@ public:
         ppCallbacks.Finalize();
 
         //cerr << "Build dependency graph" << std::endl;
-        SourceInfo srcInfo;
         DependenciesCollector depsVisitor(sourceManager, srcInfo);
         depsVisitor.TraverseDecl(Ctx.getTranslationUnitDecl());
 
@@ -623,15 +634,11 @@ public:
             sema.LateTemplateParser(sema.OpaqueParser, *lpt);
         }
 
-        if (!srcInfo.mainFunction) {
-            cerr << "Error: no main function in the file!\n";
-            return;
-        }
-
         //cerr << "Search for used decls" << std::endl;
         std::set<Decl*> used;
         std::set<Decl*> queue;
-        queue.insert(srcInfo.mainFunction->getCanonicalDecl());
+        for (Decl* decl : srcInfo.declsToKeep)
+            queue.insert(decl->getCanonicalDecl());
         while (!queue.empty()) {
             Decl* decl = *queue.begin();
             queue.erase(queue.begin());
@@ -644,11 +651,70 @@ public:
         OptimizerVisitor visitor(sourceManager, used, rewriter);
         visitor.TraverseDecl(Ctx.getTranslationUnitDecl());
 
+        removeUnusedVariables(used, Ctx);
+
         rewriter.applyChanges();
 
         //cerr << "Done!" << std::endl;
         result = getResult();
     }
+
+private:
+    // Variables are a special case because there may be many
+    // comma separated variables in one definition.
+    void removeUnusedVariables(const std::set<Decl*>& used, ASTContext& ctx) {
+        Rewriter::RewriteOptions opts;
+        opts.RemoveLineIfEmpty = true;
+
+        for (const auto& kv : srcInfo.staticVariables) {
+            const vector<VarDecl*>& vars = kv.second;
+            const size_t n = vars.size();
+            vector<bool> isUsed(n, true);
+            size_t lastUsed = n;
+            for (size_t i = 0; i < n; ++i) {
+                VarDecl* var = vars[i];
+                isUsed[i] = used.find(var->getCanonicalDecl()) != used.end();
+                if (isUsed[i])
+                    lastUsed = i;
+            }
+
+            SourceLocation startOfType = kv.first;
+            SourceLocation endOfLastVar = vars.back()->getSourceRange().getEnd();
+            SourceLocation semiColon = findSemiAfterLocation(endOfLastVar, ctx);
+
+            if (lastUsed == n) {
+                // all variables are unused
+                SourceRange range(startOfType, semiColon);
+                rewriter.removeRange(range, opts);
+            } else {
+                for (size_t i = 0; i < lastUsed; ++i) if (!isUsed[i]) {
+                    // beginning of variable name
+                    SourceLocation beg = vars[i]->getLocation();
+
+                    // end of initializer
+                    SourceLocation end = vars[i]->getSourceRange().getEnd();
+
+                    if (i+1 < n) {
+                        // comma
+                        end = findTokenAfterLocation(end, ctx, tok::comma);
+                    }
+
+                    if (beg.isValid() && end.isValid()) {
+                        SourceRange range(beg, end);
+                        rewriter.removeRange(range, opts);
+                    }
+                }
+                if (lastUsed + 1 != n) {
+                    // clear all remaining variables, starting with comma
+                    SourceLocation end = vars[lastUsed]->getSourceRange().getEnd();
+                    SourceLocation comma = findTokenAfterLocation(end, ctx, tok::comma);
+                    SourceRange range(comma, endOfLastVar);
+                    rewriter.removeRange(range, opts);
+                }
+            }
+        }
+    }
+
 
     std::string toString(const Decl* decl) const {
         if (!decl)
@@ -685,6 +751,7 @@ private:
     SmartRewriter& rewriter;
     RemoveInactivePreprocessorBlocks& ppCallbacks;
     std::string& result;
+    SourceInfo srcInfo;
 };
 
 

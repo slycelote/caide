@@ -14,10 +14,12 @@ using namespace clang;
 // Copied from lib/ARCMigrate/Transforms.cpp
 
 /// \brief \arg Loc is the end of a statement range. This returns the location
-/// of the semicolon following the statement.
-/// If no semicolon is found or the location is inside a macro, the returned
+/// of the token of expected type following the statement.
+/// If no token of this type is found or the location is inside a macro, the returned
 /// source location will be invalid.
-SourceLocation findSemiAfterLocation(SourceLocation loc, ASTContext& Ctx) {
+SourceLocation findTokenAfterLocation(SourceLocation loc, ASTContext& Ctx,
+        tok::TokenKind tokenType)
+{
     SourceManager &SM = Ctx.getSourceManager();
     if (loc.isMacroID()) {
         if (!Lexer::isAtEndOfMacroExpansion(loc, SM, Ctx.getLangOpts(), &loc))
@@ -41,10 +43,14 @@ SourceLocation findSemiAfterLocation(SourceLocation loc, ASTContext& Ctx) {
             file.begin(), tokenBegin, file.end());
     Token tok;
     lexer.LexFromRawLexer(tok);
-    if (tok.isNot(tok::semi))
+    if (tok.isNot(tokenType))
         return SourceLocation();
 
     return tok.getLocation();
+}
+
+SourceLocation findSemiAfterLocation(SourceLocation loc, ASTContext& Ctx) {
+    return findTokenAfterLocation(loc, Ctx, tok::semi);
 }
 
 /// \brief 'Loc' is the end of a statement range. This returns the location

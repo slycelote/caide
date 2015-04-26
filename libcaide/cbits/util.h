@@ -1,6 +1,7 @@
 #pragma once
 
 #include "clang/Basic/SourceLocation.h"
+#include "clang/Basic/TokenKinds.h"
 #include "clang/Tooling/CompilationDatabase.h"
 
 namespace clang {
@@ -11,6 +12,7 @@ namespace clang {
 #include <vector>
 #include <string>
 
+clang::SourceLocation findTokenAfterLocation(clang::SourceLocation loc, clang::ASTContext& Ctx, clang::tok::TokenKind tokenType);
 clang::SourceLocation findSemiAfterLocation(clang::SourceLocation loc, clang::ASTContext& Ctx);
 clang::SourceLocation findLocationAfterSemi(clang::SourceLocation loc, clang::ASTContext& Ctx);
 
