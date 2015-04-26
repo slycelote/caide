@@ -135,6 +135,8 @@ struct IntTemplate {
 
 typedef long long ll;
 
+#include "inc.h"
+
 int main() {
     {
         int x;

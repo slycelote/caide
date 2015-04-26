@@ -226,7 +226,7 @@ private:
     std::string getCanonicalPath(const FileEntry* entry) const {
         const DirectoryEntry* dirEntry = entry->getDir();
         StringRef strRef = srcManager.getFileManager().getCanonicalName(dirEntry);
-        std::string res(strRef.data());
+        std::string res(strRef.begin(), strRef.end());
         res.push_back('/');
         std::string fname(entry->getName());
         int i = (int)fname.size() - 1;
