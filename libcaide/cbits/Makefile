@@ -48,7 +48,7 @@ all: make_builddir $(BUILDDIR)/libcpphelper.a $(BUILDDIR)/libchelper.a
 make_builddir:
 	@test -d $(BUILDDIR) || mkdir $(BUILDDIR)
 
-$(BUILDDIR)/libcpphelper.a: $(BUILDDIR)/inliner.o $(BUILDDIR)/optimizer.o $(BUILDDIR)/SmartRewriter.o $(BUILDDIR)/util.o $(BUILDDIR)/RemoveInactivePreprocessorBlocks.o
+$(BUILDDIR)/libcpphelper.a: $(BUILDDIR)/inliner.o $(BUILDDIR)/optimizer.o $(BUILDDIR)/SmartRewriter.o $(BUILDDIR)/util.o $(BUILDDIR)/RemoveInactivePreprocessorBlocks.o $(BUILDDIR)/StmtParentMap.o
 	$(ARCHIVER) rcs $(BUILDDIR)/libcpphelper.a $^
 
 $(BUILDDIR)/cwrapper.o: cwrapper.cpp eol.h
@@ -68,6 +68,9 @@ $(BUILDDIR)/SmartRewriter.o: SmartRewriter.cpp SmartRewriter.h
 
 $(BUILDDIR)/RemoveInactivePreprocessorBlocks.o: RemoveInactivePreprocessorBlocks.cpp RemoveInactivePreprocessorBlocks.h
 	$(CXX) $(CXXFLAGS) $(LLVM_CXXFLAGS) $(CLANG_INCLUDES) RemoveInactivePreprocessorBlocks.cpp -o $@
+
+$(BUILDDIR)/StmtParentMap.o: StmtParentMap.cpp StmtParentMap.h
+	$(CXX) $(CXXFLAGS) $(LLVM_CXXFLAGS) $(CLANG_INCLUDES) StmtParentMap.cpp -o $@
 
 $(BUILDDIR)/util.o: util.cpp util.h
 	$(CXX) $(CXXFLAGS) $(LLVM_CXXFLAGS) $(CLANG_INCLUDES) util.cpp -o $@
