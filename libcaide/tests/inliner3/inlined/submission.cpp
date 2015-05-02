@@ -35,9 +35,29 @@ void f3() {
 }
 */
 
+int f6() {
+    return 6;
+}
+
+struct S2 {
+    int i;
+    S2()
+        : i(f6())
+    {}
+};
+
+int f7() {
+    return 7;
+}
+
+void f8(int i = f7()) {
+}
+
 int main() {
     f2();
     //f3<int>();
     f4();
+    S2 s2;
+    f8();
 }
 

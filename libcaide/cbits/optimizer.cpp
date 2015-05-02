@@ -334,6 +334,24 @@ public:
 
             // now push current function on top of the stack
             std::unique_ptr<StmtParentMap> parentMap(new StmtParentMap(f->getBody()));
+
+            // Function arguments are not inside the body; need to add them to the parent map explicitly
+            for (unsigned i = 0; i < f->getNumParams(); ++i) {
+                ParmVarDecl* argument = f->getParamDecl(i);
+                if (argument->hasDefaultArg() && !argument->hasUnparsedDefaultArg()
+                    && !argument->hasUninstantiatedDefaultArg())
+                {
+                    parentMap->addStmt(argument->getDefaultArg());
+                }
+            }
+
+            // Ditto for constructor initializers
+            if (CXXConstructorDecl* ctorDecl = dyn_cast<CXXConstructorDecl>(f)) {
+                for (auto init = ctorDecl->init_begin(); init != ctorDecl->init_end(); ++init) {
+                    parentMap->addStmt((**init).getInit());
+                }
+            }
+
             functionLexicalStack.emplace_back(f, std::move(parentMap));
         }
 
