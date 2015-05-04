@@ -5,11 +5,12 @@ dist
 .cabal-sandbox
 cabal.sandbox.config
 
-### Build artifacts ###
+### Other build artifacts ###
 /cbits/build
 /cbits/clangbuild*
 /tests/tmp
 /res/*.zip
+*.pyc
 
 ### IntelliJ ###
 *.iml
@@ -20,4 +21,8 @@ cabal.sandbox.config
 ## File-based project format:
 *.ipr
 *.iws
+
+### Misc ###
+/codedb
+/tools/cfkeys.py
 

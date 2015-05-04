@@ -2,7 +2,7 @@
 cur_dir=$( cd $(dirname "${BASH_SOURCE[0]}") ; pwd )
 [ -d "$cur_dir" ] || exit 420
 
-build_dir="$cur_dir/clangbuild"
+build_dir="$cur_dir/clangbuilddebug"
 mkdir -p "$build_dir"
 cd "$build_dir"
 "$cur_dir/llvm/configure"   "--with-clang-srcdir=$cur_dir/clang" \
@@ -23,5 +23,6 @@ cd "$build_dir"
                             "--disable-terminfo" \
                             "--enable-bindings=none" \
                             "--enable-libcpp=no" \
-                            "--prefix=$build_dir/out"
+                            "--prefix=$build_dir/out" \
+                            "--enable-debug-symbols" "--enable-debug-runtime"
 

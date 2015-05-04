@@ -196,6 +196,7 @@ clangOptions root True | "mingw" `isPrefixOf` os = [
 clangOptions root True = [
     "-target",
     arch ++ "-" ++ os,
+    -- clang headers such as xmmintrin.h are still required
     "-isystem",
     encodeString $ root </> "include",
     "-I",
