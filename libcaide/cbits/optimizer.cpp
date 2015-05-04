@@ -40,7 +40,7 @@ using namespace std;
 
 typedef std::map<Decl*, std::set<Decl*> > References;
 
-// Contains information that DependenciesCollectors passes to the next stage
+// Contains information that DependenciesCollector passes to the next stage
 struct SourceInfo {
     // key: Decl, value: what the key uses.
     References uses;
@@ -352,7 +352,7 @@ public:
         if (f->isMain())
             srcInfo.declsToKeep.insert(f);
 
-        if (f->doesThisDeclarationHaveABody()) {
+        if (f->doesThisDeclarationHaveABody() && !f->isLateTemplateParsed()) {
             // first rewind function stack
             DeclContext* ctx = f;
             auto it = functionLexicalStack.end();

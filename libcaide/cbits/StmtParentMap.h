@@ -26,6 +26,8 @@ public:
   explicit StmtParentMap(clang::Stmt* ASTRoot);
   StmtParentMap(const StmtParentMap&) = delete;
   StmtParentMap(StmtParentMap&&) = delete;
+  StmtParentMap& operator=(StmtParentMap&&) = delete;
+  StmtParentMap& operator=(const StmtParentMap&) = delete;
   ~StmtParentMap();
 
   /// \brief Adds and/or updates the parent/child-relations of the complete
