@@ -216,7 +216,8 @@ different files etc.
 
 3. Sometimes the inliner will erroneously remove a used declaration (a
    function or a variable). You should report it, but for an immediate fix,
-mark the declaration with `/// caide keep` comment (note the triple slash).
+mark the declaration with `/// caide keep` or `/** caide keep */` comment
+(note the triple slash and the double star).
 
 # Description of files in caide folder
 

@@ -56,11 +56,16 @@ void f8(int i = f7()) {
 /// caide keep
 void f9() {}
 
+int i4 ;
+
+int i8, i10;
+
 int main() {
     f2();
     //f3<int>();
     f4();
     S2 s2;
     f8();
+    i4; i8; i10;
 }
 

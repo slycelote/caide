@@ -34,9 +34,8 @@ def get_contest_status(contestId):
     return apiRequest('contest.status', params)
 
 
-def download_submission(contestId, submissionId):
+def download_submission_from_url(url):
     conn = httplib.HTTPConnection('codeforces.com')
-    url = 'http://codeforces.com/contest/'+str(contestId) + '/submission/'+str(submissionId)
     conn.request('GET', url)
     response = conn.getresponse()
     print response.status, response.reason
@@ -78,6 +77,10 @@ def download_submission(contestId, submissionId):
     parser.feed(data)
     parser.close()
     return parser.problem_text
+
+def download_submission(contestId, submissionId):
+    url = 'http://codeforces.com/contest/'+str(contestId) + '/submission/'+str(submissionId)
+    return download_submission_from_url(url)
 
 def download_submissions(contestId):
     print 'Getting submission list for contest id=' + str(contestId)
