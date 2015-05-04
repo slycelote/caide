@@ -148,6 +148,8 @@ namespace slycelote.VsCaide
             }
         }
 
+        private CHelperServer CHelperServer;
+
         public void Solution_Opened()
         {
             lock (ToDoAfterAllProjectsLoaded)
@@ -165,6 +167,11 @@ namespace slycelote.VsCaide
                 windowFrame.Show();
                 ReloadProblemList();
 
+                if (CHelperServer != null)
+                    CHelperServer.Stop();
+
+                CHelperServer = new CHelperServer();
+
                 AfterProjectsLoaded(() => SolutionUtilities.CreateCppLibProject());
             }
         }
@@ -173,6 +180,11 @@ namespace slycelote.VsCaide
         {
             cbProblems.Items.Clear();
             EnableAll(false);
+            if (CHelperServer != null)
+            {
+                CHelperServer.Stop();
+                CHelperServer = null;
+            }
         }
 
         private void EnableAll(bool enable)

@@ -11,7 +11,7 @@ import qualified Data.ByteString as BS
 import qualified Data.Text as T
 import qualified Filesystem.Path as F
 import Network
-import System.IO (hClose)
+import System.IO (hClose, hSetBuffering, stdout, stderr, BufferMode(NoBuffering))
 import System.IO.Error (tryIOError)
 
 import Data.Text.Encoding.Util (tryDecodeUtf8, universalNewlineConversionOnInput)
@@ -25,8 +25,10 @@ import Caide.Types
 
 runHttpServer :: F.FilePath -> IO ()
 runHttpServer root = withSocketsDo $ do
+    hSetBuffering stdout NoBuffering
+    hSetBuffering stderr NoBuffering
     sock <- listenOn $ PortNumber 4243
-    putStrLn "Running HTTP server for CHelper extension. Press Return to terminate."
+    T.putStrLn "Running HTTP server for CHelper extension. Press Return to terminate."
     tid <- forkIO $ void . sequence . repeat $ processRequest sock root
     _ <- getLine
     killThread tid
@@ -47,7 +49,7 @@ processRequest sock root = void . tryIOError $ do
             T.length page `seq` hClose h
 
             if null body
-            then putStrLn "Invalid request!"
+            then T.putStrLn "Invalid request!"
             else process chid page root
 
 

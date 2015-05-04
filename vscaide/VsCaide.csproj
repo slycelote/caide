@@ -134,6 +134,7 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CHelperServer.cs" />
     <Compile Include="TestCase.cs" />
     <Compile Include="UI\EditTestsWindow.xaml.cs">
       <DependentUpon>EditTestsWindow.xaml</DependentUpon>
@@ -154,6 +155,7 @@
     </Compile>
     <Compile Include="Utilities\CaideException.cs" />
     <Compile Include="Utilities\CaideExe.cs" />
+    <Compile Include="Utilities\CommandLine.cs" />
     <Compile Include="Utilities\FileUtility.cs" />
     <Compile Include="Utilities\Logger.cs" />
     <Compile Include="Utilities\Paths.cs" />
