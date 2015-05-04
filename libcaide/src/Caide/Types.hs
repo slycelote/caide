@@ -33,7 +33,6 @@ module Caide.Types(
     , ProgrammingLanguage (..)
     , TestCase (..)
     , URL
-    , CommandHandler (..)
     , Builder
     , BuilderResult(..)
     , Feature (..)
@@ -119,14 +118,6 @@ newtype Monad m => CaideM m a = CaideM { unCaideM :: StateT CaideState (ExceptT 
 
 type CaideIO a = CaideM IO a
 
--- | Describes caide command requested by the user, such as `init` or `test`
-data CommandHandler = CommandHandler
-    { command      :: Text
-    , description  :: Text
-    , usage        :: Text
-    , action       :: [Text] -> CaideIO ()
-    }
-
 -- | 'Builder' result
 data BuilderResult = BuildFailed  -- ^ Build failed or program under test exited unexpectedly
                    | TestsFailed  -- ^ Build succeeded, tests have been evaluated and failed
@@ -168,7 +159,8 @@ runInDirectory dir caideAction = do
     case ret of
         Left e -> return $ Left e
         Right (a, finalState) -> do
-            forM_ [f | f <- M.assocs (files finalState), modified (snd f)] $ uncurry writeConfigParser
+            forM_ [f | f <- M.assocs (files finalState), modified (snd f)] $
+                uncurry writeConfigParser
             return $ Right a
 
 throw :: Monad m => Text -> CaideM m a
