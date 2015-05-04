@@ -21,7 +21,7 @@ import Caide.Configuration (getDefaultLanguage, setActiveProblem, getProblemConf
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
 import Caide.Registry (findProblemParser)
-import Caide.Util (pathToText, mapWithLimitedThreads)
+import Caide.Util (pathToText, mapWithLimitedThreads, takeLock)
 
 
 
@@ -38,6 +38,9 @@ initializeProblem problem = do
     root <- caideRoot
     let probId = problemId problem
         testDir = root </> fromText probId </> ".caideproblem" </> "test"
+
+    takeLock
+    setActiveProblem probId
     problemConfPath  <- getProblemConfigFile probId
     problemStatePath <- getProblemStateFile probId
 
@@ -73,9 +76,6 @@ createNewProblem probId probType = do
     -- Prepare problem directory
     liftIO $ createDirectory False problemDir
 
-
-    -- Set active problem
-    setActiveProblem probId
     initializeProblem problem
     liftIO $ T.putStrLn . T.concat $ ["Problem successfully created in folder ", probId]
 
@@ -102,8 +102,6 @@ saveProblem problem samples = do
             writeTextFile inFile  $ testCaseInput sample
             writeTextFile outFile $ testCaseOutput sample
 
-    -- Set active problem
-    setActiveProblem probId
     initializeProblem problem
     liftIO $ T.putStrLn . T.concat $ ["Problem successfully parsed into folder ", probId]
 

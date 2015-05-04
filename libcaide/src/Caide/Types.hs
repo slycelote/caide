@@ -18,11 +18,13 @@ module Caide.Types(
     , assert
 
     , Option (..)
-    , Config
     , ConfigFileHandle
+    , Persistent
+    , Temporary
     , readConf
     , createConf
     , flushConf
+    , getTemporaryConf
     , getProp
     , setProp
     , caideRoot
@@ -106,12 +108,9 @@ data ProgrammingLanguage = ProgrammingLanguage
     , inlineCode         :: ProblemID -> CaideIO ()
     }
 
-
 class Option a where
     optionToString :: a -> String
     optionFromString :: String -> Maybe a
-
-type Config = C.ConfigParser
 
 newtype Monad m => CaideM m a = CaideM { unCaideM :: StateT CaideState (ExceptT C.CPError m) a }
     deriving (Functor, Applicative, Monad, MonadIO, MonadError C.CPError, MonadState CaideState)
@@ -146,8 +145,14 @@ noOpFeature =  Feature
     , onProblemRemoved     = const $ return ()
     }
 
+-- | A tag of 'ConfigFileHandle' indicating that the config is mapped by a file on disk
+data Persistent
+
+-- | A tag of 'ConfigFileHandle' indicating that the config is temporary (for current run only)
+data Temporary
+
 -- | File handle through which it's possible to access options. See 'setProp', 'getProp'
-newtype ConfigFileHandle = FileHandle F.FilePath
+newtype ConfigFileHandle configType = FileHandle F.FilePath
 
 runCaideM :: Monad m => CaideM m a -> CaideState -> m (Either C.CPError (a, CaideState))
 runCaideM caideAction p = runExceptT $ runStateT (unCaideM caideAction) p
@@ -159,7 +164,8 @@ runInDirectory dir caideAction = do
     case ret of
         Left e -> return $ Left e
         Right (a, finalState) -> do
-            forM_ [f | f <- M.assocs (files finalState), modified (snd f)] $
+            forM_ [f | f@(filePath, fileHandle) <- M.assocs (files finalState),
+                        modified fileHandle && not (F.null filePath)] $
                 uncurry writeConfigParser
             return $ Right a
 
@@ -174,7 +180,7 @@ caideRoot :: Monad m => CaideM m F.FilePath
 caideRoot = gets root
 
 -- | Creates a new config file. Throws if it already exists.
-createConf :: Monad m => F.FilePath -> C.ConfigParser -> CaideM m ConfigFileHandle
+createConf :: Monad m => F.FilePath -> C.ConfigParser -> CaideM m (ConfigFileHandle Persistent)
 createConf filePath cp = do
     fileMap <- gets files
     when (M.member filePath fileMap) $
@@ -183,7 +189,7 @@ createConf filePath cp = do
     return $ FileHandle filePath
 
 -- | Reads a config file
-readConf :: F.FilePath -> CaideIO ConfigFileHandle
+readConf :: F.FilePath -> CaideIO (ConfigFileHandle Persistent)
 readConf filePath = do
     fileMap <- gets files
     unless (M.member filePath fileMap) $ do
@@ -192,7 +198,16 @@ readConf filePath = do
         modifyWithFiles $ M.insert filePath newFile
     return $ FileHandle filePath
 
-flushConf :: ConfigFileHandle -> CaideIO ()
+getTemporaryConf :: CaideIO (ConfigFileHandle Temporary)
+getTemporaryConf = do
+    let emptyPath = F.empty
+    fileMap <- gets files
+    unless (M.member emptyPath fileMap) $ do
+        let newFile = ConfigInMemory { configParser = C.emptyCP, modified = False }
+        modifyWithFiles $ M.insert emptyPath newFile
+    return $ FileHandle emptyPath
+
+flushConf :: ConfigFileHandle Persistent -> CaideIO ()
 flushConf (FileHandle filePath) = do
     fileMap <- gets files
     case M.lookup filePath fileMap of
@@ -202,7 +217,7 @@ flushConf (FileHandle filePath) = do
             modifyWithFiles $ M.adjust (\c -> c{modified=False}) filePath
 
 
-getProp :: (Monad m, Option a) => ConfigFileHandle -> String -> String -> CaideM m a
+getProp :: (Monad m, Option a) => ConfigFileHandle c -> String -> String -> CaideM m a
 getProp (FileHandle path) section key = do
     mf <- gets (M.lookup path . files)
     case mf of
@@ -214,7 +229,7 @@ getProp (FileHandle path) section key = do
                 Just a  -> return a
                 Nothing -> throw $ T.concat ["Couldn't parse option ", pack opt]
 
-setProp :: (Monad m, Option a) => ConfigFileHandle -> String -> String -> a -> CaideM m ()
+setProp :: (Monad m, Option a) => ConfigFileHandle c -> String -> String -> a -> CaideM m ()
 setProp (FileHandle path) section key value = do
     mf <- gets (M.lookup path . files)
     case mf of

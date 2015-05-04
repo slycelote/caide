@@ -19,7 +19,7 @@ import Caide.Commands.Checkout (checkoutProblem)
 import Caide.Configuration (getActiveProblem, getFeatures)
 import Caide.Registry (findFeature)
 import Caide.Types
-import Caide.Util (copyTreeToDir, copyFileToDir, listDir, pathToText, tshow)
+import Caide.Util (copyTreeToDir, copyFileToDir, listDir, pathToText, tshow, takeLock)
 
 
 archiveProblem :: ProblemID -> CaideIO ()
@@ -35,6 +35,7 @@ archiveProblem probId = do
     let formattedDate = formatTime defaultTimeLocale "%F" now
         archiveDirToday = root </> "caide_archive" </> decodeString formattedDate
 
+    takeLock
     liftIO $ do
         archiveDir <- appendNumberIfExists archiveDirToday probId
         createTree archiveDir

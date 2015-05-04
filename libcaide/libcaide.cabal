@@ -13,20 +13,20 @@ description:
     Automates certain common tasks that you do during programming competitions:
     parsing, running and debugging problem tests, inlining library code.
 
-Flag preferlibcpp
-  description: Prefer building with libc++
-  default: False
-
-Flag preferlibstdcpp
-  description: Prefer building with libstdc++ (takes precedence over PreferLibCPP)
-  default: False
-
 Flag cppinliner
   description: Include support for inlining C++ code via libclang
   default: True
 
 Flag debug
   description: Debug build
+  default: False
+
+Flag preferlibcpp
+  description: Prefer building with libc++
+  default: False
+
+Flag preferlibstdcpp
+  description: Prefer building with libstdc++ (takes precedence over PreferLibCPP)
   default: False
 
 executable caide
@@ -38,6 +38,7 @@ executable caide
                    ConfigFile,
                    containers >= 0.5.0.0,
                    file-embed,
+                   filelock,
                    filepath,
                    HTTP >= 4000.2.11,
                    MissingH,

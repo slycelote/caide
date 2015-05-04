@@ -11,6 +11,7 @@ import qualified Data.Text as T
 import Caide.Types
 import Caide.Registry (findLanguage, findFeature)
 import Caide.Configuration (getActiveProblem, readProblemState, getFeatures)
+import Caide.Util (takeLock)
 
 
 generateScaffoldSolution :: T.Text -> CaideIO ()
@@ -18,6 +19,7 @@ generateScaffoldSolution lang = case findLanguage lang of
     Nothing      -> throw . T.concat $ ["Unknown or unsupported language: ", lang]
     Just ([], _) -> throw "Unexpected language"
     Just (canonicalLanguageName:_, language) -> do
+        takeLock
         problem <- getActiveProblem
 
         generateScaffold language problem

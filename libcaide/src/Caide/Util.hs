@@ -11,19 +11,23 @@ module Caide.Util(
     , copyFileToDir
     , copyTreeToDir
     , readTextFile'
+    , takeLock
 ) where
 
 import Control.Concurrent.Async (mapConcurrently)
-import Control.Monad (forM_)
+import Control.Monad (forM_, when)
 import Control.Monad.State (liftIO)
 import qualified Data.Text as T
 import Filesystem (copyFile, listDirectory, isFile, isDirectory, createDirectory)
 import qualified Filesystem.Path as F
 import Filesystem.Path (basename, filename, (</>))
-import Filesystem.Path.CurrentOS (toText)
+import Filesystem.Path.CurrentOS (encodeString, toText)
+
+import System.FileLock (SharedExclusive(Exclusive), tryLockFile)
 
 import Filesystem.Util (readTextFile)
 import Network.HTTP.Util (downloadDocument)
+import Caide.Configuration (orDefault, readCaideConf)
 import Caide.Types
 
 
@@ -83,4 +87,18 @@ readTextFile' filePath = do
         Left err   -> throw err
         Right cont -> return cont
 
+takeLock :: CaideIO ()
+takeLock = do
+    h <- readCaideConf
+    hTemp <- getTemporaryConf
+    useLock <- getProp h "core" "use_lock" `orDefault` True
+    haveLock <- getProp hTemp "DEFAULT" "have_lock" `orDefault` False
+    when (useLock && not haveLock) $ do
+        root <- caideRoot
+        let lockPath = root </> ".caide" </> "lock"
+        mbLock <- liftIO $ tryLockFile (encodeString lockPath) Exclusive
+        case mbLock of
+            Nothing -> throw $ T.concat ["Couldn't lock file ", pathToText lockPath,
+                        ". Make sure that another instance of caide is not running."]
+            _ -> setProp hTemp "DEFAULT" "have_lock" True
 
