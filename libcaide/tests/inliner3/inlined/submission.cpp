@@ -53,6 +53,9 @@ int f7() {
 void f8(int i = f7()) {
 }
 
+/// caide keep
+void f9() {}
+
 int main() {
     f2();
     //f3<int>();

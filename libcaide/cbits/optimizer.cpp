@@ -7,6 +7,7 @@
 
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/Comment.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/FileManager.h"
@@ -45,8 +46,9 @@ struct SourceInfo {
     References uses;
 
     // 'Roots of the dependency tree':
-    // - int main(), or a special function (for Topcoder).
-    // - static variables with possible side effects.
+    // - int main(), or a special function (for Topcoder)
+    // - static variables with possible side effects
+    // - declarations marked with a comment /// caide keep
     set<Decl*> declsToKeep;
 
     // Delayed parsed functions.
@@ -225,6 +227,24 @@ public:
 
         lastVisitedDecl = decl;
 
+        if (comments::FullComment* comment =
+            decl->getASTContext().getLocalCommentForDeclUncached(decl))
+        {
+            bool invalid = false;
+            const char* beg = sourceManager.getCharacterData(comment->getLocStart(), &invalid);
+            if (beg && !invalid) {
+                const char* end =
+                    sourceManager.getCharacterData(comment->getLocEnd(), &invalid);
+                if (end && !invalid) {
+                    static const string caideKeepComment = "caide keep";
+                    StringRef haystack(beg, end - beg + 1);
+                    StringRef needle(caideKeepComment);
+                    if (haystack.find(needle) != StringRef::npos)
+                        srcInfo.declsToKeep.insert(decl);
+                }
+            }
+        }
+
         return true;
     }
 
@@ -273,11 +293,19 @@ public:
         if (!varDecl->isLocalVarDeclOrParm() && sourceManager.isInMainFile(startLocation)) {
             srcInfo.staticVariables[startLocation].push_back(varDecl);
             /*
-            TODO: detect initializers with side effects
+            Technically, we cannot remove global static variables because
+            their initializers may have side effects.
+            The following code marks too many expressions as having side effects
+            (e.g. it will mark an std::vector constructor as such):
+
             VarDecl* definition = varDecl->getDefinition();
             Expr* initExpr = definition ? definition->getInit() : nullptr;
             if (initExpr && initExpr->HasSideEffects(varDecl->getASTContext()))
                 srcInfo.declsToKeep.insert(varDecl);
+
+            Because RAII idiom is not common in competitive programming, we simply
+            remove unreferenced global static variables unless they are marked with
+            a '/// caide keep' comment.
             */
         }
         return true;
@@ -387,10 +415,11 @@ public:
         if (f->doesThisDeclarationHaveABody() &&
                 sourceManager.isInMainFile(f->getLocStart()))
         {
-            DeclarationName DeclName = f->getNameInfo().getName();
-            string FuncName = DeclName.getAsString();
-
-            dbg("Moving to " << FuncName << " at " << toString(f->getLocation()) << std::endl);
+            dbg("Moving to ";
+                DeclarationName DeclName = f->getNameInfo().getName();
+                string FuncName = DeclName.getAsString();
+                cerr << FuncName << " at " << toString(f->getLocation()) << std::endl;
+            );
         }
 
         return true;

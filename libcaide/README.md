@@ -214,6 +214,10 @@ will do this automatically.
 identically named classes/variables, `#define`s with different meaning in
 different files etc.
 
+3. Sometimes the inliner will erroneously remove a used declaration (a
+   function or a variable). You should report it, but for an immediate fix,
+mark the declaration with `/// caide keep` comment (note the triple slash).
+
 # Description of files in caide folder
 
 * `caide.ini` is a text file containing general caide settings.
