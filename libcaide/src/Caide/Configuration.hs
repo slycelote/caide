@@ -189,6 +189,7 @@ clangOptions root False = [
 clangOptions root True | "mingw" `isPrefixOf` os = [
     "-target",
     "i386-pc-windows-msvc",
+    "-fdiagnostics-format=msvc",
     "-I",
     encodeString $ root </> "cpplib"
     ]
