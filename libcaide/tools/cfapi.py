@@ -1,11 +1,18 @@
-from cfkeys import KEY, SECRET
-import httplib, urllib, time, random, hashlib, json, os.path
+import httplib
+import urllib
+import time
+import random
+import hashlib
+import json
+import os.path
 from HTMLParser import HTMLParser
 from htmlentitydefs import name2codepoint
 from collections import defaultdict
 
+from cfkeys import KEY, SECRET
 
-def apiRequest(method_name, params):
+
+def api_request(method_name, params):
     now = int(time.time())
     params = [(k, str(v)) for (k, v) in params]
     params += [('apiKey', KEY), ('time', now), ('lang', 'en')]
@@ -27,11 +34,12 @@ def apiRequest(method_name, params):
 
 def get_user_info(users):
     params = [('handles', ';'.join(users))]
-    return apiRequest('user.info', params)
+    return api_request('user.info', params)
 
-def get_contest_status(contestId):
-    params = [('contestId', contestId)]
-    return apiRequest('contest.status', params)
+
+def get_contest_status(contest_id):
+    params = [('contestId', contest_id)]
+    return api_request('contest.status', params)
 
 
 def download_submission_from_url(url):
@@ -39,7 +47,7 @@ def download_submission_from_url(url):
     conn.request('GET', url)
     response = conn.getresponse()
     print response.status, response.reason
-    data = response.read()
+    html_page = response.read()
     conn.close()
 
     class ProblemParser(HTMLParser):
@@ -74,55 +82,57 @@ def download_submission_from_url(url):
                     self.problem_text += chr(int(name))
 
     parser = ProblemParser()
-    parser.feed(data)
+    parser.feed(html_page)
     parser.close()
     return parser.problem_text
 
-def download_submission(contestId, submissionId):
-    url = 'http://codeforces.com/contest/'+str(contestId) + '/submission/'+str(submissionId)
+
+def download_submission(contest_id, submission_id):
+    url = 'http://codeforces.com/contest/' + str(contest_id) + '/submission/' + str(submission_id)
     return download_submission_from_url(url)
 
-def download_submissions(contestId):
-    print 'Getting submission list for contest id=' + str(contestId)
-    j = get_contest_status(contestId)
+
+def download_submissions(contest_id):
+    print 'Getting submission list for contest id=' + str(contest_id)
+    j = get_contest_status(contest_id)
 
     print 'Grouping...'
-    grouped = defaultdict(list) # group by author and problem
+    grouped = defaultdict(list)  # group by author and problem
     for submission in j['result']:
         if submission['programmingLanguage'].lower().find('c++') < 0:
             continue
         if 'verdict' not in submission:
             continue
-        if submission['verdict'] in ['COMPILATION_ERROR','SECURITY_VIOLATED','SKIPPED','REJECTED']:
+        if submission['verdict'] in ['COMPILATION_ERROR', 'SECURITY_VIOLATED', 'SKIPPED',
+                                     'REJECTED']:
             continue
 
         party = submission['author']
         if 'teamId' in party:
-            authorId = party['teamId']
+            author_id = party['teamId']
         else:
-            authorId = party['members'][0]['handle']
-        problemId = submission['problem']['index']
-        grouped[(authorId, problemId)].append(submission)
-
-    j = None
+            author_id = party['members'][0]['handle']
+        problem_id = submission['problem']['index']
+        grouped[(author_id, problem_id)].append(submission)
 
     print 'Downloading...'
     for submissions in grouped.viewvalues():
         submissions.sort(key=lambda s: s['creationTimeSeconds'])
         latest = submissions[-1:]
         for submission in latest:
-            submissionId = submission['id']
-            filename = os.path.join('cf', str(submissionId)+'.cpp')
+            submission_id = submission['id']
+            filename = os.path.join('cf', str(submission_id) + '.cpp')
             if not os.path.isfile(filename):
-                print submissionId
-                code = download_submission(contestId, submissionId)
+                print submission_id
+                code = download_submission(contest_id, submission_id)
                 with open(filename, 'w') as f:
                     f.write(code)
-                time.sleep(1.0) # 1 second
+                time.sleep(1.0)  # 1 second
+
 
 def test():
     print download_submission(534, 10976539)
 
+
 if __name__ == "__main__":
     test()
-
