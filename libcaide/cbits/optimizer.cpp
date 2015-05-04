@@ -130,8 +130,8 @@ private:
         }
         std::ostringstream os;
         os << fileName << ":" <<
-            sourceManager.getSpellingLineNumber(loc) << ":" <<
-            sourceManager.getSpellingColumnNumber(loc);
+            sourceManager.getExpansionLineNumber(loc) << ":" <<
+            sourceManager.getExpansionColumnNumber(loc);
         return os.str();
     }
 
