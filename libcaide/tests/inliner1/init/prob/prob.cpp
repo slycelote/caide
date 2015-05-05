@@ -28,6 +28,10 @@ const char* func<int>() {return "int";}
 template<>
 const char* func<int*>() { return "int*"; }
 
+#define MULTILINE \
+    f(); \
+    g();
+
 #define DEF_C 'a'
 #define DEF_I 0
 #define DEF_I2 2

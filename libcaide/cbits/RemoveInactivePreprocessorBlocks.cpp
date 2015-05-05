@@ -35,21 +35,27 @@ private:
         if (it == definedMacros.end() || isWhitelistedMacro(it->second.name))
             return false;
 
-        bool isUsed = false;
         for (const SourceRange& usageRange : it->second.usages) {
-            // Check whether the usage of the macro has been removed
             if (rewriter.canRemoveRange(usageRange)) {
-                isUsed = true;
-                break;
+                // The usage of the macro has not been removed, so
+                // we can't remove the definition
+                return false;
             }
         }
 
-        if (!isUsed) {
-            SourceLocation defLocation = it->first->getLocation();
-            removeLine(defLocation);
-            return true;
+        SourceLocation b = it->first->getLocation(), e;
+        if (const MacroInfo* info = it->first->getMacroInfo()) {
+            e = info->getDefinitionEndLoc();
+        } else {
+            e = b;
         }
-        return false;
+        b = changeColumn(b, 1);
+        e = changeColumn(e, 10000);
+
+        Rewriter::RewriteOptions opts;
+        opts.RemoveLineIfEmpty = true;
+        rewriter.removeRange(SourceRange(b, e), opts);
+        return true;
     }
 
     void removeLine(SourceLocation loc) {
