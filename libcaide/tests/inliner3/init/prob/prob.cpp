@@ -88,6 +88,8 @@ typedef A VI;
 struct B : VI {
 };
 
+typedef double DD;
+
 int main() {
     f2();
     //f3<int>();
@@ -99,5 +101,6 @@ int main() {
     v2 = 1;
     dp[0] = 1;
     B b;
+    dp[0] = (DD)1;
 }
 

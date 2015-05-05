@@ -293,6 +293,11 @@ public:
         return true;
     }
 
+    bool VisitExplicitCastExpr(ExplicitCastExpr* castExpr) {
+        insertReferenceToType(getParentDecl(castExpr), castExpr->getTypeAsWritten());
+        return true;
+    }
+
     bool VisitValueDecl(ValueDecl* valueDecl) {
         dbg(CAIDE_FUNC);
         // Mark any function as depending on its local variables.
