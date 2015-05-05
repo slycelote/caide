@@ -63,12 +63,31 @@ int i1, i2 = 0, i3, i4 , i5;
 
 int i7, i8, i9, i10;
 
+#define td int
+#define I1 5
+
+td v1[I1], v2;
+
+#define td2 int
+#define I2 5
+
+td2 v3[I2];
+
+
+#define foo int
+#define bar foo
+void usedFunc() {}
+bar y() { return 1; }
+
+
 int main() {
     f2();
     //f3<int>();
     f4();
     S2 s2;
     f8();
-    i4; i8; i10;
+    i4 = i8 = i10 = 1;
+    usedFunc();
+    v2 = 1;
 }
 

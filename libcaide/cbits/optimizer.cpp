@@ -286,9 +286,11 @@ public:
     }
 
     bool VisitVarDecl(VarDecl* varDecl) {
-        SourceLocation startLocation = varDecl->getLocStart();
-        if (!varDecl->isLocalVarDeclOrParm() && sourceManager.isInMainFile(startLocation)) {
-            srcInfo.staticVariables[startLocation].push_back(varDecl);
+        SourceLocation start = varDecl->getLocStart();
+        if (start.isMacroID())
+            start = sourceManager.getExpansionRange(start).first;
+        if (!varDecl->isLocalVarDeclOrParm() && sourceManager.isInMainFile(start)) {
+            srcInfo.staticVariables[start].push_back(varDecl);
             /*
             Technically, we cannot remove global static variables because
             their initializers may have side effects.
@@ -610,7 +612,16 @@ private:
         if (!decl)
             return;
         SourceLocation start = decl->getLocStart();
+        if (start.isMacroID())
+            start = sourceManager.getExpansionRange(start).first;
         SourceLocation end = decl->getLocEnd();
+        if (end.isMacroID()) {
+            dbg("NOT REMOVING " << decl->getDeclKindName() << " "
+                << decl << ": " << toString(start) << " " << toString(end)
+                << std::endl);
+            return;
+        }
+
         SourceLocation semicolonAfterDefinition = findSemiAfterLocation(end, decl->getASTContext());
         dbg("REMOVE " << decl->getDeclKindName() << " "
             << decl << ": " << toString(start) << " " << toString(end)
@@ -706,6 +717,8 @@ private:
 
             SourceLocation startOfType = kv.first;
             SourceLocation endOfLastVar = vars.back()->getSourceRange().getEnd();
+            if (endOfLastVar.isMacroID())
+                endOfLastVar = sourceManager.getExpansionRange(endOfLastVar).second;
             SourceLocation semiColon = findSemiAfterLocation(endOfLastVar, ctx);
 
             if (lastUsed == n) {
@@ -719,6 +732,8 @@ private:
 
                     // end of initializer
                     SourceLocation end = vars[i]->getSourceRange().getEnd();
+                    if (end.isMacroID())
+                        end = sourceManager.getExpansionRange(end).second;
 
                     if (i+1 < n) {
                         // comma
@@ -733,6 +748,8 @@ private:
                 if (lastUsed + 1 != n) {
                     // clear all remaining variables, starting with comma
                     SourceLocation end = vars[lastUsed]->getSourceRange().getEnd();
+                    if (end.isMacroID())
+                        end = sourceManager.getExpansionRange(end).second;
                     SourceLocation comma = findTokenAfterLocation(end, ctx, tok::comma);
                     SourceRange range(comma, endOfLastVar);
                     rewriter.removeRange(range, opts);

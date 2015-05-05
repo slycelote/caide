@@ -60,12 +60,21 @@ int i4 ;
 
 int i8, i10;
 
+#define td int
+
+td v2;
+
+void usedFunc() {}
+
+
 int main() {
     f2();
     //f3<int>();
     f4();
     S2 s2;
     f8();
-    i4; i8; i10;
+    i4 = i8 = i10 = 1;
+    usedFunc();
+    v2 = 1;
 }
 
