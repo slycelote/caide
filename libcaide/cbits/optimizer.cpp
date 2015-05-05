@@ -187,6 +187,9 @@ private:
         if (const PointerType* pointerType = dyn_cast<PointerType>(to))
             insertReferenceToType(from, pointerType->getPointeeType(), seen);
 
+        if (const ReferenceType* refType = dyn_cast<ReferenceType>(to))
+            insertReferenceToType(from, refType->getPointeeType(), seen);
+
         if (const TypedefType* typedefType = dyn_cast<TypedefType>(to))
             insertReference(from, typedefType->getDecl());
 
@@ -414,6 +417,9 @@ public:
                 {
                     parentMap->addStmt(argument->getDefaultArg());
                 }
+
+                // Add reference to the parameter
+                insertReference(f, argument);
             }
 
             // Ditto for constructor initializers

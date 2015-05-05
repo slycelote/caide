@@ -92,6 +92,9 @@ typedef double DD;
 
 typedef A atd1;
 typedef A atd2;
+typedef A atd3;
+
+int f(atd3& a){}
 
 int main() {
     f2();
@@ -107,5 +110,6 @@ int main() {
     dp[0] = (DD)1;
     atd1* ptr = 0;
     new atd2[10];
+    f(b);
 }
 
