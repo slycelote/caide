@@ -187,6 +187,21 @@ private:
         if (const TypedefType* typedefType = dyn_cast<TypedefType>(to))
             insertReference(from, typedefType->getDecl());
 
+        if (const CXXRecordDecl* recordDecl = to->getAsCXXRecordDecl()) {
+            if ((recordDecl = recordDecl->getDefinition())) {
+                bool isTemplated = recordDecl->getDescribedClassTemplate() != 0;
+                TemplateSpecializationKind specKind = recordDecl->getTemplateSpecializationKind();
+                if (isTemplated && (specKind == TSK_ImplicitInstantiation || specKind == TSK_Undeclared)) {}
+                else {
+                    for (const CXXBaseSpecifier* base = recordDecl->bases_begin();
+                         base != recordDecl->bases_end(); ++base)
+                    {
+                        insertReferenceToType(from, base->getType(), seen);
+                    }
+                }
+            }
+        }
+
         if (const TemplateSpecializationType* tempSpecType =
                 dyn_cast<TemplateSpecializationType>(to))
         {
@@ -440,7 +455,6 @@ public:
     }
 
     bool VisitCXXRecordDecl(CXXRecordDecl* recordDecl) {
-        // TODO dependencies on base classes?
         insertReference(recordDecl, recordDecl->getDescribedClassTemplate());
         return true;
     }

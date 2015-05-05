@@ -82,6 +82,12 @@ bar y() { return 1; }
 typedef double db;
 db dp[100];
 
+struct A {
+};
+typedef A VI;
+struct B : VI {
+};
+
 int main() {
     f2();
     //f3<int>();
@@ -92,5 +98,6 @@ int main() {
     usedFunc();
     v2 = 1;
     dp[0] = 1;
+    B b;
 }
 
