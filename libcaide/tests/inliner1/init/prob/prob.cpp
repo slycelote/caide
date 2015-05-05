@@ -41,6 +41,14 @@ int unused_func() {
     return DEF_I3;
 }
 
+int unused_func2() {
+#ifdef SOMETHING
+    return 1;
+#else
+    return 2;
+#endif
+}
+
 template<typename T>
 class TemplateMethodInTemplateClass {
 public:

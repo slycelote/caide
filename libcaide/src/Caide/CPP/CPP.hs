@@ -38,7 +38,6 @@ inlineCPPCode probID = do
         concatCodePath = problemDir </> ".caideproblem" </> "concat.cpp"
         inlinedCodePath = problemDir </> ".caideproblem" </> "inlined.cpp"
         inlinedNoPragmaOnceCodePath = problemDir </> ".caideproblem" </> "inlinedNoPragmaOnce.cpp"
-        optimizedPass1Path = problemDir </> ".caideproblem" </> "optimizedPass1.cpp"
         finalCodePath = problemDir </> "submission.cpp"
         libraryDirectory = root </> "cpplib"
 
@@ -60,13 +59,9 @@ inlineCPPCode probID = do
 
     removePragmaOnceFromFile inlinedCodePath inlinedNoPragmaOnceCodePath
 
-    retOptimizer1 <- liftIO $ removeUnusedCode inlinedNoPragmaOnceCodePath cmdLineOptions macrosToKeep optimizedPass1Path
-    when (retOptimizer1 /= 0) $
-        throw $ T.concat ["C++ library code inliner (pass 1) failed with error code ", tshow retOptimizer1]
-
-    retOptimizer2 <- liftIO $ removeUnusedCode optimizedPass1Path cmdLineOptions macrosToKeep finalCodePath
-    when (retOptimizer2 /= 0) $
-        throw $ T.concat ["C++ library code inliner (pass 2) failed with error code ", tshow retOptimizer2]
+    retOptimizer <- liftIO $ removeUnusedCode inlinedNoPragmaOnceCodePath cmdLineOptions macrosToKeep finalCodePath
+    when (retOptimizer /= 0) $
+        throw $ T.concat ["C++ library code inliner (pass 1) failed with error code ", tshow retOptimizer]
 
     liftIO $ copyFile finalCodePath $ root </> "submission.cpp"
 

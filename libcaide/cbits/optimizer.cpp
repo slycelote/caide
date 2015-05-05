@@ -643,8 +643,6 @@ public:
     {}
 
     virtual void HandleTranslationUnit(ASTContext& Ctx) {
-        ppCallbacks.Finalize();
-
         //cerr << "Build dependency graph" << std::endl;
         DependenciesCollector depsVisitor(sourceManager, srcInfo);
         depsVisitor.TraverseDecl(Ctx.getTranslationUnitDecl());
@@ -678,6 +676,8 @@ public:
         visitor.TraverseDecl(Ctx.getTranslationUnitDecl());
 
         removeUnusedVariables(used, Ctx);
+
+        ppCallbacks.Finalize();
 
         rewriter.applyChanges();
 

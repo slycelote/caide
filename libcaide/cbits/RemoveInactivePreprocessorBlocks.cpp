@@ -2,17 +2,36 @@
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Preprocessor.h"
 
+#include <map>
+#include <vector>
+
 #include "SmartRewriter.h"
 
 using namespace std;
 using namespace clang;
 
-IfDefClause::IfDefClause(const SourceLocation& ifLocation)
-    : selectedBranch(-1)
-    , keepAllBranches(false)
-{
-    locations.push_back(ifLocation);
-}
+struct IfDefClause {
+    // Locations of #if, #ifdef, #ifndef, #else, #elif tokens of this clause
+    vector<SourceLocation> locations;
+
+    // Index of selected branch in locations list; -1 if no branch was selected
+    int selectedBranch;
+
+    bool keepAllBranches;
+
+    explicit IfDefClause(const SourceLocation& ifLocation)
+        : selectedBranch(-1)
+        , keepAllBranches(false)
+    {
+        locations.push_back(ifLocation);
+    }
+};
+
+struct Macro {
+    SourceRange definition;
+    vector<SourceRange> usages;
+    SourceLocation undefinition;
+};
 
 struct RemoveInactivePreprocessorBlocks::RemoveInactivePreprocessorBlocksImpl {
 private:
@@ -23,46 +42,37 @@ private:
     vector<IfDefClause> activeClauses;
     set<string> definedMacroNames;
 
-    typedef map<const MacroDirective*, Macro> MacroUsages;
-    MacroUsages definedMacros;
+    // Currently defined macros
+    map<const MacroDirective*, Macro> definedMacros;
+
+    // Macros that were #defined, and then #undefined.
+    // We need to keep track of them separately because corresponding MacroDirective
+    // structure is released when the macro is undefined.
+    vector<Macro> undefinedMacros;
+
+    vector<SourceRange> inactiveBranches;
 
 private:
     bool isWhitelistedMacro(const string& macroName) const {
         return macrosToKeep.find(macroName) != macrosToKeep.end();
     }
 
-    bool tryRemoveMacroDefinition(MacroUsages::const_iterator it) {
-        if (it == definedMacros.end() || isWhitelistedMacro(it->second.name))
-            return false;
-
-        for (const SourceRange& usageRange : it->second.usages) {
+    void removeMacro(const Macro& macro) {
+        for (const SourceRange& usageRange : macro.usages) {
             if (rewriter.canRemoveRange(usageRange)) {
                 // The usage of the macro has not been removed, so
                 // we can't remove the definition
-                return false;
+                return;
             }
         }
 
-        SourceLocation b = it->first->getLocation(), e;
-        if (const MacroInfo* info = it->first->getMacroInfo()) {
-            e = info->getDefinitionEndLoc();
-        } else {
-            e = b;
-        }
-        b = changeColumn(b, 1);
-        e = changeColumn(e, 10000);
-
         Rewriter::RewriteOptions opts;
         opts.RemoveLineIfEmpty = true;
-        rewriter.removeRange(SourceRange(b, e), opts);
-        return true;
-    }
 
-    void removeLine(SourceLocation loc) {
-        Rewriter::RewriteOptions opts;
-        opts.RemoveLineIfEmpty = true;
-        SourceLocation b = changeColumn(loc, 1);
-        SourceLocation e = changeColumn(loc, 10000);
+        rewriter.removeRange(macro.definition, opts);
+
+        SourceLocation b = changeColumn(macro.undefinition, 1);
+        SourceLocation e = changeColumn(macro.undefinition, 10000);
         rewriter.removeRange(SourceRange(b, e), opts);
     }
 
@@ -83,8 +93,19 @@ public:
 
     void MacroDefined(const Token& MacroNameTok, const MacroDirective* MD) {
         definedMacroNames.insert(getTokenName(MacroNameTok));
-        if (MD && isInMainFile(MD->getLocation()))
-            definedMacros[MD].usages.clear();
+
+        if (MD && isInMainFile(MD->getLocation())) {
+            SourceLocation b = MD->getLocation(), e;
+            if (const MacroInfo* info = MD->getMacroInfo())
+                e = info->getDefinitionEndLoc();
+            else
+                e = b;
+
+            b = changeColumn(b, 1);
+            e = changeColumn(e, 10000);
+
+            definedMacros[MD].definition = SourceRange(b, e);
+        }
     }
 
     void MacroUndefined(const Token& MacroNameTok, const MacroDirective* MD) {
@@ -93,15 +114,13 @@ public:
         if (!MD || !isInMainFile(MD->getLocation()))
             return;
 
-        MacroUsages::const_iterator it = definedMacros.find(MD);
-        if (tryRemoveMacroDefinition(it)) {
-            // Removed the #define, so remove this #undef too
-            SourceLocation undefLoc = MacroNameTok.getLocation();
-            removeLine(undefLoc);
-        }
+        auto it = definedMacros.find(MD);
+        if (it != definedMacros.end()) {
+            it->second.undefinition = MacroNameTok.getLocation();
 
-        if (it != definedMacros.end())
+            undefinedMacros.push_back(it->second);
             definedMacros.erase(it);
+        }
     }
 
     void MacroExpands(const Token& /*MacroNameTok*/, const MacroDirective* MD,
@@ -116,7 +135,17 @@ public:
     void Finalize() {
         // Remove unused #defines that don't have a corresponding #undef
         for (auto it = definedMacros.begin(); it != definedMacros.end(); ++it)
-            tryRemoveMacroDefinition(it);
+            removeMacro(it->second);
+
+        // Remove unused #define / #undef pairs
+        for (const Macro& macro : undefinedMacros)
+            removeMacro(macro);
+
+        Rewriter::RewriteOptions opts;
+        opts.RemoveLineIfEmpty = true;
+
+        for (const SourceRange& range: inactiveBranches)
+            rewriter.removeRange(range, opts);
     }
 
     void If(SourceLocation Loc, SourceRange ConditionRange, ConditionValueKind ConditionValue) {
@@ -175,25 +204,22 @@ public:
         IfDefClause& clause = activeClauses.back();
         clause.locations.push_back(Loc);
 
-        Rewriter::RewriteOptions opts;
-        opts.RemoveLineIfEmpty = true;
-
         if (clause.keepAllBranches) {
             // do nothing
         } else if (clause.selectedBranch < 0) {
             // remove all branches
             SourceLocation b = changeColumn(clause.locations.front(), 1);
             SourceLocation e = changeColumn(clause.locations.back(), 10000);
-            rewriter.removeRange(SourceRange(b, e), opts);
+            inactiveBranches.push_back(SourceRange(b, e));
         } else {
             // remove all branches except selected
             SourceLocation b = changeColumn(clause.locations.front(), 1);
             SourceLocation e = changeColumn(clause.locations[clause.selectedBranch], 10000);
-            rewriter.removeRange(SourceRange(b, e), opts);
+            inactiveBranches.push_back(SourceRange(b, e));
 
             b = changeColumn(clause.locations[clause.selectedBranch + 1], 1);
             e = changeColumn(clause.locations.back(), 10000);
-            rewriter.removeRange(SourceRange(b, e), opts);
+            inactiveBranches.push_back(SourceRange(b, e));
         }
 
         activeClauses.pop_back();

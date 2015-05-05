@@ -1,9 +1,7 @@
 #pragma once
 
-#include <map>
 #include <set>
 #include <string>
-#include <vector>
 
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Lex/PPCallbacks.h"
@@ -14,23 +12,6 @@ namespace clang {
 }
 
 class SmartRewriter;
-
-struct IfDefClause {
-    // Locations of #if, #ifdef, #ifndef, #else, #elif tokens of this clause
-    std::vector<clang::SourceLocation> locations;
-
-    // Index of selected branch in locations list; -1 if no branch was selected
-    int selectedBranch;
-
-    bool keepAllBranches;
-
-    explicit IfDefClause(const clang::SourceLocation& ifLocation);
-};
-
-struct Macro {
-    std::string name;
-    std::vector<clang::SourceRange> usages;
-};
 
 class RemoveInactivePreprocessorBlocks: public clang::PPCallbacks {
 private:
