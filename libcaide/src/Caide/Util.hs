@@ -11,11 +11,12 @@ module Caide.Util(
     , copyFileToDir
     , copyTreeToDir
     , readTextFile'
-    , takeLock
+    , withLock
 ) where
 
 import Control.Concurrent.Async (mapConcurrently)
-import Control.Monad (forM_, when)
+import Control.Monad (forM_)
+import Control.Monad.Except (catchError, throwError)
 import Control.Monad.State (liftIO)
 import qualified Data.Text as T
 import Filesystem (copyFile, listDirectory, isFile, isDirectory, createDirectory)
@@ -23,7 +24,7 @@ import qualified Filesystem.Path as F
 import Filesystem.Path (basename, filename, (</>))
 import Filesystem.Path.CurrentOS (encodeString, toText)
 
-import System.FileLock (SharedExclusive(Exclusive), tryLockFile)
+import System.FileLock (SharedExclusive(Exclusive), tryLockFile, unlockFile)
 
 import Filesystem.Util (readTextFile)
 import Network.HTTP.Util (downloadDocument)
@@ -87,18 +88,32 @@ readTextFile' filePath = do
         Left err   -> throw err
         Right cont -> return cont
 
-takeLock :: CaideIO ()
-takeLock = do
+finally :: (Monad m) => CaideM m a -> CaideM m () -> CaideM m a
+finally action finalizer = do
+    ret <- catchError action $ \e -> do
+        finalizer
+        throwError e
+    finalizer
+    return ret
+
+withLock :: CaideIO () -> CaideIO ()
+withLock action = do
     h <- readCaideConf
     hTemp <- getTemporaryConf
     useLock <- getProp h "core" "use_lock" `orDefault` True
     haveLock <- getProp hTemp "DEFAULT" "have_lock" `orDefault` False
-    when (useLock && not haveLock) $ do
+    if not useLock || haveLock
+    then action
+    else do
         root <- caideRoot
         let lockPath = root </> ".caide" </> "lock"
         mbLock <- liftIO $ tryLockFile (encodeString lockPath) Exclusive
         case mbLock of
             Nothing -> throw $ T.concat ["Couldn't lock file ", pathToText lockPath,
                         ". Make sure that another instance of caide is not running."]
-            _ -> setProp hTemp "DEFAULT" "have_lock" True
+            Just lock -> do
+                setProp hTemp "DEFAULT" "have_lock" True
+                finally action $ do
+                    liftIO $ unlockFile lock
+                    setProp hTemp "DEFAULT" "have_lock" False
 

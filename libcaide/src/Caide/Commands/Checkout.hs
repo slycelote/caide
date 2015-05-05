@@ -17,7 +17,7 @@ import Filesystem.Path.CurrentOS (fromText, (</>))
 import Caide.Configuration (setActiveProblem, getActiveProblem, getFeatures, orDefault)
 import Caide.Registry (findFeature)
 import Caide.Types
-import Caide.Util (takeLock)
+import Caide.Util (withLock)
 
 checkoutProblem :: ProblemID -> CaideIO ()
 checkoutProblem probId = unless (T.null probId) $ do
@@ -30,8 +30,7 @@ checkoutProblem probId = unless (T.null probId) $ do
     currentProbId <- getActiveProblem `orDefault` ""
     if currentProbId == probId
         then liftIO $ T.putStrLn . T.concat $ [probId, ": already checked out"]
-        else do
-            takeLock
+        else withLock $ do
             setActiveProblem probId
             liftIO $ T.putStrLn . T.concat $ ["Checked out problem ", probId]
             features <- mapMaybe findFeature <$> getFeatures

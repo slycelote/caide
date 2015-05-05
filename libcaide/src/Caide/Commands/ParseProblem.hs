@@ -21,7 +21,7 @@ import Caide.Configuration (getDefaultLanguage, setActiveProblem, getProblemConf
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
 import Caide.Registry (findProblemParser)
-import Caide.Util (pathToText, mapWithLimitedThreads, takeLock)
+import Caide.Util (pathToText, mapWithLimitedThreads, withLock)
 
 
 
@@ -34,12 +34,11 @@ createProblem url problemTypeStr = case findProblemParser url of
 
 
 initializeProblem :: Problem -> CaideIO ()
-initializeProblem problem = do
+initializeProblem problem = withLock $ do
     root <- caideRoot
     let probId = problemId problem
         testDir = root </> fromText probId </> ".caideproblem" </> "test"
 
-    takeLock
     setActiveProblem probId
     problemConfPath  <- getProblemConfigFile probId
     problemStatePath <- getProblemStateFile probId
