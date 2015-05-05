@@ -79,6 +79,8 @@ td2 v3[I2];
 void usedFunc() {}
 bar y() { return 1; }
 
+typedef double db;
+db dp[100];
 
 int main() {
     f2();
@@ -89,5 +91,6 @@ int main() {
     i4 = i8 = i10 = 1;
     usedFunc();
     v2 = 1;
+    dp[0] = 1;
 }
 

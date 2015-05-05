@@ -66,6 +66,8 @@ td v2;
 
 void usedFunc() {}
 
+typedef double db;
+db dp[100];
 
 int main() {
     f2();
@@ -76,5 +78,6 @@ int main() {
     i4 = i8 = i10 = 1;
     usedFunc();
     v2 = 1;
+    dp[0] = 1;
 }
 

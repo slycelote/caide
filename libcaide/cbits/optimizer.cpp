@@ -181,6 +181,9 @@ private:
 
         insertReference(from, to->getAsTagDecl());
 
+        if (const ArrayType* arrayType = dyn_cast<ArrayType>(to))
+            insertReferenceToType(from, arrayType->getElementType(), seen);
+
         if (const TypedefType* typedefType = dyn_cast<TypedefType>(to))
             insertReference(from, typedefType->getDecl());
 
