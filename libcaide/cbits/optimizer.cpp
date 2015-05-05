@@ -87,20 +87,17 @@ private:
             --i;
 
         if (i < 0) {
-            // Shouldn't happen. Any stmt must be inside a decl.
-            return nullptr;
+            // We are inside a top level declaration.
+            return lastVisitedDecl;
         }
 
-        if (i < stackSize - 1) {
-            // Top of the stack doesn't contain the stmt. Rewind the stack and return
-            // the first function containing the stmt.
-            for (; stackSize > i + 1; --stackSize)
-                functionLexicalStack.pop_back();
-            return functionLexicalStack.back().first;
-        }
+        // Rewind the stack, if necessary.
+        for (; stackSize > i + 1; --stackSize)
+            functionLexicalStack.pop_back();
 
-        // If top of the stack contains the stmt, we check whether there are any
-        // intermediate decls. If there are, lastVisitedDecl must be the last of them;
+        // Check whether there are any intermediate decls between
+        // containing function and the stmt.
+        // If there are, lastVisitedDecl must be the last of them;
         // otherwise we return the function.
         // To check for intermediate decls, walk up the parent pointers and search
         // for a DeclStmt (which is an adapter class for Decl's)
