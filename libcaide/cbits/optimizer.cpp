@@ -184,6 +184,9 @@ private:
         if (const ArrayType* arrayType = dyn_cast<ArrayType>(to))
             insertReferenceToType(from, arrayType->getElementType(), seen);
 
+        if (const PointerType* pointerType = dyn_cast<PointerType>(to))
+            insertReferenceToType(from, pointerType->getPointeeType(), seen);
+
         if (const TypedefType* typedefType = dyn_cast<TypedefType>(to))
             insertReference(from, typedefType->getDecl());
 
@@ -278,6 +281,11 @@ public:
     bool VisitCXXConstructExpr(CXXConstructExpr* constructorExpr) {
         dbg(CAIDE_FUNC);
         insertReference(getParentDecl(constructorExpr), constructorExpr->getConstructor());
+        return true;
+    }
+
+    bool VisitCXXNewExpr(CXXNewExpr* newExpr) {
+        insertReferenceToType(getParentDecl(newExpr), newExpr->getAllocatedType());
         return true;
     }
 

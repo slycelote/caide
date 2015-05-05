@@ -77,6 +77,9 @@ struct B : VI {
 
 typedef double DD;
 
+typedef A atd1;
+typedef A atd2;
+
 int main() {
     f2();
     //f3<int>();
@@ -89,5 +92,7 @@ int main() {
     dp[0] = 1;
     B b;
     dp[0] = (DD)1;
+    atd1* ptr = 0;
+    new atd2[10];
 }
 
