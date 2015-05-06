@@ -96,10 +96,10 @@ static void BuildParentMap(MapTy& M, Stmt* S,
 
 StmtParentMap::StmtParentMap(Stmt *S) : Impl(nullptr) {
   MapTy *M = new MapTy();
+  Impl = M;
   if (S) {
     (*M)[S] = nullptr;
     BuildParentMap(*M, S);
-    Impl = M;
   }
 }
 

@@ -71,9 +71,11 @@ private:
 
         rewriter.removeRange(macro.definition, opts);
 
-        SourceLocation b = changeColumn(macro.undefinition, 1);
-        SourceLocation e = changeColumn(macro.undefinition, 10000);
-        rewriter.removeRange(SourceRange(b, e), opts);
+        if (macro.undefinition.isValid()) {
+            SourceLocation b = changeColumn(macro.undefinition, 1);
+            SourceLocation e = changeColumn(macro.undefinition, 10000);
+            rewriter.removeRange(SourceRange(b, e), opts);
+        }
     }
 
     bool isInMainFile(SourceLocation loc) const {

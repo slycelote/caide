@@ -70,6 +70,7 @@ typedef double db;
 db dp[100];
 
 struct A {
+    static const int x = 2;
 };
 typedef A VI;
 struct B : VI {
@@ -80,6 +81,7 @@ typedef double DD;
 typedef A atd1;
 typedef A atd2;
 typedef A atd3;
+typedef A atd4;
 
 int f(atd3& a){}
 
@@ -98,5 +100,6 @@ int main() {
     atd1* ptr = 0;
     new atd2[10];
     f(b);
+    int i = atd4::x;
 }
 

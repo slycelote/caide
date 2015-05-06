@@ -32,11 +32,19 @@
 using namespace clang;
 using namespace std;
 
-//#define dbg(vals) std::cerr << vals
-//#define CAIDE_FUNC __FUNCTION__ << endl
+//#define CAIDE_DEBUG_MODE
+
+#ifdef CAIDE_DEBUG_MODE
+
+#define dbg(vals) std::cerr << vals
+#define CAIDE_FUNC __FUNCTION__ << endl
+
+#else
 
 #define dbg(vals)
 #define CAIDE_FUNC ""
+
+#endif
 
 typedef std::map<Decl*, std::set<Decl*> > References;
 
@@ -175,9 +183,12 @@ private:
             return;
 
         if (const ElaboratedType* elaboratedType = dyn_cast<ElaboratedType>(to)) {
-            insertReferenceToType(from, elaboratedType->getNamedType());
+            insertReferenceToType(from, elaboratedType->getNamedType(), seen);
             return;
         }
+
+        if (const ParenType* parenType = dyn_cast<ParenType>(to))
+            insertReferenceToType(from, parenType->getInnerType(), seen);
 
         insertReference(from, to->getAsTagDecl());
 
@@ -226,6 +237,12 @@ private:
     }
 
     void insertReferenceToType(Decl* from, QualType to)
+    {
+        std::set<const Type*> seen;
+        insertReferenceToType(from, to, seen);
+    }
+
+    void insertReferenceToType(Decl* from, const Type* to)
     {
         std::set<const Type*> seen;
         insertReferenceToType(from, to, seen);
@@ -294,7 +311,13 @@ public:
 
     bool VisitDeclRefExpr(DeclRefExpr* ref) {
         dbg(CAIDE_FUNC);
-        insertReference(getParentDecl(ref), ref->getDecl());
+        Decl* parent = getParentDecl(ref);
+        insertReference(parent, ref->getDecl());
+        NestedNameSpecifier* specifier = ref->getQualifier();
+        while (specifier) {
+            insertReferenceToType(parent, specifier->getAsType());
+            specifier = specifier->getPrefix();
+        }
         return true;
     }
 
@@ -651,12 +674,8 @@ private:
         if (start.isMacroID())
             start = sourceManager.getExpansionRange(start).first;
         SourceLocation end = decl->getLocEnd();
-        if (end.isMacroID()) {
-            dbg("NOT REMOVING " << decl->getDeclKindName() << " "
-                << decl << ": " << toString(start) << " " << toString(end)
-                << std::endl);
-            return;
-        }
+        if (end.isMacroID())
+            end = sourceManager.getExpansionRange(end).second;
 
         SourceLocation semicolonAfterDefinition = findSemiAfterLocation(end, decl->getASTContext());
         dbg("REMOVE " << decl->getDeclKindName() << " "
