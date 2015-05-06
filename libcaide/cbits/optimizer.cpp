@@ -533,8 +533,14 @@ public:
         , rewriter(_rewriter)
     {}
 
+    // When we remove code, we're only interested in the real code,
+    // so no implicit instantiantions.
+    bool shouldVisitImplicitCode() const { return false; }
+    bool shouldVisitTemplateInstantiations() const { return false; }
+
     bool VisitEmptyDecl(EmptyDecl* decl) {
-        removeDecl(decl);
+        if (sourceManager.isInMainFile(decl->getLocStart()))
+            removeDecl(decl);
         return true;
     }
 
@@ -542,10 +548,11 @@ public:
      Here's how template functions and classes are represented in the AST.
 -FunctionTemplateDecl <-- the template
  |-TemplateTypeParmDecl
- |-FunctionDecl  <-- for each instantiation of the template
+ |-FunctionDecl  <-- general (non-specialized) case
+ |-FunctionDecl  <-- for each implicit instantiation of the template
  | `-CompoundStmt
  |   `-...
--FunctionDecl   <-- non-template or full specialization of a template
+-FunctionDecl   <-- non-template or full explicit specialization of a template
 
 
 
@@ -575,21 +582,19 @@ public:
     bool VisitFunctionDecl(FunctionDecl* functionDecl) {
         if (!sourceManager.isInMainFile(functionDecl->getLocStart()))
             return true;
+
         if (functionDecl->getDescribedFunctionTemplate() != 0) {
-            // An instantiation of a template function; will be processed as FunctionTemplateDecl
-            return true;
-        }
-        if (functionDecl->getInstantiatedFromMemberFunction() != 0) {
-            // A method in an instantiated class template; will be processed as a method in ClassTemplateDecl
+            // General (non-specialized) case; its source range doesn't include
+            // template<...> part, so it has to be processed as corresponding
+            // FunctionTemplateDecl.
             return true;
         }
 
         if (CXXDestructorDecl* destructor = dyn_cast<CXXDestructorDecl>(functionDecl)) {
             // Destructor should be removed iff the class is unused
             CXXRecordDecl* classDecl = destructor->getParent();
-            if (classDecl && used.find(classDecl->getCanonicalDecl()) == used.end()) {
+            if (classDecl && used.find(classDecl->getCanonicalDecl()) == used.end())
                 removeDecl(destructor);
-            }
             return true;
         }
 

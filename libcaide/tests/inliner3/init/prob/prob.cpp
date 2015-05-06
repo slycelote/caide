@@ -98,6 +98,19 @@ typedef A atd4;
 
 int f(atd3& a){}
 
+template <typename T>
+struct S3 {
+    static void fill();
+};
+
+template<typename E>
+void S3<E>::fill() {
+}
+
+template<>
+void S3<char>::fill() {
+}
+
 int main() {
     f2();
     //f3<int>();
