@@ -25,15 +25,18 @@ namespace slycelote.VsCaide
     using slycelote.VsCaide.UI;
     using System.Diagnostics;
     using System.IO;
+    using System.Threading;
     using MessageBox = System.Windows.Forms.MessageBox;
 
     public partial class MainToolWindowControl : System.Windows.Controls.UserControl
     {
         private MainToolWindow mainToolWindow;
+        private SynchronizationContext uiCtx;
 
         public MainToolWindowControl(MainToolWindow owner)
         {
             InitializeComponent();
+            uiCtx = SynchronizationContext.Current;
             SkipLanguageChangedEvent = true;
             cbProgrammingLanguage.Items.Add("c++");
             cbProgrammingLanguage.Items.Add("c#");
@@ -44,38 +47,47 @@ namespace slycelote.VsCaide
 
         private void ReloadProblemList()
         {
-            string stdout = CaideExe.Run("getstate", "core", "problem");
-            string currentProblem = stdout == null ? null : stdout.Trim();
-
-            var problemNames = new List<string>();
-
-            if (string.Empty == currentProblem)
+            Logger.Trace("ReloadProblemList");
+            try
             {
-                problemNames.Add("");
-            }
+                EnableFsWatcher(false);
+                string stdout = CaideExe.Run("getstate", "core", "problem");
+                string currentProblem = stdout == null ? null : stdout.Trim();
 
-            foreach (var subdir in Directory.EnumerateDirectories(SolutionUtilities.GetSolutionDir()))
-            {
-                if (Directory.Exists(Path.Combine(subdir, ".caideproblem")) && 
-                    File.Exists(Path.Combine(subdir, "problem.ini")))
+                var problemNames = new List<string>();
+
+                if (string.Empty == currentProblem)
                 {
-                    problemNames.Add(Path.GetFileName(subdir.TrimEnd(Path.DirectorySeparatorChar)));
+                    problemNames.Add("");
                 }
-            }
 
-            problemNames.Sort(StringComparer.CurrentCultureIgnoreCase);
-            cbProblems.Items.Clear();
-            foreach (var problem in problemNames)
+                foreach (var subdir in Directory.EnumerateDirectories(SolutionUtilities.GetSolutionDir()))
+                {
+                    if (Directory.Exists(Path.Combine(subdir, ".caideproblem")) &&
+                        File.Exists(Path.Combine(subdir, "problem.ini")))
+                    {
+                        problemNames.Add(Path.GetFileName(subdir.TrimEnd(Path.DirectorySeparatorChar)));
+                    }
+                }
+
+                problemNames.Sort(StringComparer.CurrentCultureIgnoreCase);
+                cbProblems.Items.Clear();
+                foreach (var problem in problemNames)
+                {
+                    cbProblems.Items.Add(problem);
+                }
+
+                if (currentProblem == null)
+                {
+                    return;
+                }
+
+                cbProblems.SelectedItem = currentProblem;
+            }
+            finally
             {
-                cbProblems.Items.Add(problem);
+                EnableFsWatcher(true);
             }
-
-            if (currentProblem == null)
-            {
-                return;
-            }
-
-            cbProblems.SelectedItem = currentProblem;
         }
 
         private string recentFolder = null;
@@ -172,19 +184,57 @@ namespace slycelote.VsCaide
 
                 CHelperServer = new CHelperServer();
 
+                EnableFsWatcher(false);
+
+                string path = Path.Combine(SolutionUtilities.GetSolutionDir(), ".caide");
+                fsWatcher = new FileSystemWatcher(path, "config")
+                {
+                    EnableRaisingEvents = false,
+                    IncludeSubdirectories = false,
+                    NotifyFilter = NotifyFilters.LastWrite,
+                };
+                fsWatcher.Changed += fsWatcher_Changed;
+                fsWatcher.EnableRaisingEvents = true;
                 AfterProjectsLoaded(() => SolutionUtilities.CreateCppLibProject());
             }
         }
 
         public void Solution_Closed()
         {
+            EnableFsWatcher(false);
+            fsWatcher = null;
+
             cbProblems.Items.Clear();
             EnableAll(false);
+
             if (CHelperServer != null)
             {
                 CHelperServer.Stop();
                 CHelperServer = null;
             }
+        }
+
+        void fsWatcher_Changed(object sender, FileSystemEventArgs e)
+        {
+            lock (fsWatcherLock)
+            {
+                if (e.ChangeType != WatcherChangeTypes.Changed || DateTime.Now <= lastChange + TimeSpan.FromSeconds(2))
+                    return;
+                lastChange = DateTime.Now;
+            }
+            Logger.Trace("FileChanged");
+            uiCtx.Post(_ => AfterProjectsLoaded(ReloadProblemList), null);
+        }
+
+        
+        private FileSystemWatcher fsWatcher;
+        private DateTime lastChange = DateTime.MinValue;
+        private readonly object fsWatcherLock = new object();
+
+        private void EnableFsWatcher(bool enable)
+        {
+            if (fsWatcher != null)
+                fsWatcher.EnableRaisingEvents = enable;
         }
 
         private void EnableAll(bool enable)
@@ -213,29 +263,39 @@ namespace slycelote.VsCaide
             if (string.IsNullOrEmpty(selectedProblem))
                 return;
 
-            if (null == CaideExe.Run("checkout", selectedProblem))
+            try
             {
-                return;
-            }
+                if (fsWatcher != null)
+                    fsWatcher.EnableRaisingEvents = false;
+                if (null == CaideExe.Run("checkout", selectedProblem))
+                {
+                    return;
+                }
 
-            string stdout = CaideExe.Run("probgetstate", selectedProblem, "problem", "language");
-            if (null == stdout)
-            {
-                return;
-            }
+                string stdout = CaideExe.Run("probgetstate", selectedProblem, "problem", "language");
+                if (null == stdout)
+                {
+                    return;
+                }
 
-            string language = stdout.Trim();
-            SetCurrentLanguage(language);
+                string language = stdout.Trim();
+                SetCurrentLanguage(language);
 
-            string[] cppLanguages = new[] { "simplecpp", "cpp", "c++" };
-            string[] csLanguages = new[] { "c#", "csharp" };
-            if (cppLanguages.Contains(language))
-            {
-                AfterProjectsLoaded(() => SolutionUtilities.CreateAndActivateCppProject(selectedProblem, language));
+                string[] cppLanguages = new[] { "simplecpp", "cpp", "c++" };
+                string[] csLanguages = new[] { "c#", "csharp" };
+                if (cppLanguages.Contains(language))
+                {
+                    AfterProjectsLoaded(() => SolutionUtilities.CreateAndActivateCppProject(selectedProblem, language));
+                }
+                else if (csLanguages.Contains(language))
+                {
+                    AfterProjectsLoaded(() => SolutionUtilities.CreateAndActivateCSharpProject(selectedProblem));
+                }
             }
-            else if (csLanguages.Contains(language))
+            finally
             {
-                AfterProjectsLoaded(() => SolutionUtilities.CreateAndActivateCSharpProject(selectedProblem));
+                if (fsWatcher != null)
+                    fsWatcher.EnableRaisingEvents = true;
             }
         }
 
@@ -249,8 +309,6 @@ namespace slycelote.VsCaide
             {
                 return;
             }
-
-            ReloadProblemList();
         }
 
         internal void StartupProject_Changed(IVsHierarchy newStartupProjectHierarchy)
@@ -273,8 +331,6 @@ namespace slycelote.VsCaide
             {
                 return;
             }
-
-            ReloadProblemList();
         }
 
         internal void Project_Removed(IVsHierarchy projectHier)
@@ -285,8 +341,13 @@ namespace slycelote.VsCaide
             var projectName = project.Name;
             if (IsCaideProblem(projectName))
             {
+                // Try to mitigate a mysterious error 'Unsatisified (sic!) constraints: folder not empty'.
+                System.Threading.Thread.Sleep(500);
                 CaideExe.Run("archive", projectName);
-                ReloadProblemList();
+                string projectDirectory = Path.Combine(SolutionUtilities.GetSolutionDir(), projectName);
+                if (Directory.Exists(projectDirectory))
+                    Directory.Delete(projectDirectory, recursive: true);
+                SolutionUtilities.SaveSolution();
             }
         }
 
@@ -306,7 +367,6 @@ namespace slycelote.VsCaide
             if (url == null)
                 return;
             CaideExe.Run(new[] { "contest", url }, loud: true);
-            ReloadProblemList();
         }
 
         private void btnArchive_Click(object sender, RoutedEventArgs e)
@@ -320,7 +380,6 @@ namespace slycelote.VsCaide
             {
                 // A problem not tracked by VsCaide
                 CaideExe.Run(new[] { "archive", currentProblem }, loud: true);
-                ReloadProblemList();
             }
             else
             {
@@ -374,6 +433,5 @@ namespace slycelote.VsCaide
             return cbProblems.Items.Cast<string>().Any(problem =>
                 problem.Equals(projectName, StringComparison.CurrentCultureIgnoreCase));
         }
-
     }
 }

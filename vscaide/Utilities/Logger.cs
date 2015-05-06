@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,9 +11,8 @@ namespace slycelote.VsCaide.Utilities
     {
         public static void LogError(string formatString, params object[] args)
         {
-            var outputWindow = Services.GeneralOutputWindow;
-            outputWindow.OutputStringThreadSafe("[VsCaide] " + string.Format(formatString, args));
-            outputWindow.Activate();
+            LogMessage(formatString, args);
+            Services.GeneralOutputWindow.Activate();
         }
 
         public static void LogException(Exception e)
@@ -22,9 +22,15 @@ namespace slycelote.VsCaide.Utilities
 
         public static void LogMessage(string formatString, params object[] args)
         {
+            var time = DateTime.Now.ToString("s");
             var outputWindow = Services.GeneralOutputWindow;
-            outputWindow.OutputStringThreadSafe("[VsCaide] " + string.Format(formatString, args));
+            outputWindow.OutputStringThreadSafe("[VsCaide " + time + "] " + string.Format(formatString, args) + "\n");
         }
 
+        [Conditional("DEBUG")]
+        public static void Trace(string formatString, params object[] args)
+        {
+            LogMessage("[TRACE] " + formatString, args);
+        }
     }
 }

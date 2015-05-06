@@ -45,6 +45,7 @@ namespace slycelote.VsCaide.Utilities
 
         public static int Execute(string[] args, string directory, out string stdout, out string stderr)
         {
+            Logger.Trace("{0}", "caide.exe " + string.Join(" ", args));
             if (Paths.CaideExe == null)
             {
                 stderr = "Couldn't find caide.exe";
