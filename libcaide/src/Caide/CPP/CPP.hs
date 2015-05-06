@@ -4,8 +4,9 @@ module Caide.CPP.CPP(
 ) where
 
 import Control.Applicative ((<$>))
-import Control.Monad (when)
 import Control.Monad.State (liftIO)
+import Data.Char (isSpace)
+import Data.List (groupBy)
 import qualified Data.Text as T
 
 import Prelude hiding (FilePath)
@@ -15,6 +16,8 @@ import Filesystem.Path ((</>), FilePath, hasExtension)
 
 import Text.Regex.TDFA.Text (Regex)
 import Text.Regex.Base.RegexLike (makeRegex, match)
+
+import qualified Filesystem.Path.CurrentOS as F
 
 import Filesystem.Util (writeTextFile)
 
@@ -29,16 +32,30 @@ import Caide.Util (listDir, readTextFile', tshow)
 language :: ProgrammingLanguage
 language = CPPSimple.language {inlineCode = inlineCPPCode}
 
+data InlinerStage = InlinerStage
+    { stageName   :: T.Text
+    , stageAction :: F.FilePath -> F.FilePath -> CaideIO Int
+    }
+
+doInline :: [InlinerStage] -> F.FilePath -> F.FilePath -> CaideIO F.FilePath
+doInline [] _ f = return f
+doInline (first:rest) tempDir f = do
+    let nextFile = tempDir </> fromText (stageName first `T.append` ".cpp")
+    ret <- stageAction first f nextFile
+    case ret of
+        0 -> doInline rest tempDir nextFile
+        _ -> throw . T.concat $
+            ["Inliner stage '", stageName first, "' failed with error code ", tshow ret]
+
+
 inlineCPPCode :: ProblemID -> CaideIO ()
 inlineCPPCode probID = do
     root <- caideRoot
     let problemDir = root </> fromText probID
         solutionPath = problemDir </> fromText (T.append probID ".cpp")
         mainFilePath = problemDir </> "main.cpp"
+        tempDir = problemDir </> ".caideproblem"
         concatCodePath = problemDir </> ".caideproblem" </> "concat.cpp"
-        inlinedCodePath = problemDir </> ".caideproblem" </> "inlined.cpp"
-        inlinedNoPragmaOnceCodePath = problemDir </> ".caideproblem" </> "inlinedNoPragmaOnce.cpp"
-        finalCodePath = problemDir </> "submission.cpp"
         libraryDirectory = root </> "cpplib"
 
     hConf <- readCaideConf
@@ -53,17 +70,40 @@ inlineCPPCode probID = do
     concatFiles <- T.concat <$> mapM readTextFile' (solutionPath:mainFilePath:libraryCPPFiles)
     liftIO $ writeTextFile concatCodePath concatFiles
 
-    retInliner <- liftIO $ inlineLibraryCode [concatCodePath] cmdLineOptions inlinedCodePath
-    when (retInliner /= 0) $
-        throw $ T.concat ["C++ library code inliner failed with error code ", tshow retInliner]
+    let stages :: [InlinerStage]
+        stages =
+               [ InlinerStage
+                   { stageName = "inline"
+                   , stageAction = \input output ->
+                        liftIO $ inlineLibraryCode [input] cmdLineOptions output
+                   }
+               , InlinerStage
+                   { stageName = "removePragmaOnce"
+                   , stageAction = \input output -> do
+                        removePragmaOnceFromFile input output
+                        return 0
+                   }
+               , InlinerStage
+                   { stageName = "removeUnusedCode"
+                   , stageAction = \input output ->
+                        liftIO $ removeUnusedCode input cmdLineOptions macrosToKeep output
+                   }
+               , InlinerStage
+                   { stageName = "removeEmptyLines"
+                   , stageAction = \input output -> do
+                        maxConsequentEmptyLines <- withDefault 2 $
+                            getProp hConf "cpp" "max_consequent_empty_lines"
+                        cont <- readTextFile' input
+                        liftIO $ writeTextFile output $ removeEmptyLines maxConsequentEmptyLines cont
+                        return 0
+                   }
+               ]
 
-    removePragmaOnceFromFile inlinedCodePath inlinedNoPragmaOnceCodePath
+    finalCodePath <- doInline stages tempDir concatCodePath
 
-    retOptimizer <- liftIO $ removeUnusedCode inlinedNoPragmaOnceCodePath cmdLineOptions macrosToKeep finalCodePath
-    when (retOptimizer /= 0) $
-        throw $ T.concat ["C++ library code inliner (pass 1) failed with error code ", tshow retOptimizer]
-
-    liftIO $ copyFile finalCodePath $ root </> "submission.cpp"
+    liftIO $ do
+        copyFile finalCodePath $ problemDir </> "submission.cpp"
+        copyFile finalCodePath $ root </> "submission.cpp"
 
 
 listDirectoryRecursively :: FilePath -> IO [FilePath]
@@ -83,4 +123,17 @@ pragmaOnceRegex = makeRegex ("^[[:space:]]*#[[:space:]]*pragma[[:space:]]+once[[
 removePragmaOnce :: T.Text -> T.Text
 removePragmaOnce = T.unlines . filter (not . isPragmaOnce) . T.lines
     where isPragmaOnce = match pragmaOnceRegex
+
+removeEmptyLines :: Int -> T.Text -> T.Text
+removeEmptyLines maxConsequentEmptyLines =
+    -- concat
+    T.unlines .
+    -- leave no more than this number of empty lines
+    concatMap (take maxConsequentEmptyLines) .
+    -- group empty lines together
+    groupBy bothEmptyLines .
+    -- split
+    T.lines
+  where
+    bothEmptyLines line1 line2 = all (T.all isSpace) [line1, line2]
 

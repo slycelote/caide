@@ -164,6 +164,8 @@ defaultCaideConf root useSystemHeaders = forceEither $
     setValue "core" "language" "cpp" >>=
     setValue "core" "features" "" >>=
     addSection "cpp" >>=
+    setValue "cpp" "keep_macros" "ONLINE_JUDGE" >>=
+    setValue "cpp" "max_consequent_empty_lines" "2" >>=
     setValue "cpp" "clang_options" (intercalate ",\n  " $ clangOptions root useSystemHeaders)
 
 clangOptions :: FilePath -> Bool -> [String]

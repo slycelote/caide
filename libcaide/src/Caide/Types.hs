@@ -260,6 +260,10 @@ instance Option Text where
     optionToString = unpack
     optionFromString = Just . pack
 
+instance Option Int where
+    optionToString = show
+    optionFromString = readMaybe
+
 instance Option Double where
     optionToString = show
     optionFromString = readMaybe
