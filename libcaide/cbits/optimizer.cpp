@@ -304,6 +304,12 @@ public:
         return true;
     }
 
+    bool VisitCXXTemporaryObjectExpr(CXXTemporaryObjectExpr* tempExpr) {
+        if (TypeSourceInfo* tsi = tempExpr->getTypeSourceInfo())
+            insertReferenceToType(getParentDecl(tempExpr), tsi->getType());
+        return true;
+    }
+
     bool VisitCXXNewExpr(CXXNewExpr* newExpr) {
         insertReferenceToType(getParentDecl(newExpr), newExpr->getAllocatedType());
         return true;
@@ -543,6 +549,13 @@ public:
             removeDecl(decl);
         return true;
     }
+
+    /*
+    bool VisitStmt(Stmt* stmt) {
+        cerr << stmt->getStmtClassName() << endl;
+        return true;
+    }
+    */
 
     /*
      Here's how template functions and classes are represented in the AST.

@@ -111,6 +111,12 @@ template<>
 void S3<char>::fill() {
 }
 
+struct S4 {
+    S4(int a, int b){}
+};
+
+typedef S4 tds4;
+
 int main() {
     f2();
     //f3<int>();
@@ -127,5 +133,6 @@ int main() {
     new atd2[10];
     f(b);
     int i = atd4::x;
+    tds4(1, 2);
 }
 
