@@ -1,13 +1,21 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Caide.Commands(
       runMain
 ) where
 
+import Control.Exception.Base (catch, SomeException)
 import Control.Monad (void)
 import Data.Monoid (mconcat)
 import qualified Data.Text as T
-import qualified Filesystem.Path as F
-import Options.Applicative
 import System.Exit (exitWith, ExitCode(ExitFailure))
+import System.Environment (getExecutablePath)
+
+import qualified Filesystem.Path as F
+import qualified Filesystem.Path.CurrentOS as F
+import Filesystem.Path.CurrentOS ((</>))
+import Options.Applicative
+
+import System.IO.Util (writeFileAtomic)
 
 import Caide.Types (CaideIO, runInDirectory)
 import qualified Caide.Commands.Init as Init
@@ -28,6 +36,13 @@ type CaideAction = F.FilePath -> IO ()
 caideIoToIo :: CaideIO () -> CaideAction
 caideIoToIo cmd root = do
     ret <- runInDirectory root cmd
+
+    -- Save path to caide executable
+    let fileNameStr = F.encodeString (root </> ".caide" </> "caideExe.txt")
+        ignoreException :: SomeException -> IO ()
+        ignoreException = const $ return ()
+    (getExecutablePath >>= \caideExe -> writeFileAtomic fileNameStr caideExe) `catch` ignoreException
+
     case ret of
         Left err -> do
             putStrLn $ describeError err

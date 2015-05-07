@@ -37,6 +37,7 @@ executable caide
                    bytestring,
                    ConfigFile,
                    containers >= 0.5.0.0,
+                   directory,
                    file-embed,
                    filelock,
                    filepath,
