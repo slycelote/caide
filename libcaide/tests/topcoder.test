@@ -1,0 +1,3 @@
+#!/bin/bash
+"$caide" problem prob1 --type topcoder,ClassName,methodName:long,i:int,d:double,s:String,vi:vint,vvs:vvString
+

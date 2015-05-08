@@ -8,6 +8,9 @@ module Caide.Types(
     , ProblemType (..)
     , InputSource (..)
     , OutputTarget (..)
+    , TopcoderType (..)
+    , TopcoderValue (..)
+    , TopcoderProblemDescriptor (..)
 
     , CaideIO
     , CaideM
@@ -47,6 +50,7 @@ import Control.Monad.Except (ExceptT, MonadError, runExceptT, throwError)
 import Control.Monad.State (StateT, MonadState, runStateT, gets, modify')
 import Control.Monad.Trans (MonadIO, liftIO)
 import Data.Char (toLower)
+import Data.List (isPrefixOf)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Text (Text, pack, unpack)
@@ -74,11 +78,26 @@ data Problem = Problem
     , problemType :: !ProblemType
     } deriving (Show)
 
-data ProblemType = Topcoder | Stream !InputSource !OutputTarget
+data ProblemType = Topcoder !TopcoderProblemDescriptor | Stream !InputSource !OutputTarget
     deriving (Show)
 data InputSource = StdIn | FileInput !F.FilePath
     deriving (Show)
 data OutputTarget = StdOut | FileOutput !F.FilePath
+    deriving (Show)
+
+data TopcoderProblemDescriptor = TopcoderProblemDescriptor
+    { tcClassName        :: !Text
+    , tcMethod           :: !TopcoderValue
+    , tcMethodParameters :: ![TopcoderValue]
+    } deriving (Show)
+
+data TopcoderValue = TopcoderValue
+    { tcValueName      :: !Text          -- ^ Parameter/method name
+    , tcValueType      :: !TopcoderType  -- ^ Base type of the parameter, e.g. int for vector<vector<int>>
+    , tcValueDimension :: !Int           -- ^ Dimension, e.g. 2 for vector<vector<int>>
+    } deriving (Show)
+
+data TopcoderType = TCInt | TCLong | TCDouble | TCString
     deriving (Show)
 
 type URL = Text
@@ -272,16 +291,63 @@ instance Option [Text] where
     optionToString = unpack . T.intercalate ","
     optionFromString = Just . map T.strip . T.splitOn "," . pack
 
+instance Option TopcoderType where
+    optionToString TCInt    = "int"
+    optionToString TCLong   = "long"
+    optionToString TCDouble = "double"
+    optionToString TCString = "String"
+
+    optionFromString "int"    = Just TCInt
+    optionFromString "long"   = Just TCLong
+    optionFromString "double" = Just TCDouble
+    optionFromString "String" = Just TCString
+    optionFromString "string" = Just TCString
+    optionFromString _        = Nothing
+
+-- name:vvType
+instance Option TopcoderValue where
+    optionToString p = concat [
+        unpack (tcValueName p), ":", replicate (tcValueDimension p) 'v', optionToString (tcValueType p)]
+
+    optionFromString s = case T.splitOn ":" (pack s) of
+        [paramName, paramType] -> case maybeBaseType of
+            Just baseType -> Just TopcoderValue
+                { tcValueName = paramName
+                , tcValueType = baseType
+                , tcValueDimension = dim
+                }
+            Nothing       -> Nothing
+          where
+            dim = T.length . T.takeWhile (=='v') $ paramType
+            maybeBaseType = optionFromString . unpack . T.dropWhile (=='v') $ paramType
+        _ -> Nothing
+
+-- topcoder,class,method,param1:type1,param2:type2
 instance Option ProblemType where
-    optionToString Topcoder = "topcoder"
-    optionToString (Stream input output) =
-        "file," ++ inputSourceToString input ++ "," ++ outputTargetToString output
+    optionToString (Topcoder desc) =
+        optionToString ("topcoder" : tcClassName desc :
+                        map (pack . optionToString) (tcMethod desc : tcMethodParameters desc))
+    optionToString (Stream input output) = concat [
+        "file,", inputSourceToString input, ",", outputTargetToString output]
 
     optionFromString s
-        | map toLower s == "topcoder" = Just Topcoder
+        | "topcoder," `isPrefixOf` s = case maybeParams of
+            Just (method:params) -> Just $ Topcoder TopcoderProblemDescriptor
+                { tcClassName = className
+                , tcMethod = method
+                , tcMethodParameters = params
+                }
+            _ -> Nothing
+          where
+            components = T.splitOn "," . pack $ s
+            _:className:paramsStr = components
+            maybeParams = if length components >= 3
+                then mapM (optionFromString . unpack) paramsStr
+                else Nothing
+
     optionFromString s = case optionFromString s of
         Just [probType, inputSource, outputSource]
-            | T.map toLower probType == "file" -> Just $ Stream (parseInput inputSource) (parseOutput outputSource)
+            | probType == "file" -> Just $ Stream (parseInput inputSource) (parseOutput outputSource)
         _ -> Nothing
 
 
