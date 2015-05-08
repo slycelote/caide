@@ -1,5 +1,5 @@
 #!/bin/bash
 "$caide" problem 'http://codeforces.com/contest/452/problem/A'
-"$caide" problem 'http://codeforces.ru/contest/522/problem/A'
+"$caide" problem 'http://codeforces.ru/contest/522/problem/A?lang=ru'
 compare_with parsed cf{452,522}A/case{1..3}.{in,out} cf522A/problem.ini
 

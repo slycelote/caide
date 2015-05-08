@@ -84,12 +84,14 @@ initOpts = Init.initialize <$>
 
 
 problemOpts :: Parser (CaideIO ())
-problemOpts = createProblem <$>
-    txtArgument (metavar "URL-OR-NAME" <>
-        help "Either problem URL to parse or problem name to create from scratch") <*>
-    txtArgument (metavar "PROBLEM-TYPE" <>
+problemOpts = createProblem
+    <$> txtArgument (metavar "URL-OR-NAME" <>
+        help "Either problem URL to parse or problem name to create from scratch")
+    <*> txtOption (long "type" <> short 't' <> metavar "PROBLEM-TYPE" <>
         help "Problem type, e.g.: 'topcoder', 'file,stdin,stdout' or 'file,input.txt,output.txt'. Ignored when parsing an existing problem." <>
         value "file,stdin,stdout" <> showDefault)
+    <*> optional (txtOption (long "lang" <> short 'l' <> metavar "LANG" <>
+        help "Programming language to switch to"))
 
 
 contestOpts :: Parser (CaideIO ())
@@ -102,7 +104,8 @@ langOpts = generateScaffoldSolution <$>
 
 checkoutOpts :: Parser (CaideIO ())
 checkoutOpts = checkoutProblem <$>
-    txtArgument (metavar "PROBLEM" <> help "Problem ID (matches problem directory)")
+    txtArgument (metavar "PROBLEM" <> help "Problem ID (matches problem directory)") <*>
+    optional (txtOption (long "lang" <> short 'l' <> metavar "LANG" <> help "Programming language to switch to"))
 
 archiveOpts :: Parser (CaideIO ())
 archiveOpts = archiveProblem <$>
@@ -141,4 +144,7 @@ runMain args = case parseResult of
 
 txtArgument :: Mod ArgumentFields String -> Parser T.Text
 txtArgument mods = T.pack <$> strArgument mods
+
+txtOption :: Mod OptionFields String -> Parser T.Text
+txtOption mods = T.pack <$> strOption mods
 

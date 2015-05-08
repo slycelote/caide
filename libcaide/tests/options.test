@@ -1,0 +1,11 @@
+#!/bin/bash
+"$caide" problem prob1
+
+"$caide" problem prob2 --lang=csharp
+lang=$("$caide" probgetstate prob2 problem language)
+[[ "c#" = "$lang" ]] || { echo "Must switch to csharp after 'caide problem'"; exit 200; }
+
+"$caide" checkout prob1 --lang=csharp
+lang=$("$caide" probgetstate prob1 problem language)
+[[ "c#" = "$lang" ]] || { echo "Must switch to csharp after 'caide checkout'"; exit 200; }
+

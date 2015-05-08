@@ -3,7 +3,7 @@ function compare_with {
     shift 1
     for file in "$@"
     do
-        diff -bB --strip-trailing-cr ./$file $etalon_dir/$file || return 1
+        diff -bB --strip-trailing-cr $etalon_dir/$file ./$file || return 1
     done
     return 0
 }

@@ -50,7 +50,7 @@ archiveProblem probId = withLock $ do
     when (activeProblem == probId) $ do
         allProblems <- liftIO $ caideProblems root
         let newActiveProblem = if null allProblems then "" else head allProblems
-        checkoutProblem newActiveProblem
+        checkoutProblem newActiveProblem Nothing
 
     featureNames <- getFeatures
     let features = mapMaybe findFeature featureNames

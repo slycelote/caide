@@ -1,6 +1,6 @@
 #!/bin/bash
 "$caide" init
-"$caide" problem prob file,input.txt,output.txt
+"$caide" problem prob --type=file,input.txt,output.txt
 cd prob
 cat <<EOF >prob.cpp
 #include <istream>

@@ -25,12 +25,16 @@ import Caide.Util (pathToText, mapWithLimitedThreads, withLock)
 
 
 
-createProblem :: URL -> T.Text -> CaideIO ()
-createProblem url problemTypeStr = case findProblemParser url of
-    Just parser -> parseExistingProblem url parser
-    Nothing     -> case optionFromString (T.unpack problemTypeStr) of
-        Nothing    -> throw . T.concat $ ["Incorrect problem type: ", problemTypeStr]
-        Just pType -> createNewProblem url pType
+createProblem :: URL -> T.Text -> Maybe T.Text -> CaideIO ()
+createProblem url problemTypeStr maybeLangStr = do
+    case findProblemParser url of
+        Just parser -> parseExistingProblem url parser
+        Nothing     -> case optionFromString (T.unpack problemTypeStr) of
+            Nothing    -> throw . T.concat $ ["Incorrect problem type: ", problemTypeStr]
+            Just pType -> createNewProblem url pType
+    case maybeLangStr of
+        Just langStr -> generateScaffoldSolution langStr
+        Nothing      -> return ()
 
 
 initializeProblem :: Problem -> CaideIO ()
