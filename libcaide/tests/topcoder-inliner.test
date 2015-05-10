@@ -1,0 +1,9 @@
+#!/bin/bash
+"$caide" problem prob1 --type topcoder,ClassName,methodName:long,i:int,d:double --lang cpp
+cd prob1
+g++ prob1*.cpp -o prob1_test.exe
+"$caide" make
+g++ submission.cpp -c -o /dev/null
+cd ..
+compare_with inlined prob1/submission.cpp
+

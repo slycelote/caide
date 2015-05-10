@@ -17,6 +17,7 @@ mkdir -p $tmp_dir
 
 failed=0
 passed=0
+failed_tests=""
 shopt -s nullglob
 
 if [ "$#" -eq 0 ]; then
@@ -47,11 +48,13 @@ do
     else
         echo " == Failed =="
         failed=$((failed+1))
+        failed_tests="$failed_tests $f"
     fi
 
 done
 
 echo "$passed tests passed, $failed tests failed"
+echo "$failed_tests"
 
 exit $failed
 

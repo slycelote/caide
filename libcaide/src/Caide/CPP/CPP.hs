@@ -23,7 +23,7 @@ import Filesystem.Util (writeTextFile)
 
 import qualified Caide.CPP.CPPSimple as CPPSimple
 
-import Caide.Configuration (readCaideConf, withDefault)
+import Caide.Configuration (readCaideConf, readProblemConfig, withDefault)
 import Caide.CPP.CBinding
 import Caide.Types
 import Caide.Util (listDir, readTextFile', tshow)
@@ -62,12 +62,19 @@ inlineCPPCode probID = do
     cmdLineOptions <- getProp hConf "cpp" "clang_options"
     macrosToKeep <- withDefault ["ONLINE_JUDGE"] $ getProp hConf "cpp" "keep_macros"
 
+    hProbConf <- readProblemConfig probID
+    probType <- getProp hProbConf "problem" "type"
+
     libExists <- liftIO $ isDirectory libraryDirectory
     libraryCPPFiles <- if libExists
                        then filter (`hasExtension` "cpp") <$> liftIO (listDirectoryRecursively libraryDirectory)
                        else return []
 
-    concatFiles <- T.concat <$> mapM readTextFile' (solutionPath:mainFilePath:libraryCPPFiles)
+    let allCppFiles = case probType of
+            Stream _ _ -> solutionPath:mainFilePath:libraryCPPFiles
+            Topcoder _ -> solutionPath:libraryCPPFiles
+
+    concatFiles <- T.concat <$> mapM readTextFile' allCppFiles
     liftIO $ writeTextFile concatCodePath concatFiles
 
     let stages :: [InlinerStage]

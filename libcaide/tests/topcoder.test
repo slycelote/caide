@@ -1,3 +1,7 @@
 #!/bin/bash
-"$caide" problem prob1 --type topcoder,ClassName,methodName:long,i:int,d:double,s:String,vi:vint,vvs:vvString
+"$caide" problem prob1 --type topcoder,ClassName,methodName:long,i:int,d:double,s:String,vi:vint,vvs:vvString --lang simplecpp
+cd prob1
+g++ prob1*.cpp -o prob1_test.exe
+"$caide" make
+g++ submission.cpp -c -o /dev/null
 

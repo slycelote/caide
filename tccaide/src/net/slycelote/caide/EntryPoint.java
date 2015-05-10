@@ -61,8 +61,8 @@ public class EntryPoint extends BaseEntryPoint {
 
         if (language.getId() == CPPLanguage.CPP_LANGUAGE.getId())
             this.language = Lang.CPP;
-        else if (language.getId() == CSharpLanguage.CSHARP_LANGUAGE.getId())
-            this.language = Lang.CSHARP;
+//        else if (language.getId() == CSharpLanguage.CSHARP_LANGUAGE.getId())
+//            this.language = Lang.CSHARP;
         else {
             this.language = Lang.UNSUPPORTED;
             editor.logError(language.getName() + " is not supported.");
