@@ -46,12 +46,6 @@ public class EntryPoint extends BaseEntryPoint {
     }
 
     private void debug(ProblemComponentModel component) {
-        if (isDebugMode()) {
-            for (Object o : com.topcoder.shared.problem.SimpleDataTypeFactory.getDataTypes()) {
-                DataType dataType = (DataType) o;
-                editor.logMessage(dataType.getDescription());
-            }
-        }
     }
 
     @Override
@@ -160,7 +154,7 @@ public class EntryPoint extends BaseEntryPoint {
     }
 
     protected boolean isDebugMode() {
-        return true;
+        return false;
     }
 
     private CaideEditor editor = new CaideEditor();

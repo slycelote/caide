@@ -322,7 +322,7 @@ instance Option TopcoderValue where
             maybeBaseType = optionFromString . unpack . T.dropWhile (=='v') $ paramType
         _ -> Nothing
 
--- topcoder,class,method,param1:type1,param2:type2
+-- topcoder,class,method:retType,param1:type1,param2:type2
 instance Option ProblemType where
     optionToString (Topcoder desc) =
         optionToString ("topcoder" : tcClassName desc :
@@ -330,20 +330,19 @@ instance Option ProblemType where
     optionToString (Stream input output) = concat [
         "file,", inputSourceToString input, ",", outputTargetToString output]
 
-    optionFromString s
-        | "topcoder," `isPrefixOf` s = case maybeParams of
-            Just (method:params) -> Just $ Topcoder TopcoderProblemDescriptor
-                { tcClassName = className
-                , tcMethod = method
-                , tcMethodParameters = params
-                }
-            _ -> Nothing
-          where
-            components = T.splitOn "," . pack $ s
-            _:className:paramsStr = components
-            maybeParams = if length components >= 3
-                then mapM (optionFromString . unpack) paramsStr
-                else Nothing
+    optionFromString s | "topcoder," `isPrefixOf` s = case maybeParams of
+        Just (method:params) -> Just $ Topcoder TopcoderProblemDescriptor
+            { tcClassName = className
+            , tcMethod = method
+            , tcMethodParameters = params
+            }
+        _ -> Nothing
+      where
+        components = T.splitOn "," . pack $ s
+        _:className:paramsStr = components
+        maybeParams = if length components >= 3
+            then mapM (optionFromString . unpack) paramsStr
+            else Nothing
 
     optionFromString s = case optionFromString s of
         Just [probType, inputSource, outputSource]

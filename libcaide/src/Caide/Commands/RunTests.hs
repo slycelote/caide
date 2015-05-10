@@ -12,7 +12,7 @@ import Control.Monad.State (liftIO)
 
 import Data.Either (isRight)
 import Data.List (group, sort)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import Data.Text.Read as TextRead
 import qualified Data.Text as T
@@ -29,6 +29,7 @@ import Caide.Configuration (getActiveProblem, readProblemConfig, readProblemStat
 import Caide.Registry (findLanguage)
 import Caide.Types
 import Caide.TestCases.Types
+import Caide.TestCases.TopcoderComparator
 import Caide.Util (tshow)
 
 
@@ -68,15 +69,26 @@ runTests = do
         TestsPassed -> return ()
         NoEvalTests -> evalTests
 
+data ComparisonOptions = ComparisonOptions
+    { doublePrecision :: Double
+    , topcoderType :: Maybe TopcoderValue
+    }
+
 evalTests :: CaideIO ()
 evalTests = do
     probId <- getActiveProblem
     root <- caideRoot
     hProblem <- readProblemConfig probId
     precision <- getProp hProblem "problem" "double_precision"
+    probType  <- getProp hProblem "problem" "type"
     let testsDir = root </> fromText probId </> ".caideproblem" </> "test"
         reportFile = testsDir </> "report.txt"
-        cmpOptions = ComparisonOptions { doublePrecision = precision }
+        cmpOptions = ComparisonOptions
+            { doublePrecision = precision
+            , topcoderType = case probType of
+                Topcoder descr -> Just . tcMethod $ descr
+                _              -> Nothing
+            }
 
     errors <- liftIO $ do
         report <- generateReport cmpOptions testsDir
@@ -114,10 +126,18 @@ testResult cmpOptions allFiles testFile = case () of
 
 compareFiles :: ComparisonOptions -> Text -> Text -> ComparisonResult Text
 compareFiles cmpOptions etalon out = case () of
-    _ | not (null errors) -> Error $ T.concat ["Line ", tshow line, ": ", err]
+    _ | isTopcoder -> tcComparison
+      | not (null errors) -> Error $ T.concat ["Line ", tshow line, ": ", err]
       | length actual == length expected -> Success
       | otherwise -> Error $ T.concat ["Expected ", tshow (length expected), " line(s)"]
   where
+    Just returnValueType = topcoderType cmpOptions
+    isTopcoder = isJust $ topcoderType cmpOptions
+    tcComparison = case tcCompare returnValueType (doublePrecision cmpOptions) etalon out of
+        Nothing    -> Success
+        Just tcErr -> Error tcErr
+
+
     expected = T.lines . T.strip $ etalon
     actual   = T.lines . T.strip $ out
     lineComparison = zipWith (compareLines cmpOptions) expected actual
