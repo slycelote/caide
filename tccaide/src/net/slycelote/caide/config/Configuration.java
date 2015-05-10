@@ -9,7 +9,9 @@ import java.nio.file.Paths;
 
 public class Configuration {
     private static LocalPreferences preferences = LocalPreferences.getInstance();
-    private static final String CAIDE_PROJECT_DIR_KEY = "net.slycelote.caide.project";
+
+    private static final String NAMESPACE = "net.slycelote.caide.";
+    private static final String CAIDE_PROJECT_DIR_KEY = NAMESPACE + "project";
 
     public static String getCaideProjectDir() {
         return preferences.getProperty(CAIDE_PROJECT_DIR_KEY);

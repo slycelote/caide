@@ -17,6 +17,9 @@ caide is split into the following components:
 
 * [libcaide](https://github.com/slycelote/caide/blob/master/libcaide/README.md) is core command line application implementing all functionality. Windows and Linux are supported. Theoretically, it should also build on OS X.
 * [VsCaide](https://github.com/slycelote/caide/blob/master/vscaide/README.md) is caide frontend (extension) for Visual Studio; currently supports only C++ programming language.
+* [tccaide](https://github.com/slycelote/caide/blob/master/tccaide/README.md)
+  is a plugin for Topcoder arena required if you want to work with Topcoder
+problems.
 
 Download caide from [releases page](https://github.com/slycelote/caide/releases).
 
