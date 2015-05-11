@@ -11,9 +11,14 @@ struct RewriteItem {
     clang::Rewriter::RewriteOptions opts;
 };
 
+struct SourceLocationComparer {
+    bool operator() (const clang::SourceLocation& lhs, const clang::SourceLocation& rhs) const;
+    clang::Rewriter* rewriter;
+};
+
 struct RewriteItemComparer {
     bool operator() (const RewriteItem& lhs, const RewriteItem& rhs) const;
-    clang::Rewriter* rewriter;
+    SourceLocationComparer cmp;
 };
 
 

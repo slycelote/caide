@@ -6,15 +6,19 @@
 
 using namespace clang;
 
+bool SourceLocationComparer::operator() (const SourceLocation& lhs, const SourceLocation& rhs) const {
+    return rewriter->getSourceMgr().isBeforeInTranslationUnit(lhs, rhs);
+}
+
 bool RewriteItemComparer::operator() (const RewriteItem& lhs, const RewriteItem& rhs) const {
-    return rewriter->getSourceMgr().isBeforeInTranslationUnit(lhs.range.getBegin(), rhs.range.getBegin());
+    return cmp(lhs.range.getBegin(), rhs.range.getBegin());
 }
 
 SmartRewriter::SmartRewriter(clang::Rewriter& rewriter_)
     : rewriter(rewriter_)
     , changesApplied(false)
 {
-    comparer.rewriter = &rewriter_;
+    comparer.cmp.rewriter = &rewriter_;
     removed = std::set<RewriteItem, RewriteItemComparer>(comparer);
 }
 

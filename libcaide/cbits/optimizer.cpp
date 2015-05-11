@@ -750,9 +750,20 @@ public:
         while (!queue.empty()) {
             Decl* decl = *queue.begin();
             queue.erase(queue.begin());
-            if (used.insert(decl).second) {
+            if (used.insert(decl).second)
                 queue.insert(srcInfo.uses[decl].begin(), srcInfo.uses[decl].end());
+        }
+
+        {
+            std::set<Decl*> usedInMainFile;
+            for (Decl* decl : used) {
+                SourceLocation start = decl->getLocStart();
+                if (start.isMacroID())
+                    start = sourceManager.getExpansionRange(start).first;
+                if (sourceManager.isInMainFile(start))
+                    usedInMainFile.insert(decl);
             }
+            used = usedInMainFile;
         }
 
         //cerr << "Remove unused decls" << std::endl;
