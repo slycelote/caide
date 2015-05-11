@@ -59,7 +59,7 @@ consume c = do
     _ <- scanUntil (not . isSpace)
     cur <- peek
     when (cur /= c) $
-        throwError $ T.concat ["Expected char", T.singleton c, "but found ", T.singleton cur]
+        throwError $ T.concat ["Expected char ", T.singleton c, "but found ", T.singleton cur]
     advance 1
 
 isTokenSeparator :: Char -> Bool
@@ -71,7 +71,7 @@ readToken = scanUntil (not . isSpace) >> scanUntil isTokenSeparator
 readQuotedString :: TopcoderParser Text
 readQuotedString = do
     consume '"'
-    ret <- scanUntil (/= '"')
+    ret <- scanUntil (== '"')
     advance 1
     return ret
 

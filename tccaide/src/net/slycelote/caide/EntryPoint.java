@@ -65,7 +65,6 @@ public class EntryPoint extends BaseEntryPoint {
 
         final String root = Configuration.getCaideProjectDir();
         final String testMethodDesc = getTestMethodDescriptor(component);
-        editor.logMessage(testMethodDesc);
 
         CaideExe.ExecutionResult ret;
         if (Files.exists(Paths.get(root, problemName, "problem.ini"))) {
