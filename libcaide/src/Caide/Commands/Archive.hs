@@ -4,15 +4,16 @@ module Caide.Commands.Archive(
 ) where
 
 import Prelude hiding (FilePath)
-import Control.Applicative ((<$>))
+import Control.Applicative ((<$>), (<*>))
 import Control.Monad (unless, when, forM_, forM)
 import Control.Monad.State (liftIO)
 import Data.List (sort)
 import Data.Maybe (mapMaybe)
 import qualified Data.Text as T
 import Data.Time (getZonedTime, formatTime)
-import Filesystem (isDirectory, createTree, removeTree, listDirectory, isDirectory)
+import Filesystem (isDirectory, createTree, removeTree, listDirectory, isDirectory, isFile)
 import Filesystem.Path.CurrentOS ((</>), fromText, decodeString, basename, FilePath)
+import System.IO.Error (catchIOError, ioeGetErrorString, isPermissionError)
 import System.Locale (defaultTimeLocale)
 
 import Caide.Commands.Checkout (checkoutProblem)
@@ -43,7 +44,11 @@ archiveProblem probId = withLock $ do
         forM_ files $ \file -> copyFileToDir file archiveDir
         copyTreeToDir problemStateDir archiveDir
         -- Remove problem directory
-        removeTree problemDir
+        -- A common error in Windows is when a problem folder is locked by
+        -- Explorer or another program. In this case all files are removed but
+        -- some of directories may be left. We ignore this exception (PermissionError).
+        removeTree problemDir `catchIOError` (\e ->
+            if isPermissionError e then putStrLn $ ioeGetErrorString e else ioError e)
 
     -- Change active problem, if necessary
     activeProblem <- getActiveProblem
@@ -60,7 +65,8 @@ archiveProblem probId = withLock $ do
 caideProblems :: FilePath -> IO [ProblemID]
 caideProblems rootDir = do
     dirs <- listDirectory rootDir
-    isCaideProblem <- forM dirs $ \dir -> isDirectory (dir </> ".caideproblem")
+    isCaideProblem <- forM dirs $ \dir ->
+        (&&) <$> isDirectory (dir </> ".caideproblem") <*> isFile (dir </> "problem.ini")
     return $ sort [pathToText (basename dir) | (dir, True) <- zip dirs isCaideProblem]
 
 appendNumberIfExists :: FilePath -> T.Text -> IO FilePath

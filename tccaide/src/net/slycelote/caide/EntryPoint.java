@@ -118,7 +118,7 @@ public class EntryPoint extends BaseEntryPoint {
         for (int i = 0; i < testCases.length; ++i) {
             TestCase testCase = testCases[i];
 
-            Path fileName = Paths.get(root, problemName, "case" + (i + 1) + ".in");
+            Path fileName = Paths.get(root, problemName, "case" + i + ".in");
             if (!Files.exists(fileName)) {
                 List<String> input = new ArrayList<String>();
                 Collections.addAll(input, testCase.getInput());
@@ -129,7 +129,7 @@ public class EntryPoint extends BaseEntryPoint {
                 }
             }
 
-            fileName = Paths.get(root, problemName, "case" + (i + 1) + ".out");
+            fileName = Paths.get(root, problemName, "case" + i + ".out");
             if (!Files.exists(fileName)) {
                 List<String> output = new ArrayList<String>();
                 output.add(testCase.getOutput());
