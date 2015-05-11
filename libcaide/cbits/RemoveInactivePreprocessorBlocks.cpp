@@ -101,10 +101,9 @@ public:
             if (const MacroInfo* info = MD->getMacroInfo())
                 e = info->getDefinitionEndLoc();
             else
-                e = b;
+                e = changeColumn(b, 10000);
 
             b = changeColumn(b, 1);
-            e = changeColumn(e, 10000);
 
             definedMacros[MD].definition = SourceRange(b, e);
         }

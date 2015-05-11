@@ -49,6 +49,9 @@ int unused_func2() {
 #endif
 }
 
+#define UNUSED_MACRO1 void f(){\
+}
+
 template<typename T>
 class TemplateMethodInTemplateClass {
 public:
