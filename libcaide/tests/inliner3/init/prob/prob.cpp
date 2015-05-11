@@ -117,6 +117,11 @@ struct S4 {
 
 typedef S4 tds4;
 
+template<typename T>
+struct Identity { typedef T type; };
+
+typedef Identity<int>::type inttd;
+
 int main() {
     f2();
     //f3<int>();
@@ -134,5 +139,6 @@ int main() {
     f(b);
     int i = atd4::x;
     tds4(1, 2);
+    inttd j;
 }
 

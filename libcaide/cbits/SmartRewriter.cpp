@@ -10,6 +10,11 @@ bool SourceLocationComparer::operator() (const SourceLocation& lhs, const Source
     return rewriter->getSourceMgr().isBeforeInTranslationUnit(lhs, rhs);
 }
 
+bool SourceRangeComparer::operator() (const clang::SourceRange& lhs, const clang::SourceRange& rhs) const {
+    return cmp(lhs.getBegin(), rhs.getBegin()) ||
+            (lhs.getBegin() == rhs.getBegin() && cmp(lhs.getEnd(), rhs.getEnd()));
+}
+
 bool RewriteItemComparer::operator() (const RewriteItem& lhs, const RewriteItem& rhs) const {
     return cmp(lhs.range.getBegin(), rhs.range.getBegin());
 }

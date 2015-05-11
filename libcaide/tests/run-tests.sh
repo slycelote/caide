@@ -53,7 +53,7 @@ do
 
 done
 
-echo "$passed tests passed, $failed tests failed"
+echo "$passed test(s) passed, $failed test(s) failed"
 echo "$failed_tests"
 
 exit $failed

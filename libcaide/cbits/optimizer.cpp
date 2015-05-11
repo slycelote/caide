@@ -509,10 +509,61 @@ public:
 };
 
 
+class UsageInfo {
+private:
+    SourceManager& sourceManager;
+    SourceRangeComparer cmp;
+    std::set<Decl*> usedDecls;
+    std::set<SourceRange, SourceRangeComparer> locationsOfUsedDecls;
+
+public:
+    UsageInfo(SourceManager& sourceManager_, Rewriter& rewriter_)
+        : sourceManager(sourceManager_)
+    {
+        cmp.cmp.rewriter = &rewriter_;
+        locationsOfUsedDecls = std::set<SourceRange, SourceRangeComparer>(cmp);
+    }
+
+    bool isUsed(Decl* decl) const {
+        if (usedDecls.find(decl) != usedDecls.end())
+            return true;
+
+        SourceRange range = getSourceRange(decl);
+        return locationsOfUsedDecls.find(range) != locationsOfUsedDecls.end();
+    }
+
+    void addIfInMainFile(Decl* decl) {
+        SourceLocation start = decl->getLocStart();
+        if (start.isMacroID())
+            start = sourceManager.getExpansionRange(start).first;
+
+        if (sourceManager.isInMainFile(start)) {
+            SourceLocation end = decl->getLocEnd();
+            if (end.isMacroID())
+                end = sourceManager.getExpansionRange(end).second;
+            usedDecls.insert(decl);
+            locationsOfUsedDecls.insert(SourceRange(start, end));
+        }
+    }
+
+private:
+    SourceRange getSourceRange(Decl* decl) const {
+        SourceLocation start = decl->getLocStart();
+        if (start.isMacroID())
+            start = sourceManager.getExpansionRange(start).first;
+
+        SourceLocation end = decl->getLocEnd();
+        if (end.isMacroID())
+            end = sourceManager.getExpansionRange(end).second;
+
+        return SourceRange(start, end);
+    }
+};
+
 class OptimizerVisitor: public RecursiveASTVisitor<OptimizerVisitor> {
 private:
     SourceManager& sourceManager;
-    const std::set<Decl*>& used;
+    const UsageInfo usageInfo;
     std::set<Decl*> declared;
     std::set<NamespaceDecl*> usedNamespaces;
     SmartRewriter& rewriter;
@@ -533,10 +584,10 @@ private:
     }
 
 public:
-    OptimizerVisitor(SourceManager& srcManager, const std::set<Decl*>& _used, SmartRewriter& _rewriter)
+    OptimizerVisitor(SourceManager& srcManager, const UsageInfo& usageInfo_, SmartRewriter& rewriter_)
         : sourceManager(srcManager)
-        , used(_used)
-        , rewriter(_rewriter)
+        , usageInfo(usageInfo_)
+        , rewriter(rewriter_)
     {}
 
     // When we remove code, we're only interested in the real code,
@@ -606,13 +657,13 @@ public:
         if (CXXDestructorDecl* destructor = dyn_cast<CXXDestructorDecl>(functionDecl)) {
             // Destructor should be removed iff the class is unused
             CXXRecordDecl* classDecl = destructor->getParent();
-            if (classDecl && used.find(classDecl->getCanonicalDecl()) == used.end())
+            if (classDecl && !usageInfo.isUsed(classDecl->getCanonicalDecl()))
                 removeDecl(destructor);
             return true;
         }
 
         FunctionDecl* canonicalDecl = functionDecl->getCanonicalDecl();
-        const bool funcIsUnused = used.find(canonicalDecl) == used.end();
+        const bool funcIsUnused = !usageInfo.isUsed(canonicalDecl);
         const bool thisIsRedeclaration = !functionDecl->doesThisDeclarationHaveABody() && declared.find(canonicalDecl) != declared.end();
         if (funcIsUnused || thisIsRedeclaration) {
             dbg(CAIDE_FUNC);
@@ -626,7 +677,7 @@ public:
         if (!sourceManager.isInMainFile(functionDecl->getLocStart()))
             return true;
         dbg(CAIDE_FUNC);
-        if (used.find(functionDecl) == used.end())
+        if (!usageInfo.isUsed(functionDecl))
             removeDecl(functionDecl);
         return true;
     }
@@ -639,7 +690,7 @@ public:
         if (isTemplated && (specKind == TSK_ImplicitInstantiation || specKind == TSK_Undeclared))
             return true;
         CXXRecordDecl* canonicalDecl = recordDecl->getCanonicalDecl();
-        const bool classIsUnused = used.find(canonicalDecl) == used.end();
+        const bool classIsUnused = !usageInfo.isUsed(canonicalDecl);
         const bool thisIsRedeclaration = !recordDecl->isCompleteDefinition() && declared.find(canonicalDecl) != declared.end();
 
         if (classIsUnused || thisIsRedeclaration)
@@ -654,7 +705,7 @@ public:
             return true;
         dbg(CAIDE_FUNC);
         ClassTemplateDecl* canonicalDecl = templateDecl->getCanonicalDecl();
-        const bool classIsUnused = used.find(canonicalDecl) == used.end();
+        const bool classIsUnused = !usageInfo.isUsed(canonicalDecl);
         const bool thisIsRedeclaration = !templateDecl->isThisDeclarationADefinition() && declared.find(canonicalDecl) != declared.end();
 
         if (classIsUnused || thisIsRedeclaration)
@@ -669,7 +720,7 @@ public:
             return true;
 
         Decl* canonicalDecl = typedefDecl->getCanonicalDecl();
-        if (used.find(canonicalDecl) == used.end())
+        if (!usageInfo.isUsed(canonicalDecl))
             removeDecl(typedefDecl);
 
         return true;
@@ -706,10 +757,6 @@ private:
         rewriter.removeRange(SourceRange(start, end), opts);
     }
 
-    bool isDeclUsed(Decl* decl) const {
-        return used.find(decl->getCanonicalDecl()) != used.end();
-    }
-
     std::string toString(const SourceLocation& loc) const {
         return loc.printToString(sourceManager);
     }
@@ -717,13 +764,15 @@ private:
 
 class OptimizerConsumer: public ASTConsumer {
 public:
-    explicit OptimizerConsumer(CompilerInstance& compiler_, SmartRewriter& _rewriter,
-               RemoveInactivePreprocessorBlocks& ppCallbacks_, std::string& _result)
+    explicit OptimizerConsumer(CompilerInstance& compiler_, SmartRewriter& smartRewriter_,
+                Rewriter& rewriter_, RemoveInactivePreprocessorBlocks& ppCallbacks_,
+                std::string& result_)
         : compiler(compiler_)
         , sourceManager(compiler.getSourceManager())
-        , rewriter(_rewriter)
+        , smartRewriter(smartRewriter_)
+        , rewriter(rewriter_)
         , ppCallbacks(ppCallbacks_)
-        , result(_result)
+        , result(result_)
     {}
 
     virtual void HandleTranslationUnit(ASTContext& Ctx) {
@@ -743,38 +792,32 @@ public:
         }
 
         //cerr << "Search for used decls" << std::endl;
+        UsageInfo usageInfo(sourceManager, rewriter);
         std::set<Decl*> used;
         std::set<Decl*> queue;
         for (Decl* decl : srcInfo.declsToKeep)
             queue.insert(decl->getCanonicalDecl());
+
         while (!queue.empty()) {
             Decl* decl = *queue.begin();
             queue.erase(queue.begin());
-            if (used.insert(decl).second)
+            if (used.insert(decl).second) {
                 queue.insert(srcInfo.uses[decl].begin(), srcInfo.uses[decl].end());
+                usageInfo.addIfInMainFile(decl);
+            }
         }
 
-        {
-            std::set<Decl*> usedInMainFile;
-            for (Decl* decl : used) {
-                SourceLocation start = decl->getLocStart();
-                if (start.isMacroID())
-                    start = sourceManager.getExpansionRange(start).first;
-                if (sourceManager.isInMainFile(start))
-                    usedInMainFile.insert(decl);
-            }
-            used = usedInMainFile;
-        }
+        used.clear();
 
         //cerr << "Remove unused decls" << std::endl;
-        OptimizerVisitor visitor(sourceManager, used, rewriter);
+        OptimizerVisitor visitor(sourceManager, usageInfo, smartRewriter);
         visitor.TraverseDecl(Ctx.getTranslationUnitDecl());
 
-        removeUnusedVariables(used, Ctx);
+        removeUnusedVariables(usageInfo, Ctx);
 
         ppCallbacks.Finalize();
 
-        rewriter.applyChanges();
+        smartRewriter.applyChanges();
 
         //cerr << "Done!" << std::endl;
         result = getResult();
@@ -783,7 +826,7 @@ public:
 private:
     // Variables are a special case because there may be many
     // comma separated variables in one definition.
-    void removeUnusedVariables(const std::set<Decl*>& used, ASTContext& ctx) {
+    void removeUnusedVariables(const UsageInfo& usageInfo, ASTContext& ctx) {
         Rewriter::RewriteOptions opts;
         opts.RemoveLineIfEmpty = true;
 
@@ -794,7 +837,7 @@ private:
             size_t lastUsed = n;
             for (size_t i = 0; i < n; ++i) {
                 VarDecl* var = vars[i];
-                isUsed[i] = used.find(var->getCanonicalDecl()) != used.end();
+                isUsed[i] = usageInfo.isUsed(var->getCanonicalDecl());
                 if (isUsed[i])
                     lastUsed = i;
             }
@@ -808,7 +851,7 @@ private:
             if (lastUsed == n) {
                 // all variables are unused
                 SourceRange range(startOfType, semiColon);
-                rewriter.removeRange(range, opts);
+                smartRewriter.removeRange(range, opts);
             } else {
                 for (size_t i = 0; i < lastUsed; ++i) if (!isUsed[i]) {
                     // beginning of variable name
@@ -826,7 +869,7 @@ private:
 
                     if (beg.isValid() && end.isValid()) {
                         SourceRange range(beg, end);
-                        rewriter.removeRange(range, opts);
+                        smartRewriter.removeRange(range, opts);
                     }
                 }
                 if (lastUsed + 1 != n) {
@@ -836,7 +879,7 @@ private:
                         end = sourceManager.getExpansionRange(end).second;
                     SourceLocation comma = findTokenAfterLocation(end, ctx, tok::comma);
                     SourceRange range(comma, endOfLastVar);
-                    rewriter.removeRange(range, opts);
+                    smartRewriter.removeRange(range, opts);
                 }
             }
         }
@@ -860,7 +903,7 @@ private:
         // At this point the rewriter's buffer should be full with the rewritten
         // file contents.
         if (const RewriteBuffer* rewriteBuf =
-                rewriter.getRewriteBufferFor(sourceManager.getMainFileID()))
+                smartRewriter.getRewriteBufferFor(sourceManager.getMainFileID()))
             return std::string(rewriteBuf->begin(), rewriteBuf->end());
 
         // No changes
@@ -875,7 +918,8 @@ private:
 private:
     CompilerInstance& compiler;
     SourceManager& sourceManager;
-    SmartRewriter& rewriter;
+    SmartRewriter& smartRewriter;
+    Rewriter& rewriter;
     RemoveInactivePreprocessorBlocks& ppCallbacks;
     std::string& result;
     SourceInfo srcInfo;
@@ -899,13 +943,12 @@ public:
 
     virtual std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance& compiler, StringRef /*file*/)
     {
-        if (!compiler.hasSourceManager()) {
+        if (!compiler.hasSourceManager())
             throw "No source manager";
-        }
         rewriter.setSourceMgr(compiler.getSourceManager(), compiler.getLangOpts());
         auto ppCallbacks = std::unique_ptr<RemoveInactivePreprocessorBlocks>(
             new RemoveInactivePreprocessorBlocks(compiler.getSourceManager(), smartRewriter, macrosToKeep));
-        auto consumer = std::unique_ptr<OptimizerConsumer>(new OptimizerConsumer(compiler, smartRewriter, *ppCallbacks, result));
+        auto consumer = std::unique_ptr<OptimizerConsumer>(new OptimizerConsumer(compiler, smartRewriter, rewriter, *ppCallbacks, result));
         compiler.getPreprocessor().addPPCallbacks(std::move(ppCallbacks));
         return std::move(consumer);
     }

@@ -16,6 +16,11 @@ struct SourceLocationComparer {
     clang::Rewriter* rewriter;
 };
 
+struct SourceRangeComparer {
+    bool operator() (const clang::SourceRange& lhs, const clang::SourceRange& rhs) const;
+    SourceLocationComparer cmp;
+};
+
 struct RewriteItemComparer {
     bool operator() (const RewriteItem& lhs, const RewriteItem& rhs) const;
     SourceLocationComparer cmp;
