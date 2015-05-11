@@ -96,7 +96,7 @@ typedef A atd2;
 typedef A atd3;
 typedef A atd4;
 
-int f(atd3& a){}
+void f(atd3& a){}
 
 template <typename T>
 struct S3 {
@@ -122,6 +122,9 @@ struct Identity { typedef T type; };
 
 typedef Identity<int>::type inttd;
 
+template<typename T>
+void noopFunc(T t) {}
+
 int main() {
     f2();
     //f3<int>();
@@ -140,5 +143,9 @@ int main() {
     int i = atd4::x;
     tds4(1, 2);
     inttd j;
+    {
+        typedef int Int;
+        noopFunc([&](Int& i){});
+    }
 }
 

@@ -379,6 +379,12 @@ public:
         return true;
     }
 
+    bool VisitLambdaExpr(LambdaExpr* lambdaExpr) {
+        dbg(CAIDE_FUNC);
+        insertReference(getParentDecl(lambdaExpr), lambdaExpr->getCallOperator());
+        return true;
+    }
+
     bool VisitFieldDecl(FieldDecl* field) {
         dbg(CAIDE_FUNC);
         insertReference(field, field->getParent());
