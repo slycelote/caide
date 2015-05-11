@@ -30,7 +30,7 @@ const char* func<int*>() { return "int*"; }
 
 template<class T>
 void compilingFunc() {
-    // when uncommended, this is invalid syntax, but there should be no error because of delayed template parsing;
+    this is invalid syntax, but there should be no error because of delayed template parsing;
 };
 
 

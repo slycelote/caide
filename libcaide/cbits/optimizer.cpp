@@ -788,14 +788,15 @@ public:
 
         // Source range of delayed-parsed template functions includes only declaration part.
         //     Force their parsing to get correct source ranges.
-        // Note that this essentially disables -fdelayed-template-parsing flag for user code
-        //     and may lead to incompatible results when, e.g., code compiles in VS
-        //     but not in the inliner. TODO: find another way to get correct source ranges.
+        //     Suppress error messages temporarily (it's OK for these functions
+        //     to be malformed).
+        clang::Sema& sema = compiler.getSema();
+        sema.getDiagnostics().setSuppressAllDiagnostics(true);
         for (FunctionDecl* f : srcInfo.delayedParsedFunctions) {
-            clang::Sema& sema = compiler.getSema();
             clang::LateParsedTemplate* lpt = sema.LateParsedTemplateMap[f];
             sema.LateTemplateParser(sema.OpaqueParser, *lpt);
         }
+        sema.getDiagnostics().setSuppressAllDiagnostics(false);
 
         //cerr << "Search for used decls" << std::endl;
         UsageInfo usageInfo(sourceManager, rewriter);

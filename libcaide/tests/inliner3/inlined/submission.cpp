@@ -16,8 +16,6 @@ void f4() {
 }
 
 
-/*
-TODO
 template<typename T>
 struct Outer
 {
@@ -33,7 +31,6 @@ void f3() {
     Outer<T> v;
     v.inner;
 }
-*/
 
 int f6() {
     return 6;
@@ -120,6 +117,9 @@ int main() {
     {
         typedef int Int;
         noopFunc([&](Int& i){});
+    }
+    {
+        f3<char>();
     }
 }
 
