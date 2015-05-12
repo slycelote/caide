@@ -103,7 +103,7 @@ problemOpts = createProblem
     <$> txtArgument (metavar "URL-OR-NAME" <>
         help "Either problem URL to parse or problem name to create from scratch")
     <*> txtOption (long "type" <> short 't' <> metavar "PROBLEM-TYPE" <>
-        help "Problem type, e.g.: 'topcoder', 'file,stdin,stdout' or 'file,input.txt,output.txt'. Ignored when parsing an existing problem." <>
+        help "Problem type, e.g.: 'topcoder,ClassName,methodName:returnType,param1:type1,param2:type2', 'file,stdin,stdout' or 'file,input.txt,output.txt'. Topcoder types are: int, long, double, String, vint, vlong, vdouble, vString. This option is ignored when parsing an existing problem." <>
         value "file,stdin,stdout" <> showDefault)
     <*> optional (txtOption (long "lang" <> short 'l' <> metavar "LANG" <>
         help "Programming language to switch to"))

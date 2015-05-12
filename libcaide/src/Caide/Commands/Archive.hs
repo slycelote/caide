@@ -11,7 +11,7 @@ import Data.List (sort)
 import Data.Maybe (mapMaybe)
 import qualified Data.Text as T
 import Data.Time (getZonedTime, formatTime)
-import Filesystem (isDirectory, createTree, removeTree, listDirectory, isDirectory, isFile)
+import Filesystem (isDirectory, createTree, removeTree, listDirectory, isFile)
 import Filesystem.Path.CurrentOS ((</>), fromText, decodeString, basename, FilePath)
 import System.IO.Error (catchIOError, ioeGetErrorString, isPermissionError)
 import System.Locale (defaultTimeLocale)
@@ -24,11 +24,12 @@ import Caide.Util (copyTreeToDir, copyFileToDir, listDir, pathToText, tshow, wit
 
 
 archiveProblem :: ProblemID -> CaideIO ()
-archiveProblem probId = withLock $ do
+archiveProblem probId' = withLock $ do
     root <- caideRoot
-    let problemDir = root </> fromText probId
+    let probId = T.dropAround (\c -> c == '/' || c == '\\') probId'
+        problemDir = root </> fromText probId
         problemStateDir = problemDir </> ".caideproblem"
-    problemExists <- liftIO $ isDirectory problemStateDir
+    problemExists <- liftIO $ isFile $ problemDir </> "problem.ini"
     unless problemExists $ throw . T.concat $ ["Problem ", probId, " doesn't exist"]
 
     -- Prepare archive directory
@@ -65,8 +66,7 @@ archiveProblem probId = withLock $ do
 caideProblems :: FilePath -> IO [ProblemID]
 caideProblems rootDir = do
     dirs <- listDirectory rootDir
-    isCaideProblem <- forM dirs $ \dir ->
-        (&&) <$> isDirectory (dir </> ".caideproblem") <*> isFile (dir </> "problem.ini")
+    isCaideProblem <- forM dirs $ \dir -> isFile (dir </> "problem.ini")
     return $ sort [pathToText (basename dir) | (dir, True) <- zip dirs isCaideProblem]
 
 appendNumberIfExists :: FilePath -> T.Text -> IO FilePath

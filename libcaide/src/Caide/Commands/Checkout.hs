@@ -11,7 +11,7 @@ import Data.Maybe (mapMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.IO.Util as T
 
-import Filesystem (isDirectory)
+import Filesystem (isFile)
 import Filesystem.Path.CurrentOS (fromText, (</>))
 
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
@@ -21,10 +21,11 @@ import Caide.Types
 import Caide.Util (withLock)
 
 checkoutProblem :: ProblemID -> Maybe T.Text -> CaideIO ()
-checkoutProblem probId maybeLangStr = unless (T.null probId) $ do
+checkoutProblem probId' maybeLangStr = unless (T.null probId') $ do
     root <- caideRoot
-    let problemDir = root </> fromText probId
-    problemExists <- liftIO $ isDirectory problemDir
+    let probId = T.dropAround (\c -> c == '/' || c == '\\') probId'
+        problemDir = root </> fromText probId
+    problemExists <- liftIO $ isFile $ problemDir </> "problem.ini"
 
     unless problemExists $ throw . T.concat $ ["Problem ", probId, " doesn't exist"]
 
