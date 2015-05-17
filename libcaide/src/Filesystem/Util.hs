@@ -1,18 +1,24 @@
-{-| Unicode input/output is broken.
-    Use these functions to read and write text files in UTF8.
--}
 module Filesystem.Util(
+      -- * Unicode input/output is broken.  Use these functions to read and write text files in UTF8.
       readTextFile
     , writeTextFile
     , appendTextFile
+
+      -- * General filesystem utilities
+    , listDir
+    , copyFileToDir
+    , copyTreeToDir
+    , pathToText
 ) where
 
 import Control.Applicative ((<$>))
+import Control.Monad (forM_)
 
 import qualified Data.ByteString as BS
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 
+import qualified Filesystem as F
 import qualified Filesystem.Path as F
 import qualified Filesystem.Path.CurrentOS as F
 
@@ -36,4 +42,32 @@ writeTextFile filePath text = BS.writeFile (F.encodeString filePath) .
 appendTextFile :: F.FilePath -> T.Text -> IO ()
 appendTextFile filePath text = BS.appendFile (F.encodeString filePath) .
     encodeUtf8 . universalNewlineConversionOnOutput $ text
+
+pathToText :: F.FilePath -> T.Text
+pathToText path = case F.toText path of
+    Left  s -> s
+    Right s -> s
+
+-- | Returns (file list, directory list)
+listDir :: F.FilePath -> IO ([F.FilePath], [F.FilePath])
+listDir dir = do
+    filesAndDirs <- F.listDirectory dir
+    thisIsFile <- mapM F.isFile filesAndDirs
+    thisIsDir <- mapM F.isDirectory filesAndDirs
+    let files = map fst . filter snd $ zip filesAndDirs thisIsFile
+        dirs  = map fst . filter snd $ zip filesAndDirs thisIsDir
+    return (files, dirs)
+
+copyFileToDir :: F.FilePath -> F.FilePath -> IO ()
+copyFileToDir srcFile dstDir = F.copyFile srcFile dstFile
+    where dstFile = dstDir F.</> F.filename srcFile
+
+copyTreeToDir :: F.FilePath -> F.FilePath -> IO ()
+copyTreeToDir srcTree dstDir = do
+    let targetDir = dstDir F.</> F.basename srcTree
+    F.createDirectory True targetDir
+    (files, dirs) <- listDir srcTree
+    forM_ files $ \file -> copyFileToDir file targetDir
+    forM_ dirs $ \dir -> copyTreeToDir dir targetDir
+
 

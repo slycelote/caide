@@ -39,6 +39,8 @@ public class Test
             Console.Error.WriteLine("caide update_tests returned non-zero error code " + updateTestsProcess.ExitCode);
         }
 
+        StringWriter report = new StringWriter();
+
         // Process each test case described in a file in current directory
         foreach (string line in File.ReadAllLines(Path.Combine(testDir, "testList.txt")))
         {
@@ -47,8 +49,7 @@ public class Test
             if (testState == "Skip")
             {
                 Console.Error.WriteLine("Skipping test " + testName);
-                // mark test as skipped
-                File.WriteAllText(Path.Combine(testDir, testName + ".skipped"), "");
+                report.WriteLine(testName + " skipped");
             }
             else if (testState == "Run")
             {
@@ -65,14 +66,14 @@ public class Test
                     catch
                     {
                         Console.Error.WriteLine("Test " + testName + " threw an exception");
-                        // mark test as failed
-                        File.WriteAllText(Path.Combine(testDir, testName + ".failed"), "");
+                        report.WriteLine(testName + " failed");
                     }
                 }
 
                 // save program output
                 string result = output.ToString();
                 File.WriteAllText(Path.Combine(testDir, testName + ".out"), result);
+                report.WriteLine(testName + " ran");
 
                 // optional: print program output to stderr
                 if (result.Length > 100)
@@ -81,10 +82,11 @@ public class Test
             }
             else
             {
-                // internal caide error: unknown test status
-                File.WriteAllText(Path.Combine(testDir, testName + ".error"), "");
+                report.WriteLine(testName + " error unknown test status");
             }
         }
+
+        File.WriteAllText(Path.Combine(testDir, "report.txt"), report.ToString());
 
         // optional: evaluate tests automatically
         Process evalTestsProcess = Run(caideExe, "eval_tests");

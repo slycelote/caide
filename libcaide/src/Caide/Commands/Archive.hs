@@ -4,7 +4,7 @@ module Caide.Commands.Archive(
 ) where
 
 import Prelude hiding (FilePath)
-import Control.Applicative ((<$>), (<*>))
+import Control.Applicative ((<$>))
 import Control.Monad (unless, when, forM_, forM)
 import Control.Monad.State (liftIO)
 import Data.List (sort)
@@ -13,6 +13,8 @@ import qualified Data.Text as T
 import Data.Time (getZonedTime, formatTime)
 import Filesystem (isDirectory, createTree, removeTree, listDirectory, isFile)
 import Filesystem.Path.CurrentOS ((</>), fromText, decodeString, basename, FilePath)
+import Filesystem.Util (copyTreeToDir, copyFileToDir, listDir, pathToText)
+
 import System.IO.Error (catchIOError, ioeGetErrorString, isPermissionError)
 import System.Locale (defaultTimeLocale)
 
@@ -20,7 +22,7 @@ import Caide.Commands.Checkout (checkoutProblem)
 import Caide.Configuration (getActiveProblem, getFeatures)
 import Caide.Registry (findFeature)
 import Caide.Types
-import Caide.Util (copyTreeToDir, copyFileToDir, listDir, pathToText, tshow, withLock)
+import Caide.Util (tshow, withLock)
 
 
 archiveProblem :: ProblemID -> CaideIO ()

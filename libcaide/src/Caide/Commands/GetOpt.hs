@@ -10,9 +10,10 @@ import Control.Monad.State (liftIO)
 import qualified Data.Text as T
 import qualified Data.Text.IO.Util as T
 
+import Filesystem.Util (pathToText)
+
 import Caide.Configuration (readProblemConfig, readProblemState, readCaideConf, readCaideState)
 import Caide.Types
-import Caide.Util (pathToText)
 
 getOpt :: T.Text -> T.Text -> CaideIO ()
 getOpt section key = do

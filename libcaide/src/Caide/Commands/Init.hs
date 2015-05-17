@@ -14,10 +14,10 @@ import qualified Data.Text.IO.Util as T
 
 import Filesystem.Path.CurrentOS (encodeString)
 import qualified Filesystem.Path as FSP
+import Filesystem.Util (pathToText)
 
 import Caide.Configuration (writeCaideConf, writeCaideState, defaultCaideConf, defaultCaideState)
 import Caide.Types
-import Caide.Util (pathToText)
 
 initialize :: Bool -> CaideIO ()
 initialize useSystemCppHeaders = do

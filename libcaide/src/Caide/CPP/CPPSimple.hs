@@ -10,14 +10,14 @@ import Data.List (intersperse)
 import qualified Data.Text as T
 
 import Filesystem (copyFile, isFile)
-import Filesystem.Util (appendTextFile, writeTextFile)
+import Filesystem.Util (appendTextFile, writeTextFile, pathToText)
 import Filesystem.Path ((</>))
 import Filesystem.Path.CurrentOS (fromText)
 import qualified Filesystem.Path as F
 
 import Caide.Configuration (readProblemConfig)
 import Caide.Types
-import Caide.Util (pathToText, readTextFile')
+import Caide.Util (readTextFile')
 
 
 language :: ProgrammingLanguage
@@ -32,6 +32,11 @@ generateCPPScaffold probID = do
     probType <- getProbType probID
     generateSolutionFiles probType root probID
 
+copyFileUnlessExists :: F.FilePath -> F.FilePath -> IO ()
+copyFileUnlessExists from to = do
+    fileExists <- isFile to
+    unless fileExists $ copyFile from to
+
 
 generateSolutionFiles :: ProblemType -> F.FilePath -> ProblemID -> CaideIO ()
 generateSolutionFiles (Stream input output) root probID = do
@@ -41,10 +46,8 @@ generateSolutionFiles (Stream input output) root probID = do
         liftIO $ writeTextFile mainProgramPath $
                 T.unlines $ inputPreamble ++ outputPreamble ++ [mainTemplate]
     liftIO $ do
-        solutionFileExists <- isFile scaffoldPath
-        unless solutionFileExists $ copyFile scaffoldTemplatePath scaffoldPath
-        testFileExists <- isFile testProgramPath
-        unless testFileExists $ copyFile testTemplatePath testProgramPath
+        copyFileUnlessExists scaffoldTemplatePath scaffoldPath
+        copyFileUnlessExists testTemplatePath testProgramPath
   where
     inputPreamble = case input of
         StdIn -> ["#define CAIDE_STDIN 1"]
@@ -74,6 +77,9 @@ generateSolutionFiles (Topcoder desc) root probID = do
         testTemplate <- readTextFile' testTemplatePath
         liftIO $ writeTextFile testProgramPath $
             T.unlines $ tcTestPreamble ++ [testTemplate]
+
+    liftIO $ copyFileUnlessExists (root </> "templates" </> "topcoder_serialize.h")
+                                  (problemDir </> "topcoder_serialize.h")
   where
     problemDir = root </> fromText probID
     solutionPath = problemDir </> fromText (T.append probID ".cpp")

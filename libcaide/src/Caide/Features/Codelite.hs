@@ -20,6 +20,7 @@ import Filesystem.Path ((</>), basename, hasExtension)
 import qualified Filesystem.Path as F
 
 import qualified System.FilePath
+import Filesystem.Util (listDir, pathToText)
 
 import Text.XML.Light (parseXML, Content(..))
 import Text.XML.Light.Cursor
@@ -27,7 +28,6 @@ import Text.XML.Light.Cursor
 import Caide.Types
 import Caide.Xml
 import Caide.Configuration (readProblemState, getActiveProblem)
-import Caide.Util (listDir, pathToText)
 
 feature :: Feature
 feature =  noOpFeature

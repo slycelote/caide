@@ -16,13 +16,13 @@ import Prelude hiding (FilePath)
 import Filesystem (isDirectory, listDirectory, createTree, removeFile, copyFile, writeTextFile)
 import Filesystem.Path.CurrentOS (FilePath, fromText, encodeString,
     hasExtension, replaceExtension, basename, filename, (</>))
+import Filesystem.Util (copyFileToDir, pathToText)
 
 import System.Environment (getExecutablePath)
 
 import Caide.Configuration (getActiveProblem, readProblemState)
 import Caide.Registry (findLanguage)
 import Caide.Types
-import Caide.Util (copyFileToDir, pathToText)
 import Caide.TestCases.Types
 
 
@@ -97,8 +97,9 @@ updateTestList problemDir = do
         testState testName = if testName `elem` testsToSkip then Skip else Run
         testList = zip allTests (map testState allTests)
         succeededAndName (testName, _) = case lookup testName report of
-            Just (Error _) -> (False, testName)
-            _              -> (True,  testName)
+            Just (Failed _) -> (False, testName)
+            Just (Error _)  -> (False, testName)
+            _               -> (True,  testName)
         sortedTests = sortBy (comparing succeededAndName) testList
         testListFile = testDir </> "testList.txt"
     writeTests sortedTests testListFile

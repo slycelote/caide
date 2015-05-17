@@ -19,14 +19,14 @@ import Text.Regex.Base.RegexLike (makeRegex, match)
 
 import qualified Filesystem.Path.CurrentOS as F
 
-import Filesystem.Util (writeTextFile)
+import Filesystem.Util (listDir, writeTextFile)
 
 import qualified Caide.CPP.CPPSimple as CPPSimple
 
 import Caide.Configuration (readCaideConf, readProblemConfig, withDefault)
 import Caide.CPP.CBinding
 import Caide.Types
-import Caide.Util (listDir, readTextFile', tshow)
+import Caide.Util (readTextFile', tshow)
 
 
 language :: ProgrammingLanguage

@@ -14,6 +14,7 @@ import qualified Data.Text.IO.Util as T
 
 import Filesystem (createDirectory, createTree, writeTextFile, isDirectory)
 import Filesystem.Path.CurrentOS (fromText, decodeString, (</>))
+import Filesystem.Util (pathToText)
 
 import Caide.Types
 import Caide.Configuration (getDefaultLanguage, setActiveProblem, getProblemConfigFile,
@@ -21,7 +22,7 @@ import Caide.Configuration (getDefaultLanguage, setActiveProblem, getProblemConf
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
 import Caide.Registry (findProblemParser)
-import Caide.Util (pathToText, mapWithLimitedThreads, withLock)
+import Caide.Util (mapWithLimitedThreads, withLock)
 
 
 

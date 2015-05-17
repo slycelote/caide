@@ -29,17 +29,25 @@ import Filesystem (isFile, readTextFile, writeTextFile)
 import Caide.Util (tshow)
 
 
-data ComparisonResult a = Success | Skipped | EtalonUnknown | Error a
-                            deriving (Show, Eq)
+data ComparisonResult a = Success        -- ^ Test passed
+                        | Ran            -- ^ Test ran but hasn't been evaluated
+                        | EtalonUnknown  -- ^ Test ran but etalon is unknown
+                        | Skipped        -- ^ Test was skipped
+                        | Failed a       -- ^ Test failed
+                        | Error a        -- ^ Error (e.g. exception in checker)
+                        deriving (Show, Eq)
 
 humanReadable :: ComparisonResult Text -> Text
 humanReadable Success = "OK"
+humanReadable Ran = "ran"
 humanReadable Skipped = "skipped"
+humanReadable (Failed message) = T.append "failed: " message
 humanReadable EtalonUnknown = "unknown"
 humanReadable (Error err) = err
 
 machineReadable :: ComparisonResult Text -> Text
-machineReadable (Error _) = "failed"
+machineReadable (Failed message) = T.append "failed " message
+machineReadable (Error err) = T.append "error " err
 machineReadable res = humanReadable res
 
 
@@ -49,16 +57,26 @@ serializeTestReport :: TestReport Text -> Text
 serializeTestReport = T.unlines .
             map (\(testName, res) -> T.concat [testName, " ", machineReadable res])
 
-deserializeTestReport :: Text -> TestReport ()
+readComparisonResult :: [Text] -> ComparisonResult Text
+readComparisonResult ["OK"] = Success
+readComparisonResult ["ran"] = Ran
+readComparisonResult ["skipped"] = Skipped
+readComparisonResult ["unknown"] = EtalonUnknown
+readComparisonResult ("failed":err) = Failed $ T.concat err
+readComparisonResult ("error":err) = Error $ T.concat err
+readComparisonResult _ = Error "Corrupted report file"
+
+deserializeTestReport :: Text -> TestReport Text
 deserializeTestReport text = map (parseTest . T.words) reportLines
   where
-    reportLines = T.lines text
+    reportLines = filter (not . T.null) . map T.strip $ T.lines text
 
-    parseTest :: [Text] -> (Text, ComparisonResult ())
-    parseTest [testName, testStatus] = (testName, if testStatus == "failed" then Error () else Success)
-    parseTest _ = error "Corrupted test report"
+    parseTest :: [Text] -> (Text, ComparisonResult Text)
+    parseTest (testName:testStatus:err) = (testName, readComparisonResult (testStatus:err))
+    parseTest [testName] = (testName, Error "Corrupted report file")
+    parseTest [] = error "Impossible happened in deserializeTestReport"
 
-readTestReport :: FilePath -> IO (TestReport ())
+readTestReport :: FilePath -> IO (TestReport Text)
 readTestReport reportFile = do
     reportExists <- isFile reportFile
     if reportExists

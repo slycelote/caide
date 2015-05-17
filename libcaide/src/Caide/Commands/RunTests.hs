@@ -19,9 +19,10 @@ import qualified Data.Text as T
 import qualified Data.Text.IO.Util as T
 
 import Prelude hiding (FilePath)
-import Filesystem (listDirectory, readTextFile, writeTextFile)
-import Filesystem.Path (FilePath, (</>),  replaceExtension)
+import Filesystem (isFile, readTextFile, writeTextFile)
+import Filesystem.Path (FilePath, (</>), basename, replaceExtension)
 import Filesystem.Path.CurrentOS (fromText)
+import Filesystem.Util (pathToText)
 
 import qualified Caide.Builders.None as None
 import qualified Caide.Builders.Custom as Custom
@@ -41,6 +42,7 @@ humanReadableSummary :: TestReport Text -> Text
 humanReadableSummary = T.unlines . map toText . group . sort . map (fromComparisonResult . snd)
     where toText list = T.concat [head list, "\t", tshow (length list)]
           fromComparisonResult (Error _) = "Error"
+          fromComparisonResult (Failed _) = "Failed"
           fromComparisonResult r = tshow r
 
 getBuilder :: Text -> CaideIO Builder
@@ -104,24 +106,28 @@ evalTests = do
 generateReport :: ComparisonOptions -> FilePath -> IO (TestReport Text)
 generateReport cmpOptions testDir = do
     testList <- readTests $ testDir </> "testList.txt"
-    allFiles <- listDirectory testDir
+    report   <- readTestReport $ testDir </> "report.txt"
     let (testNames, inputFiles) = unzip [(testName, inputFile) | (testName, _) <- testList,
                                           let inputFile = testDir </> fromText (T.append testName ".in")
                                         ]
-    results <- mapM (testResult cmpOptions allFiles) inputFiles
+    results <- mapM (testResult cmpOptions report) inputFiles
     return $ zip testNames results
 
 
-testResult :: ComparisonOptions -> [FilePath] -> FilePath -> IO (ComparisonResult Text)
-testResult cmpOptions allFiles testFile = case () of
-    _ | outFile `elem` allFiles     -> if etalonFile `elem` allFiles
-                                       then compareFiles cmpOptions <$> readTextFile etalonFile <*> readTextFile outFile
-                                       else return EtalonUnknown
-      | failedFile `elem` allFiles  -> return . Error $ "Program crashed"
-      | skippedFile `elem` allFiles -> return Skipped
-      | otherwise                   -> return . Error $ "unknown error"
-  where [outFile, etalonFile, failedFile, skippedFile] = map (replaceExtension testFile)
-          ["out", "etalon", "failed", "skipped"]
+testResult :: ComparisonOptions -> TestReport Text -> FilePath -> IO (ComparisonResult Text)
+testResult cmpOptions report testFile = case lookup testName report of
+    Nothing -> return $ Error "Test was not run"
+    Just Ran -> do
+        [etalonExists, outFileExists] <- mapM isFile [etalonFile, outFile]
+        if not outFileExists
+           then return $ Error "Output file is missing"
+           else if etalonExists
+               then compareFiles cmpOptions <$> readTextFile etalonFile <*> readTextFile outFile
+               else return EtalonUnknown
+    Just result -> return result
+  where
+    testName = pathToText $ basename testFile
+    [outFile, etalonFile] = map (replaceExtension testFile) ["out", "etalon"]
 
 
 compareFiles :: ComparisonOptions -> Text -> Text -> ComparisonResult Text

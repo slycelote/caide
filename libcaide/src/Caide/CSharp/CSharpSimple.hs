@@ -9,14 +9,14 @@ import Control.Monad.State (liftIO)
 import qualified Data.Text as T
 
 import Filesystem (copyFile, isFile)
-import Filesystem.Util (appendTextFile, writeTextFile)
+import Filesystem.Util (appendTextFile, writeTextFile, pathToText)
 import qualified Filesystem.Path as F
 import Filesystem.Path ((</>))
 import Filesystem.Path.CurrentOS (fromText)
 
 import Caide.Configuration (readProblemConfig)
 import Caide.Types
-import Caide.Util (pathToText, readTextFile')
+import Caide.Util (readTextFile')
 
 
 language :: ProgrammingLanguage
