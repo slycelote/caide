@@ -42,8 +42,10 @@ bool customChecker(istream& input, istream& output, string& errorMessage) {
 }
 
 /** Test generator **/
+/*
 static void generator() {
 }
+*/
 
 static void runTest(const char* inFile, const char* outFile, string& result);
 

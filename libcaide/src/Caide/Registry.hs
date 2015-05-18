@@ -31,11 +31,12 @@ import Caide.Parsers.HackerRank
 import Caide.Parsers.POJ
 import Caide.Parsers.RCC
 import Caide.Parsers.Timus
+import Caide.Parsers.Yandex
 
 
 
 htmlParsers :: [HtmlParser]
-htmlParsers = [codeforcesParser, codeChefParser, timusParser, gcjParser, pojParser, rccParser, hackerRankParser]
+htmlParsers = [codeforcesParser, codeChefParser, timusParser, gcjParser, pojParser, rccParser, hackerRankParser, yandexParser]
 
 problemParsers :: [ProblemParser]
 problemParsers = map htmlParserToProblemParser [codeforcesParser, codeChefParser, timusParser,
