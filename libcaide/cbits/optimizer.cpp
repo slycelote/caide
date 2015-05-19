@@ -505,6 +505,12 @@ public:
     bool VisitCXXMethodDecl(CXXMethodDecl* method) {
         dbg(CAIDE_FUNC);
         insertReference(method, method->getParent());
+        if (method->isVirtual()) {
+            // Virtual methods may not be called directly. Assume that
+            // if we need a class, we need all its virtual methods.
+            // TODO: a more detailed analysis (walk the inheritance tree?)
+            insertReference(method->getParent(), method);
+        }
         return true;
     }
 
