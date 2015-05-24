@@ -120,10 +120,16 @@ public class EntryPoint extends BaseEntryPoint {
 
             Path fileName = Paths.get(root, problemName, "case" + i + ".in");
             if (!Files.exists(fileName)) {
-                List<String> input = new ArrayList<String>();
-                Collections.addAll(input, testCase.getInput());
+                List<String> serializedInput = new ArrayList<String>();
+                String[] inputs = testCase.getInput();
+                int numInputs = inputs.length;
+                serializedInput.add("{");
+                for (int j = 0; j < numInputs; ++j) {
+                    serializedInput.add(inputs[j] + (j == numInputs - 1 ? "" : ","));
+                }
+                serializedInput.add("}");
                 try {
-                    Files.write(fileName, input);
+                    Files.write(fileName, serializedInput);
                 } catch (IOException e) {
                     editor.logException(e);
                 }
