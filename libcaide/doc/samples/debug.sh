@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script (not a builder) runs current solution in gdb
+# This script runs current solution in gdb
 
 set -e
 
