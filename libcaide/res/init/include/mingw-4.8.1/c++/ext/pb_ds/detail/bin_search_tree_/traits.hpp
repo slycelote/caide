@@ -55,7 +55,7 @@ namespace __gnu_pbds
 	     class Cmp_Fn,
 	     template<typename Node_CItr,
 		      class Node_Itr,
-		      class Cmp_Fn,
+		      class Cmp_Fn2,
 		      typename _Alloc>
 	     class Node_Update,
 	     class Node,
@@ -161,7 +161,7 @@ namespace __gnu_pbds
 	     class Cmp_Fn,
 	     template<typename Node_CItr,
 		      class Node_Itr,
-		      class Cmp_Fn,
+		      class Cmp_Fn2,
 		      typename _Alloc>
 	     class Node_Update,
 	     class Node,
