@@ -242,6 +242,12 @@ directory named `chefTEST` containing the following files:
 
 * `*.in` and `*.out` files contain sample input and output. You can add your
   own sample cases.
+  - Rename `*.out` file to `*.skip` to skip the test.
+  - Delete it or rename to something else to indicate that the etalon output
+    is unknown.
+
+  (You can also do this in VsCaide GUI.)
+
 * `problem.ini` contains problem settings.
 * Source code file named `chefTEST` where you implement solution to the
   problem. Typically, this is the only file you need to edit.

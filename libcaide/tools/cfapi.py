@@ -5,6 +5,7 @@ import random
 import hashlib
 import json
 import os.path
+import os
 from HTMLParser import HTMLParser
 from htmlentitydefs import name2codepoint
 from collections import defaultdict
@@ -93,6 +94,12 @@ def download_submission(contest_id, submission_id):
 
 
 def download_submissions(contest_id):
+    contest_dir = 'cf' + str(contest_id)
+    try:
+        os.makedirs(contest_dir)
+    except:
+        pass
+
     print 'Getting submission list for contest id=' + str(contest_id)
     j = get_contest_status(contest_id)
 
@@ -121,7 +128,7 @@ def download_submissions(contest_id):
         latest = submissions[-1:]
         for submission in latest:
             submission_id = submission['id']
-            filename = os.path.join('cf', str(submission_id) + '.cpp')
+            filename = os.path.join(contest_dir, str(submission_id) + '.cpp')
             if not os.path.isfile(filename):
                 print submission_id
                 code = download_submission(contest_id, submission_id)
@@ -131,8 +138,10 @@ def download_submissions(contest_id):
 
 
 def test():
-    print download_submission(534, 10976539)
+    #print download_submission(534, 10976539)
+    print download_submissions(547)
 
 
 if __name__ == "__main__":
     test()
+

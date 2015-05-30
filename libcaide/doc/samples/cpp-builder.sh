@@ -4,7 +4,6 @@
 # and add the following section to caide.ini file:
 # [cpp_builder]
 # build_and_run_tests: bash /full/path/to/this/file.sh
-# evaluates_tests: yes
 
 # exit on error
 set -e

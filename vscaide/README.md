@@ -21,6 +21,9 @@ self-explanatory.
 You can run/debug tests by clicking corresponding buttons in Caide window or
 by pressing `Ctrl+F5`/`F5`.
 
+For Topcoder support you will also need the [Arena
+plugin](https://github.com/slycelote/caide/tccaide).
+
 # Configuration
 
 VsCaide should work out of the box. However, you can tweak most configuration
@@ -32,4 +35,12 @@ too. In addition, the [property
 file](http://msdn.microsoft.com/en-us/library/669zx6zc.aspx) `vs_common.props`
 in solution root directory is included into all generated projects. You can
 modify this file in Property Manager window.
+
+# CHelper Chrome extension
+
+VsCaide supports some online judges from CHelper chrome extension (see
+[Features](https://github.com/slycelote/caide/tree/master/doc/features.md) for
+details). Because of how the extension works, VsCaide has to run a local HTTP
+server to enable the support. (You may have to click Allow in Windows firewall
+prompt.)
 
