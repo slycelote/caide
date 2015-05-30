@@ -1,0 +1,11 @@
+<component name="ArtifactManager">
+  <artifact build-on-make="true" name="tccaide:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/</output-path>
+    <root id="root">
+      <element id="archive" name="tccaide.jar">
+        <element id="module-output" name="tccaide" />
+      </element>
+      <element id="library" level="project" name="arena-api" />
+    </root>
+  </artifact>
+</component>
