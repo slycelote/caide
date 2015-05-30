@@ -78,9 +78,9 @@ struct FileIO {
 	}
 
 	~FileIO() {
-		if (handle != nullptr) {
+		if (handle != 0) {
 			fclose(handle);
-			handle = nullptr;
+			handle = 0;
 		}
 	}
 };

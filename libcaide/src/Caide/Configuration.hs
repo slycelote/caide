@@ -188,14 +188,17 @@ clangOptions root False = [
     "_D__declspec="
     ]
 
+-- Windows with VS headers
 clangOptions root True | "mingw" `isPrefixOf` os = [
     "-target",
     "i386-pc-windows-msvc",
     "-fdiagnostics-format=msvc",
+    "-D_CRT_SECURE_NO_WARNINGS",
     "-I",
     encodeString $ root </> "cpplib"
     ]
 
+-- Linux with system headers
 clangOptions root True = [
     "-target",
     arch ++ "-" ++ os,
