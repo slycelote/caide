@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <istream>
 #include <map>
+#include <numeric>
 #include <ostream>
 #include <set>
 #include <sstream>
