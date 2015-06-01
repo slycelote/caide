@@ -103,21 +103,30 @@ namespace slycelote.VsCaide.Utilities
         {
             var dte = Services.DTE;
             var solution = dte.Solution as Solution2;
-            var solutionDir = SolutionUtilities.GetSolutionDir();
-            var projectDir = Path.Combine(solutionDir, projectName);
+            string solutionDir = SolutionUtilities.GetSolutionDir();
+            string projectDir = Path.Combine(solutionDir, projectName);
 
             var allProjects = solution.Projects.OfType<Project>();
-            var project = allProjects.SingleOrDefault(p => p.Name == projectName);
+            var oldProject = allProjects.SingleOrDefault(p => p.Name == projectName);
+            if (oldProject != null && projectType.Belongs(oldProject))
+                return oldProject;
+
+            ProjectType oldProjectType = oldProject == null ? null : GetProjectType(oldProject);
+            bool needBackup = projectType.RequiresEmptyDirectoryForCreation ||
+                (oldProject != null && (oldProjectType == null || oldProjectType.RequiresEmptyDirectoryForCreation));
+
+            Project newProject = null;
+
             string tempDir = null;
             try
             {
-                if (project != null && !projectType.Belongs(project))
+                // Backup current directory
+                if (needBackup)
                 {
                     tempDir = Path.Combine(Path.GetTempPath(), "vscaide", projectName);
                     if (Directory.Exists(tempDir))
                     {
                         Directory.Delete(tempDir, recursive: true);
-                        //FileUtility.RemoveFiles(tempDir);
                     }
 
                     // Don't keep VS files
@@ -128,41 +137,42 @@ namespace slycelote.VsCaide.Utilities
                         !filesToDelete.Contains(fi.Extension, StringComparer.CurrentCultureIgnoreCase);
 
                     FileUtility.DirectoryCopy(projectDir, tempDir, copySubDirs: true, fileFilter: filter);
+                }
 
+                // Remove the old project
+                if (oldProject != null)
+                {
                     IgnoreSolutionEvents = true;
                     try
                     {
-                        solution.Remove(project);
+                        solution.Remove(oldProject);
                     }
                     finally
                     {
                         IgnoreSolutionEvents = false;
                     }
-                    project = null;
                 }
 
-                if (project == null)
+                // Create the project
+                if (projectType.RequiresEmptyDirectoryForCreation)
                 {
-                    // Create the project
-                    if (projectType.RequiresEmptyDirectoryForCreation)
-                    {
-                        FileUtility.RemoveFiles(projectDir);
-                    }
-                    solution.AddFromTemplate(projectType.ProjectTemplate,
-                        Destination: Path.Combine(SolutionUtilities.GetSolutionDir(), projectName),
-                        ProjectName: projectName,
-                        Exclusive: false);
+                    FileUtility.RemoveFiles(projectDir);
+                }
+                solution.AddFromTemplate(projectType.ProjectTemplate,
+                    Destination: Path.Combine(SolutionUtilities.GetSolutionDir(), projectName),
+                    ProjectName: projectName,
+                    Exclusive: false);
 
-                    allProjects = solution.Projects.OfType<Project>();
-                    project = allProjects.SingleOrDefault(p => p.Name == projectName);
-                    if (project == null)
-                    {
-                        Logger.LogError("Couldn't create {0} project", projectName);
-                    }
+                allProjects = solution.Projects.OfType<Project>();
+                newProject = allProjects.SingleOrDefault(p => p.Name == projectName);
+                if (newProject == null)
+                {
+                    Logger.LogError("Couldn't create {0} project", projectName);
                 }
             }
             finally
             {
+                // Restore backup
                 if (tempDir != null)
                 {
                     FileUtility.DirectoryCopy(tempDir, projectDir, copySubDirs: true, fileFilter: null);
@@ -170,7 +180,7 @@ namespace slycelote.VsCaide.Utilities
                 }
             }
 
-            return project;
+            return newProject;
         }
 
         public static void CreateAndActivateCSharpProject(string selectedProblem)
@@ -402,12 +412,25 @@ namespace slycelote.VsCaide.Utilities
             RequiresEmptyDirectoryForCreation = false,
         };
 
+
+        private static ProjectType GetProjectType(Project p)
+        {
+            foreach (var projectType in new[] { CSharpProjectType, CppProjectType })
+            {
+                if (projectType.Belongs(p))
+                    return projectType;
+            }
+            return null;
+        }
     }
 
     internal class ProjectType
     {
-        public Func<Project, bool> Belongs {get;set;}
-        public string ProjectTemplate {get;set;}
+        public Func<Project, bool> Belongs { get; set; }
+        public string ProjectTemplate { get; set; }
+
+        // C# project needs an empty directory; and viceversa, when a C# project
+        // gets removed, the whole directory is cleared.
         public bool RequiresEmptyDirectoryForCreation { get; set; }
     }
 }

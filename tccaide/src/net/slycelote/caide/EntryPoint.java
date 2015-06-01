@@ -19,7 +19,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 
@@ -55,8 +54,8 @@ public class EntryPoint extends BaseEntryPoint {
 
         if (language.getId() == CPPLanguage.CPP_LANGUAGE.getId())
             this.language = Lang.CPP;
-//        else if (language.getId() == CSharpLanguage.CSHARP_LANGUAGE.getId())
-//            this.language = Lang.CSHARP;
+        else if (language.getId() == CSharpLanguage.CSHARP_LANGUAGE.getId())
+            this.language = Lang.CSHARP;
         else {
             this.language = Lang.UNSUPPORTED;
             editor.logError(language.getName() + " is not supported.");
