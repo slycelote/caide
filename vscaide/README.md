@@ -42,5 +42,6 @@ VsCaide supports some online judges from CHelper chrome extension (see
 [Features](https://github.com/slycelote/caide/tree/master/doc/features.md) for
 details). Because of how the extension works, VsCaide has to run a local HTTP
 server to enable the support. (You may have to click Allow in Windows firewall
-prompt.)
+prompt.) You can disable this feature by adding a setting `enable_http_server`
+equal to `false` to `[vscaide]` section in caide.ini file.
 

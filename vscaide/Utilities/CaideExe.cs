@@ -11,11 +11,18 @@ namespace slycelote.VsCaide.Utilities
 {
     using MessageBox = System.Windows.Forms.MessageBox;
 
+    public enum Loudness
+    {
+        QUIET,
+        NORMAL,
+        LOUD
+    }
+
     public abstract class CaideExe
     {
         public const int EXIT_CODE_TIMEOUT = -4451;
 
-        public static string Run(string[] args, bool loud = false, string solutionDir = null)
+        public static string Run(string[] args, Loudness loud = Loudness.NORMAL, string solutionDir = null)
         {
             if (solutionDir == null)
             {
@@ -26,8 +33,11 @@ namespace slycelote.VsCaide.Utilities
             int ret = CaideExe.Execute(args, solutionDir, out stdout, out stderr);
             if (ret != 0)
             {
-                Logger.LogError("caide.exe error. Return code {0}\n{1}\n{2}", ret, stdout, stderr);
-                if (loud)
+                if (loud >= Loudness.NORMAL)
+                {
+                    Logger.LogError("caide.exe error. Return code {0}\n{1}\n{2}", ret, stdout, stderr);
+                }
+                if (loud >= Loudness.LOUD)
                 {
                     MessageBox.Show(string.Format("caide.exe error. Return code {0}\n{1}\n{2}", ret, stdout, stderr));
                 }
@@ -39,7 +49,7 @@ namespace slycelote.VsCaide.Utilities
 
         public static string Run(params string[] args)
         {
-            return Run(args, loud: false);
+            return Run(args, loud: Loudness.NORMAL);
         }
 
 

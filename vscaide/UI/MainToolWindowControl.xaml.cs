@@ -117,7 +117,7 @@ namespace slycelote.VsCaide
                     solutionDir = recentFolder = folderBrowserDialog.SelectedPath;
                 }
 
-                if (null == CaideExe.Run(new[] { "init", "--cpp-use-system-headers" }, loud: true, solutionDir: solutionDir))
+                if (null == CaideExe.Run(new[] { "init", "--cpp-use-system-headers" }, loud: Loudness.LOUD, solutionDir: solutionDir))
                 {
                     return;
                 }
@@ -180,9 +180,22 @@ namespace slycelote.VsCaide
                 ReloadProblemList();
 
                 if (CHelperServer != null)
+                {
                     CHelperServer.Stop();
+                    CHelperServer = null;
+                }
 
-                CHelperServer = new CHelperServer();
+                string enableChelperServerStr = 
+                    CaideExe.Run(new[] { "getopt", "vscaide", "enable_http_server" }, loud: Loudness.QUIET) ?? "1";
+                if (new[] { "yes", "1", "true" }.Contains(enableChelperServerStr.ToLowerInvariant().Trim()))
+                {
+                    CHelperServer = new CHelperServer();
+                }
+                else
+                {
+                    Logger.LogMessage("Disabling CHelper HTTP server due to a setting in caide.ini");
+                }
+
 
                 EnableFsWatcher(false);
 
@@ -305,7 +318,7 @@ namespace slycelote.VsCaide
             if (problemUrl == null)
                 return;
 
-            if (null == CaideExe.Run(new[] { "problem", problemUrl }, loud: true))
+            if (null == CaideExe.Run(new[] { "problem", problemUrl }, loud: Loudness.LOUD))
             {
                 return;
             }
@@ -366,7 +379,7 @@ namespace slycelote.VsCaide
             string url = PromptDialog.Prompt("Enter contest URL: ", "Parse contest");
             if (url == null)
                 return;
-            CaideExe.Run(new[] { "contest", url }, loud: true);
+            CaideExe.Run(new[] { "contest", url }, loud: Loudness.LOUD);
         }
 
         private void btnArchive_Click(object sender, RoutedEventArgs e)
@@ -379,7 +392,7 @@ namespace slycelote.VsCaide
             if (project == null)
             {
                 // A problem not tracked by VsCaide
-                CaideExe.Run(new[] { "archive", currentProblem }, loud: true);
+                CaideExe.Run(new[] { "archive", currentProblem }, loud: Loudness.LOUD);
             }
             else
             {
@@ -418,7 +431,7 @@ namespace slycelote.VsCaide
             if (!SkipLanguageChangedEvent)
             {
                 var language = (string)cbProgrammingLanguage.SelectedItem;
-                if (null == CaideExe.Run(new[] { "lang", language }, loud: true))
+                if (null == CaideExe.Run(new[] { "lang", language }, loud: Loudness.LOUD))
                 {
                     var previousLanguage = (string)e.RemovedItems[0];
                     SetCurrentLanguage(previousLanguage);
