@@ -3,7 +3,7 @@
 
 <CodeLite_Project Name="prob1" InternalType="Console">
   <Description />
-  <Dependencies />
+  <Dependencies><Project Name="cpplib" /></Dependencies>
   <VirtualDirectory Name="src">
 
 

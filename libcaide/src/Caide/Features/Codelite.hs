@@ -65,8 +65,9 @@ generateProject probId = do
                         includePaths = ["."]
                         libs = []
                         libraryPaths = []
+                        deps = []
                         transformed = runXmlTransformation
-                            (generateProjectXML "cpplib" "Static Library" files includePaths libraryPaths libs >>
+                            (generateProjectXML "cpplib" "Static Library" files includePaths libraryPaths libs deps >>
                              setOutputFile "$(IntermediateDirectory)/lib$(ProjectName).a")
                             cursor
                     case transformed of
@@ -90,10 +91,12 @@ generateProject probId = do
             ("." : ["../cpplib" | needLibrary])
             ["../cpplib/$(ConfigurationName)" | needLibrary]
             ["cpplib" | needLibrary]
+            ["cpplib" | needLibrary]
 
         generateProjectUnlessExists (croot </> "submission") "submission"
             ["../submission.cpp"]
             ["."]
+            []
             []
             []
 
@@ -111,8 +114,9 @@ generateProjectUnlessExists :: F.FilePath -> T.Text
                                  -> [T.Text]
                                  -> [T.Text]
                                  -> [T.Text]
+                                 -> [String]
                                  -> CaideIO ()
-generateProjectUnlessExists projectDir projectName files includePaths libraryPaths libs = do
+generateProjectUnlessExists projectDir projectName files includePaths libraryPaths libs deps = do
     let projectFile = projectDir </> fromText (T.append projectName ".project")
     projectExists <- liftIO $ isFile projectFile
     if projectExists
@@ -127,7 +131,7 @@ generateProjectUnlessExists projectDir projectName files includePaths libraryPat
         let doc = parseXML xmlString
             Just cursor = fromForest doc
             transformed = runXmlTransformation
-                (generateProjectXML projectName "Executable" files includePaths libraryPaths libs)
+                (generateProjectXML projectName "Executable" files includePaths libraryPaths libs deps)
                 cursor
 
         case transformed of
@@ -163,6 +167,14 @@ setOutputFile outputFile = do
         return changed
     return $ or changed
 
+setDependencies :: [String] -> XmlState ()
+setDependencies deps = do
+    goToProjectTag
+    goToChild ["Dependencies"]
+    removeChildren $ const True
+    forM_ deps $ \dep ->
+        insertLastChild $ Elem $ mkElem "Project" [("Name", dep)]
+
 setSourceFiles :: [T.Text] -> XmlState Bool
 setSourceFiles sourceFiles = do
     goToProjectTag
@@ -182,8 +194,8 @@ setSourceFiles sourceFiles = do
         return True
 
 
-generateProjectXML :: T.Text -> String -> [T.Text] -> [T.Text] -> [T.Text] -> [T.Text] -> XmlState ()
-generateProjectXML projectName projectType sourceFiles includePaths libPaths libs = do
+generateProjectXML :: T.Text -> String -> [T.Text] -> [T.Text] -> [T.Text] -> [T.Text] -> [String] -> XmlState ()
+generateProjectXML projectName projectType sourceFiles includePaths libPaths libs deps = do
     _ <- setProjectName projectName
     _ <- setProjectType projectType
     _ <- setSourceFiles sourceFiles
@@ -203,6 +215,8 @@ generateProjectXML projectName projectType sourceFiles includePaths libPaths lib
     forM_ libs $ \lib -> do
         insertLastChild $ Elem $ mkElem "Library" [("Value", T.unpack lib)]
         modifyFromJust "" parent -- <Linker>
+
+    setDependencies deps
 
     goToDocRoot
 
