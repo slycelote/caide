@@ -14,7 +14,7 @@ import Data.Maybe (catMaybes)
 import qualified Data.Text as T
 import qualified Data.Text.IO.Util as T
 
-import Filesystem (isFile, readTextFile, writeTextFile, listDirectory, createDirectory)
+import Filesystem (isFile, readTextFile, writeTextFile, listDirectory, createDirectory, createTree)
 import Filesystem.Path.CurrentOS (fromText, decodeString, encodeString)
 import Filesystem.Path ((</>), basename, hasExtension)
 import qualified Filesystem.Path as F
@@ -137,6 +137,11 @@ generateProjectUnlessExists projectDir projectName files includePaths libraryPat
         case transformed of
             Left errorMessage -> throw errorMessage
             Right (_, xml)    -> liftIO . writeTextFile projectFile . T.pack . showXml $ xml
+
+    -- Workaround for https://github.com/eranif/codelite/issues/812:
+    -- create the directories so that continuous build feature worked immediately after project creation
+    forM_ ["Release", "Debug"] $ \conf ->
+        liftIO $ createTree $ projectDir </> conf
 
 goToProjectTag :: XmlState ()
 goToProjectTag = do
