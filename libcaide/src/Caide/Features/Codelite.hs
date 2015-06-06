@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-
 module Caide.Features.Codelite(
       feature
 ) where
@@ -7,6 +6,7 @@ module Caide.Features.Codelite(
 
 import Control.Applicative ((<$>))
 import Control.Monad (forM_, when)
+import Control.Monad.Except (catchError)
 import Control.Monad.State.Strict (modify, gets)
 import Control.Monad.State (liftIO)
 import Data.List ((\\), sort)
@@ -21,6 +21,8 @@ import qualified Filesystem.Path as F
 
 import qualified System.FilePath
 import Filesystem.Util (listDir, pathToText)
+
+import System.Environment (getExecutablePath)
 
 import Text.XML.Light (parseXML, Content(..))
 import Text.XML.Light.Cursor
@@ -66,8 +68,9 @@ generateProject probId = do
                         libs = []
                         libraryPaths = []
                         deps = []
+                        postBuild = Nothing
                         transformed = runXmlTransformation
-                            (generateProjectXML "cpplib" "Static Library" files includePaths libraryPaths libs deps >>
+                            (generateProjectXML "cpplib" "Static Library" files includePaths libraryPaths libs deps postBuild >>
                              setOutputFile "$(IntermediateDirectory)/lib$(ProjectName).a")
                             cursor
                     case transformed of
@@ -86,12 +89,15 @@ generateProject probId = do
                         writeTextFile libProjectFile . T.pack . showXml $ xmlCursor
                     Right (_, xml)    -> writeTextFile libProjectFile . T.pack . showXml $ xml
 
+        caideExePath <- liftIO getExecutablePath
+
         generateProjectUnlessExists projectDir probId
             (map (T.append probId) [".cpp", "_test.cpp"])
             ("." : ["../cpplib" | needLibrary])
             ["../cpplib/$(ConfigurationName)" | needLibrary]
             ["cpplib" | needLibrary]
             ["cpplib" | needLibrary]
+            (Just . T.pack $ caideExePath)
 
         generateProjectUnlessExists (croot </> "submission") "submission"
             ["../submission.cpp"]
@@ -99,6 +105,7 @@ generateProject probId = do
             []
             []
             []
+            Nothing
 
         generateWorkspace
 
@@ -109,14 +116,17 @@ makeRelative :: F.FilePath -> F.FilePath -> F.FilePath
 makeRelative wrt what = decodeString . replace '/' '\\' $
     System.FilePath.makeRelative (encodeString wrt) (encodeString what)
 
+
+-- TODO refactor
 generateProjectUnlessExists :: F.FilePath -> T.Text
                                  -> [T.Text]
                                  -> [T.Text]
                                  -> [T.Text]
                                  -> [T.Text]
                                  -> [String]
+                                 -> Maybe T.Text
                                  -> CaideIO ()
-generateProjectUnlessExists projectDir projectName files includePaths libraryPaths libs deps = do
+generateProjectUnlessExists projectDir projectName files includePaths libraryPaths libs deps cmd = do
     let projectFile = projectDir </> fromText (T.append projectName ".project")
     projectExists <- liftIO $ isFile projectFile
     if projectExists
@@ -131,7 +141,7 @@ generateProjectUnlessExists projectDir projectName files includePaths libraryPat
         let doc = parseXML xmlString
             Just cursor = fromForest doc
             transformed = runXmlTransformation
-                (generateProjectXML projectName "Executable" files includePaths libraryPaths libs deps)
+                (generateProjectXML projectName "Executable" files includePaths libraryPaths libs deps cmd)
                 cursor
 
         case transformed of
@@ -180,6 +190,21 @@ setDependencies deps = do
     forM_ deps $ \dep ->
         insertLastChild $ Elem $ mkElem "Project" [("Name", dep)]
 
+setPostBuildStep :: String -> XmlState ()
+setPostBuildStep cmd = do
+    goToProjectTag
+    goToChild ["Settings"]
+    _ <- forEachChild (isTag "Configuration") $ do
+        goToChild ["PostBuild"] `catchError` const (insertLastChild (Elem $ mkElem "PostBuild" []))
+        removeChildren $ const True
+        insertLastChild $ Elem $ mkElem "Command" [("Enabled", "yes")]
+        insertLastChild $ mkText cmd
+        modifyFromJust "setPostBuildStep" parent -- <Command>
+        modifyFromJust "setPostBuildStep" parent -- <PostBuild>
+        modifyFromJust "setPostBuildStep" parent -- <Configuration>
+    return ()
+
+
 setSourceFiles :: [T.Text] -> XmlState Bool
 setSourceFiles sourceFiles = do
     goToProjectTag
@@ -199,8 +224,8 @@ setSourceFiles sourceFiles = do
         return True
 
 
-generateProjectXML :: T.Text -> String -> [T.Text] -> [T.Text] -> [T.Text] -> [T.Text] -> [String] -> XmlState ()
-generateProjectXML projectName projectType sourceFiles includePaths libPaths libs deps = do
+generateProjectXML :: T.Text -> String -> [T.Text] -> [T.Text] -> [T.Text] -> [T.Text] -> [String] -> Maybe T.Text -> XmlState ()
+generateProjectXML projectName projectType sourceFiles includePaths libPaths libs deps maybeCmd = do
     _ <- setProjectName projectName
     _ <- setProjectType projectType
     _ <- setSourceFiles sourceFiles
@@ -222,6 +247,9 @@ generateProjectXML projectName projectType sourceFiles includePaths libPaths lib
         modifyFromJust "" parent -- <Linker>
 
     setDependencies deps
+    case maybeCmd of
+        Just cmd -> setPostBuildStep $ T.unpack cmd
+        _        -> return ()
 
     goToDocRoot
 

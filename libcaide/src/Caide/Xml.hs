@@ -95,7 +95,7 @@ removeChildren predicate = do
             put $ fromJust $ removeGoUp child
             removeChildren predicate
 
--- | Modify each child that satisfies the predicate. The action is supposed to return to the child in the end.
+-- | Modify each child that satisfies the predicate. The action is required to return to the child in the end.
 forEachChild ::  (MonadError T.Text m, MonadState Cursor m) =>
                  (Cursor -> Bool) -> m t -> m [t]
 forEachChild predicate action = do
