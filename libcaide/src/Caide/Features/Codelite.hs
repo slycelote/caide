@@ -27,6 +27,7 @@ import System.Environment (getExecutablePath)
 import Text.XML.Light (parseXML, Content(..))
 import Text.XML.Light.Cursor
 
+import Caide.Templates (getTemplate)
 import Caide.Types
 import Caide.Xml
 import Caide.Configuration (readProblemState, getActiveProblem)
@@ -58,9 +59,8 @@ generateProject probId = do
                     let Just cursor = fromForest doc
                     return cursor
                 else do
-                    xmlString <- liftIO $ do
-                        createDirectory True libProjectDir
-                        readTextFile $ croot </> "templates" </> "codelite_project_template.project"
+                    liftIO $ createDirectory True libProjectDir
+                    xmlString <- getTemplate "codelite_project_template.project"
                     let doc = parseXML xmlString
                         Just cursor = fromForest doc
                         files = []
@@ -132,11 +132,10 @@ generateProjectUnlessExists projectDir projectName files includePaths libraryPat
     if projectExists
     then liftIO . T.putStrLn . T.concat $ [projectName, ".project already exists. Not overwriting"]
     else do
-        croot <- caideRoot
-        xmlString <- liftIO $ do
+        liftIO $ do
             T.putStrLn . T.concat $ ["Generating ", projectName, ".project for Codelite"]
             createDirectory True projectDir
-            readTextFile $ croot </> "templates" </> "codelite_project_template.project"
+        xmlString <- getTemplate "codelite_project_template.project"
 
         let doc = parseXML xmlString
             Just cursor = fromForest doc
@@ -260,18 +259,16 @@ generateWorkspace = do
     activeProblem <- getActiveProblem
     let workspaceFile = croot </> "caide.workspace"
 
-    liftIO $ do
-        workspaceExists <- isFile workspaceFile
-        let existingWorkspace = if workspaceExists
-            then workspaceFile
-            else croot </> "templates" </> "codelite_workspace_template.workspace"
-        xmlString <- readFile $ encodeString existingWorkspace
-        let doc = length xmlString `seq` parseXML xmlString
-            Just cursor = fromForest doc
-            transformed = runXmlTransformation (generateWorkspaceXml projects activeProblem) cursor
-        case transformed of
-            Left errorMessage -> T.putStrLn . T.concat $ ["Couldn't generate Codelite workspace: ", errorMessage]
-            Right (_, xml)    -> writeTextFile workspaceFile . T.pack . showXml $ xml
+    workspaceExists <- liftIO $ isFile workspaceFile
+    xmlString <- if workspaceExists
+        then liftIO $ readFile $ encodeString workspaceFile
+        else T.unpack <$> getTemplate "codelite_workspace_template.workspace"
+    let doc = length xmlString `seq` parseXML xmlString
+        Just cursor = fromForest doc
+        transformed = runXmlTransformation (generateWorkspaceXml projects activeProblem) cursor
+    liftIO $ case transformed of
+        Left errorMessage -> T.putStrLn . T.concat $ ["Couldn't generate Codelite workspace: ", errorMessage]
+        Right (_, xml)    -> writeTextFile workspaceFile . T.pack . showXml $ xml
 
 -- Includes problems and CPP library
 getCodeliteProjects :: CaideIO [T.Text]

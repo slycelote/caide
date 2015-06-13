@@ -16,6 +16,7 @@ import Filesystem.Path ((</>))
 import Filesystem.Path.CurrentOS (fromText)
 
 import Caide.Configuration (readProblemConfig)
+import Caide.Templates (copyTemplateUnlessExists, getTemplate)
 import Caide.Types
 import Caide.Util (readTextFile')
 
@@ -36,30 +37,25 @@ generateCSharpScaffold probID = do
 
     let problemDir = root </> fromText probID
         testProgramPath = problemDir </> fromText (T.append probID "_test.cs")
-        testTemplatePath = F.parent problemDir </> "templates" </> "test_template.cs"
         testerCode = generateTesterCode probType
-    liftIO $ do
-        testFileExists <- isFile testProgramPath
-        unless testFileExists $ do
-            copyFile testTemplatePath testProgramPath
-            appendTextFile testProgramPath $ T.unlines testerCode
+
+    testFileExists <- liftIO $ isFile testProgramPath
+    unless testFileExists $ do
+        testTemplate <- getTemplate "test_template.cs"
+        liftIO $ writeTextFile testProgramPath $ T.append testTemplate $ T.unlines testerCode
 
 generateSolutionFiles :: ProblemType -> F.FilePath -> ProblemID -> CaideIO ()
 generateSolutionFiles (Stream input output) root probID = do
     mainFileExists <- liftIO $ isFile mainProgramPath
     unless mainFileExists $ do
-        mainTemplate <- readTextFile' mainTemplatePath
+        mainTemplate <- getTemplate "main_template.cs"
         liftIO $ writeTextFile mainProgramPath $ T.append caideConstants mainTemplate
 
-    liftIO $ do
-        solutionFileExists <- isFile scaffoldPath
-        unless solutionFileExists $ copyFile scaffoldTemplatePath scaffoldPath
+    copyTemplateUnlessExists "solution_template.cs" scaffoldPath
   where
     problemDir = root </> fromText probID
     scaffoldPath = problemDir </> fromText (T.append probID ".cs")
-    scaffoldTemplatePath = F.parent problemDir </> "templates" </> "solution_template.cs"
     mainProgramPath = problemDir </> "main.cs"
-    mainTemplatePath = root </> "templates" </> "main_template.cs"
     inputPreamble = case input of
         StdIn -> "    public const string InputFile = null;"
         FileInput fileName -> T.concat ["    public const string InputFile = \"", pathToText fileName, "\";"]
@@ -71,15 +67,15 @@ generateSolutionFiles (Stream input output) root probID = do
         else T.unlines ["class CaideConstants {", inputPreamble, outputPreamble, "}"]
 
 
-generateSolutionFiles (Topcoder tcDesc) root probID = liftIO $ do
-    solutionFileExists <- isFile scaffoldPath
+generateSolutionFiles (Topcoder tcDesc) root probID = do
+    solutionFileExists <- liftIO $ isFile scaffoldPath
     unless solutionFileExists $ do
-        copyFile scaffoldTemplatePath scaffoldPath
-        appendTextFile scaffoldPath $ T.unlines solutionDeclaration
+        templateSolution <- getTemplate "topcoder_solution_template.cs"
+        liftIO $
+            writeTextFile scaffoldPath $ T.append templateSolution $ T.unlines solutionDeclaration
   where
     problemDir = root </> fromText probID
     scaffoldPath = problemDir </> fromText (T.append probID ".cs")
-    scaffoldTemplatePath = F.parent problemDir </> "templates" </> "topcoder_solution_template.cs"
     method = tcMethod tcDesc
     params = tcMethodParameters tcDesc
     declare val = T.concat [csharpType (tcValueType val) (tcValueDimension val), " ", tcValueName val]

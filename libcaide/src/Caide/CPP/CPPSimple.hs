@@ -16,6 +16,7 @@ import Filesystem.Path.CurrentOS (fromText)
 import qualified Filesystem.Path as F
 
 import Caide.Configuration (readProblemConfig)
+import Caide.Templates (copyTemplateUnlessExists, getTemplate)
 import Caide.Types
 import Caide.Util (readTextFile')
 
@@ -32,22 +33,15 @@ generateCPPScaffold probID = do
     probType <- getProbType probID
     generateSolutionFiles probType root probID
 
-copyFileUnlessExists :: F.FilePath -> F.FilePath -> IO ()
-copyFileUnlessExists from to = do
-    fileExists <- isFile to
-    unless fileExists $ copyFile from to
-
-
 generateSolutionFiles :: ProblemType -> F.FilePath -> ProblemID -> CaideIO ()
 generateSolutionFiles (Stream input output) root probID = do
     mainFileExists <- liftIO $ isFile mainProgramPath
     unless mainFileExists $ do
-        mainTemplate <- readTextFile' mainTemplatePath
+        mainTemplate <- getTemplate "main_template.cpp"
         liftIO $ writeTextFile mainProgramPath $
                 T.unlines $ inputPreamble ++ outputPreamble ++ [mainTemplate]
-    liftIO $ do
-        copyFileUnlessExists scaffoldTemplatePath scaffoldPath
-        copyFileUnlessExists testTemplatePath testProgramPath
+    copyTemplateUnlessExists "solution_template.cpp" scaffoldPath
+    copyTemplateUnlessExists "test_template.cpp" testProgramPath
   where
     inputPreamble = case input of
         StdIn -> ["#define CAIDE_STDIN 1"]
@@ -61,31 +55,25 @@ generateSolutionFiles (Stream input output) root probID = do
     scaffoldPath    = problemDir </> fromText (T.append probID ".cpp")
     testProgramPath = problemDir </> fromText (T.append probID "_test.cpp")
     mainProgramPath = problemDir </> "main.cpp"
-    scaffoldTemplatePath = root </> "templates" </> "solution_template.cpp"
-    testTemplatePath     = root </> "templates" </> "test_template.cpp"
-    mainTemplatePath     = root </> "templates" </> "main_template.cpp"
 
 generateSolutionFiles (Topcoder desc) root probID = do
     solutionFileExists <- liftIO $ isFile solutionPath
     unless solutionFileExists $ do
-        solutionTemplate <- readTextFile' solutionTemplatePath
+        solutionTemplate <- getTemplate "topcoder_solution_template.cpp"
         liftIO $ writeTextFile solutionPath $
             T.unlines (solutionTemplate:tcSolution)
 
     testFileExists <- liftIO $ isFile testProgramPath
     unless testFileExists $ do
-        testTemplate <- readTextFile' testTemplatePath
+        testTemplate <- getTemplate "test_template.cpp"
         liftIO $ writeTextFile testProgramPath $
             T.unlines $ tcTestPreamble ++ [testTemplate]
 
-    liftIO $ copyFileUnlessExists (root </> "templates" </> "topcoder_serialize.h")
-                                  (problemDir </> "topcoder_serialize.h")
+    copyTemplateUnlessExists "topcoder_serialize.h" (problemDir </> "topcoder_serialize.h")
   where
     problemDir = root </> fromText probID
     solutionPath = problemDir </> fromText (T.append probID ".cpp")
     testProgramPath = problemDir </> fromText (T.append probID "_test.cpp")
-    solutionTemplatePath = root </> "templates" </> "topcoder_solution_template.cpp"
-    testTemplatePath     = root </> "templates" </> "test_template.cpp"
 
     tcTestPreamble = buildTopcoderTestPreamble (tcMethod desc) (tcMethodParameters desc)
     tcSolution = buildTopcoderSolution desc

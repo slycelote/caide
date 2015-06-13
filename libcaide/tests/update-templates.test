@@ -1,0 +1,13 @@
+#!/bin/bash
+
+"$caide" problem prob
+
+diff .caide/templates/main_template.cpp templates/main_template.cpp
+grep "old version of template, unmodified" templates/main_template.cpp && exit 300 || true
+
+diff .caide/templates/test_template.cpp templates/test_template.cpp
+grep "missing template" templates/test_template.cpp && exit 300 || true
+
+diff .caide/templates/solution_template.cpp templates/solution_template.cpp && exit 400 || true
+grep "modified template" templates/solution_template.cpp
+
