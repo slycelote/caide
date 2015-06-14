@@ -26,11 +26,15 @@ void tcwrite(ostream& out, const T& val) {
 /** Custom checker **/
 static const bool USE_CUSTOM_CHECKER = false;
 
-bool customChecker(istream& input, istream& output, string& errorMessage) {
+bool customChecker(istream& input, istream& userOutput, istream& judgeOutput,
+                   string& errorMessage)
+{
 #ifdef CAIDE_TOPCODER
     // Declare and read return value
-    CAIDE_TC_RETURN_TYPE result; tcread(output, result);
-    // Declare and read parameters
+    CAIDE_TC_RETURN_TYPE result; tcread(userOutput, result);
+    // Declare and read judge return value
+    CAIDE_TC_RETURN_TYPE judgeResult; tcread(judgeOutput, judgeResult);
+    // Declare and read input parameters
     char c;
 #define CAIDE_TC_PARAM(type, name) type name; input >> c; tcread(input, name);
     CAIDE_TC_PARAM_LIST
@@ -130,12 +134,13 @@ int main() {
                 try {
                     istringstream output(result);
                     ifstream input((testDir + testName + ".in").c_str());
+                    ifstream judgeOutput((testDir + "../../" + testName + ".out").c_str());
                     string message;
-                    bool ok = customChecker(input, output, message);
+                    bool ok = customChecker(input, output, judgeOutput, message);
                     if (ok) {
                         report << testName << " OK" << endl;
                     } else {
-                        cerr << message << endl;
+                        cerr << "FAILED: " << message << endl;
                         report << testName << " failed " << message << endl;
                     }
                 } catch (...) {
