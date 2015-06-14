@@ -188,17 +188,14 @@ static bool fileExists(const string& path) {
 // #define CAIDE_TC_PARAM_LIST  CAIDE_TC_PARAM(string, s) CAIDE_TC_PARAM(string, t)
 
 
-// Forward declaration of solution class.
 // Note: we cannot forward declare the actual class defined by Topcoder
 // because we don't know what methods/members it will contain after it's implemented.
-// So we use a special CaideSolution class.
+// So we declare a wrapper function around the solution class.
 // Its definition is in solution file and must not be modified! It will be removed before submission.
 #define CAIDE_TC_PARAM(type, name) type name,
-struct CaideSolution {
-    CAIDE_TC_RETURN_TYPE solve(
-        CAIDE_TC_PARAM_LIST
-        int);
-};
+CAIDE_TC_RETURN_TYPE solve(
+    CAIDE_TC_PARAM_LIST
+    int);
 #undef CAIDE_TC_PARAM
 
 void solve(istream& in, ostream& out) {
@@ -211,9 +208,8 @@ void solve(istream& in, ostream& out) {
 #undef CAIDE_TC_PARAM
 
     // Run solution
-    CaideSolution sol;
 #define CAIDE_TC_PARAM(type, name) name,
-    CAIDE_TC_RETURN_TYPE caide_result = sol.solve(
+    CAIDE_TC_RETURN_TYPE caide_result = solve(
             CAIDE_TC_PARAM_LIST
             0);
 #undef CAIDE_TC_PARAM
@@ -232,4 +228,3 @@ static void runTest(const char* inFile, const char* outFile, string& result) {
     resFile << result;
 }
 #endif
-

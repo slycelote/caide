@@ -127,12 +127,7 @@ buildTopcoderSolution desc =
     , "};"
     , ""
     , ""
-    , "struct CaideSolution {"
-    , T.concat ["    ", declareValue (method {tcValueName = "solve"}), "(",
-              T.intercalate ", " (map declareValue params),
-              ", int);"]
-    , "};"
-    , T.concat [declareValue (method {tcValueName = "CaideSolution::solve"}), "(",
+    , T.concat [declareValue (method {tcValueName = "solve"}), "(",
               T.intercalate ", " (map declareValue params),
               ", int) {"]
     , T.concat ["    ", tcClassName desc, " sol;"]
