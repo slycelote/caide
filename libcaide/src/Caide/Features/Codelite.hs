@@ -97,7 +97,7 @@ generateProject probId = do
             ["../cpplib/$(ConfigurationName)" | needLibrary]
             ["cpplib" | needLibrary]
             ["cpplib" | needLibrary]
-            (Just . T.pack $ caideExePath)
+            (Just . T.pack $ caideExePath ++ " make")
 
         generateProjectUnlessExists (croot </> "submission") "submission"
             ["../submission.cpp"]
