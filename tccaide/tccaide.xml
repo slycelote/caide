@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="tccaide" default="all">
+
+
+  <property file="tccaide.properties"/>
+  <!-- Uncomment the following property if no tests compilation is needed -->
+  <!--
+  <property name="skip.tests" value="true"/>
+   -->
+
+  <!-- Compiler options -->
+
+  <property name="compiler.debug" value="on"/>
+  <property name="compiler.generate.no.warnings" value="off"/>
+  <property name="compiler.args" value=""/>
+  <property name="compiler.max.memory" value="700m"/>
+  <patternset id="ignored.files">
+    <exclude name="**/*.hprof/**"/>
+    <exclude name="**/*.pyc/**"/>
+    <exclude name="**/*.pyo/**"/>
+    <exclude name="**/*.rbc/**"/>
+    <exclude name="**/*~/**"/>
+    <exclude name="**/.DS_Store/**"/>
+    <exclude name="**/.bundle/**"/>
+    <exclude name="**/.git/**"/>
+    <exclude name="**/.hg/**"/>
+    <exclude name="**/.svn/**"/>
+    <exclude name="**/.tox/**"/>
+    <exclude name="**/CVS/**"/>
+    <exclude name="**/RCS/**"/>
+    <exclude name="**/SCCS/**"/>
+    <exclude name="**/__pycache__/**"/>
+    <exclude name="**/_svn/**"/>
+    <exclude name="**/rcs/**"/>
+    <exclude name="**/vssver.scc/**"/>
+    <exclude name="**/vssver2.scc/**"/>
+  </patternset>
+  <patternset id="library.patterns">
+    <include name="*.war"/>
+    <include name="*.ear"/>
+    <include name="*.apk"/>
+    <include name="*.zip"/>
+    <include name="*.swc"/>
+    <include name="*.ane"/>
+    <include name="*.egg"/>
+    <include name="*.jar"/>
+  </patternset>
+  <patternset id="compiler.resources">
+    <exclude name="**/?*.java"/>
+    <exclude name="**/?*.form"/>
+    <exclude name="**/?*.class"/>
+    <exclude name="**/?*.groovy"/>
+    <exclude name="**/?*.scala"/>
+    <exclude name="**/?*.flex"/>
+    <exclude name="**/?*.kt"/>
+    <exclude name="**/?*.clj"/>
+    <exclude name="**/?*.aj"/>
+  </patternset>
+
+
+  <!-- Project Libraries -->
+
+  <path id="library.arena-api.classpath">
+    <pathelement location="${basedir}/lib/arena-client-7.1.3.jar"/>
+    <pathelement location="${basedir}/lib/arena-shared-7.5.6.jar"/>
+    <pathelement location="${basedir}/lib/custom-serialization-1.1.1.jar"/>
+  </path>
+
+
+  <!-- Global Libraries -->
+
+  <!-- Modules -->
+
+
+  <!-- Module tccaide -->
+
+  <dirname property="module.tccaide.basedir" file="${ant.file}"/>
+
+
+
+  <property name="compiler.args.tccaide" value="-source 1.6 ${compiler.args}"/>
+
+  <property name="tccaide.output.dir" value="${module.tccaide.basedir}/out/production/tccaide"/>
+  <property name="tccaide.testoutput.dir" value="${module.tccaide.basedir}/out/test/tccaide"/>
+
+  <path id="tccaide.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+
+  <path id="tccaide.module.production.classpath">
+    <path refid="library.arena-api.classpath"/>
+  </path>
+
+  <path id="tccaide.runtime.production.module.classpath">
+    <pathelement location="${tccaide.output.dir}"/>
+    <path refid="library.arena-api.classpath"/>
+  </path>
+
+  <path id="tccaide.module.classpath">
+    <pathelement location="${tccaide.output.dir}"/>
+    <path refid="library.arena-api.classpath"/>
+  </path>
+
+  <path id="tccaide.runtime.module.classpath">
+    <pathelement location="${tccaide.testoutput.dir}"/>
+    <pathelement location="${tccaide.output.dir}"/>
+    <path refid="library.arena-api.classpath"/>
+  </path>
+
+
+  <patternset id="excluded.from.module.tccaide">
+    <patternset refid="ignored.files"/>
+  </patternset>
+
+  <patternset id="excluded.from.compilation.tccaide">
+    <patternset refid="excluded.from.module.tccaide"/>
+  </patternset>
+
+  <path id="tccaide.module.sourcepath">
+    <dirset dir="${module.tccaide.basedir}">
+      <include name="src"/>
+    </dirset>
+  </path>
+
+
+  <target name="compile.module.tccaide" depends="compile.module.tccaide.production,compile.module.tccaide.tests" description="Compile module tccaide"/>
+
+  <target name="compile.module.tccaide.production" description="Compile module tccaide; production classes">
+    <mkdir dir="${tccaide.output.dir}"/>
+    <javac destdir="${tccaide.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true">
+      <compilerarg line="${compiler.args.tccaide}"/>
+      <bootclasspath refid="tccaide.module.bootclasspath"/>
+      <classpath refid="tccaide.module.production.classpath"/>
+      <src refid="tccaide.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.tccaide"/>
+    </javac>
+
+    <copy todir="${tccaide.output.dir}">
+      <fileset dir="${module.tccaide.basedir}/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+
+  <target name="compile.module.tccaide.tests" depends="compile.module.tccaide.production" description="compile module tccaide; test classes" unless="skip.tests"/>
+
+  <target name="clean.module.tccaide" description="cleanup module">
+    <delete dir="${tccaide.output.dir}"/>
+    <delete dir="${tccaide.testoutput.dir}"/>
+  </target>
+
+  <target name="init" description="Build initialization">
+    <!-- Perform any build initialization in this target -->
+  </target>
+
+  <target name="clean" depends="clean.module.tccaide, clean.artifact.tccaide:jar" description="cleanup all"/>
+
+  <target name="build.modules" depends="init, clean, compile.module.tccaide" description="build all modules"/>
+
+  <target name="init.artifacts">
+    <property name="artifacts.temp.dir" value="${basedir}/__artifacts_temp"/>
+    <property name="artifact.output.tccaide:jar" value="${basedir}/out/artifacts"/>
+    <mkdir dir="${artifacts.temp.dir}"/>
+    <property name="temp.jar.path.tccaide.jar" value="${artifacts.temp.dir}/tccaide.jar"/>
+  </target>
+
+  <target name="clean.artifact.tccaide:jar" depends="init.artifacts" description="clean tccaide:jar artifact output">
+    <delete dir="${artifact.output.tccaide:jar}"/>
+  </target>
+
+  <target name="artifact.tccaide:jar" depends="init.artifacts, compile.module.tccaide" description="Build &#39;tccaide:jar&#39; artifact">
+    <mkdir dir="${artifact.output.tccaide:jar}"/>
+    <jar destfile="${temp.jar.path.tccaide.jar}" duplicate="preserve" filesetmanifest="mergewithoutmain">
+      <zipfileset dir="${tccaide.output.dir}"/>
+    </jar>
+    <copy file="${temp.jar.path.tccaide.jar}" tofile="${artifact.output.tccaide:jar}/tccaide.jar"/>
+    <copy file="${basedir}/lib/arena-shared-7.5.6.jar" tofile="${artifact.output.tccaide:jar}/arena-shared-7.5.6.jar"/>
+    <copy file="${basedir}/lib/arena-client-7.1.3.jar" tofile="${artifact.output.tccaide:jar}/arena-client-7.1.3.jar"/>
+    <copy file="${basedir}/lib/custom-serialization-1.1.1.jar" tofile="${artifact.output.tccaide:jar}/custom-serialization-1.1.1.jar"/>
+  </target>
+
+  <target name="build.all.artifacts" depends="artifact.tccaide:jar" description="Build all artifacts">
+
+    <!-- Delete temporary files -->
+    <delete dir="${artifacts.temp.dir}"/>
+  </target>
+
+  <target name="all" depends="build.modules, build.all.artifacts" description="build all"/>
+</project>
