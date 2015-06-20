@@ -6,7 +6,6 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class CaideExe {
     public static class ExecutionResult {
@@ -60,13 +59,8 @@ public class CaideExe {
             });
             reader.start();
 
-            if (process.waitFor(5, TimeUnit.SECONDS)) {
-                return new ExecutionResult(sb.toString(), process.exitValue());
-            } else {
-                process.destroy();
-                return new ExecutionResult("Timeout\n" + sb.toString(), 11110);
-            }
-
+            process.waitFor();
+            return new ExecutionResult(sb.toString(), process.exitValue());
         } catch (IOException e) {
             return new ExecutionResult(e.getMessage(), 11111);
         } catch (InterruptedException e) {

@@ -15,6 +15,7 @@ import net.slycelote.caide.logic.CaideExe;
 import net.slycelote.caide.model.Lang;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,6 +45,7 @@ public class EntryPoint extends BaseEntryPoint {
         }
     }
 
+    @SuppressWarnings("UnusedParameters")
     private void debug(ProblemComponentModel component) {
     }
 
@@ -128,7 +130,7 @@ public class EntryPoint extends BaseEntryPoint {
                 }
                 serializedInput.add("}");
                 try {
-                    Files.write(fileName, serializedInput);
+                    Files.write(fileName, serializedInput, Charset.defaultCharset());
                 } catch (IOException e) {
                     editor.logException(e);
                 }
@@ -139,7 +141,7 @@ public class EntryPoint extends BaseEntryPoint {
                 List<String> output = new ArrayList<String>();
                 output.add(testCase.getOutput());
                 try {
-                    Files.write(fileName, output);
+                    Files.write(fileName, output, Charset.defaultCharset());
                 } catch (IOException e) {
                     editor.logException(e);
                 }
