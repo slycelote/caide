@@ -1,7 +1,3 @@
-(**Note**: this is documentation for development version of caide. README for
-the latest release is located
-[here](https://github.com/slycelote/caide/blob/v1.2.0/libcaide/README.md).)
-
 caide is a command line application which is the core of caide software suite.
 
 # Installation
@@ -46,10 +42,6 @@ extension](https://chrome.google.com/webstore/detail/chelper-extension/eicjndbml
 sites.) Because of how the extension works, you have to be running a local
 server that will accept requests from Chrome. This is done in command line
 with `caide httpServer`. Hit Return to stop the server.
-
-Supported online judges for the extension:
-[Codeforces](http://codeforces.com), [Google Code
-Jam](http://code.google.com/codejam), [HackerRank](https://hackerrank.com).
 
 
 <a name="configuration" />
@@ -155,7 +147,8 @@ and C# programming languages.
 # IDE support
 ## Visual Studio
 
-See [readme](https://github.com/slycelote/caide/tree/master/vscaide/README.md)
+See
+[readme](https://github.com/slycelote/caide/tree/release/vscaide/README.md)
 for VsCaide extension in that project's directory.
 
 <a name="codelite"/>

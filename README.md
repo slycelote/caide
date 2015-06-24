@@ -18,19 +18,23 @@ languages and IDEs/editors.
 
 caide is split into the following components:
 
-* [libcaide](https://github.com/slycelote/caide/blob/master/libcaide/README.md)
+* [libcaide](https://github.com/slycelote/caide/blob/release/libcaide/README.md)
   is core command line application implementing all functionality. Windows and
 Linux are supported. Theoretically, it should also build on OS X.
-* [VsCaide](https://github.com/slycelote/caide/blob/master/vscaide/README.md)
+* [VsCaide](https://github.com/slycelote/caide/blob/release/vscaide/README.md)
   is caide frontend (extension) for Visual Studio; currently supports C++ and
 C# programming languages.
-* [tccaide](https://github.com/slycelote/caide/blob/master/tccaide/README.md)
+* [tccaide](https://github.com/slycelote/caide/blob/release/tccaide/README.md)
   is a plugin for Topcoder arena required if you want to work with Topcoder
 problems.
 
 Download caide from [releases page](https://github.com/slycelote/caide/releases).
 
-See developer documentation in
-[libcaide/doc/dev](https://github.com/slycelote/caide/tree/master/libcaide/doc/dev)
-directory.
+[Features](https://github.com/slycelote/caide/blob/release/doc/features.md)
+
+[Known
+issues](https://github.com/slycelote/caide/blob/release/doc/known-issues.md)
+
+[Developer
+documentation](https://github.com/slycelote/caide/tree/release/libcaide/doc/dev)
 

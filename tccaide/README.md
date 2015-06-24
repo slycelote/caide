@@ -3,12 +3,13 @@ in caide tools.
 
 # Installation
 
-0. JRE 1.7+ is required.
+Note: JRE 1.7+ is required.
 
 1. Create a caide project in one of caide tools. See
-   [libcaide](https://github.com/slycelote/caide/libcaide) for a command line
-tool or [VsCaide](https://github.com/slycelote/caide/vscaide) for a Visual
-Studio Extension.
+   [libcaide](https://github.com/slycelote/caide/tree/release/libcaide) for a
+command line tool or
+[VsCaide](https://github.com/slycelote/caide/tree/release/vscaide) for a
+Visual Studio Extension.
 
 2. Download tccaide.jar file from releases page.
 
@@ -32,6 +33,6 @@ will be created automatically.
 # Configuration
 
 The topcoder plugin doesn't have any options. Refer to [libcaide
-documentation](https://github.com/slycelote/caide/libcaide) for general caide
-configuration.
+documentation](https://github.com/slycelote/caide/tree/release/libcaide) for
+general caide configuration.
 
