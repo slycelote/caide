@@ -28,12 +28,17 @@ void tcwrite(ostream& out, const T& val) {
 /** Custom checker **/
 static const bool USE_CUSTOM_CHECKER = false;
 
-bool customChecker(istream& input, istream& output, string& errorMessage) {
+bool customChecker(istream& input, istream& userOutput, istream& judgeOutput,
+                   string& errorMessage)
+{
 #ifdef CAIDE_TOPCODER
     // Declare and read return value
-    CAIDE_TC_RETURN_TYPE result; tcread(output, result);
-    // Declare and read parameters
-#define CAIDE_TC_PARAM(type, name) type name; tcread(input, name);
+    CAIDE_TC_RETURN_TYPE result; tcread(userOutput, result);
+    // Declare and read judge return value
+    CAIDE_TC_RETURN_TYPE judgeResult; tcread(judgeOutput, judgeResult);
+    // Declare and read input parameters
+    char c;
+#define CAIDE_TC_PARAM(type, name) type name; input >> c; tcread(input, name);
     CAIDE_TC_PARAM_LIST
 #undef CAIDE_TC_PARAM
 #endif
@@ -57,54 +62,57 @@ void solve(int in(const char*...), int out(const char*...));
 
 template<int TAG>
 struct FileIO {
-	static FILE* handle;
+    static FILE* handle;
 
-	static int scanf(const char* format, ...) {
-		int res;
-		va_list args;
-		va_start(args, format);
-		res = vfscanf(handle, format, args);
-		va_end(args);
-		return res;
-	}
+    static int scanf(const char* format, ...) {
+        int res;
+        va_list args;
+        va_start(args, format);
+        res = vfscanf(handle, format, args);
+        va_end(args);
+        return res;
+    }
 
-	static int printf(const char* format, ...) {
-		int res;
-		va_list args;
-		va_start(args, format);
-		res = vfprintf(handle, format, args);
-		va_end(args);
-		return res;
-	}
+    static int printf(const char* format, ...) {
+        int res;
+        va_list args;
+        va_start(args, format);
+        res = vfprintf(handle, format, args);
+        va_end(args);
+        return res;
+    }
 
-	~FileIO() {
-		if (handle != 0) {
-			fclose(handle);
-			handle = 0;
-		}
-	}
+    ~FileIO() {
+        if (handle != 0) {
+            fclose(handle);
+            handle = 0;
+        }
+    }
 };
 
+template<>
 FILE* FileIO<1>::handle = 0;
+
+template<>
 FILE* FileIO<2>::handle = 0;
 
 // Test method calling the solution function. Must write result to the output
 // file and into the string.
 static void runTest(const char* inFile, const char* outFile, string& result) {
-	{
-		FileIO<1>::handle = fopen(inFile, "r");
-		FileIO<1> in;
-		FileIO<2>::handle = fopen(outFile, "w");
-		FileIO<2> out;
-		solve(FileIO<1>::scanf, FileIO<2>::printf);
-	}
+    {
+        FileIO<1>::handle = fopen(inFile, "r");
+        FileIO<1> in;
+        FileIO<2>::handle = fopen(outFile, "w");
+        FileIO<2> out;
+        solve(FileIO<1>::scanf, FileIO<2>::printf);
+    }
 
-	ifstream res(outFile);
-	res.seekg(0, std::ios::end);
-	size_t size = res.tellg();
-	result.resize(size, ' ');
-	res.seekg(0);
-	res.read(&result[0], size);
+    ifstream res(outFile);
+    res.seekg(0, std::ios::end);
+    size_t size = res.tellg();
+    result.resize(size, ' ');
+    res.seekg(0);
+    res.read(&result[0], size);
 }
 #endif
 
@@ -115,7 +123,7 @@ static bool fileExists(const string& path);
 
 int main() {
     // Find test directory
-	string testDir = "./";
+    string testDir = "./";
     string caideExeFile = testDir + "caideExe.txt";
     if (!fileExists(caideExeFile)) {
         // support running from problem directory too
@@ -138,7 +146,6 @@ int main() {
         string quotes = "\"";
 #endif
         caideExe = quotes + caideExe + quotes;
-
     }
 
     // Prepare the list of test cases in correct order; add recently created test cases too.
@@ -173,12 +180,13 @@ int main() {
                 try {
                     istringstream output(result);
                     ifstream input((testDir + testName + ".in").c_str());
+                    ifstream judgeOutput((testDir + "../../" + testName + ".out").c_str());
                     string message;
-                    bool ok = customChecker(input, output, message);
+                    bool ok = customChecker(input, output, judgeOutput, message);
                     if (ok) {
                         report << testName << " OK" << endl;
                     } else {
-                        cerr << message << endl;
+                        cerr << "FAILED: " << message << endl;
                         report << testName << " failed " << message << endl;
                     }
                 } catch (...) {
@@ -231,31 +239,28 @@ static bool fileExists(const string& path) {
 // #define CAIDE_TC_PARAM_LIST  CAIDE_TC_PARAM(string, s) CAIDE_TC_PARAM(string, t)
 
 
-// Forward declaration of solution class.
 // Note: we cannot forward declare the actual class defined by Topcoder
 // because we don't know what methods/members it will contain after it's implemented.
-// So we use a special CaideSolution class.
+// So we declare a wrapper function around the solution class.
 // Its definition is in solution file and must not be modified! It will be removed before submission.
 #define CAIDE_TC_PARAM(type, name) type name,
-struct CaideSolution {
-    CAIDE_TC_RETURN_TYPE solve(
-        CAIDE_TC_PARAM_LIST
-        int);
-};
+CAIDE_TC_RETURN_TYPE solve(
+    CAIDE_TC_PARAM_LIST
+    int);
 #undef CAIDE_TC_PARAM
 
 void solve(istream& in, ostream& out) {
     out << std::setprecision(12);
 
     // Declare and read parameters
-#define CAIDE_TC_PARAM(type, name) type name; tcread(in, name);
+    char c;
+#define CAIDE_TC_PARAM(type, name) type name; in >> c; tcread(in, name);
     CAIDE_TC_PARAM_LIST
 #undef CAIDE_TC_PARAM
 
     // Run solution
-    CaideSolution sol;
 #define CAIDE_TC_PARAM(type, name) name,
-    CAIDE_TC_RETURN_TYPE caide_result = sol.solve(
+    CAIDE_TC_RETURN_TYPE caide_result = solve(
             CAIDE_TC_PARAM_LIST
             0);
 #undef CAIDE_TC_PARAM
@@ -274,4 +279,3 @@ static void runTest(const char* inFile, const char* outFile, string& result) {
     resFile << result;
 }
 #endif
-

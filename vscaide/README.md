@@ -24,6 +24,23 @@ by pressing `Ctrl+F5`/`F5`.
 For Topcoder support you will also need the [Arena
 plugin](https://github.com/slycelote/caide/tccaide).
 
+# Supported online judges
+
+Caide can parse problem definitions (problem name and sample tests)
+automatically. You need to provide a URL of problem or contest in 'New
+problem' or 'Parse contest' dialogs.
+
+## CHelper Chrome extension
+
+Caide is compatible with [chelper chrome
+extension](https://chrome.google.com/webstore/detail/chelper-extension/eicjndbmlajfjdhephbcjdeegmmoadip).
+(To parse a problem, click the plus sign that appears in tab bar for supported
+sites.) Because of how the extension works, VsCaide has to run a local HTTP
+server that will accept requests from Chrome. (You may need to click Allow in
+Windows firewall prompt.) You can disable this feature by adding a setting
+`enable_http_server` equal to `false` to `[vscaide]` section in caide.ini
+file.
+
 # Configuration
 
 VsCaide should work out of the box. However, you can tweak most configuration
@@ -35,13 +52,4 @@ too. In addition, the [property
 file](http://msdn.microsoft.com/en-us/library/669zx6zc.aspx) `vs_common.props`
 in solution root directory is included into all generated projects. You can
 modify this file in Property Manager window.
-
-# CHelper Chrome extension
-
-VsCaide supports some online judges from CHelper chrome extension (see
-[Features](https://github.com/slycelote/caide/tree/master/doc/features.md) for
-details). Because of how the extension works, VsCaide has to run a local HTTP
-server to enable the support. (You may have to click Allow in Windows firewall
-prompt.) You can disable this feature by adding a setting `enable_http_server`
-equal to `false` to `[vscaide]` section in caide.ini file.
 

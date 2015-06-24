@@ -30,9 +30,8 @@ before the ones that passed.
 # Supported online judges
 
 Caide can parse problem definitions (problem name and sample tests)
-automatically. This is currently supported for
-[CodeChef](http://codechef.com), [Codeforces](http://codeforces.com), [Russian
-Code Cup](http://russiancodecup.ru) and [Timus](http://acm.timus.ru).
+automatically. You need to provide a URL of problem or contest (`caide
+problem` and `caide contest` commands).
 
 ## CHelper Chrome extension
 
@@ -54,7 +53,7 @@ Most settings are stored in `caide.ini` file in the project root.
 * `language` is default programming language for newly created/parsed
   problems. Possible values: `cpp`, `simplecpp`, `csharp`. `simplecpp` is a
 fallback option that disables C++ code inliner in case you have problems with
-it.  Settings for each language are kept in the corresponding section of the
+it. Settings for each language are kept in the corresponding section of the
 file.
 * `features` is a comma separated list of 'features' (optional pieces of
   functionality). Settings for each feature are kept in the corresponding
@@ -140,8 +139,8 @@ To configure a builder for a programming language, add a setting
 `build_and_run_tests`, in the section for that language (e.g., `[cpp]`). The
 value of the setting should be the actual command that runs your builder.
 
-`templates/builder-samples` directory contains examples of builders for C++
-and C# programming languages.
+[Samples](https://github.com/slycelote/caide/tree/release/libcaide/doc/samples)
+directory contains examples of builders for C++ and C# programming languages.
 
 <a name="ide" />
 # IDE support

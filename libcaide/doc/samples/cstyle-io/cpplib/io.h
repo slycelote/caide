@@ -1,6 +1,7 @@
 #pragma once
 #include <functional>
 #include <cstdarg>
+#include <cstdio>
 
 class CIO {
 private:

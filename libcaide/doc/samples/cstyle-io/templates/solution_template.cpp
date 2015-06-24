@@ -17,6 +17,11 @@ using namespace std;
 class Solution {
 public:
     void solve(const CIO& scanf, const CIO& printf) {
+        /*
+        int a, b;
+        scanf("%i%i", &a, &b);
+        printf("%i\n", a+b);
+        */
     }
 };
 
