@@ -22,7 +22,7 @@ You can run/debug tests by clicking corresponding buttons in Caide window or
 by pressing `Ctrl+F5`/`F5`.
 
 For Topcoder support you will also need the [Arena
-plugin](https://github.com/slycelote/caide/tccaide).
+plugin](https://github.com/slycelote/caide/tree/release/tccaide).
 
 # Supported online judges
 
@@ -45,9 +45,9 @@ file.
 
 VsCaide should work out of the box. However, you can tweak most configuration
 options described in [libcaide
-README](https://github.com/slycelote/caide/tree/master/libcaide/README.md#configuration).
+README](https://github.com/slycelote/caide/tree/release/libcaide/README.md#configuration).
 Make sure to read the section on [C++
-inliner](https://github.com/slycelote/caide/tree/master/libcaide/README.md#inliner)
+inliner](https://github.com/slycelote/caide/tree/release/libcaide/README.md#inliner)
 too. In addition, the [property
 file](http://msdn.microsoft.com/en-us/library/669zx6zc.aspx) `vs_common.props`
 in solution root directory is included into all generated projects. You can
