@@ -16,6 +16,21 @@ automate the following tasks:
 Unlike other projects, caide is designed to support multiple programming
 languages and IDEs/editors.
 
+## Screenshots
+Codelite and command line caide in Linux: ([full size](http://i.imgur.com/cZsP6Z0.png))
+
+![ ](http://i.imgur.com/cZsP6Z0l.png)
+
+Codelite in Windows: ([full size](http://i.imgur.com/mLmQDgD.png))
+
+![ ](http://i.imgur.com/mLmQDgDl.png)
+
+Visual Studio:
+
+![ ](http://i.imgur.com/xjpp3tU.png)
+
+## Download
+
 caide is split into the following components:
 
 * [libcaide](https://github.com/slycelote/caide/blob/release/libcaide/README.md)
@@ -33,11 +48,22 @@ page](https://github.com/slycelote/caide/releases). You will need *either* the
 command line executable for your platform, *or* the Visual Studio extension.
 In addition, if you want Topcoder support, you will need the Arena plugin.
 
-[Features](https://github.com/slycelote/caide/blob/release/doc/features.md)
+## Documentation
 
-[Known
-issues](https://github.com/slycelote/caide/blob/release/doc/known-issues.md)
+* [Features](https://github.com/slycelote/caide/blob/release/doc/features.md)
 
-[Developer
-documentation](https://github.com/slycelote/caide/tree/release/libcaide/doc/dev)
+* [Known
+  issues](https://github.com/slycelote/caide/blob/release/doc/known-issues.md)
+
+* [Command line
+  application](https://github.com/slycelote/caide/blob/release/libcaide/README.md)
+
+* [Visual Studio extension
+  ](https://github.com/slycelote/caide/blob/release/vscaide/README.md)
+
+* [Plugin for Topcoder
+  Arena](https://github.com/slycelote/caide/blob/release/tccaide/README.md)
+
+* [Developer
+  documentation](https://github.com/slycelote/caide/tree/release/libcaide/doc/dev)
 
