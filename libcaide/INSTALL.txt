@@ -1,28 +1,58 @@
 == Windows build
-0. Install Python 2 from here: https://www.python.org/downloads/.
-1. Install Haskell Platform 2014.2.0.0 from here: https://www.haskell.org/platform/windows.html.
+1. Install Python 2 from here: https://www.python.org/downloads/.
+2. Install Haskell Platform 2014.2.0.0 from here: https://www.haskell.org/platform/windows.html.
     * Select a path WITHOUT SPACES or other special characters.
     * UNCHECK the 'modify PATH' setting during install.
-2. Install MSYS from here: http://sourceforge.net/projects/mingw/
-3. Haskell Platform currently comes with an old g++ version. You'll have to copy the
+3. Install MSYS from here: http://sourceforge.net/projects/mingw/
+4. Haskell Platform currently comes with an old g++ version. You'll have to copy the
 contents of your mingw installation into the folder (Haskell Platform path)\mingw.
-4. Open MSYS shell and CD to libcaide source directory.
-5. Edit the file mingw32.sh according to the installation path of Haskell Platform.
+5. Clone source code repository and submodules from your favourite GUI git
+client or command line:
+    > git clone https://github.com/slycelote/caide
+    > cd caide
+    > git submodule init
+    > git submodule update
+
+6. Open MSYS shell and CD to libcaide source directory.
+7. Edit the file mingw32.sh according to the installation path of Haskell Platform.
 
 All of the following is done in MSYS shell, from libcaide directory.
 
-6. Setup PATH:
+8. Setup PATH:
     > source mingw32.sh
     (Note: you can copy the file to C:\MinGW\msys\1.0\home\<username>\.bashrc to
     avoid having to do this every time you open a new MSYS shell.)
-7. Update package database:
+9. Update package database:
     > cabal update
-8. Initialize cabal sandbox:
+10. Initialize cabal sandbox:
     > cabal sandbox init
-9. Install dependencies:
+11. Install dependencies:
     > cabal install --only-dependencies
-10. Build:
+12. Build:
     > cabal configure
     > cabal build
 Resulting executable: dist\build\caide\caide.exe
+
+
+== Linux build
+1. You need python 2, reasonably new g++, ghc 7.8 and latest cabal. To run
+tests, you will also need mono. In Debian, install packages mono-gmcs and
+binfmt-support.
+
+2. Clone source code repository and submodules:
+    > git clone https://github.com/slycelote/caide
+    > cd caide
+    > git submodule init
+    > git submodule update
+
+3. Update package database:
+    > cabal update
+4. Initialize cabal sandbox:
+    > cabal sandbox init
+5. Install dependencies:
+    > cabal install --only-dependencies
+6. Build:
+    > cabal configure
+    > cabal build
+Resulting executable: dist\build\caide\caide
 

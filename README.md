@@ -28,7 +28,10 @@ C# programming languages.
   is a plugin for Topcoder arena required if you want to work with Topcoder
 problems.
 
-Download caide from [releases page](https://github.com/slycelote/caide/releases).
+Download caide from [releases
+page](https://github.com/slycelote/caide/releases). You will need *either* the
+command line executable for your platform, *or* the Visual Studio extension.
+In addition, if you want Topcoder support, you will need the Arena plugin.
 
 [Features](https://github.com/slycelote/caide/blob/release/doc/features.md)
 

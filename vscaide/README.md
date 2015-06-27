@@ -22,7 +22,7 @@ You can run/debug tests by clicking corresponding buttons in Caide window or
 by pressing `Ctrl+F5`/`F5`.
 
 For Topcoder support you will also need the [Arena
-plugin](https://github.com/slycelote/caide/tree/release/tccaide).
+plugin](https://github.com/slycelote/caide/tree/release/tccaide/README.md).
 
 # Supported online judges
 

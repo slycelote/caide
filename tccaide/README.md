@@ -6,10 +6,10 @@ in caide tools.
 Note: JRE 1.7+ is required.
 
 1. Create a caide project in one of caide tools. See
-   [libcaide](https://github.com/slycelote/caide/tree/release/libcaide) for a
-command line tool or
-[VsCaide](https://github.com/slycelote/caide/tree/release/vscaide) for a
-Visual Studio Extension.
+   [libcaide](https://github.com/slycelote/caide/tree/release/libcaide/README.md)
+for a command line tool or
+[VsCaide](https://github.com/slycelote/caide/tree/release/vscaide/README.md)
+for a Visual Studio Extension.
 
 2. Download tccaide.jar file from releases page.
 
@@ -33,6 +33,6 @@ will be created automatically.
 # Configuration
 
 The topcoder plugin doesn't have any options. Refer to [libcaide
-documentation](https://github.com/slycelote/caide/tree/release/libcaide) for
-general caide configuration.
+documentation](https://github.com/slycelote/caide/tree/release/libcaide/README.md)
+for general caide configuration.
 
