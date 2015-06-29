@@ -700,7 +700,7 @@ public:
             // See corresponding comment in VisitFunctionDecl.
             return true;
         }
-        if (!usageInfo.isUsed(functionDecl))
+        if (!usageInfo.isUsed(functionDecl->getCanonicalDecl()))
             removeDecl(functionDecl);
         return true;
     }

@@ -146,6 +146,9 @@ void caide_keep_inside_unused_function_template() {
     typedef int TD;
 }
 
+template<typename T>
+void forwaredDeclared();
+
 int main() {
     f2();
     //f3<int>();
@@ -171,5 +174,10 @@ int main() {
     {
         f3<char>();
     }
+    forwaredDeclared<int>();
+}
+
+template<typename T>
+void forwaredDeclared() {
 }
 

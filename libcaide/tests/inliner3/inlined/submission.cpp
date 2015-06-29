@@ -96,6 +96,9 @@ typedef Identity<int>::type inttd;
 template<typename T>
 void noopFunc(T t) {}
 
+template<typename T>
+void forwaredDeclared();
+
 int main() {
     f2();
     //f3<int>();
@@ -121,5 +124,10 @@ int main() {
     {
         f3<char>();
     }
+    forwaredDeclared<int>();
+}
+
+template<typename T>
+void forwaredDeclared() {
 }
 
