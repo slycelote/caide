@@ -659,10 +659,12 @@ public:
         if (!sourceManager.isInMainFile(functionDecl->getLocStart()))
             return true;
 
-        if (functionDecl->getDescribedFunctionTemplate() != 0) {
-            // General (non-specialized) case; its source range doesn't include
-            // template<...> part, so it has to be processed as corresponding
-            // FunctionTemplateDecl.
+        // Correct source range (including all template<...> parts) for
+        // method templates is in this decl; for function templates
+        // it's in described template (FunctionTemplateDecl)
+        if (functionDecl->getDescribedFunctionTemplate() != nullptr &&
+            !isa<CXXMethodDecl>(functionDecl))
+        {
             return true;
         }
 
@@ -689,6 +691,12 @@ public:
         if (!sourceManager.isInMainFile(functionDecl->getLocStart()))
             return true;
         dbg(CAIDE_FUNC);
+        if (isa<CXXMethodDecl>(functionDecl->getTemplatedDecl())) {
+            // Source range for this decl may not include all template parameters;
+            // it will be processed as CXXMethodDecl instead.
+            // See corresponding comment in VisitFunctionDecl.
+            return true;
+        }
         if (!usageInfo.isUsed(functionDecl))
             removeDecl(functionDecl);
         return true;

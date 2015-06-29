@@ -123,6 +123,18 @@ typedef Identity<int>::type inttd;
 template<typename T>
 void noopFunc(T t) {}
 
+
+template<typename T>
+struct UnusedClass {
+    template<typename S>
+    void method();
+};
+
+template<typename T>
+template<typename S>
+void UnusedClass<T>::method() {
+}
+
 int main() {
     f2();
     //f3<int>();
