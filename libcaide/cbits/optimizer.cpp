@@ -261,7 +261,9 @@ public:
 
     bool VisitDecl(Decl* decl) {
         // Mark dependence on enclosing class/namespace.
-        insertReference(decl, dyn_cast_or_null<Decl>(decl->getDeclContext()));
+        Decl* ctx = dyn_cast_or_null<Decl>(decl->getDeclContext());
+        if (ctx && !isa<FunctionDecl>(ctx))
+            insertReference(decl, ctx);
 
         lastVisitedDecl = decl;
 
@@ -417,6 +419,7 @@ public:
     }
 
     bool VisitFunctionDecl(FunctionDecl* f) {
+        dbg(CAIDE_FUNC);
         if (f->isMain())
             srcInfo.declsToKeep.insert(f);
 

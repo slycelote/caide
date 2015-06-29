@@ -135,6 +135,17 @@ template<typename S>
 void UnusedClass<T>::method() {
 }
 
+void caide_keep_inside_unused_function() {
+    /// caide keep
+    typedef int TD;
+}
+
+template<typename T>
+void caide_keep_inside_unused_function_template() {
+    /// caide keep
+    typedef int TD;
+}
+
 int main() {
     f2();
     //f3<int>();
