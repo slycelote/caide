@@ -169,12 +169,13 @@ private:
         from = from->getCanonicalDecl();
         to = to->getCanonicalDecl();
         srcInfo.uses[from].insert(to);
-        dbg("Reference   FROM    " << from->getDeclKindName() << " " << from << "<"
-            << toString(from).substr(0, 30)
-            << ">" << toString(from->getSourceRange())
-            << "     TO     " << to->getDeclKindName() << " " << to << "<"
-            << toString(to).substr(0, 30)
-            << ">" << toString(to->getSourceRange()) << std::endl);
+        dbg("Reference   FROM    " << from->getDeclKindName() << " " << from
+            << "<" << toString(from).substr(0, 30) << ">"
+            << toString(from->getSourceRange())
+            << "     TO     " << to->getDeclKindName() << " " << to
+            << "<" << toString(to).substr(0, 30) << ">"
+            << toString(to->getSourceRange())
+            << std::endl);
     }
 
     void insertReferenceToType(Decl* from, const Type* to,
@@ -428,6 +429,17 @@ public:
         return true;
     }
 
+    /*
+    Every function template is represented as a FunctionTemplateDecl and a FunctionDecl
+    (or something derived from FunctionDecl). The former contains template properties
+    (such as the template parameter lists) while the latter contains the actual description
+    of the template's contents. FunctionTemplateDecl::getTemplatedDecl() retrieves the
+    FunctionDecl that describes the function template,
+    FunctionDecl::getDescribedFunctionTemplate() retrieves the FunctionTemplateDecl
+    from a FunctionDecl.
+
+    We only use FunctionDecl's for dependency tracking.
+     */
     bool VisitFunctionDecl(FunctionDecl* f) {
         dbg(CAIDE_FUNC);
         if (f->isMain())
@@ -490,7 +502,7 @@ public:
 
         FunctionTemplateSpecializationInfo* specInfo = f->getTemplateSpecializationInfo();
         if (specInfo)
-            insertReference(f, specInfo->getTemplate());
+            insertReference(f, specInfo->getTemplate()->getTemplatedDecl());
 
         insertReferenceToType(f, f->getReturnType());
 
@@ -667,51 +679,57 @@ public:
 
 
      */
-    // TODO: dependencies on types of template parameters
-    bool VisitFunctionDecl(FunctionDecl* functionDecl) {
-        if (!sourceManager.isInMainFile(functionDecl->getLocStart()))
-            return true;
 
-        // Correct source range (including all template<...> parts) for
-        // method templates is in this decl; for function templates
-        // it's in described template (FunctionTemplateDecl)
-        if (functionDecl->getDescribedFunctionTemplate() != nullptr &&
-            !isa<CXXMethodDecl>(functionDecl))
-        {
-            return true;
-        }
-
+    bool needToRemoveFunction(FunctionDecl* functionDecl) const {
         if (CXXDestructorDecl* destructor = dyn_cast<CXXDestructorDecl>(functionDecl)) {
             // Destructor should be removed iff the class is unused
             CXXRecordDecl* classDecl = destructor->getParent();
-            if (classDecl && !usageInfo.isUsed(classDecl->getCanonicalDecl()))
-                removeDecl(destructor);
-            return true;
+            return classDecl && !usageInfo.isUsed(classDecl->getCanonicalDecl());
         }
 
         FunctionDecl* canonicalDecl = functionDecl->getCanonicalDecl();
         const bool funcIsUnused = !usageInfo.isUsed(canonicalDecl);
-        const bool thisIsRedeclaration = !functionDecl->doesThisDeclarationHaveABody() && declared.find(canonicalDecl) != declared.end();
-        if (funcIsUnused || thisIsRedeclaration) {
-            dbg(CAIDE_FUNC);
-            removeDecl(functionDecl);
-        }
-        declared.insert(canonicalDecl);
-        return true;
+        const bool thisIsRedeclaration = !functionDecl->doesThisDeclarationHaveABody()
+                && declared.find(canonicalDecl) != declared.end();
+        return funcIsUnused || thisIsRedeclaration;
     }
 
-    bool VisitFunctionTemplateDecl(FunctionTemplateDecl* functionDecl) {
+    bool VisitFunctionDecl(FunctionDecl* functionDecl) {
         if (!sourceManager.isInMainFile(functionDecl->getLocStart()))
             return true;
         dbg(CAIDE_FUNC);
-        if (isa<CXXMethodDecl>(functionDecl->getTemplatedDecl())) {
-            // Source range for this decl may not include all template parameters;
-            // it will be processed as CXXMethodDecl instead.
-            // See corresponding comment in VisitFunctionDecl.
+
+        // It may have been processed as FunctionTemplateDecl already
+        // but we try it anyway.
+        if (needToRemoveFunction(functionDecl))
+            removeDecl(functionDecl);
+
+        declared.insert(functionDecl->getCanonicalDecl());
+        return true;
+    }
+
+    // TODO: dependencies on types of template parameters
+    bool VisitFunctionTemplateDecl(FunctionTemplateDecl* templateDecl) {
+        if (!sourceManager.isInMainFile(templateDecl->getLocStart()))
+            return true;
+        dbg(CAIDE_FUNC);
+        FunctionDecl* functionDecl = templateDecl->getTemplatedDecl();
+
+        // Correct source range may be given by either this template decl
+        // or corresponding CXXMethodDecl, in case of template method of
+        // template class. Choose the one that starts earlier.
+        const bool processAsCXXMethod = sourceManager.isBeforeInTranslationUnit(
+                getExpansionStart(functionDecl),
+                getExpansionStart(templateDecl)
+        );
+
+        if (processAsCXXMethod) {
+            // Will be processed as FunctionDecl later.
             return true;
         }
-        if (!usageInfo.isUsed(functionDecl->getCanonicalDecl()))
-            removeDecl(functionDecl);
+
+        if (needToRemoveFunction(functionDecl))
+            removeDecl(templateDecl);
         return true;
     }
 
@@ -769,15 +787,26 @@ public:
     }
 
 private:
-    void removeDecl(Decl* decl) {
-        if (!decl)
-            return;
+    SourceLocation getExpansionStart(const Decl* decl) const {
         SourceLocation start = decl->getLocStart();
         if (start.isMacroID())
             start = sourceManager.getExpansionRange(start).first;
+        return start;
+    }
+
+    SourceLocation getExpansionEnd(const Decl* decl) const {
         SourceLocation end = decl->getLocEnd();
         if (end.isMacroID())
             end = sourceManager.getExpansionRange(end).second;
+        return end;
+    }
+
+
+    void removeDecl(Decl* decl) {
+        if (!decl)
+            return;
+        SourceLocation start = getExpansionStart(decl);
+        SourceLocation end = getExpansionEnd(decl);
 
         SourceLocation semicolonAfterDefinition = findSemiAfterLocation(end, decl->getASTContext());
         dbg("REMOVE " << decl->getDeclKindName() << " "

@@ -156,6 +156,40 @@ class WithDefaultTypeParam
 {
 };
 
+struct C{
+    template<typename S>
+    void f(S s);
+};
+
+template<typename S>
+void C::f(S s) {
+}
+
+template<typename T>
+struct D {
+    template<typename S>
+    void f() {}
+
+    template<typename S>
+    void g();
+};
+
+template<typename T>
+template<typename S>
+void D<T>::g() {
+}
+
+template<typename T>
+void usedFunc1();
+
+
+template<typename T>
+void usedFunc1();
+
+template<typename T>
+void usedFunc1() {
+}
+
 int main() {
     f2();
     //f3<int>();
@@ -183,6 +217,7 @@ int main() {
     }
     forwaredDeclared<int>();
     WithDefaultTypeParam<int> w;
+    usedFunc1<int>();
 }
 
 template<typename T>

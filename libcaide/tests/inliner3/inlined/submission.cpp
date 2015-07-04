@@ -106,6 +106,13 @@ class WithDefaultTypeParam
 {
 };
 
+template<typename T>
+void usedFunc1();
+
+template<typename T>
+void usedFunc1() {
+}
+
 int main() {
     f2();
     //f3<int>();
@@ -133,6 +140,7 @@ int main() {
     }
     forwaredDeclared<int>();
     WithDefaultTypeParam<int> w;
+    usedFunc1<int>();
 }
 
 template<typename T>
