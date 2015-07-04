@@ -1,4 +1,5 @@
 #include "util.h"
+#include <sstream>
 
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/FileManager.h"
@@ -88,5 +89,56 @@ std::string rangeToString(SourceManager& sourceManager, const SourceLocation& st
         return std::string(b, e);
     else
         return std::string(b, b+30) + "[...]";
+}
+
+std::string toString(SourceManager& sourceManager, SourceLocation loc) {
+    //return loc.printToString(sourceManager);
+    std::string fileName = sourceManager.getFilename(loc).str();
+    if (fileName.length() > 30)
+        fileName = fileName.substr(fileName.length() - 30);
+    std::ostringstream os;
+    os << fileName << ":" <<
+        sourceManager.getExpansionLineNumber(loc) << ":" <<
+        sourceManager.getExpansionColumnNumber(loc);
+    return os.str();
+}
+
+std::string toString(SourceManager& sourceManager, SourceRange range) {
+    return toString(sourceManager, range.getBegin()) + " -- " +
+        toString(sourceManager, range.getEnd());
+}
+
+std::string toString(SourceManager& sourceManager, const Decl* decl) {
+    if (!decl)
+        return "<invalid>";
+    SourceLocation start = sourceManager.getExpansionLoc(decl->getLocStart());
+    bool invalid;
+    const char* b = sourceManager.getCharacterData(start, &invalid);
+    if (invalid || !b)
+        return "<invalid>";
+    SourceLocation end = sourceManager.getExpansionLoc(decl->getLocEnd());
+    const char* e = sourceManager.getCharacterData(end, &invalid);
+    if (invalid || !e)
+        return "<invalid>";
+    return std::string(b, std::min(b+30, e));
+}
+
+SourceLocation getExpansionStart(SourceManager& sourceManager, const Decl* decl) {
+    SourceLocation start = decl->getLocStart();
+    if (start.isMacroID())
+        start = sourceManager.getExpansionRange(start).first;
+    return start;
+}
+
+SourceLocation getExpansionEnd(SourceManager& sourceManager, const Decl* decl) {
+    SourceLocation end = decl->getLocEnd();
+    if (end.isMacroID())
+        end = sourceManager.getExpansionRange(end).second;
+    return end;
+}
+
+SourceRange getExpansionRange(SourceManager& sourceManager, const Decl* decl) {
+    return SourceRange(getExpansionStart(sourceManager, decl),
+            getExpansionEnd(sourceManager, decl));
 }
 

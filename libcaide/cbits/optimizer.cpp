@@ -131,38 +131,6 @@ private:
         return dyn_cast_or_null<Decl>(decl->getLexicalDeclContext());
     }
 
-    std::string toString(SourceLocation loc) const {
-        //return loc.printToString(sourceManager);
-        std::string fileName = sourceManager.getFilename(loc).str();
-        if (fileName.length() > 30) {
-            fileName = fileName.substr(fileName.length() - 30);
-        }
-        std::ostringstream os;
-        os << fileName << ":" <<
-            sourceManager.getExpansionLineNumber(loc) << ":" <<
-            sourceManager.getExpansionColumnNumber(loc);
-        return os.str();
-    }
-
-    std::string toString(SourceRange range) const {
-        return toString(range.getBegin()) + " -- " + toString(range.getEnd());
-    }
-
-    std::string toString(const Decl* decl) const {
-        if (!decl)
-            return "<invalid>";
-        SourceLocation start = sourceManager.getExpansionLoc(decl->getLocStart());
-        bool invalid;
-        const char* b = sourceManager.getCharacterData(start, &invalid);
-        if (invalid || !b)
-            return "<invalid>";
-        SourceLocation end = sourceManager.getExpansionLoc(decl->getLocEnd());
-        const char* e = sourceManager.getCharacterData(end, &invalid);
-        if (invalid || !e)
-            return "<invalid>";
-        return std::string(b, std::min(b+30, e));
-    }
-
     void insertReference(Decl* from, Decl* to) {
         if (!from || !to)
             return;
@@ -170,11 +138,11 @@ private:
         to = to->getCanonicalDecl();
         srcInfo.uses[from].insert(to);
         dbg("Reference   FROM    " << from->getDeclKindName() << " " << from
-            << "<" << toString(from).substr(0, 30) << ">"
-            << toString(from->getSourceRange())
+            << "<" << toString(sourceManager, from).substr(0, 30) << ">"
+            << toString(sourceManager, from->getSourceRange())
             << "     TO     " << to->getDeclKindName() << " " << to
-            << "<" << toString(to).substr(0, 30) << ">"
-            << toString(to->getSourceRange())
+            << "<" << toString(sourceManager, to).substr(0, 30) << ">"
+            << toString(sourceManager, to->getSourceRange())
             << std::endl);
     }
 
@@ -227,6 +195,8 @@ private:
         if (const TemplateSpecializationType* tempSpecType =
                 dyn_cast<TemplateSpecializationType>(to))
         {
+            if (TemplateDecl* tempDecl = tempSpecType->getTemplateName().getAsTemplateDecl())
+                insertReference(from, tempDecl);
             for (unsigned i = 0; i < tempSpecType->getNumArgs(); ++i) {
                 const TemplateArgument& arg = tempSpecType->getArg(i);
                 if (arg.getKind() == TemplateArgument::Type)
@@ -265,6 +235,11 @@ public:
     bool shouldVisitTemplateInstantiations() const { return true; }
 
     bool VisitDecl(Decl* decl) {
+        dbg("DECL " << decl->getDeclKindName() << " " << decl
+            << "<" << ::toString(sourceManager, decl).substr(0, 30) << ">"
+            << ::toString(sourceManager, getExpansionRange(sourceManager, decl))
+            << endl);
+
         // Mark dependence on enclosing class/namespace.
         Decl* ctx = dyn_cast_or_null<Decl>(decl->getDeclContext());
         if (ctx && !isa<FunctionDecl>(ctx))
@@ -362,9 +337,7 @@ public:
     }
 
     bool VisitVarDecl(VarDecl* varDecl) {
-        SourceLocation start = varDecl->getLocStart();
-        if (start.isMacroID())
-            start = sourceManager.getExpansionRange(start).first;
+        SourceLocation start = getExpansionStart(sourceManager, varDecl);
         if (!varDecl->isLocalVarDeclOrParm() && sourceManager.isInMainFile(start)) {
             srcInfo.staticVariables[start].push_back(varDecl);
             /*
@@ -514,7 +487,8 @@ public:
             dbg("Moving to ";
                 DeclarationName DeclName = f->getNameInfo().getName();
                 string FuncName = DeclName.getAsString();
-                cerr << FuncName << " at " << toString(f->getLocation()) << std::endl;
+                cerr << FuncName << " at " <<
+                    toString(sourceManager, f->getLocation()) << std::endl;
             );
         }
 
@@ -570,30 +544,36 @@ public:
     }
 
     void addIfInMainFile(Decl* decl) {
-        SourceLocation start = decl->getLocStart();
-        if (start.isMacroID())
-            start = sourceManager.getExpansionRange(start).first;
+        SourceRange range = getSourceRange(decl);
 
-        if (sourceManager.isInMainFile(start)) {
-            SourceLocation end = decl->getLocEnd();
-            if (end.isMacroID())
-                end = sourceManager.getExpansionRange(end).second;
+        if (sourceManager.isInMainFile(range.getBegin())) {
+            dbg("USAGEINFO " <<
+                decl->getDeclKindName() << " " << decl
+                << "<" << toString(sourceManager, decl).substr(0, 30) << ">"
+                << toString(sourceManager, range)
+                << endl);
             usedDecls.insert(decl);
-            locationsOfUsedDecls.insert(SourceRange(start, end));
+            locationsOfUsedDecls.insert(range);
         }
     }
 
 private:
     SourceRange getSourceRange(Decl* decl) const {
-        SourceLocation start = decl->getLocStart();
-        if (start.isMacroID())
-            start = sourceManager.getExpansionRange(start).first;
+        SourceRange range = getExpansionRange(sourceManager, decl);
+        /*
+        Decl* anotherDecl = nullptr;
+        if (FunctionDecl* f = dyn_cast_or_null<FunctionDecl>(decl))
+            anotherDecl = f->getDescribedFunctionTemplate();
+        else if (FunctionTemplateDecl* ft = dyn_cast_or_null<FunctionTemplateDecl>(decl))
+            anotherDecl = ft;
 
-        SourceLocation end = decl->getLocEnd();
-        if (end.isMacroID())
-            end = sourceManager.getExpansionRange(end).second;
-
-        return SourceRange(start, end);
+        if (anotherDecl) {
+            SourceRange anotherRange = getExpansionRange(sourceManager, anotherDecl);
+            if (sourceManager.isBeforeInTranslationUnit(anotherRange.getBegin(), range.getBegin()))
+                range = anotherRange;
+        }
+        */
+        return range;
     }
 };
 
@@ -719,8 +699,8 @@ public:
         // or corresponding CXXMethodDecl, in case of template method of
         // template class. Choose the one that starts earlier.
         const bool processAsCXXMethod = sourceManager.isBeforeInTranslationUnit(
-                getExpansionStart(functionDecl),
-                getExpansionStart(templateDecl)
+                getExpansionStart(sourceManager, functionDecl),
+                getExpansionStart(sourceManager, templateDecl)
         );
 
         if (processAsCXXMethod) {
@@ -787,31 +767,16 @@ public:
     }
 
 private:
-    SourceLocation getExpansionStart(const Decl* decl) const {
-        SourceLocation start = decl->getLocStart();
-        if (start.isMacroID())
-            start = sourceManager.getExpansionRange(start).first;
-        return start;
-    }
-
-    SourceLocation getExpansionEnd(const Decl* decl) const {
-        SourceLocation end = decl->getLocEnd();
-        if (end.isMacroID())
-            end = sourceManager.getExpansionRange(end).second;
-        return end;
-    }
-
-
     void removeDecl(Decl* decl) {
         if (!decl)
             return;
-        SourceLocation start = getExpansionStart(decl);
-        SourceLocation end = getExpansionEnd(decl);
+        SourceLocation start = getExpansionStart(sourceManager, decl);
+        SourceLocation end = getExpansionEnd(sourceManager, decl);
 
         SourceLocation semicolonAfterDefinition = findSemiAfterLocation(end, decl->getASTContext());
         dbg("REMOVE " << decl->getDeclKindName() << " "
             << decl << ": " << toString(start) << " " << toString(end)
-            << " " << toString(semicolonAfterDefinition) << std::endl);
+            << " ; " << toString(semicolonAfterDefinition) << std::endl);
         if (semicolonAfterDefinition.isValid())
             end = semicolonAfterDefinition;
         Rewriter::RewriteOptions opts;
@@ -906,9 +871,7 @@ private:
             }
 
             SourceLocation startOfType = kv.first;
-            SourceLocation endOfLastVar = vars.back()->getSourceRange().getEnd();
-            if (endOfLastVar.isMacroID())
-                endOfLastVar = sourceManager.getExpansionRange(endOfLastVar).second;
+            SourceLocation endOfLastVar = getExpansionEnd(sourceManager, vars.back());
             SourceLocation semiColon = findSemiAfterLocation(endOfLastVar, ctx);
 
             if (lastUsed == n) {
@@ -921,9 +884,7 @@ private:
                     SourceLocation beg = vars[i]->getLocation();
 
                     // end of initializer
-                    SourceLocation end = vars[i]->getSourceRange().getEnd();
-                    if (end.isMacroID())
-                        end = sourceManager.getExpansionRange(end).second;
+                    SourceLocation end = getExpansionEnd(sourceManager, vars[i]);
 
                     if (i+1 < n) {
                         // comma
@@ -937,9 +898,7 @@ private:
                 }
                 if (lastUsed + 1 != n) {
                     // clear all remaining variables, starting with comma
-                    SourceLocation end = vars[lastUsed]->getSourceRange().getEnd();
-                    if (end.isMacroID())
-                        end = sourceManager.getExpansionRange(end).second;
+                    SourceLocation end = getExpansionEnd(sourceManager, vars[lastUsed]);
                     SourceLocation comma = findTokenAfterLocation(end, ctx, tok::comma);
                     SourceRange range(comma, endOfLastVar);
                     smartRewriter.removeRange(range, opts);

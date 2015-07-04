@@ -21,3 +21,15 @@ clang::tooling::FixedCompilationDatabase* createCompilationDatabaseFromCommandLi
 std::string rangeToString(clang::SourceManager& sourceManager,
         const clang::SourceLocation& start, const clang::SourceLocation& end);
 
+std::string toString(clang::SourceManager& sourceManager, clang::SourceLocation loc);
+std::string toString(clang::SourceManager& sourceManager, clang::SourceRange range);
+std::string toString(clang::SourceManager& sourceManager, const clang::Decl* decl);
+
+clang::SourceLocation getExpansionStart(clang::SourceManager& sourceManager,
+        const clang::Decl* decl);
+clang::SourceLocation getExpansionEnd(clang::SourceManager& sourceManager,
+        const clang::Decl* decl);
+
+clang::SourceRange getExpansionRange(clang::SourceManager& sourceManager,
+        const clang::Decl* decl);
+

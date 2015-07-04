@@ -190,6 +190,12 @@ template<typename T>
 void usedFunc1() {
 }
 
+template<typename T>
+struct E{};
+
+template<typename T, typename M = E<T> >
+struct F {};
+
 int main() {
     f2();
     //f3<int>();
@@ -216,8 +222,11 @@ int main() {
         f3<char>();
     }
     forwaredDeclared<int>();
-    WithDefaultTypeParam<int> w;
-    usedFunc1<int>();
+    {
+        WithDefaultTypeParam<int> w;
+        usedFunc1<int>();
+        F<int, int> f;
+    }
 }
 
 template<typename T>
