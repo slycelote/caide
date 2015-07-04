@@ -19,6 +19,13 @@ SideEffect instance;
   In general, if you find that caide removes a declaration by mistake, mark
 this declaration with `caide keep` (and file an issue :)).
 
+* Integral constants get removed even if they are used as a template argument: 
+``` 
+const int N = 42; 
+template<int n> func() {} 
+func<N>(); 
+```
+
 * On Linux, if you use system headers, then caide will not be able to parse
   one of GNU-specific headers from `pb_ds` namespace. Workaround: either apply
 [this small

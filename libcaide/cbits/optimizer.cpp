@@ -127,6 +127,10 @@ private:
         return dyn_cast_or_null<FunctionDecl>(declCtx);
     }
 
+    Decl* getParentDecl(Decl* decl) const {
+        return dyn_cast_or_null<Decl>(decl->getLexicalDeclContext());
+    }
+
     std::string toString(SourceLocation loc) const {
         //return loc.printToString(sourceManager);
         std::string fileName = sourceManager.getFilename(loc).str();
@@ -309,6 +313,12 @@ public:
     bool VisitCXXTemporaryObjectExpr(CXXTemporaryObjectExpr* tempExpr) {
         if (TypeSourceInfo* tsi = tempExpr->getTypeSourceInfo())
             insertReferenceToType(getParentDecl(tempExpr), tsi->getType());
+        return true;
+    }
+
+    bool VisitTemplateTypeParmDecl(TemplateTypeParmDecl* paramDecl) {
+        if (paramDecl->hasDefaultArgument())
+            insertReferenceToType(getParentDecl(paramDecl), paramDecl->getDefaultArgument());
         return true;
     }
 

@@ -99,6 +99,13 @@ void noopFunc(T t) {}
 template<typename T>
 void forwaredDeclared();
 
+class DefaultTypeParam {};
+
+template<typename T=DefaultTypeParam>
+class WithDefaultTypeParam
+{
+};
+
 int main() {
     f2();
     //f3<int>();
@@ -125,6 +132,7 @@ int main() {
         f3<char>();
     }
     forwaredDeclared<int>();
+    WithDefaultTypeParam<int> w;
 }
 
 template<typename T>
