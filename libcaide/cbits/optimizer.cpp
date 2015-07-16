@@ -661,12 +661,6 @@ public:
      */
 
     bool needToRemoveFunction(FunctionDecl* functionDecl) const {
-        if (CXXDestructorDecl* destructor = dyn_cast<CXXDestructorDecl>(functionDecl)) {
-            // Destructor should be removed iff the class is unused
-            CXXRecordDecl* classDecl = destructor->getParent();
-            return classDecl && !usageInfo.isUsed(classDecl->getCanonicalDecl());
-        }
-
         FunctionDecl* canonicalDecl = functionDecl->getCanonicalDecl();
         const bool funcIsUnused = !usageInfo.isUsed(canonicalDecl);
         const bool thisIsRedeclaration = !functionDecl->doesThisDeclarationHaveABody()
@@ -832,6 +826,13 @@ public:
             if (used.insert(decl).second) {
                 queue.insert(srcInfo.uses[decl].begin(), srcInfo.uses[decl].end());
                 usageInfo.addIfInMainFile(decl);
+
+                if (CXXRecordDecl* record = dyn_cast<CXXRecordDecl>(decl)) {
+                    // No implicit calls to destructors in AST; assume that
+                    // if a class is used, its destructor is used too.
+                    if (CXXDestructorDecl* destructor = record->getDestructor())
+                        queue.insert(destructor);
+                }
             }
         }
 

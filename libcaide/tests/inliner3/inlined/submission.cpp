@@ -119,6 +119,13 @@ struct E{};
 template<typename T, typename M = E<T> >
 struct F {};
 
+struct G {
+    void used() {}
+    ~G() {
+        used();
+    }
+};
+
 int main() {
     f2();
     //f3<int>();
@@ -149,6 +156,7 @@ int main() {
         WithDefaultTypeParam<int> w;
         usedFunc1<int>();
         F<int, int> f;
+        G g;
     }
 }
 
