@@ -198,6 +198,9 @@ struct F {};
 
 struct G {
     void used() {}
+    G() = default;
+    G(const G&) = default;
+    G& operator=(const G&) = delete;
     ~G() {
         used();
     }

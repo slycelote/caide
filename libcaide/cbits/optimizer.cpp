@@ -661,6 +661,8 @@ public:
      */
 
     bool needToRemoveFunction(FunctionDecl* functionDecl) const {
+        if (functionDecl->isExplicitlyDefaulted() || functionDecl->isDeleted())
+            return false;
         FunctionDecl* canonicalDecl = functionDecl->getCanonicalDecl();
         const bool funcIsUnused = !usageInfo.isUsed(canonicalDecl);
         const bool thisIsRedeclaration = !functionDecl->doesThisDeclarationHaveABody()
