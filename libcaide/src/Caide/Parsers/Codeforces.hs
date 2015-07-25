@@ -6,6 +6,7 @@ module Caide.Parsers.Codeforces(
 import Data.Array ((!))
 import qualified Data.Text as T
 
+import Filesystem.Path.CurrentOS (fromText)
 import Network.URI (parseURI, uriAuthority, uriRegName)
 
 import Text.HTML.TagSoup (fromTagText, innerText,
@@ -61,7 +62,21 @@ doParse tags =
                    else "cfproblem"
     probId = T.snoc probIdPrefix (T.head title)
 
-    probType = Stream StdIn StdOut
+    inputFileDiv = dropWhile (~~/== "<div class=input-file") statement
+    inputFileName = innerText . takeWhile (~~/== "</div>") . drop 1 . dropWhile (~~/== "</div>" ) $ inputFileDiv
+
+    outputFileDiv = dropWhile (~~/== "<div class=output-file") statement
+    outputFileName = innerText . takeWhile (~~/== "</div>") . drop 1 . dropWhile (~~/== "</div>" ) $ outputFileDiv
+
+    inputSource = if T.toLower inputFileName `elem` ["standard output", "стандартный ввод"]
+                     then StdIn
+                     else FileInput $ fromText inputFileName
+
+    outputTarget = if T.toLower outputFileName `elem` ["standard output", "стандартный вывод"]
+                      then StdOut
+                      else FileOutput $ fromText outputFileName
+
+    probType = Stream inputSource outputTarget
 
 contestUrlRegex :: Regex
 contestUrlRegex = makeRegex (".*/([[:digit:]]+)$" :: String)
