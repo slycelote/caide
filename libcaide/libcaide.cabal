@@ -45,16 +45,14 @@ executable caide
                    mtl >= 2.2.1,
                    network >= 2.6,
                    network-uri >= 2.6,
-                   old-locale,
                    optparse-applicative,
+                   parsec,
                    process,
-                   regex-base,
-                   regex-tdfa-text,
                    system-fileio >= 0.3.16,
                    system-filepath,
                    tagsoup >= 0.13,
                    text >= 1.1.0,
-                   time < 1.5,
+                   time >= 1.5.0.1,
                    xml,
                    zip-archive
   other-extensions: CPP

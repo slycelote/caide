@@ -10,13 +10,12 @@ import Control.Monad.State (liftIO)
 import Data.List (sort)
 import Data.Maybe (mapMaybe)
 import qualified Data.Text as T
-import Data.Time (getZonedTime, formatTime)
+import Data.Time (defaultTimeLocale, getZonedTime, formatTime)
 import Filesystem (isDirectory, createTree, removeTree, listDirectory, isFile)
 import Filesystem.Path.CurrentOS ((</>), fromText, decodeString, basename, FilePath)
 import Filesystem.Util (copyTreeToDir, copyFileToDir, listDir, pathToText)
 
 import System.IO.Error (catchIOError, ioeGetErrorString, isPermissionError)
-import System.Locale (defaultTimeLocale)
 
 import Caide.Commands.Checkout (checkoutProblem)
 import Caide.Configuration (getActiveProblem, getFeatures)

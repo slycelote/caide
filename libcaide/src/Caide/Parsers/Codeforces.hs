@@ -3,7 +3,7 @@ module Caide.Parsers.Codeforces(
       codeforcesParser
 ) where
 
-import Data.Array ((!))
+import Data.Either (rights)
 import qualified Data.Text as T
 
 import Filesystem.Path.CurrentOS (fromText)
@@ -13,8 +13,8 @@ import Text.HTML.TagSoup (fromTagText, innerText,
                           parseTags, sections, fromAttrib, Tag)
 import Text.HTML.TagSoup.Utils
 
-import Text.Regex.TDFA.Text (Regex)
-import Text.Regex.Base.RegexLike (makeRegex, matchAllText)
+import Text.Parsec
+import Text.Parsec.Text (Parser)
 
 import Caide.Parsers.Common (replaceBr)
 import Caide.Types
@@ -54,8 +54,7 @@ doParse tags =
     rtable = takeWhile (~/= "</table>") . dropWhile (~~/== "<table class=rtable>") $ sidebar
     anchors = sections (~== "<a>") rtable
     links = map (fromAttrib "href" . head) anchors
-    allMatches = concatMap (matchAllText contestUrlRegex) links
-    contestIds = map (fst . (!1)) allMatches
+    contestIds = rights . map (parse contestUrlLink "link") $ links
 
     probIdPrefix = if length contestIds == 1
                    then T.append "cf" (head contestIds)
@@ -78,6 +77,10 @@ doParse tags =
 
     probType = Stream inputSource outputTarget
 
-contestUrlRegex :: Regex
-contestUrlRegex = makeRegex (".*/([[:digit:]]+)$" :: String)
+contestUrlLink :: Parser T.Text
+contestUrlLink = do
+    _ <- string "/contest/"
+    contId <- many1 digit
+    eof
+    return $ T.pack contId
 

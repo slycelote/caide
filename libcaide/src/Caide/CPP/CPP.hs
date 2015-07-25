@@ -6,6 +6,7 @@ module Caide.CPP.CPP(
 import Control.Applicative ((<$>))
 import Control.Monad.State (liftIO)
 import Data.Char (isSpace)
+import Data.Either (isRight)
 import Data.List (groupBy)
 import qualified Data.Text as T
 
@@ -14,10 +15,10 @@ import Filesystem (copyFile, isDirectory)
 import Filesystem.Path.CurrentOS (fromText)
 import Filesystem.Path ((</>), FilePath, hasExtension)
 
-import Text.Regex.TDFA.Text (Regex)
-import Text.Regex.Base.RegexLike (makeRegex, match)
-
 import qualified Filesystem.Path.CurrentOS as F
+
+import Text.Parsec
+import Text.Parsec.Text (Parser)
 
 import Filesystem.Util (listDir, writeTextFile)
 
@@ -124,12 +125,20 @@ removePragmaOnceFromFile inputPath outputPath = do
     contents <- readTextFile' inputPath
     liftIO $ writeTextFile outputPath $ removePragmaOnce contents
 
-pragmaOnceRegex :: Regex
-pragmaOnceRegex = makeRegex ("^[[:space:]]*#[[:space:]]*pragma[[:space:]]+once[[:space:]]*$" :: T.Text)
+pragmaOnceLine :: Parser ()
+pragmaOnceLine = do
+    skipMany space
+    _ <- char '#'
+    skipMany space
+    _ <- string "pragma"
+    skipMany1 space
+    _ <- string "once"
+    skipMany space
+    eof
 
 removePragmaOnce :: T.Text -> T.Text
 removePragmaOnce = T.unlines . filter (not . isPragmaOnce) . T.lines
-    where isPragmaOnce = match pragmaOnceRegex
+    where isPragmaOnce = isRight . parse pragmaOnceLine "line_of_code"
 
 removeEmptyLines :: Int -> T.Text -> T.Text
 removeEmptyLines maxConsequentEmptyLines =
