@@ -68,7 +68,7 @@ doParse tags =
     outputFileDiv = dropWhile (~~/== "<div class=output-file") statement
     outputFileName = innerText . takeWhile (~~/== "</div>") . drop 1 . dropWhile (~~/== "</div>" ) $ outputFileDiv
 
-    inputSource = if T.toLower inputFileName `elem` ["standard output", "стандартный ввод"]
+    inputSource = if T.toLower inputFileName `elem` ["standard input", "стандартный ввод"]
                      then StdIn
                      else FileInput $ fromText inputFileName
 

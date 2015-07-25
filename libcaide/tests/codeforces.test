@@ -4,5 +4,5 @@
 "$caide" problem 'http://codeforces.com/problemset/problem/120/A'
 "$caide" problem 'http://codeforces.com/problemset/problem/120/B?locale=ru'
 
-compare_with parsed cf{452,522}A/case{1..3}.{in,out} cf{522A,120A,120B}/problem.ini
+compare_with parsed cf{452,522}A/case{1..3}.{in,out} cf*/problem.ini
 
