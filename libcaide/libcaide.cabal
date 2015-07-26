@@ -12,6 +12,11 @@ license:        BSD3
 description:
     Automates certain common tasks that you do during programming competitions:
     parsing, running and debugging problem tests, inlining library code.
+tested-with:    GHC == 7.8.4, GHC == 7.10.1
+
+source-repository head
+  type:         git
+  location:     https://github.com/slycelote/caide
 
 Flag cppinliner
   description: Include support for inlining C++ code via libclang
@@ -30,10 +35,22 @@ Flag preferlibstdcpp
   default: False
 
 executable caide
+  -- Due to a cabal bug, linking custom Setup.hs fails when local version
+  -- of unix package doesn't match ghc version. Older unix version in GHC 7.8
+  -- forces us to use an older version of time package.
+  if impl(ghc < 7.10)
+    build-depends:
+                   base >= 4.7 && < 4.8,
+                   old-locale,
+                   time < 1.5
+  else
+    build-depends:
+                   base >= 4.8 && < 6,
+                   time >= 1.5.0.1
+
   build-depends:
                    array,
                    async >= 2.0.1,
-                   base >= 4.7 && < 6,
                    bytestring,
                    ConfigFile,
                    containers >= 0.5.0.0,
@@ -52,7 +69,6 @@ executable caide
                    system-filepath,
                    tagsoup >= 0.13,
                    text >= 1.1.0,
-                   time >= 1.5.0.1,
                    xml,
                    zip-archive
   other-extensions: CPP

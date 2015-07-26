@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, CPP #-}
 module Caide.Commands.Archive(
       archiveProblem
 ) where
@@ -10,7 +10,14 @@ import Control.Monad.State (liftIO)
 import Data.List (sort)
 import Data.Maybe (mapMaybe)
 import qualified Data.Text as T
-import Data.Time (defaultTimeLocale, getZonedTime, formatTime)
+
+import Data.Time (getZonedTime, formatTime)
+#if MIN_VERSION_time(1,5,0)
+import Data.Time (defaultTimeLocale)
+#else
+import System.Locale (defaultTimeLocale)
+#endif
+
 import Filesystem (isDirectory, createTree, removeTree, listDirectory, isFile)
 import Filesystem.Path.CurrentOS ((</>), fromText, decodeString, basename, FilePath)
 import Filesystem.Util (copyTreeToDir, copyFileToDir, listDir, pathToText)
