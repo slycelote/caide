@@ -3,41 +3,58 @@ module Network.HTTP.Util(
       downloadDocument
 ) where
 
+import Control.Exception (catch)
+import Data.ByteString.Lazy (toStrict)
 import Data.Maybe (isNothing)
 import qualified Data.Text as T
-import Network.Browser (browse, request, setAllowRedirects, setMaxErrorRetries, setOutHandler)
-import Network.HTTP (mkRequest, RequestMethod(GET), rspBody, rspCode, rspReason)
-import Network.URI (parseURI, uriScheme, URI)
+import Network.HTTP.Client (HttpException(..), httpLbs, newManager, parseUrl,
+                            responseStatus, responseBody, responseTimeout, Request)
+import Network.HTTP.Client.TLS (tlsManagerSettings)
+import Network.HTTP.Types.Status (ok200, statusMessage)
 import System.IO.Error (catchIOError, ioeGetErrorString)
 
-import Data.Text.Encoding.Util (tryDecodeUtf8)
+import Data.Text.Encoding.Util (safeDecodeUtf8, tryDecodeUtf8)
 
 {- | Download an HTML document. Return (Left errorMessage) in case of an error,
      (Right doc) in case of success.
 -}
 downloadDocument :: T.Text -> IO (Either T.Text T.Text)
 downloadDocument url
-    | isNothing maybeUri        = mkLiftedError "URL not supported"
-    | "http:" == uriScheme uri  = result
-    | otherwise                 = mkLiftedError "URL not supported"
+    | isNothing mbRequest       = mkLiftedError "URL not supported"
+    | otherwise                 = result
   where
-    maybeUri = parseURI $ T.unpack url
-    Just uri = maybeUri
+    mbRequest = parseUrl $ T.unpack url
+    Just request = mbRequest
+    request' = request { responseTimeout = Just 15 }
     mkLiftedError = return . Left
     errorHandler = mkLiftedError . T.pack . ioeGetErrorString
-    result = httpDownloader uri `catchIOError` errorHandler
+    result = httpDownloader request' `catchIOError` errorHandler `catch` statusExceptionHandler
 
+describeHttpException :: HttpException -> T.Text
+describeHttpException (StatusCodeException status _ _) =
+    safeDecodeUtf8 . statusMessage $ status
+describeHttpException (InvalidUrlException a b) = T.pack $ a ++ b
+describeHttpException (TooManyRedirects _) = "Too many redirects"
+describeHttpException (UnparseableRedirect _) = "Unparseable redirect"
+describeHttpException (HttpParserException s) = T.pack s
+describeHttpException (FailedConnectionException s _) = T.pack s
+describeHttpException (FailedConnectionException2 s _ _ _) = T.pack s
+describeHttpException (InvalidStatusLine bs) = safeDecodeUtf8 bs
+describeHttpException (InvalidHeader bs) = safeDecodeUtf8 bs
+describeHttpException (ProxyConnectException bs _ _) = safeDecodeUtf8 bs
+describeHttpException (InvalidDestinationHost bs) = safeDecodeUtf8 bs
 
-httpDownloader :: URI -> IO (Either T.Text T.Text)
-httpDownloader uri = do
-    (_, rsp) <- browse $ do
-        -- setErrHandler $ const $ return ()
-        setOutHandler $ const $ return ()
-        setAllowRedirects True
-        setMaxErrorRetries $ Just 5
-        request $ mkRequest GET uri
-    let getResponseCode (a,b,c) = 100*a + 10*b + c
-    return $ case getResponseCode (rspCode rsp) of
-        200 -> tryDecodeUtf8 $ rspBody rsp
-        err -> Left .  T.pack $ show err ++ " " ++ rspReason rsp
+describeHttpException e = T.pack . show $ e
+
+statusExceptionHandler :: HttpException -> IO (Either T.Text T.Text)
+statusExceptionHandler = return . Left . describeHttpException
+
+httpDownloader :: Request -> IO (Either T.Text T.Text)
+httpDownloader request = do
+    manager <- newManager tlsManagerSettings
+    response <- httpLbs request manager
+    let status = responseStatus response
+    return $ if status == ok200
+       then tryDecodeUtf8 . toStrict . responseBody $ response
+       else Left . safeDecodeUtf8 . statusMessage $ status
 

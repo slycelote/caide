@@ -2,6 +2,7 @@
 module Data.Text.Encoding.Util(
       describeUnicodeException
     , tryDecodeUtf8
+    , safeDecodeUtf8
     , universalNewlineConversionOnInput
     , universalNewlineConversionOnOutput
 ) where
@@ -19,6 +20,12 @@ describeUnicodeException (EncodeError s _) = T.pack s
 
 tryDecodeUtf8 :: ByteString -> Either T.Text T.Text
 tryDecodeUtf8 = either (Left . describeUnicodeException) Right . decodeUtf8'
+
+-- | If the ByteString is not a valid UTF8, its Show instance is used
+safeDecodeUtf8 :: ByteString -> T.Text
+safeDecodeUtf8 s = case tryDecodeUtf8 s of
+    Left _ -> T.pack $ show s
+    Right t -> t
 
 
 nativeCallsForConversion :: Bool
