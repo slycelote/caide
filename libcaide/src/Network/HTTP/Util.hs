@@ -25,7 +25,7 @@ downloadDocument url
   where
     mbRequest = parseUrl $ T.unpack url
     Just request = mbRequest
-    request' = request { responseTimeout = Just 15 }
+    request' = request { responseTimeout = Just (15*1000*1000) } -- 15 seconds
     mkLiftedError = return . Left
     errorHandler = mkLiftedError . T.pack . ioeGetErrorString
     result = httpDownloader request' `catchIOError` errorHandler `catch` statusExceptionHandler
