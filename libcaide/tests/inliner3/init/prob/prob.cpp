@@ -206,6 +206,25 @@ struct G {
     }
 };
 
+template<typename T>
+struct H {
+    template<typename U>
+    using UsedAlias = int;
+
+    template<typename U>
+    using UnusedAlias = int;
+};
+
+template<typename T>
+struct UsedThroughAlias {
+};
+
+template<typename T>
+using StructAlias = UsedThroughAlias<T>;
+
+template<typename T>
+using UnusedStructAlias = UsedThroughAlias<T>;
+
 int main() {
     f2();
     //f3<int>();
@@ -237,6 +256,8 @@ int main() {
         usedFunc1<int>();
         F<int, int> f;
         G g;
+        H<double>::UsedAlias<int> i;
+        StructAlias<int> sa;
     }
 }
 

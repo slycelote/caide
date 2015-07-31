@@ -377,9 +377,21 @@ public:
         return true;
     }
 
-    bool VisitTypedefDecl(TypedefDecl* typedefDecl) {
+    bool VisitTypedefNameDecl(TypedefNameDecl* typedefDecl) {
         dbg(CAIDE_FUNC);
         insertReferenceToType(typedefDecl, typedefDecl->getUnderlyingType());
+        return true;
+    }
+
+    bool VisitTypeAliasDecl(TypeAliasDecl* aliasDecl) {
+        dbg(CAIDE_FUNC);
+        insertReference(aliasDecl, aliasDecl->getDescribedAliasTemplate());
+        return true;
+    }
+
+    bool VisitTypeAliasTemplateDecl(TypeAliasTemplateDecl* aliasTemplateDecl) {
+        dbg(CAIDE_FUNC);
+        insertReference(aliasTemplateDecl, aliasTemplateDecl->getInstantiatedFromMemberTemplate());
         return true;
     }
 
@@ -750,6 +762,12 @@ public:
         if (!usageInfo.isUsed(canonicalDecl))
             removeDecl(typedefDecl);
 
+        return true;
+    }
+
+    bool VisitTypeAliasTemplateDecl(TypeAliasTemplateDecl* aliasDecl) {
+        if (!usageInfo.isUsed(aliasDecl))
+            removeDecl(aliasDecl);
         return true;
     }
 
