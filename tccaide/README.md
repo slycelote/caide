@@ -11,7 +11,8 @@ for a command line tool or
 [VsCaide](https://github.com/slycelote/caide/tree/release/vscaide/README.md)
 for a Visual Studio Extension.
 
-2. Download tccaide.jar file from releases page.
+2. Download tccaide.jar file from
+   [releases page](https://github.com/slycelote/caide/releases/).
 
 3. Log into Arena and select Options -> Editor from main menu.
 
@@ -28,7 +29,9 @@ for a Visual Studio Extension.
 # Quick start
 
 Simply open a problem in Topcoder Arena. Solution template and testing code
-will be created automatically.
+will be created automatically. Don't forget to hit 'Compile' button in Arena
+before submitting!
+
 
 # Configuration
 

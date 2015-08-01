@@ -32,16 +32,24 @@ All of the following is done in MSYS shell, from libcaide directory.
     > cabal configure
     > cabal build
 Resulting executable: dist\build\caide\caide.exe
+The first build will be quite long; later rebuilds take much less time.
+13. Optionally: reduce executable size
+    > strip dist/build/caide/caide.exe
 
 
 == Linux build
-1. You need python 2, reasonably new g++, ghc 7.8 and latest cabal. To run
-tests, you will also need mono. In Debian, install packages mono-gmcs and
-binfmt-support.
+1. Prerequisites:
+  * python 2
+  * reasonably new g++
+  * ghc >= 7.8. Latest ghc can be downloaded here: https://www.haskell.org/ghc/download.
+  * latest cabal. Can be downloaded here: https://www.haskell.org/cabal/download.html.
+  * zlib and gmp development packages. (In Debian: apt-get install zlib1g-dev libgmp10-dev.)
+
+To run tests, you will also need mono. In Debian: apt-get install mono-gmcs binfmt-support.
 
 2. Clone source code repository and submodules:
     > git clone https://github.com/slycelote/caide
-    > cd caide
+    > cd caide/libcaide
     > git submodule init
     > git submodule update
 
@@ -54,5 +62,7 @@ binfmt-support.
 6. Build:
     > cabal configure
     > cabal build
-Resulting executable: dist\build\caide\caide
-
+Resulting executable: dist/build/caide/caide
+The first build will be quite long; later rebuilds take much less time.
+7. Optionally: reduce executable size
+    > strip dist/build/caide/caide
