@@ -30,7 +30,7 @@ createProblem :: URL -> T.Text -> Maybe T.Text -> CaideIO ()
 createProblem url problemTypeStr maybeLangStr = do
     case findProblemParser url of
         Just parser -> parseExistingProblem url parser
-        Nothing     -> case optionFromString (T.unpack problemTypeStr) of
+        Nothing     -> case optionFromText problemTypeStr of
             Nothing    -> throw . T.concat $ ["Incorrect problem type: ", problemTypeStr]
             Just pType -> createNewProblem url pType
     case maybeLangStr of

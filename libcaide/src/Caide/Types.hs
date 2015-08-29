@@ -1,6 +1,4 @@
-{-# LANGUAGE Rank2Types, GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings #-}
 
 module Caide.Types(
       Problem (..)
@@ -50,9 +48,10 @@ import Control.Monad.Except (ExceptT, MonadError, runExceptT, throwError)
 import Control.Monad.State (StateT, MonadState, runStateT, gets, modify')
 import Control.Monad.Trans (MonadIO, liftIO)
 import Data.Char (toLower)
-import Data.List (isPrefixOf)
+import Data.List (intercalate)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import Data.Maybe (catMaybes, isNothing)
 import Data.Text (Text, pack, unpack)
 import qualified Data.Text as T
 import qualified Data.ConfigFile as C
@@ -129,7 +128,14 @@ data ProgrammingLanguage = ProgrammingLanguage
 
 class Option a where
     optionToString :: a -> String
+    optionToText   :: a -> Text
     optionFromString :: String -> Maybe a
+    optionFromText   :: Text -> Maybe a
+
+    optionToString = unpack . optionToText
+    optionToText   = pack . optionToString
+    optionFromString = optionFromText . pack
+    optionFromText   = optionFromString . unpack
 
 newtype Monad m => CaideM m a = CaideM { unCaideM :: StateT CaideState (ExceptT C.CPError m) a }
     deriving (Functor, Applicative, Monad, MonadIO, MonadError C.CPError, MonadState CaideState)
@@ -276,8 +282,8 @@ instance Option Bool where
       where s' = map toLower s
 
 instance Option Text where
-    optionToString = unpack
-    optionFromString = Just . pack
+    optionToText = id
+    optionFromText = Just
 
 instance Option Int where
     optionToString = show
@@ -287,9 +293,12 @@ instance Option Double where
     optionToString = show
     optionFromString = readMaybe
 
-instance Option [Text] where
-    optionToString = unpack . T.intercalate ","
-    optionFromString = Just . map T.strip . T.splitOn "," . pack
+instance Option a => Option [a] where
+    optionToString = intercalate "," . map optionToString
+    optionFromText text = if any isNothing list
+                        then Nothing
+                        else Just . catMaybes $ list
+      where list = map (optionFromText . T.strip) . T.splitOn "," $ text
 
 instance Option TopcoderType where
     optionToString TCInt    = "int"
@@ -309,7 +318,7 @@ instance Option TopcoderValue where
     optionToString p = concat [
         unpack (tcValueName p), ":", replicate (tcValueDimension p) 'v', optionToString (tcValueType p)]
 
-    optionFromString s = case T.splitOn ":" (pack s) of
+    optionFromText s = case T.splitOn ":" s of
         [paramName, paramType] -> case maybeBaseType of
             Just baseType -> Just TopcoderValue
                 { tcValueName = paramName
@@ -319,18 +328,18 @@ instance Option TopcoderValue where
             Nothing       -> Nothing
           where
             dim = T.length . T.takeWhile (=='v') $ paramType
-            maybeBaseType = optionFromString . unpack . T.dropWhile (=='v') $ paramType
+            maybeBaseType = optionFromText . T.dropWhile (=='v') $ paramType
         _ -> Nothing
 
 -- topcoder,class,method:retType,param1:type1,param2:type2
 instance Option ProblemType where
     optionToString (Topcoder desc) =
         optionToString ("topcoder" : tcClassName desc :
-                        map (pack . optionToString) (tcMethod desc : tcMethodParameters desc))
+                        map optionToText (tcMethod desc : tcMethodParameters desc))
     optionToString (Stream input output) = concat [
         "file,", inputSourceToString input, ",", outputTargetToString output]
 
-    optionFromString s | "topcoder," `isPrefixOf` s = case maybeParams of
+    optionFromText s | "topcoder," `T.isPrefixOf` s = case maybeParams of
         Just (method:params) -> Just $ Topcoder TopcoderProblemDescriptor
             { tcClassName = className
             , tcMethod = method
@@ -338,13 +347,13 @@ instance Option ProblemType where
             }
         _ -> Nothing
       where
-        components = T.splitOn "," . pack $ s
+        components = T.splitOn "," s
         _:className:paramsStr = components
         maybeParams = if length components >= 3
-            then mapM (optionFromString . unpack) paramsStr
+            then mapM optionFromText paramsStr
             else Nothing
 
-    optionFromString s = case optionFromString s of
+    optionFromText s = case optionFromText s of
         Just [probType, inputSource, outputSource]
             | probType == "file" -> Just $ Stream (parseInput inputSource) (parseOutput outputSource)
         _ -> Nothing
