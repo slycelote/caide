@@ -158,18 +158,18 @@ addSection section conf = add_section conf section
 setValue :: SectionSpec -> OptionSpec -> String -> ConfigParser -> Either CPError ConfigParser
 setValue section key value conf = set conf section key value
 
-defaultCaideConf :: FilePath -> Bool -> ConfigParser
-defaultCaideConf root useSystemHeaders = forceEither $
+defaultCaideConf :: FilePath -> Bool -> Int -> ConfigParser
+defaultCaideConf root useSystemHeaders mscver = forceEither $
     addSection "core" emptyCP >>=
     setValue "core" "language" "cpp" >>=
     setValue "core" "features" "" >>=
     addSection "cpp" >>=
     setValue "cpp" "keep_macros" "ONLINE_JUDGE" >>=
     setValue "cpp" "max_consequent_empty_lines" "2" >>=
-    setValue "cpp" "clang_options" (intercalate ",\n  " $ clangOptions root useSystemHeaders)
+    setValue "cpp" "clang_options" (intercalate ",\n  " $ clangOptions root useSystemHeaders mscver)
 
-clangOptions :: FilePath -> Bool -> [String]
-clangOptions root False = [
+clangOptions :: FilePath -> Bool -> Int -> [String]
+clangOptions root False _ = [
     "-target",
     "i386-pc-mingw32",
     "-nostdinc",
@@ -189,17 +189,25 @@ clangOptions root False = [
     ]
 
 -- Windows with VS headers
-clangOptions root True | "mingw" `isPrefixOf` os = [
-    "-target",
-    "i386-pc-windows-msvc",
-    "-fdiagnostics-format=msvc",
-    "-D_CRT_SECURE_NO_WARNINGS",
-    "-I",
-    encodeString $ root </> "cpplib"
+clangOptions root True mscver | "mingw" `isPrefixOf` os =
+    [ "-target"
+    , "i386-pc-windows-msvc"
+    , "-fdiagnostics-format=msvc"
+    , "-fmsc-version=" ++ show mscver
+    ] ++ (
+    if mscver >= 1900
+       then [ "-isystem"
+            , "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.10150.0\\ucrt"
+            ]
+       else []
+    ) ++
+    [ "-D_CRT_SECURE_NO_WARNINGS"
+    , "-I"
+    , encodeString $ root </> "cpplib"
     ]
 
 -- Linux with system headers
-clangOptions root True = [
+clangOptions root True _ = [
     "-target",
     arch ++ "-" ++ os,
     -- clang headers such as xmmintrin.h are still required

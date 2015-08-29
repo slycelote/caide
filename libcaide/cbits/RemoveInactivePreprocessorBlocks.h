@@ -24,13 +24,13 @@ public:
     ~RemoveInactivePreprocessorBlocks();
 
     void MacroDefined(const clang::Token& MacroNameTok, const clang::MacroDirective* MD) override;
-    void MacroUndefined(const clang::Token& MacroNameTok, const clang::MacroDirective* MD) override;
-    void MacroExpands(const clang::Token& /*MacroNameTok*/, const clang::MacroDirective* MD,
+    void MacroUndefined(const clang::Token& MacroNameTok, const clang::MacroDefinition& MD) override;
+    void MacroExpands(const clang::Token& /*MacroNameTok*/, const clang::MacroDefinition& MD,
                       clang::SourceRange Range, const clang::MacroArgs* /*Args*/) override;
 
     void If(clang::SourceLocation Loc, clang::SourceRange ConditionRange, ConditionValueKind ConditionValue) override;
-    void Ifdef(clang::SourceLocation Loc, const clang::Token& MacroNameTok, const clang::MacroDirective* /*MD*/) override;
-    void Ifndef(clang::SourceLocation Loc, const clang::Token& MacroNameTok, const clang::MacroDirective* /*MD*/) override;
+    void Ifdef(clang::SourceLocation Loc, const clang::Token& MacroNameTok, const clang::MacroDefinition& /*MD*/) override;
+    void Ifndef(clang::SourceLocation Loc, const clang::Token& MacroNameTok, const clang::MacroDefinition& /*MD*/) override;
     void Elif(clang::SourceLocation Loc, clang::SourceRange ConditionRange, ConditionValueKind ConditionValue, clang::SourceLocation /*IfLoc*/ ) override;
     void Else(clang::SourceLocation Loc, clang::SourceLocation /*IfLoc*/) override;
     void Endif(clang::SourceLocation Loc, clang::SourceLocation /*IfLoc*/) override;

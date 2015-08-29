@@ -110,16 +110,10 @@ libClangConfHook (pkg, pbi) flags = do
                            ] ++
                            ["CXXFLAGS=-D_GLIBCXX_HAVE_FENV_H=1 -D_WINVER=0x0502 -D_WIN32_WINNT=0x0502" | buildOS == Windows] ++
 
-
-                           {-
-                           -- mingw can't handle files this large
                            if debug
-                             then ["--disable-optimized"]
-                             else ["--enable-optimized" , "--with-optimize-option=-O2"]
-                             -}
-                           if debug
-                              then ["--enable-debug-symbols", "--enable-debug-runtime"]
-                              else []
+                              then ["--enable-optimized", "--with-optimize-option=-Os",
+                                    "--enable-debug-symbols", "--enable-debug-runtime"]
+                              else ["--enable-optimized" , "--with-optimize-option=-O2"]
 
 
           handleNoWindowsSH action
@@ -177,7 +171,7 @@ zipResources curDir verbosity llvmPrefixDir = do
         case llvmPrefixDir of
             Nothing -> B.writeFile initFile $ fromArchive archive
             Just dir -> do
-                archive' <- addFilesToZipFile archive $ dir </> "lib" </> "clang" </> "3.6.0"
+                archive' <- addFilesToZipFile archive $ dir </> "lib" </> "clang" </> "3.7.0"
                 B.writeFile initFile $ fromArchive archive'
 
 
@@ -200,6 +194,7 @@ libClangBuildHook pkg lbi usrHooks flags = do
               LibCPP    -> "c++"
             clangSubDir = if debug then "clangbuilddebug" else "clangbuild"
             llvmBuildDir  = curDir </> "cbits" </> clangSubDir
+            llvmSrcDir    = curDir </> "cbits" </> "llvm"
             llvmPrefixDir = llvmBuildDir </> "out"
             llvmLibDir = llvmPrefixDir </> "lib"
 
@@ -221,43 +216,50 @@ libClangBuildHook pkg lbi usrHooks flags = do
                            "clangAST",
                            "clangLex",
                            "clangBasic",
-                           "LLVMInstrumentation",
-                           "LLVMIRReader",
-                           "LLVMAsmParser",
-                           "LLVMDebugInfo",
-                           "LLVMOption",
                            "LLVMLTO",
+                           "LLVMObjCARCOpts",
                            "LLVMLinker",
+                           "LLVMBitWriter",
+                           "LLVMIRReader",
+                           "LLVMMIRParser",
+                           "LLVMAsmParser",
+                           "LLVMLibDriver",
+                           "LLVMOption",
+                           "LLVMDebugInfoPDB",
+                           "LLVMTableGen",
+                           "LLVMOrcJIT",
+                           "LLVMPasses",
                            "LLVMipo",
                            "LLVMVectorize",
-                           "LLVMBitWriter",
-                           "LLVMBitReader",
-                           "LLVMTableGen",
                            "LLVMX86Disassembler",
                            "LLVMX86AsmParser",
                            "LLVMX86CodeGen",
                            "LLVMSelectionDAG",
                            "LLVMAsmPrinter",
                            "LLVMX86Desc",
+                           "LLVMMCDisassembler",
                            "LLVMX86Info",
                            "LLVMX86AsmPrinter",
                            "LLVMX86Utils",
-                           "LLVMMCDisassembler",
-                           "LLVMMCParser",
-                           "LLVMInterpreter",
                            "LLVMMCJIT",
+                           "LLVMDebugInfoDWARF",
+                           "LLVMLineEditor",
+                           "LLVMInterpreter",
+                           "LLVMExecutionEngine",
+                           "LLVMRuntimeDyld",
                            "LLVMCodeGen",
-                           "LLVMObjCARCOpts",
+                           "LLVMTarget",
                            "LLVMScalarOpts",
+                           "LLVMProfileData",
+                           "LLVMObject",
+                           "LLVMMCParser",
+                           "LLVMBitReader",
                            "LLVMInstCombine",
+                           "LLVMInstrumentation",
                            "LLVMTransformUtils",
                            "LLVMipa",
-                           "LLVMAnalysis",
-                           "LLVMRuntimeDyld",
-                           "LLVMExecutionEngine",
-                           "LLVMTarget",
                            "LLVMMC",
-                           "LLVMObject",
+                           "LLVMAnalysis",
                            "LLVMCore",
                            "LLVMSupport"] ++
                            ["imagehlp" | buildOS == Windows]
@@ -273,6 +275,12 @@ libClangBuildHook pkg lbi usrHooks flags = do
         libclangExists <- doesFileExist $ llvmLibDir </> "libclangTooling.a"
         unless libclangExists $ do
             notice verbosity "Building LLVM and Clang..."
+            let patchedFileName = curDir </> "cbits" </> "clang-patch" </> "DynamicLibrary.inc"
+                srcFileName = llvmSrcDir </> "lib" </> "Support" </> "Windows" </> "DynamicLibrary.inc"
+            patchedFile <- readFile patchedFileName
+            srcFile <- readFile srcFileName
+            unless (patchedFile == srcFile) $ copyFile patchedFileName srcFileName
+
 
             -- FIXME: We'd ideally like to use the -j option given to cabal-install itself.
             -- Alternatively we could use a command-specific option like
