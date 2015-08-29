@@ -259,8 +259,7 @@ libClangBuildHook pkg lbi usrHooks flags = do
                            "LLVMMC",
                            "LLVMObject",
                            "LLVMCore",
-                           "LLVMSupport",
-                           linkCPPStdLib] ++
+                           "LLVMSupport"] ++
                            ["imagehlp" | buildOS == Windows]
             }
 

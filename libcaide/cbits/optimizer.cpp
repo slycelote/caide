@@ -766,6 +766,8 @@ public:
     }
 
     bool VisitTypeAliasTemplateDecl(TypeAliasTemplateDecl* aliasDecl) {
+        if (!sourceManager.isInMainFile(aliasDecl->getLocStart()))
+            return true;
         if (!usageInfo.isUsed(aliasDecl))
             removeDecl(aliasDecl);
         return true;
