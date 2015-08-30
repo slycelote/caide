@@ -1,37 +1,28 @@
-﻿using Microsoft.VisualStudio.Shell.Interop;
-using slycelote.VsCaide.Utilities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Forms;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using System.IO;
+using System.Threading;
+
+using slycelote.VsCaide.UI;
+using slycelote.VsCaide.Utilities;
+using VsInterface;
+
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Shell.Interop;
+using EnvDTE;
 
 namespace slycelote.VsCaide
 {
-    using EnvDTE;
-    using EnvDTE80;
-    using Microsoft.VisualStudio;
-    using Microsoft.VisualStudio.Shell;
-    using Microsoft.VisualStudio.VCProjectEngine;
-    using slycelote.VsCaide.UI;
-    using System.Diagnostics;
-    using System.IO;
-    using System.Threading;
-    using MessageBox = System.Windows.Forms.MessageBox;
-
     public partial class MainToolWindowControl : System.Windows.Controls.UserControl
     {
         private MainToolWindow mainToolWindow;
         private SynchronizationContext uiCtx;
+        private IProjectManager projectManager;
 
         public MainToolWindowControl(MainToolWindow owner)
         {
@@ -43,6 +34,7 @@ namespace slycelote.VsCaide
             SkipLanguageChangedEvent = false;
             EnableAll(false);
             this.mainToolWindow = owner;
+            this.projectManager = VsVersionDispatcher.GetProjectManager();
         }
 
         private void ReloadProblemList()
@@ -208,7 +200,7 @@ namespace slycelote.VsCaide
                 };
                 fsWatcher.Changed += fsWatcher_Changed;
                 fsWatcher.EnableRaisingEvents = true;
-                AfterProjectsLoaded(() => SolutionUtilities.CreateCppLibProject());
+                AfterProjectsLoaded(() => projectManager.CreateCppLibProject());
             }
         }
 
@@ -298,11 +290,11 @@ namespace slycelote.VsCaide
                 string[] csLanguages = new[] { "c#", "csharp" };
                 if (cppLanguages.Contains(language))
                 {
-                    AfterProjectsLoaded(() => SolutionUtilities.CreateAndActivateCppProject(selectedProblem, language));
+                    AfterProjectsLoaded(() => projectManager.CreateAndActivateCppProject(selectedProblem, language));
                 }
                 else if (csLanguages.Contains(language))
                 {
-                    AfterProjectsLoaded(() => SolutionUtilities.CreateAndActivateCSharpProject(selectedProblem));
+                    AfterProjectsLoaded(() => projectManager.CreateAndActivateCSharpProject(selectedProblem));
                 }
             }
             finally

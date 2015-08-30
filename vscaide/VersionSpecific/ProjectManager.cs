@@ -1,25 +1,28 @@
-﻿using EnvDTE;
-using EnvDTE80;
-using VSLangProj;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.VCProjectEngine;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Diagnostics;
+using System.IO;
 
-namespace slycelote.VsCaide.Utilities
+using VsInterface;
+using slycelote.VsCaide.Utilities;
+
+using EnvDTE;
+using EnvDTE80;
+using VSLangProj;
+
+using Microsoft.VisualStudio.VCProjectEngine;
+
+namespace slycelote.VsCaide.VsSpecific
 {
-    public abstract class SolutionUtilities
+    /// <summary>
+    /// This is a common implementation for Vs2013 and Vs2015.
+    /// The only difference is which version of VCProjectEngine assembly the DLL references.
+    /// </summary>
+    public class ProjectManager : IProjectManager
     {
-        public static volatile bool IgnoreSolutionEvents = false;
-
-
-        public static void AddDirectoryRecursively(VCProject vcProject, string directory)
+        private static void AddDirectoryRecursively(VCProject vcProject, string directory)
         {
             var requiredDirectories = new HashSet<string>(
                 Directory.EnumerateFiles(directory, "*.h", SearchOption.AllDirectories)
@@ -61,45 +64,7 @@ namespace slycelote.VsCaide.Utilities
             processDir(vcProject, directory);
         }
 
-
-        public static Project GetProject(IVsHierarchy hierarchy)
-        {
-            object project;
-            ErrorHandler.ThrowOnFailure(
-                hierarchy.GetProperty(VSConstants.VSITEMID_ROOT, (int)__VSHPROPID.VSHPROPID_ExtObject, out project));
-            return (Project)project;
-        }
-
-        public static Project TryGetProject(IVsHierarchy hierarchy)
-        {
-            object project;
-            int hr = hierarchy.GetProperty(VSConstants.VSITEMID_ROOT, (int)__VSHPROPID.VSHPROPID_ExtObject, out project);
-            return hr == VSConstants.S_OK ? project as Project : null;
-        }
-
-        public static void SaveSolution()
-        {
-            ErrorHandler.ThrowOnFailure(
-                Services.Solution.SaveSolutionElement((uint)__VSSLNSAVEOPTIONS.SLNSAVEOPT_SaveIfDirty, null, 0));
-        }
-
-        public static string GetSolutionDir()
-        {
-            var solutionService = Services.Solution;
-            string solutionDir, unused;
-
-            ErrorHandler.ThrowOnFailure(
-                solutionService.GetSolutionInfo(out solutionDir, out unused, out unused));
-            return solutionDir;
-        }
-
-        public static bool IsCaideSolution()
-        {
-            var solutionDir = GetSolutionDir();
-            return solutionDir != null && File.Exists(Path.Combine(solutionDir, "caide.ini"));
-        }
-
-        private static Project RecreateProjectOfCorrectType(string projectName, ProjectType projectType)
+        private Project RecreateProjectOfCorrectType(string projectName, ProjectType projectType)
         {
             var dte = Services.DTE;
             var solution = dte.Solution as Solution2;
@@ -142,14 +107,14 @@ namespace slycelote.VsCaide.Utilities
                 // Remove the old project
                 if (oldProject != null)
                 {
-                    IgnoreSolutionEvents = true;
+                    SolutionUtilities.IgnoreSolutionEvents = true;
                     try
                     {
                         solution.Remove(oldProject);
                     }
                     finally
                     {
-                        IgnoreSolutionEvents = false;
+                        SolutionUtilities.IgnoreSolutionEvents = false;
                     }
                 }
 
@@ -183,7 +148,7 @@ namespace slycelote.VsCaide.Utilities
             return newProject;
         }
 
-        public static void CreateAndActivateCSharpProject(string selectedProblem)
+        public void CreateAndActivateCSharpProject(string selectedProblem)
         {
             Project project = RecreateProjectOfCorrectType(selectedProblem, CSharpProjectType);
             if (project == null)
@@ -222,7 +187,7 @@ namespace slycelote.VsCaide.Utilities
             SolutionUtilities.SaveSolution();
         }
 
-        public static void CreateAndActivateCppProject(string selectedProblem, string language)
+        public void CreateAndActivateCppProject(string selectedProblem, string language)
         {
             Project project = RecreateProjectOfCorrectType(selectedProblem, CppProjectType);
 
@@ -307,9 +272,9 @@ namespace slycelote.VsCaide.Utilities
             SolutionUtilities.SaveSolution();
         }
 
-        public static void CreateCppLibProject()
+        public void CreateCppLibProject()
         {
-            var solutionDir = GetSolutionDir();
+            var solutionDir = SolutionUtilities.GetSolutionDir();
             const string cpplib = "cpplib";
             var cppLibraryDir = Path.Combine(solutionDir, cpplib);
             if (!Directory.Exists(cppLibraryDir))
@@ -349,12 +314,12 @@ namespace slycelote.VsCaide.Utilities
             vcProject = (VCProject)project.Object;
 
             // Ensure that all files from the directory are added
-            SolutionUtilities.AddDirectoryRecursively(vcProject, cppLibraryDir);
+            AddDirectoryRecursively(vcProject, cppLibraryDir);
 
             SolutionUtilities.SaveSolution();
         }
 
-        public static void CreateSubmissionCppProject()
+        public void CreateSubmissionCppProject()
         {
             Project project = RecreateProjectOfCorrectType("submission", CppProjectType);
 
@@ -380,7 +345,7 @@ namespace slycelote.VsCaide.Utilities
             }
         }
 
-        public static void CreateSubmissionCsProject()
+        public void CreateSubmissionCsProject()
         {
             Project project = RecreateProjectOfCorrectType("submission", CSharpProjectType);
 

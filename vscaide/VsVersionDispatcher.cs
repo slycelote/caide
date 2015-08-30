@@ -1,0 +1,65 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
+
+using slycelote.VsCaide.Utilities;
+using VsInterface;
+
+namespace slycelote.VsCaide
+{
+    public class VsVersionDispatcher
+    {
+        public static IProjectManager GetProjectManager()
+        {
+            string version = Services.DTE.Version;
+            if (string.IsNullOrEmpty(version))
+            {
+                version = "2013";
+            }
+            else
+            {
+                var parts = version.Split('.');
+                if (parts.Length > 0 && parts[0] == "14")
+                {
+                    version = "2015";
+                }
+                else
+                {
+                    version = "2013";
+                }
+            }
+
+            string versionSpecificDLL = Path.Combine(Paths.PackageInstallationDir, "Vs" + version + ".dll");
+
+            Assembly assembly = Assembly.LoadFrom(versionSpecificDLL);
+            if (assembly == null)
+            {
+                throw new CaideException("Couldn't load assembly " + versionSpecificDLL);
+            }
+
+            Type pmType = assembly.GetType("slycelote.VsCaide.VsSpecific.ProjectManager");
+            if (pmType == null)
+            {
+                throw new CaideException("Couldn't find type slycelote.VsCaide.VsSpecific.ProjectManager");
+            }
+
+            ConstructorInfo constructor = pmType.GetConstructor(new Type[] { });
+            if (constructor == null)
+            {
+                throw new CaideException("Couldn't find constructor");
+            }
+
+            object obj = constructor.Invoke(new object[] { });
+            if (!(obj is IProjectManager))
+            {
+                throw new CaideException("Couldn't create a ProjectManager");
+            }
+
+            return obj as IProjectManager;
+        }
+    }
+}
