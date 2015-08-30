@@ -12,6 +12,7 @@ import Data.ByteString.Lazy (fromStrict)
 import Data.FileEmbed (embedFile)
 import qualified Data.Text as T
 import qualified Data.Text.IO.Util as T
+import System.Environment (lookupEnv)
 
 import Filesystem (createTree)
 import Filesystem.Path.CurrentOS (encodeString, (</>))
@@ -25,7 +26,14 @@ import Caide.Types
 initialize :: Bool -> CaideIO ()
 initialize useSystemCppHeaders = do
     curDir <- caideRoot
-    _ <- writeCaideConf $ defaultCaideConf curDir useSystemCppHeaders
+    mscver <- liftIO $ do
+        [vs12, vs14] <- mapM lookupEnv ["VS120COMNTOOLS", "VS140COMNTOOLS"]
+        return $ case (vs12, vs14) of
+            (_, Just _) -> 1900
+            (Just _, _) -> 1800
+            _           -> 1700
+
+    _ <- writeCaideConf $ defaultCaideConf curDir useSystemCppHeaders mscver
     _ <- writeCaideState defaultCaideState
     liftIO $ do
         unpackResources curDir

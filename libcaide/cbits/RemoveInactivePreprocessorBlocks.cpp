@@ -109,7 +109,8 @@ public:
         }
     }
 
-    void MacroUndefined(const Token& MacroNameTok, const MacroDirective* MD) {
+    void MacroUndefined(const Token& MacroNameTok, const MacroDefinition& MacroDef) {
+        const DefMacroDirective* MD = MacroDef.getLocalDirective();
         definedMacroNames.erase(getTokenName(MacroNameTok));
 
         if (!MD || !isInMainFile(MD->getLocation()))
@@ -124,9 +125,10 @@ public:
         }
     }
 
-    void MacroExpands(const Token& /*MacroNameTok*/, const MacroDirective* MD,
+    void MacroExpands(const Token& /*MacroNameTok*/, const MacroDefinition& MacroDef,
                       SourceRange Range, const MacroArgs* /*Args*/)
     {
+        const DefMacroDirective* MD = MacroDef.getLocalDirective();
         if (!MD || !isInMainFile(MD->getLocation()))
             return;
 
@@ -159,7 +161,7 @@ public:
             activeClauses.back().keepAllBranches = true;
     }
 
-    void Ifdef(SourceLocation Loc, const Token& MacroNameTok, const MacroDirective* /*MD*/) {
+    void Ifdef(SourceLocation Loc, const Token& MacroNameTok, const MacroDefinition& /*MD*/) {
         if (!isInMainFile(Loc))
             return;
         activeClauses.push_back(IfDefClause(Loc));
@@ -170,7 +172,7 @@ public:
             activeClauses.back().keepAllBranches = true;
     }
 
-    void Ifndef(SourceLocation Loc, const Token& MacroNameTok, const MacroDirective* /*MD*/) {
+    void Ifndef(SourceLocation Loc, const Token& MacroNameTok, const MacroDefinition& /*MD*/) {
         if (!isInMainFile(Loc))
             return;
         activeClauses.push_back(IfDefClause(Loc));
@@ -272,13 +274,13 @@ void RemoveInactivePreprocessorBlocks::MacroDefined(
 }
 
 void RemoveInactivePreprocessorBlocks::MacroUndefined(
-        const Token& MacroNameTok, const MacroDirective* MD)
+        const Token& MacroNameTok, const MacroDefinition& MD)
 {
     impl->MacroUndefined(MacroNameTok, MD);
 }
 
 void RemoveInactivePreprocessorBlocks::MacroExpands(
-        const Token& MacroNameTok, const MacroDirective* MD,
+        const Token& MacroNameTok, const MacroDefinition& MD,
         SourceRange Range, const MacroArgs* Args)
 {
     impl->MacroExpands(MacroNameTok, MD, Range, Args);
@@ -296,13 +298,13 @@ void RemoveInactivePreprocessorBlocks::If(
 }
 
 void RemoveInactivePreprocessorBlocks::Ifdef(
-        SourceLocation Loc, const Token& MacroNameTok, const MacroDirective* MD)
+        SourceLocation Loc, const Token& MacroNameTok, const MacroDefinition& MD)
 {
     impl->Ifdef(Loc, MacroNameTok, MD);
 }
 
 void RemoveInactivePreprocessorBlocks::Ifndef(
-        SourceLocation Loc, const Token& MacroNameTok, const MacroDirective* MD)
+        SourceLocation Loc, const Token& MacroNameTok, const MacroDefinition& MD)
 {
     impl->Ifndef(Loc, MacroNameTok, MD);
 }
