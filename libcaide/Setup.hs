@@ -279,7 +279,8 @@ libClangBuildHook pkg lbi usrHooks flags = do
                 srcFileName = llvmSrcDir </> "lib" </> "Support" </> "Windows" </> "DynamicLibrary.inc"
             patchedFile <- readFile patchedFileName
             srcFile <- readFile srcFileName
-            unless (patchedFile == srcFile) $ copyFile patchedFileName srcFileName
+            unless (patchedFile == srcFile) $
+                length srcFile `seq` copyFile patchedFileName srcFileName
 
 
             -- FIXME: We'd ideally like to use the -j option given to cabal-install itself.

@@ -10,6 +10,7 @@ import Control.Monad (unless, when)
 import Data.ByteString (ByteString)
 import Data.Maybe (isNothing)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import Data.Text.Encoding.Util (universalNewlineConversionOnInput)
 import Filesystem (isFile, createTree)
@@ -54,7 +55,7 @@ getTemplate path = do
                 case mbOriginal of
                     Left _ -> overwrite
                     Right original -> if original == current
-                        then overwrite
+                        then T.length original `seq` overwrite
                         else return current
 
 mbReadFile :: F.FilePath -> IO (Either Text Text)
