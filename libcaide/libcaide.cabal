@@ -1,5 +1,5 @@
 name:           caide
-version:        2.0.1
+version:        2.1.0
 cabal-version:  >= 1.14
 build-type:     Custom
 license:        BSD3
@@ -83,7 +83,7 @@ executable caide
   }
   if flag(debug) {
     -- run as cabal configure -fdebug --ghc-option=-debug -O0
-    ghc-options:    -fprof-auto
+    ghc-options:   -fprof-auto
   }
   if flag(cppinliner) {
     cpp-options:   -DCLANG_INLINER
