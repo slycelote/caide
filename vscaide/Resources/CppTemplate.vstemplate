@@ -1,19 +1,19 @@
 <VSTemplate Version="3.0.0" xmlns="http://schemas.microsoft.com/developer/vstemplate/2005" Type="Project">
   <TemplateData>
-    <Name>vscaide_vc2013_template</Name>
+    <Name>vscaide_cpp_template</Name>
     <Description>C++ Project template for VsCaide extension</Description>
     <ProjectType>VC</ProjectType>
     <ProjectSubType>
     </ProjectSubType>
     <SortOrder>1000</SortOrder>
     <CreateNewFolder>true</CreateNewFolder>
-    <DefaultName>vscaide_vc2013_template</DefaultName>
+    <DefaultName>vscaide_cpp_template</DefaultName>
     <ProvideDefaultName>true</ProvideDefaultName>
     <LocationField>Enabled</LocationField>
     <EnableLocationBrowseButton>true</EnableLocationBrowseButton>
     <Icon>__TemplateIcon.ico</Icon>
   </TemplateData>
   <TemplateContent>
-    <Project TargetFileName="vscaide_vc2013_template.vcxproj" File="vscaide_vc2013_template.vcxproj" ReplaceParameters="true" />
+    <Project TargetFileName="vscaide_cpp_template.vcxproj" File="vscaide_cpp_template.vcxproj" ReplaceParameters="true" />
   </TemplateContent>
 </VSTemplate>

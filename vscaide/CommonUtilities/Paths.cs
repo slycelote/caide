@@ -39,7 +39,7 @@ namespace slycelote.VsCaide.Utilities
             {
                 if (!cSharpTemplateProcessed)
                 {
-                    var csProj = Path.Combine(PackageInstallationDir, "Resources", "vscaide_vc2013_template.csproj");
+                    var csProj = Path.Combine(PackageInstallationDir, "Resources", "vscaide_cs_template.csproj");
                     var template = File.ReadAllText(csProj);
                     var newTemplate = template.Replace("CAIDE_EXE", Paths.CaideExe);
                     if (newTemplate != template)

@@ -180,11 +180,11 @@
     <Content Include="Resources\CsTemplate.vstemplate">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="Resources\vscaide_vc2013_template.csproj">
+    <Content Include="Resources\vscaide_cs_template.csproj">
       <IncludeInVSIX>true</IncludeInVSIX>
       <SubType>Designer</SubType>
     </Content>
-    <Content Include="Resources\vscaide_vc2013_template.vcxproj">
+    <Content Include="Resources\vscaide_cpp_template.vcxproj">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <None Include="source.extension.vsixmanifest">
