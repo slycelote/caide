@@ -53,3 +53,17 @@ file](http://msdn.microsoft.com/en-us/library/669zx6zc.aspx) `vs_common.props`
 in solution root directory is included into all generated projects. You can
 modify this file in Property Manager window.
 
+# Troubleshooting
+
+You can report issues on [github](https://github.com/slycelote/caide/issues)
+or in [Codeforces thread](http://codeforces.com/blog/entry/18838). Try to
+include as much information as possible, such as:
+
+* All installed versions of Visual Studio
+* Error message. You can get detailed output in Output window (View menu ->
+  Output).
+* Your caide.ini file.
+* If the problem is related to C++ code inliner, add a `-v` option to
+  `clang_options` list in caide.ini file. This will produce more diagnostics
+output.
+

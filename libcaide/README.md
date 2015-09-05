@@ -260,3 +260,15 @@ Run `caide -h` for the list of commands. Commands marked with (Internal) are
 'plumbing layer' not meant for the end user but for use in scripts (such as
 [builders](#builder)), IDEs etc.
 
+# Troubleshooting
+
+You can report issues on [github](https://github.com/slycelote/caide/issues)
+or in [Codeforces thread](http://codeforces.com/blog/entry/18838). Try to
+include as much information as possible, such as:
+
+* Your operating system (in Linux, output of `uname -a`).
+* Your caide.ini file.
+* If the problem is related to C++ code inliner, add a `-v` option to
+  `clang_options` list in caide.ini file. This will produce more diagnostics
+output.
+
