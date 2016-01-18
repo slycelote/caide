@@ -43,7 +43,9 @@ doParse cont =
 
     texts = map normalizeText .
             mapMaybe (maybeTagText . (!!1)) .
-            sections (~~== "<pre class=intable>") $
+            sections (~~== "<pre>") .
+            takeWhile (~~/== "</table>") .
+            dropWhile (~~/== "<table class=sample>") $
             tags
     testCases = [TestCase (texts!!i) (texts!!(i+1)) | i <- [0, 2 .. length texts-2]]
 
