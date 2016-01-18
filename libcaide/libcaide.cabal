@@ -9,6 +9,8 @@ maintainer:     slycelot@yandex.ru
 synopsis:       Automate certain common tasks that you do during programming competitions.
 category:       Application
 license:        BSD3
+homepage:       https://github.com/slycelote/caide
+bug-reports:    https://github.com/slycelote/caide/issues
 description:
     Automates certain common tasks that you do during programming competitions:
     parsing, running and debugging problem tests, inlining library code.
@@ -79,7 +81,7 @@ executable caide
   if os(windows) {
     ghc-options:   -optl-static
   } else {
-    ghc-options:   -optl-pthread -optl-static-libstdc++ -optl-static-libgcc
+    ghc-options:   -optl-pthread -optl-static-libstdc++
   }
   if flag(debug) {
     -- run as cabal configure -fdebug --ghc-option=-debug -O0
