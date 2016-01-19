@@ -18,7 +18,7 @@ import qualified Filesystem.Path as F
 import Filesystem.Path ((</>))
 import Filesystem.Path.CurrentOS (encodeString)
 
-import System.FileLock (SharedExclusive(Exclusive), tryLockFile, unlockFile)
+import System.FileLock (SharedExclusive(Exclusive), tryLockFile, unlockFile)
 
 import Filesystem.Util (pathToText, readTextFile)
 import Network.HTTP.Util (downloadDocument)

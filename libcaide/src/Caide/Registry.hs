@@ -5,6 +5,7 @@ module Caide.Registry(
     , findLanguage
     , findFeature
     , findHtmlParser
+    , findHtmlParserForUrl
     , findProblemParser
 ) where
 
@@ -44,6 +45,9 @@ problemParsers = map htmlParserToProblemParser [codeforcesParser, codeChefParser
 
 findHtmlParser :: Text -> Maybe HtmlParser
 findHtmlParser chid = find ((== chid) . chelperId) htmlParsers
+
+findHtmlParserForUrl :: URL -> Maybe HtmlParser
+findHtmlParserForUrl url = find (`htmlParserUrlMatches` url) htmlParsers
 
 findProblemParser :: URL -> Maybe ProblemParser
 findProblemParser url = find (`problemUrlMatches` url) problemParsers

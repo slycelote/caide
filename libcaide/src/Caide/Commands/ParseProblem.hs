@@ -15,28 +15,31 @@ import qualified Data.Text.IO.Util as T
 import Filesystem (createDirectory, createTree, writeTextFile, isDirectory)
 import Filesystem.Path.CurrentOS (fromText, decodeString, (</>))
 import Filesystem.Util (pathToText)
+import qualified Filesystem.Path.CurrentOS as F
 
 import Caide.Types
 import Caide.Configuration (getDefaultLanguage, setActiveProblem, getProblemConfigFile,
                             getProblemStateFile, defaultProblemConfig, defaultProblemState)
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
-import Caide.Registry (findProblemParser)
-import Caide.Util (mapWithLimitedThreads, withLock)
+import Caide.Registry (findHtmlParserForUrl, findProblemParser)
+import Caide.Util (mapWithLimitedThreads, readTextFile', withLock)
 
 
 
-createProblem :: URL -> T.Text -> Maybe T.Text -> CaideIO ()
-createProblem url problemTypeStr maybeLangStr = do
-    case findProblemParser url of
-        Just parser -> parseExistingProblem url parser
-        Nothing     -> case optionFromText problemTypeStr of
+createProblem :: URL -> T.Text -> Maybe T.Text -> Maybe T.Text -> CaideIO ()
+createProblem url problemTypeStr maybeLangStr maybeFilePathStr = do
+    case (maybeFilePathStr, findProblemParser url, findHtmlParserForUrl url) of
+        (Just _,           _, Nothing)         -> throw . T.concat $ ["File parser for URL ", url, " not found"]
+        (Just filePathStr, _, Just htmlParser) -> parseExistingProblemFromHtml htmlParser (fromText filePathStr)
+        (Nothing, Just parser, _)              -> parseExistingProblem url parser
+        (Nothing, Nothing,     _)              -> case optionFromText problemTypeStr of
             Nothing    -> throw . T.concat $ ["Incorrect problem type: ", problemTypeStr]
             Just pType -> createNewProblem url pType
+
     case maybeLangStr of
         Just langStr -> generateScaffoldSolution langStr
         Nothing      -> return ()
-
 
 initializeProblem :: Problem -> CaideIO ()
 initializeProblem problem = withLock $ do
@@ -109,6 +112,12 @@ saveProblem problem samples = do
     initializeProblem problem
     liftIO $ T.putStrLn . T.concat $ ["Problem successfully parsed into folder ", probId]
 
+parseExistingProblemFromHtml :: HtmlParser -> F.FilePath -> CaideIO ()
+parseExistingProblemFromHtml htmlParser filePath = do
+    parseResult <- parseFromHtml htmlParser <$> readTextFile' filePath
+    case parseResult of
+        Left err -> throw . T.unlines $ ["Encountered a problem while parsing:", err]
+        Right (problem, samples) -> saveProblem problem samples
 
 parseExistingProblem :: URL -> ProblemParser -> CaideIO ()
 parseExistingProblem url parser = do

@@ -107,6 +107,8 @@ problemOpts = createProblem
         value "file,stdin,stdout" <> showDefault)
     <*> optional (txtOption (long "lang" <> short 'l' <> metavar "LANG" <>
         help "Programming language to switch to"))
+    <*> optional (txtOption (long "from-file" <> short 'f' <> metavar "PATH-TO-FILE" <>
+        help "Instead of downloading web page containing the description of the problem, read it from file"))
 
 
 contestOpts :: Parser (CaideIO ())
