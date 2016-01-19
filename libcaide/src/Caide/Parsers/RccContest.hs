@@ -1,9 +1,11 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 module Caide.Parsers.RccContest(
       rccContestParser
 ) where
 
+#ifndef AMP
 import Control.Applicative ((<$>))
+#endif
 import Control.Monad (forM_)
 import Control.Monad.Except (liftIO)
 import Data.Either (rights)

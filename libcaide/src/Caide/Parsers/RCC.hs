@@ -1,10 +1,12 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 module Caide.Parsers.RCC(
       rccParser
     , parseRccProblem
 ) where
 
+#ifndef AMP
 import Control.Applicative ((<$>))
+#endif
 import Data.Char (isAlpha)
 import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import qualified Data.Text as T

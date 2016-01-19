@@ -4,7 +4,9 @@ module Caide.Commands.Archive(
 ) where
 
 import Prelude hiding (FilePath)
+#ifndef AMP
 import Control.Applicative ((<$>))
+#endif
 import Control.Monad (unless, when, forM_, forM)
 import Control.Monad.State (liftIO)
 import Data.List (sort)

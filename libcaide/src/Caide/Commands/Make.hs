@@ -1,10 +1,12 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 module Caide.Commands.Make(
       updateTests
     , make
 ) where
 
+#ifndef AMP
 import Control.Applicative ((<$>))
+#endif
 import Control.Monad (forM_)
 import Control.Monad.State (liftIO)
 import Data.List (sortBy)

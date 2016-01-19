@@ -1,9 +1,11 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 module Caide.CPP.CPP(
       language
 ) where
 
+#ifndef AMP
 import Control.Applicative ((<$>))
+#endif
 import Control.Monad.State (liftIO)
 import Data.Char (isSpace)
 import Data.Either (isRight)

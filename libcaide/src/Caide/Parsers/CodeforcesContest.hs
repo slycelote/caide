@@ -1,9 +1,11 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 module Caide.Parsers.CodeforcesContest(
       codeforcesContestParser
 ) where
 
+#ifndef AMP
 import Control.Applicative ((<$>))
+#endif
 import Control.Monad.Except (liftIO)
 import Data.Maybe (mapMaybe)
 

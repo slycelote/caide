@@ -5,7 +5,7 @@ module Caide.Commands.ParseProblem(
     , parseProblems
 ) where
 
-#ifdef AMP
+#ifndef AMP
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad (forM_, unless, when)

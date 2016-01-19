@@ -1,9 +1,11 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 module Caide.Commands.Checkout (
       checkoutProblem
 ) where
 
+#ifndef AMP
 import Control.Applicative ((<$>))
+#endif
 import Control.Monad (forM_, unless)
 import Control.Monad.State (liftIO)
 import Data.Maybe (mapMaybe)

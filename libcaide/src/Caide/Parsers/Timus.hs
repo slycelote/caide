@@ -1,9 +1,11 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 module Caide.Parsers.Timus(
       timusParser
 ) where
 
+#ifndef AMP
 import Control.Applicative ((<$>))
+#endif
 import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import qualified Data.Text as T
 import Network.URI (parseURI, uriAuthority, uriRegName)

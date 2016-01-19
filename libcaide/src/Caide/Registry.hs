@@ -9,7 +9,9 @@ module Caide.Registry(
     , findProblemParser
 ) where
 
+#ifndef AMP
 import Control.Applicative ((<$>))
+#endif
 import Data.Char (toLower)
 import Data.List (find)
 import Data.Text (Text)

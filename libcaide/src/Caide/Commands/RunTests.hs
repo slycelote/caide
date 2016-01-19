@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 
 module Caide.Commands.RunTests(
       runTests
@@ -6,7 +6,9 @@ module Caide.Commands.RunTests(
 ) where
 
 
+#ifndef AMP
 import Control.Applicative ((<$>), (<*>))
+#endif
 import Control.Monad (unless)
 import Control.Monad.State (liftIO)
 

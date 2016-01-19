@@ -1,9 +1,11 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 module Caide.Commands.BuildScaffold(
       generateScaffoldSolution
 ) where
 
+#ifndef AMP
 import Control.Applicative ((<$>))
+#endif
 import Control.Monad (forM_)
 import Data.Maybe (mapMaybe)
 import qualified Data.Text as T

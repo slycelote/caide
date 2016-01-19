@@ -1,10 +1,11 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 module Caide.Commands.CHelperHttpServer(
       runHttpServer
 ) where
 
-
+#ifndef AMP
 import Control.Applicative ((<$>), (<*>))
+#endif
 import Control.Concurrent (forkIO, killThread)
 import Control.Monad (void)
 import qualified Data.ByteString as BS

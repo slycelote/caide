@@ -1,11 +1,13 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE CPP, ForeignFunctionInterface #-}
 
 module Caide.CPP.CBinding(
       inlineLibraryCode
     , removeUnusedCode
 ) where
 
+#ifndef AMP
 import Control.Applicative ((<$>))
+#endif
 import qualified Data.Text as T
 import Foreign
 import Foreign.C.String
