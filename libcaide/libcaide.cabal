@@ -49,6 +49,8 @@ executable caide
     build-depends:
                    base >= 4.8 && < 6,
                    time >= 1.5.0.1
+    -- Functor-Applicative-Monad proposal
+    cpp-options:   -DAMP
 
   build-depends:
                    array,
