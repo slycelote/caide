@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings #-}
+{-# LANGUAGE CPP, GeneralizedNewtypeDeriving, OverloadedStrings #-}
 
 module Caide.Types(
       Problem (..)
@@ -42,7 +42,9 @@ module Caide.Types(
     , noOpFeature
 ) where
 
+#ifndef AMP
 import Control.Applicative (Applicative)
+#endif
 import Control.Monad (forM_, unless, when)
 import Control.Monad.Except (ExceptT, MonadError, runExceptT, throwError)
 import Control.Monad.State (StateT, MonadState, runStateT, gets, modify')

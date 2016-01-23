@@ -15,8 +15,7 @@ import qualified Data.Text as T
 import System.IO (nativeNewline, Newline(CRLF))
 
 describeUnicodeException :: UnicodeException -> T.Text
-describeUnicodeException (DecodeError s _) = T.pack s
-describeUnicodeException (EncodeError s _) = T.pack s
+describeUnicodeException = T.pack . show
 
 tryDecodeUtf8 :: ByteString -> Either T.Text T.Text
 tryDecodeUtf8 = either (Left . describeUnicodeException) Right . decodeUtf8'

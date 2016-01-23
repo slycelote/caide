@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Filesystem.Util(
       -- * Unicode input/output is broken.  Use these functions to read and write text files in UTF8.
       readTextFile
@@ -11,7 +12,9 @@ module Filesystem.Util(
     , pathToText
 ) where
 
+#ifndef AMP
 import Control.Applicative ((<$>))
+#endif
 import Control.Monad (forM_)
 
 import qualified Data.ByteString as BS

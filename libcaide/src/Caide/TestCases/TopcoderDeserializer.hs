@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings #-}
+{-# LANGUAGE CPP, GeneralizedNewtypeDeriving, OverloadedStrings #-}
 module Caide.TestCases.TopcoderDeserializer(
       readToken
     , readDouble
@@ -8,7 +8,9 @@ module Caide.TestCases.TopcoderDeserializer(
     , TopcoderParser
 ) where
 
+#ifndef AMP
 import Control.Applicative (Applicative)
+#endif
 import Control.Monad (unless, when)
 import Control.Monad.Except (MonadError, Except, runExcept, throwError)
 import Control.Monad.State (StateT, MonadState, get, put, runStateT)
