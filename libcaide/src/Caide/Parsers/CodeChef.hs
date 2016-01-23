@@ -43,7 +43,9 @@ doParse cont =
     probId = T.append "chef" title
 
     -- test cases
-    problemPage = dropWhile (~/= "<div id=problem-page>") tags
+    problemPage = dropWhile (\t ->
+        t ~/= "<div id=problem-page-complete>" && t ~/= "<div id=problem-page>") tags
+
     content = takeWhile (~/= "</div>") . dropWhile (~~/== "<div class=content>") $ problemPage
     pres = sections (~== "<pre>") content
     testsContainer = drop 1 . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>") . last $ pres

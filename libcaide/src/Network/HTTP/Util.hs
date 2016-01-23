@@ -8,8 +8,9 @@ import Data.ByteString.Lazy (toStrict)
 import Data.Maybe (isNothing)
 import qualified Data.Text as T
 import Network.HTTP.Client (HttpException(..), httpLbs, newManager, parseUrl,
-                            responseStatus, responseBody, responseTimeout, Request)
+                            responseStatus, responseBody, responseTimeout, requestHeaders, Request)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
+import Network.HTTP.Types.Header (hAccept, hAcceptEncoding, hConnection, hUserAgent)
 import Network.HTTP.Types.Status (ok200, statusMessage)
 import System.IO.Error (catchIOError, ioeGetErrorString)
 
@@ -25,7 +26,15 @@ downloadDocument url
   where
     mbRequest = parseUrl $ T.unpack url
     Just request = mbRequest
-    request' = request { responseTimeout = Just (15*1000*1000) } -- 15 seconds
+    request' = request {
+        responseTimeout = Just (15*1000*1000), -- 15 seconds
+        requestHeaders  =
+            [ (hUserAgent, "wget")
+            , (hAccept, "*/*")
+            , (hAcceptEncoding, "")
+            , (hConnection, "Keep-Alive")
+            ]
+    }
     mkLiftedError = return . Left
     errorHandler = mkLiftedError . T.pack . ioeGetErrorString
     result = httpDownloader request' `catchIOError` errorHandler `catch` statusExceptionHandler

@@ -1,11 +1,13 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 module Caide.Commands(
       runMain
 ) where
 
 import Control.Exception.Base (catch, SomeException)
 import Control.Monad (void)
+#if !MIN_VERSION_base(4, 8, 0)
 import Data.Monoid (mconcat)
+#endif
 import qualified Data.Text as T
 import System.Exit (exitWith, ExitCode(ExitFailure))
 import System.Environment (getExecutablePath)
