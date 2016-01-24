@@ -64,7 +64,7 @@ executable caide
                    filepath,
                    http-client >= 0.4,
                    http-client-tls,
-                   http-types,
+                   http-types >= 0.9,
                    mtl >= 2.2.1,
                    network >= 2.6,
                    network-uri >= 2.6,
