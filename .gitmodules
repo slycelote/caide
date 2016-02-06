@@ -1,6 +1,4 @@
-[submodule "libcaide/cbits/llvm"]
-	path = libcaide/cbits/llvm
-	url = http://llvm.org/git/llvm.git
-[submodule "libcaide/cbits/clang"]
-	path = libcaide/cbits/clang
-	url = http://llvm.org/git/clang.git
+
+[submodule "libcaide/cbits/cpp-inliner"]
+	path = libcaide/cbits/cpp-inliner
+	url = https://github.com/slycelote/caide-cpp-inliner

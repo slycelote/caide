@@ -28,14 +28,6 @@ Flag debug
   description: Debug build
   default: False
 
-Flag preferlibcpp
-  description: Prefer building with libc++
-  default: False
-
-Flag preferlibstdcpp
-  description: Prefer building with libstdc++ (takes precedence over PreferLibCPP)
-  default: False
-
 executable caide
   -- Due to a cabal bug, linking custom Setup.hs fails when local version
   -- of unix package doesn't match ghc version. Older unix version in GHC 7.8
@@ -90,14 +82,14 @@ executable caide
     ghc-options:   -fprof-auto
   }
   if flag(cppinliner) {
-    cpp-options:   -DCLANG_INLINER
+    cpp-options:     -DCLANG_INLINER
     include-dirs:    cbits
-    extra-lib-dirs:  cbits/build
-    if flag(debug) {
-      extra-lib-dirs: cbits/clangbuilddebug/out/lib
-    } else {
-      extra-lib-dirs: cbits/clangbuild/out/lib
+    c-sources:       cbits/cwrapper.c
+
+    if os(windows) {
+      extra-libraries: imagehlp
     }
+    extra-lib-dirs: cbits/build cbits/build/llvm/lib
   }
   default-language: Haskell2010
   main-is:         Main.hs
