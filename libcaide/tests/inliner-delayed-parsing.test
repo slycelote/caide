@@ -1,5 +1,0 @@
-#!/bin/bash
-"$caide" make
-compare_with inlined submission.cpp
-g++ submission.cpp
-
