@@ -16,6 +16,7 @@ addons:
             - cmake
             - mono-gmcs
 
+install: true
 script: travis/build-and-test.sh
 
 notifications:
