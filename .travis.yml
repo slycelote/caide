@@ -17,6 +17,7 @@ addons:
             - mono-gmcs
 
 install:
+    - git submodule update --init --recursive
     - cd libcaide
     - cabal install --only-dependencies
 
