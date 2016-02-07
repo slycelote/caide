@@ -86,14 +86,17 @@ readEntry' opts path = do
     e <- readEntry opts path
     eUncompressedSize e `seq` return e
 
--- A version of addFilesToArchive that uses a strict version of readEntry
-addFilesToArchive' :: [ZipOption] -> Archive -> [FilePath] -> IO Archive
-addFilesToArchive' opts archive files = do
+-- A version of addFilesToArchive that:
+--   1. uses a strict version of readEntry
+--   2. allows specifying a relative path of added files
+addFilesToArchive' :: [ZipOption] -> Archive -> [FilePath] -> FilePath -> IO Archive
+addFilesToArchive' opts archive files relPath = do
     filesAndChildren <- if OptRecursive `elem` opts
         then (nub . concat) <$> mapM getDirectoryContentsRecursive files
         else return files
     entries <- mapM (readEntry' opts) filesAndChildren
-    return $ foldr addEntryToArchive archive entries
+    let changeEntryPath e = e { eRelativePath = relPath ++ "/" ++ eRelativePath e }
+    return $ foldr addEntryToArchive archive $ map changeEntryPath entries
 
 
 -- Zip resources. The archive will be embedded into the executable.
@@ -104,15 +107,16 @@ zipResources curDir verbosity inlinerSrcDir = do
     unless zipFileExists $ do
         notice verbosity "Zipping resource files..."
 
-        let addFilesToZipFile :: Archive -> FilePath -> IO Archive
-            addFilesToZipFile archive filesPath = inDir filesPath $
-                addFilesToArchive' [OptRecursive] archive ["."]
+        let addFilesToZipFile :: Archive -> FilePath -> FilePath -> IO Archive
+            addFilesToZipFile archive relPath filesPath = inDir filesPath $
+                addFilesToArchive' [OptRecursive] archive ["."] relPath
 
-        archive <- addFilesToZipFile emptyArchive $ curDir </> "res" </> "init"
+        archive <- addFilesToZipFile emptyArchive "." $ curDir </> "res" </> "init"
         case inlinerSrcDir of
             Nothing -> B.writeFile initFile $ fromArchive archive
             Just dir -> do
-                archive' <- addFilesToZipFile archive $ dir </> "clang" </> "lib" </> "Headers"
+                archive' <- addFilesToZipFile archive "include" $
+                                dir </> "clang" </> "lib" </> "Headers"
                 B.writeFile initFile $ fromArchive archive'
 
 
