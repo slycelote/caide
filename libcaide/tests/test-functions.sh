@@ -8,3 +8,10 @@ function compare_with {
     return 0
 }
 
+function run_csharp_executable {
+    if [ "x$MONO" = "x" ]
+    then "$1"
+    else "$MONO" "$1"
+    fi
+}
+

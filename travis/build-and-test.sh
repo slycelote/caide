@@ -11,5 +11,5 @@ cabal install --only-dependencies
 cabal configure
 cabal build --ghc-options="-pgml $CXX"
 
-tests/run-tests.sh
+MONO=mono tests/run-tests.sh
 

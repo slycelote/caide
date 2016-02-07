@@ -10,5 +10,5 @@ PROB=$($CAIDE getstate core problem)
 cd "$ROOT/$PROB"
 $CSC /out:"${PROB}cs".exe "$PROB.cs" "${PROB}_test.cs"
 
-"./${PROB}cs.exe"
+run_csharp_executable "./${PROB}cs.exe"
 
