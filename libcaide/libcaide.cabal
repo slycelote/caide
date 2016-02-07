@@ -32,17 +32,18 @@ executable caide
   -- Due to a cabal bug, linking custom Setup.hs fails when local version
   -- of unix package doesn't match ghc version. Older unix version in GHC 7.8
   -- forces us to use an older version of time package.
-  if impl(ghc < 7.10)
+  if impl(ghc < 7.10) {
     build-depends:
                    base >= 4.7 && < 4.8,
                    old-locale,
                    time < 1.5
-  else
+  } else {
     build-depends:
                    base >= 4.8 && < 6,
                    time >= 1.5.0.1
     -- Functor-Applicative-Monad proposal
     cpp-options:   -DAMP
+  }
 
   build-depends:
                    array,

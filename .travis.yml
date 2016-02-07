@@ -16,15 +16,7 @@ addons:
             - cmake
             - mono-gmcs
 
-install:
-    - git submodule update --init --recursive
-    - cd libcaide
-    - cabal install --only-dependencies
-
-script:
-    - export CXX=g++-4.9
-    - export CC=gcc-4.9
-    - cabal configure && cabal build && tests/run-tests.sh
+script: travis/build-and-test.sh
 
 notifications:
     email:
