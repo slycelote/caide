@@ -26,11 +26,11 @@ cp case1.in case1.out
 "$caide" make
 
 # Run tests
-g++ prob*.cpp -o test.exe
+$CXX prob*.cpp -o test.exe
 ./test.exe
 
 # Run submission
-g++ submission.cpp -o submission.exe
+$CXX submission.cpp -o submission.exe
 ./submission.exe </dev/null
 if ! diff -bBq --strip-trailing-cr input.txt output.txt ; then
     echo "C++: Output is different"
@@ -42,7 +42,7 @@ fi
 "$caide" make
 
 # Run submission
-g++ submission.cpp -o submission.exe
+$CXX submission.cpp -o submission.exe
 ./submission.exe </dev/null
 if ! diff -bBq --strip-trailing-cr input.txt output.txt ; then
     echo "simplecpp: Output is different"

@@ -2,6 +2,6 @@
 "$caide" init --cpp-use-system-headers
 "$caide" problem prob
 "$caide" make
-g++ submission.cpp
+$CXX submission.cpp
 
 

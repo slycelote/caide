@@ -2,7 +2,7 @@
 "$caide" init
 "$caide" problem prob
 cd prob
-g++ prob*.cpp -o prob.exe
+$CXX prob*.cpp -o prob.exe
 "$caide" make
 
 echo 1 >case1.in
