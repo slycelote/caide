@@ -26,6 +26,7 @@ else
     tests=( "$@" )
 fi
 
+echo "MONO = $MONO"
 for f in "${tests[@]}"
 do
     echo " == Running $f... =="

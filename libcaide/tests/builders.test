@@ -1,7 +1,5 @@
 #!/bin/bash
 
-export CAIDE="$caide"
-
 "$caide" problem prob
 cat <<EOF >prob/case1.in
 1
