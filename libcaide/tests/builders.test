@@ -1,6 +1,6 @@
 #!/bin/bash
 
-"$caide" problem prob
+"$CAIDE" problem prob
 cat <<EOF >prob/case1.in
 1
 2
@@ -8,7 +8,7 @@ cat <<EOF >prob/case1.in
 EOF
 cp prob/case1.in prob/case1.out
 
-"$caide" lang cpp
+"$CAIDE" lang cpp
 
 
 cat <<EOF >prob/prob.cpp
@@ -22,10 +22,10 @@ void solve(istream& in, ostream& out) {
 }
 EOF
 
-"$caide" test
+"$CAIDE" test
 compare_with after-test prob/.caideproblem/test/report.txt
 
-"$caide" lang csharp
+"$CAIDE" lang csharp
 
 cat <<EOF >prob/prob.cs
 using System;
@@ -42,6 +42,6 @@ EOF
 
 rm prob/.caideproblem/test/{report.txt,*.in,*.out}
 
-"$caide" test
+"$CAIDE" test
 compare_with after-test prob/.caideproblem/test/report.txt
 

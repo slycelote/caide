@@ -16,7 +16,7 @@ import Distribution.Simple.Program.Db
 import Distribution.Simple.Setup
 import Distribution.Simple.Utils
 import Distribution.System(OS(..), buildOS)
-import System.Directory hiding(canonicalizePath)
+import System.Directory
 import System.Environment(getEnvironment)
 import System.Exit (ExitCode(..))
 import System.FilePath
@@ -37,13 +37,6 @@ main =
       }
 
 
-canonicalizePath :: FilePath -> IO FilePath
-canonicalizePath path = do
-  canonicalPath <- inDir path $
-    rawSystemStdout silent "sh" ["-c", "pwd"]
-  return $ reverse . dropWhile isSpace . reverse . dropWhile isSpace $ canonicalPath
-
-
 inlinerConfHook :: (GenericPackageDescription, HookedBuildInfo) -> ConfigFlags
                  -> IO LocalBuildInfo
 inlinerConfHook (pkg, pbi) flags = do
@@ -56,7 +49,6 @@ inlinerConfHook (pkg, pbi) flags = do
   lbi <- confHook simpleUserHooks (pkg, pbi) flags
 
   when cppinliner $ do
-      -- Compute some paths that need to be absolute.
       curDir <- getCurrentDirectory
       let inlinerSrcDir    = curDir </> "cbits" </> "cpp-inliner" </> "src"
           inlinerBuildDir  = curDir </> "cbits" </> "build"
@@ -64,17 +56,14 @@ inlinerConfHook (pkg, pbi) flags = do
 
       createDirectoryIfMissingVerbose verbosity True inlinerBuildDir
 
-      [inlinerSrcDirCanonical, inlinerBuildDirCanonical] <-
-          mapM canonicalizePath [inlinerSrcDir, inlinerBuildDir]
-
       let cmakeOptions = ["-G", "Unix Makefiles", "-DCMAKE_BUILD_TYPE=" ++ cmakeBuildType,
                           "-DCAIDE_USE_SYSTEM_CLANG=OFF", "-DCAIDE_SHARED_LIBRARY=OFF",
-                          inlinerSrcDirCanonical]
+                          inlinerSrcDir]
 
       notice verbosity "Configuring C++ inliner..."
 
       env <- getEnvironment
-      inDir inlinerBuildDirCanonical $
+      inDir inlinerBuildDir $
           rawSystemExitWithEnv verbosity "cmake" cmakeOptions env
 
   return lbi
@@ -170,16 +159,8 @@ inlinerBuildHook pkg lbi usrHooks flags = do
         let threadFlags = ["-j4" | buildOS /= Windows]
             makeOptions = threadFlags ++ ["caideInliner"]
 
-        inDir inlinerBuildDir $ do
-          -- Workaround for 'make not found' in MinGW
-          buildMade <- case buildOS of
-              Windows -> do
-                (exitCode, _, _) <- readProcessWithExitCode "make" makeOptions ""
-                return $ exitCode == ExitSuccess
-              _       -> return False
-
-          env <- getEnvironment
-          unless buildMade $
+        env <- getEnvironment
+        inDir inlinerBuildDir $
             rawSystemExitWithEnv verbosity "make" makeOptions env
 
         zipResources curDir verbosity $ Just inlinerSrcDir

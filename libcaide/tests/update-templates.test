@@ -1,6 +1,6 @@
 #!/bin/bash
 
-"$caide" problem prob
+"$CAIDE" problem prob
 
 diff .caide/templates/main_template.cpp templates/main_template.cpp
 grep "old version of template, unmodified" templates/main_template.cpp && exit 300 || true

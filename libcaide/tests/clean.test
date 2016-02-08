@@ -1,14 +1,14 @@
 #!/bin/bash
-"$caide" init
-"$caide" problem prob
+"$CAIDE" init
+"$CAIDE" problem prob
 cd prob
 "$CXX" prob*.cpp -o prob.exe
-"$caide" make
+"$CAIDE" make
 
 echo 1 >case1.in
 
 rm -rf .caideproblem
-"$caide" update_tests
+"$CAIDE" update_tests
 
 cd ..
 compare_with after-update-tests prob/.caideproblem/test/{case1.in,testList.txt}
@@ -19,5 +19,5 @@ cd prob/.caideproblem/test
 cd ../../..
 
 #rm -rf .caide
-#"$caide" checkout prob
+#"$CAIDE" checkout prob
 

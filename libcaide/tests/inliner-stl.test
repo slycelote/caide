@@ -1,6 +1,6 @@
 #!/bin/bash
 # Just make sure all commands run successfully
-"$caide" init
-"$caide" problem test
-"$caide" make
+"$CAIDE" init
+"$CAIDE" problem test
+"$CAIDE" make
 

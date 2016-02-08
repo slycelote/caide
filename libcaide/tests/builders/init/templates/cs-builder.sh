@@ -4,8 +4,8 @@
 set -e
 
 
-ROOT=$($caide printRoot)
-PROB=$($caide getstate core problem)
+ROOT=$("$CAIDE" printRoot)
+PROB=$("$CAIDE" getstate core problem)
 
 cd "$ROOT/$PROB"
 "$CSC" /out:"${PROB}cs".exe "$PROB.cs" "${PROB}_test.cs"

@@ -1,13 +1,13 @@
 #!/bin/bash
-"$caide" problem prob1
+"$CAIDE" problem prob1
 # Strip path to caide executable
 sed -i '/<PostBuild/c\ <PostBuild /> ' prob1/prob1.project
 compare_with create-prob1 caide.workspace cpplib/cpplib.project prob1/prob1.project submission/submission.project
-"$caide" problem prob2
+"$CAIDE" problem prob2
 sed -i '/<PostBuild/c\ <PostBuild /> ' prob2/prob2.project
 compare_with create-prob2 caide.workspace prob2/prob2.project
-"$caide" checkout prob1
+"$CAIDE" checkout prob1
 compare_with checkout-prob1 caide.workspace
-"$caide" archive prob1
+"$CAIDE" archive prob1
 compare_with archive-prob1 caide.workspace
 

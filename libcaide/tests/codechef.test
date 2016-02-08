@@ -1,7 +1,7 @@
 #!/bin/bash
-"$caide" problem http://www.codechef.com/problems/MAXCIR
-"$caide" problem http://www.codechef.com/problems/POWERMUL
-"$caide" problem http://www.codechef.com/problems/MX
+"$CAIDE" problem http://www.codechef.com/problems/MAXCIR
+"$CAIDE" problem http://www.codechef.com/problems/POWERMUL
+"$CAIDE" problem http://www.codechef.com/problems/MX
 
 compare_with parsed chefMAXCIR/case{1,2}.{in,out} chef{MX,POWERMUL}/case1.{in,out}
 

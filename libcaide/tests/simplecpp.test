@@ -1,13 +1,13 @@
 #!/bin/bash
 
-"$caide" init
-"$caide" problem prob
-"$caide" lang simplecpp
+"$CAIDE" init
+"$CAIDE" problem prob
+"$CAIDE" lang simplecpp
 cd prob
 "$CXX" prob*.cpp -o prob.exe
 echo 1 >case1.in
 ./prob.exe
-"$caide" make
+"$CAIDE" make
 cd ..
 compare_with after-make prob/submission.cpp prob/.caideproblem/test/report.txt
 cd prob

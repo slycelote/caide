@@ -1,7 +1,7 @@
 #!/bin/bash
-"$caide" init --cpp-use-system-headers
-"$caide" problem prob
-"$caide" make
+"$CAIDE" init --cpp-use-system-headers
+"$CAIDE" problem prob
+"$CAIDE" make
 "$CXX" submission.cpp
 
 

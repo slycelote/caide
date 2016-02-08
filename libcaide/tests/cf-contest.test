@@ -1,8 +1,8 @@
 #!/bin/bash
-"$caide" contest http://codeforces.com/contest/1
+"$CAIDE" contest http://codeforces.com/contest/1
 compare_with parsed cf1{A..C}/case1.{in,out}
 
-cur_problem="$("$caide" getstate core problem)"
+cur_problem="$("$CAIDE" getstate core problem)"
 
 if [ "$cur_problem" != "cf1A" ] ; then
     echo "Must activate the first problem of the contest by default"

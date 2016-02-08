@@ -1,6 +1,6 @@
 #!/bin/bash
-"$caide" init
-"$caide" problem prob --type=file,input.txt,output.txt
+"$CAIDE" init
+"$CAIDE" problem prob --type=file,input.txt,output.txt
 cd prob
 cat <<EOF >prob.cpp
 #include <istream>
@@ -23,7 +23,7 @@ cp case1.in input.txt
 cp case1.in case1.out
 
 
-"$caide" make
+"$CAIDE" make
 
 # Run tests
 "$CXX" prob*.cpp -o test.exe
@@ -38,8 +38,8 @@ if ! diff -bBq --strip-trailing-cr input.txt output.txt ; then
 fi
 
 
-"$caide" lang simplecpp
-"$caide" make
+"$CAIDE" lang simplecpp
+"$CAIDE" make
 
 # Run submission
 "$CXX" submission.cpp -o submission.exe
@@ -50,7 +50,7 @@ if ! diff -bBq --strip-trailing-cr input.txt output.txt ; then
 fi
 
 
-"$caide" lang 'c#'
+"$CAIDE" lang 'c#'
 cat <<EOF >prob.cs
 using System;
 using System.Linq;
@@ -70,7 +70,7 @@ run_csharp_executable ./test.exe
 
 
 # Run submission
-"$caide" make
+"$CAIDE" make
 "$CSC" -out:submission.exe submission.cs
 run_csharp_executable ./submission.exe </dev/null
 if ! diff -bBq --strip-trailing-cr input.txt output.txt ; then

@@ -1,18 +1,18 @@
 #!/bin/bash
-"$caide" init
-"$caide" problem prob1 --type topcoder,ClassName,methodName:long,i:int,d:double,s:String,vi:vint,vvs:vvString --lang simplecpp
+"$CAIDE" init
+"$CAIDE" problem prob1 --type topcoder,ClassName,methodName:long,i:int,d:double,s:String,vi:vint,vvs:vvString --lang simplecpp
 cd prob1
 "$CXX" prob1*.cpp -o prob1_test.exe
-"$caide" make
+"$CAIDE" make
 "$CXX" submission.cpp -c -o /dev/null
 
 cd ..
 rm -rf prob1/
 
-"$caide" problem prob1 --type topcoder,ClassName,methodName:long,i:int,d:double --lang cpp
+"$CAIDE" problem prob1 --type topcoder,ClassName,methodName:long,i:int,d:double --lang cpp
 cd prob1
 "$CXX" prob1*.cpp -o prob1_test.exe
-"$caide" make
+"$CAIDE" make
 "$CXX" submission.cpp -c -o /dev/null
 cd ..
 compare_with inlined prob1/submission.cpp

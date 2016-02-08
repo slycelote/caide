@@ -1,4 +1,4 @@
 #!/bin/bash
-"$caide" problem 'http://acm.timus.ru/problem.aspx?space=1&num=2032'
+"$CAIDE" problem 'http://acm.timus.ru/problem.aspx?space=1&num=2032'
 compare_with after-parse timus2032/case{1..3}.{in,out} timus2032/problem.ini
 

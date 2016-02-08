@@ -3,8 +3,8 @@
 # exit on error
 set -e
 
-ROOT=$($caide printRoot)
-PROB=$($caide getstate core problem)
+ROOT=$("$CAIDE" printRoot)
+PROB=$("$CAIDE" getstate core problem)
 
 cd "$ROOT/$PROB"
 "$CXX" "$PROB.cpp" "${PROB}_test.cpp" -I../cpplib -o "$PROB".exe
