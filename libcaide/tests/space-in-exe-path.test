@@ -1,6 +1,6 @@
 #!/bin/bash
 mkdir "sp ace"
-cp $caide "sp ace"
+cp "$caide" "sp ace"
 caide="$PWD/sp ace/caide"
 mkdir repo
 cd repo
@@ -8,7 +8,7 @@ cd repo
 "$caide" problem prob
 "$caide" make
 cd prob
-$CXX prob*.cpp -o prob.exe
+"$CXX" prob*.cpp -o prob.exe
 cd .caideproblem/test
 ../../prob.exe
 

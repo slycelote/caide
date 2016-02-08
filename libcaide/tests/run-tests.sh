@@ -10,6 +10,7 @@ export caide=$cur_dir/../dist/build/caide/caide
 # On Windows use something like CSC=/c/Windows/Microsoft.NET/Framework/v4.0.30319/csc.exe ./run-tests.sh
 export CSC=${CSC:-gmcs}
 export CXX=${CXX:-g++}
+export MONO=${MONO:-}
 
 functions_file=$cur_dir/test-functions.sh
 
@@ -26,7 +27,6 @@ else
     tests=( "$@" )
 fi
 
-echo "MONO = $MONO"
 for f in "${tests[@]}"
 do
     echo " == Running $f... =="

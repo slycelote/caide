@@ -4,11 +4,14 @@
 set -e
 
 
-ROOT=$($CAIDE printRoot)
-PROB=$($CAIDE getstate core problem)
+ROOT=$($caide printRoot)
+PROB=$($caide getstate core problem)
 
 cd "$ROOT/$PROB"
-$CSC /out:"${PROB}cs".exe "$PROB.cs" "${PROB}_test.cs"
+"$CSC" /out:"${PROB}cs".exe "$PROB.cs" "${PROB}_test.cs"
 
-"./${PROB}cs.exe"
+if [ "x$MONO" = "x" ]
+then "./${PROB}cs.exe"
+else "$MONO" "./${PROB}cs.exe"
+fi
 
