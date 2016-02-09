@@ -14,8 +14,6 @@ addons:
             - binutils
             - cmake
             - mono-gmcs
-            - cli-common
-            - binfmt-support
 
 install: true
 script: travis/build-and-test.sh

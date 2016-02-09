@@ -1,16 +1,14 @@
 ### Cabal ###
-cabal-dev
-dist
-.dist-buildwrapper
-.cabal-sandbox
-cabal.sandbox.config
+/cabal-dev
+/dist
+/.dist-buildwrapper
+/.cabal-sandbox
+/cabal.sandbox.config
 
 ### Other build artifacts ###
 /cbits/build
-/cbits/clangbuild*
 /tests/tmp
 /res/*.zip
-*.pyc
 
 ### IntelliJ ###
 *.iml
@@ -21,8 +19,4 @@ cabal.sandbox.config
 ## File-based project format:
 *.ipr
 *.iws
-
-### Misc ###
-/codedb
-/tools/cfkeys.py
 
