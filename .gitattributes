@@ -1,7 +1,4 @@
-/libcaide/res/* linguist-documentation
-/libcaide/res/init/templates/* linguist-documentation=false
+/libcaide/res/init/* linguist-documentation
 /libcaide/tests/* linguist-documentation
 /libcaide/tests/*.sh linguist-documentation=false
-/libcaide/cbits/clang/* linguist-vendored
-/libcaide/cbits/llvm/* linguist-vendored
-
+/libcaide/cbits/cpp-inliner/* linguist-vendored
