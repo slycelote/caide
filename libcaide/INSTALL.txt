@@ -1,11 +1,13 @@
 == Windows build
-1. Install Python 2 from here: https://www.python.org/downloads/.
-2. Install Haskell Platform 2014.2.0.0 from here: https://www.haskell.org/platform/windows.html.
+1. Install Python 2 (https://www.python.org/downloads/)
+and CMake (https://cmake.org/download/).
+2. Install Haskell Platform 7.10.3 (https://www.haskell.org/platform/windows.html).
     * Select a path WITHOUT SPACES or other special characters.
     * UNCHECK the 'modify PATH' setting during install.
-3. Install MSYS from here: http://sourceforge.net/projects/mingw/
-4. Haskell Platform currently comes with an old g++ version. You'll have to copy the
-contents of your mingw installation into the folder (Haskell Platform path)\mingw.
+3. Install Mingw-w64 from here: https://sourceforge.net/projects/mingw-w64/files/External%20binary%20packages%20%28Win64%20hosted%29/MSYS%20%2832-bit%29/
+4. Follow these instructions to install MSYS: https://sourceforge.net/p/mingw-w64/wiki2/MSYS/
+When asked about MinGW location in postinstall script, input the path where you
+installed MinGW in the previous step.
 5. Clone source code repository and submodules from your favourite GUI git
 client or command line:
     > git clone https://github.com/slycelote/caide
@@ -20,8 +22,6 @@ All of the following is done in MSYS shell, from libcaide directory.
 
 8. Setup PATH:
     > source mingw32.sh
-    (Note: you can copy the file to C:\MinGW\msys\1.0\home\<username>\.bashrc to
-    avoid having to do this every time you open a new MSYS shell.)
 9. Update package database:
     > cabal update
 10. Initialize cabal sandbox:
