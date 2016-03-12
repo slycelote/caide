@@ -31,7 +31,7 @@ Visual Studio:
 
 ## Download
 
-caide is split into the following components:
+caide is split into the following components (click the links to learn more):
 
 * [libcaide](https://github.com/slycelote/caide/blob/release/libcaide/README.md)
   is core command line application implementing all functionality. Windows and

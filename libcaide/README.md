@@ -79,6 +79,9 @@ manually. `<target>` should be:
 with `g++ -v -x c++ -E /dev/null`.
   - `-I <path>` adds a location for user headers. `cpplib` is most likely the
     only directory that should be specified here.
+  - `-DONLINE_JUDGE` (or similar) - a preprocessor symbol defined on judge
+    servers. This must be *on* because submitted file will be executed on a
+    judge server.
   - `-std=c++11` - you can remove this if you feel nostalgic.
 
   The full list of command line options can be found in [clang user
@@ -90,28 +93,23 @@ won't have any effect.
   kept in submission file even if they are not used. For example, if you use
 the following code:
 
-        #ifdef LOCAL_RUN
-        #   define Endl std::endl
+        #ifdef _WIN32
+        #define LLD "%I64d"
         #else
-        #   define Endl "\n"
+        #define LLD "%lld"
         #endif
 
-  and compile locally with `-DLOCAL_RUN`, then it will be replaced with:
+  and compile locally on Linux, then it will be replaced with:
 
-        #   define Endl std::endl
+        #define LLD "%lld"
 
-  which is probably not what you intended. To fix this, add `LOCAL_RUN` to
-`keep_macros` setting. Then both `#if` branches will be kept in submission
-file.
+  which is probably not what you intended. To fix this, add `_WIN32` to
+  `keep_macros` setting. Then both `#if` branches will be kept in submission
+  file.
 
-  By default `keep_macros` contains a single definition `ONLINE_JUDGE`. So the
-example above may be rewritten as
+  By default `keep_macros` contains a list of common compiler-specific and
+  OS-specific definitions, so the example above actually works correctly.
 
-        #ifdef ONLINE_JUDGE
-        #   define Endl "\n"
-        #else
-        #   define Endl std::endl
-        #endif
 
 
 ## Problem settings
