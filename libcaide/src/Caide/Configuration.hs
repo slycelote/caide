@@ -164,7 +164,7 @@ defaultCaideConf root useSystemHeaders mscver = forceEither $
     setValue "core" "language" "cpp" >>=
     setValue "core" "features" "" >>=
     addSection "cpp" >>=
-    setValue "cpp" "keep_macros" "ONLINE_JUDGE" >>=
+    setValue "cpp" "keep_macros" "_WIN32,_WIN64,_MSC_VER,__GNUC__,__cplusplus," >>=
     setValue "cpp" "max_consequent_empty_lines" "2" >>=
     setValue "cpp" "clang_options" (intercalate ",\n  " $ clangOptions root useSystemHeaders mscver)
 
@@ -184,6 +184,7 @@ clangOptions root False _ = [
     "-I",
     encodeString $ root </> "cpplib",
     "-std=c++11",
+    "-DONLINE_JUDGE",
     "-D__MSVCRT__=1",
     "_D__declspec="
     ]
@@ -202,19 +203,21 @@ clangOptions root True mscver | "mingw" `isPrefixOf` os =
        else []
     ) ++
     [ "-D_CRT_SECURE_NO_WARNINGS"
+    , "-DONLINE_JUDGE"
     , "-I"
     , encodeString $ root </> "cpplib"
     ]
 
 -- Linux with system headers
-clangOptions root True _ = [
-    "-target",
-    arch ++ "-" ++ os,
+clangOptions root True _ = 
+    [ "-target"
+    , arch ++ "-" ++ os
     -- clang headers such as xmmintrin.h are still required
-    "-isystem",
-    encodeString $ root </> "include",
-    "-I",
-    encodeString $ root </> "cpplib"
+    , "-isystem"
+    , encodeString $ root </> "include"
+    , "-I"
+    , encodeString $ root </> "cpplib"
+    , "-DONLINE_JUDGE"
     ]
 
 
