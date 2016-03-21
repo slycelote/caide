@@ -7,7 +7,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-using namespace std;
 // Powered by caide (code generator, tester, and library code inliner)
 
 class ClassName {
