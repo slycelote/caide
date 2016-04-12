@@ -88,7 +88,7 @@ executable caide
     c-sources:       cbits/cwrapper.c
 
     if os(windows) {
-      extra-libraries: imagehlp
+      extra-libraries: imagehlp ole32 uuid
     }
     extra-lib-dirs: cbits/build cbits/build/llvm/lib
   }
