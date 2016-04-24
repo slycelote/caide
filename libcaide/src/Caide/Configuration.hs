@@ -199,6 +199,7 @@ clangOptions root True mscver | "mingw" `isPrefixOf` os =
     if mscver >= 1900
        then [ "-isystem"
             , "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.10150.0\\ucrt"
+            , "-D__EDG__"
             ]
        else []
     ) ++
