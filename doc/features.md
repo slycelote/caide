@@ -1,10 +1,10 @@
-<!-- vim: textwidth=0:formatoptions-=a 
---> 
+<!-- vim: textwidth=0:formatoptions-=a
+-->
 ## Supported online judges
 
 | Online judge            | Sample Problem URL | Sample Contest URL | CHelper Chrome plugin |
 | :----------:            | :----------------: | :----------------: | :-------------------: |
-| CodeChef                | http://www.codechef.com/MAY15/problems/SETDIFF            | - | + |
+| CodeChef                | http://www.codechef.com/MAY15/problems/SETDIFF            | http://www.codechef.com/COOK54 | + |
 | Codeforces              | http://codeforces.com/contest/1/problem/A, http://codeforces.com/gym/100681/problem/B | http://codeforces.com/contest/1 | + |
 | Google Code Jam         | - | - | + |
 | HackerRank              | - | - | + |
