@@ -170,7 +170,7 @@ defaultCaideConf root useSystemHeaders mscver = forceEither $
 
 clangOptions :: FilePath -> Bool -> Int -> [String]
 clangOptions root False _ =
-    [ "-target",
+    [ "-target"
     , "i386-pc-mingw32"
     , "-nostdinc"
     , "-isystem"
