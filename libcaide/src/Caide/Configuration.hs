@@ -164,7 +164,7 @@ defaultCaideConf root useSystemHeaders mscver = forceEither $
     setValue "core" "language" "cpp" >>=
     setValue "core" "features" "" >>=
     addSection "cpp" >>=
-    setValue "cpp" "keep_macros" "_WIN32,_WIN64,_MSC_VER,__GNUC__,__cplusplus," >>=
+    setValue "cpp" "keep_macros" "_WIN32,_WIN64,_MSC_VER,__GNUC__,__cplusplus" >>=
     setValue "cpp" "max_consequent_empty_lines" "2" >>=
     setValue "cpp" "clang_options" (intercalate ",\n  " $ clangOptions root useSystemHeaders mscver)
 
@@ -210,7 +210,7 @@ clangOptions root True mscver | "mingw" `isPrefixOf` os =
     ]
 
 -- Linux with system headers
-clangOptions root True _ = 
+clangOptions root True _ =
     [ "-target"
     , arch ++ "-" ++ os
     -- clang headers such as xmmintrin.h are still required
