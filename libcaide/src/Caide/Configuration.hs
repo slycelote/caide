@@ -169,24 +169,25 @@ defaultCaideConf root useSystemHeaders mscver = forceEither $
     setValue "cpp" "clang_options" (intercalate ",\n  " $ clangOptions root useSystemHeaders mscver)
 
 clangOptions :: FilePath -> Bool -> Int -> [String]
-clangOptions root False _ = [
-    "-target",
-    "i386-pc-mingw32",
-    "-nostdinc",
-    "-isystem",
-    encodeString $ root </> "include" </> "mingw-4.8.1",
-    "-isystem",
-    encodeString $ root </> "include" </> "mingw-4.8.1" </> "c++",
-    "-isystem",
-    encodeString $ root </> "include" </> "mingw-4.8.1" </> "c++" </> "mingw32",
-    "-isystem",
-    encodeString $ root </> "include",
-    "-I",
-    encodeString $ root </> "cpplib",
-    "-std=c++11",
-    "-DONLINE_JUDGE",
-    "-D__MSVCRT__=1",
-    "_D__declspec="
+clangOptions root False _ =
+    [ "-target",
+    , "i386-pc-mingw32"
+    , "-nostdinc"
+    , "-isystem"
+    , encodeString $ root </> "include" </> "mingw-4.8.1"
+    , "-isystem"
+    , encodeString $ root </> "include" </> "mingw-4.8.1" </> "c++"
+    , "-isystem"
+    , encodeString $ root </> "include" </> "mingw-4.8.1" </> "c++" </> "mingw32"
+    , "-isystem"
+    , encodeString $ root </> "include"
+    , "-I"
+    , encodeString $ root </> "cpplib"
+    , "-std=c++11"
+    , "-fparse-all-comments"
+    , "-DONLINE_JUDGE"
+    , "-D__MSVCRT__=1"
+    , "_D__declspec="
     ]
 
 -- Windows with VS headers
@@ -203,7 +204,8 @@ clangOptions root True mscver | "mingw" `isPrefixOf` os =
             ]
        else []
     ) ++
-    [ "-D_CRT_SECURE_NO_WARNINGS"
+    [ "-fparse-all-comments"
+    , "-D_CRT_SECURE_NO_WARNINGS"
     , "-DONLINE_JUDGE"
     , "-I"
     , encodeString $ root </> "cpplib"
@@ -218,6 +220,7 @@ clangOptions root True _ =
     , encodeString $ root </> "include"
     , "-I"
     , encodeString $ root </> "cpplib"
+    , "-fparse-all-comments"
     , "-DONLINE_JUDGE"
     ]
 
