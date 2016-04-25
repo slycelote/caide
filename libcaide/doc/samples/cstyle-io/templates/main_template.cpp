@@ -1,5 +1,3 @@
-#define CAIDE_STDIN 1
-#define CAIDE_STDOUT 1
 #include <cstdio>
 #include "io.h"
 
