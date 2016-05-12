@@ -1,0 +1,19 @@
+{
+  "name": "ffcaide",
+  "title": "ffcaide",
+  "id": "ffcaide@github",
+  "description": "Helper extension for caide software suite",
+  "author": "slycelote <slycelot@yandex.ru>",
+  "homepage": "https://github.com/slycelote/caide",
+  "icon": "data/icon-64.png",
+  "license": "GPL-3.0",
+  "version": "2.2.0",
+  "preferences": [{
+      "name": "caideRoot",
+      "title": "caide root directory",
+      "description": "Path to caide directory on disk",
+      "type": "directory"
+  }],
+  "main": "lib/main.js"
+}
+
