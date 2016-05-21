@@ -26,7 +26,7 @@ yandexParser = HtmlParser
 isYandexUrl :: URL -> Bool
 isYandexUrl url = case parseURI (T.unpack url) >>= uriAuthority of
     Nothing   -> False
-    Just auth -> uriRegName auth `elem` ["contest.yandex.ru", "www.contest.yandex.ru"]
+    Just auth -> uriRegName auth `elem` ["contest.yandex.ru", "www.contest.yandex.ru", "contest.yandex.com", "www.contest.yandex.com"]
 
 
 doParse :: T.Text -> Either T.Text (Problem, [TestCase])
@@ -38,7 +38,8 @@ doParse cont =
     tags = parseTags cont
 
     spanTitle = drop 1 . dropWhile (~~/== "<span>") .
-                dropWhile (~~/== "<a class='tabs-menu__tab_active_yes i-bem'>") $ tags
+                dropWhile (~~/== "<li class='tabs-menu__tab_active_yes'>") .
+                dropWhile (~~/== "<ul class='tabs-menu_role_problems'>") $ tags
     title' = T.strip <$> (listToMaybe spanTitle >>= maybeTagText)
     probId' = T.take 1 <$> title'
 
