@@ -39,13 +39,12 @@ doParseContest url = do
 
 parseChefContest :: Either T.Text URL -> Either T.Text [T.Text]
 parseChefContest (Left err)   = Left err
-parseChefContest (Right cont) = if null problemsTable
+parseChefContest (Right cont) = if null problems
                                     then Left "Couldn't parse contest"
                                     else Right problems
   where
     tags = parseTags cont
-    problemsTable = takeWhile (~~/== "</table>") . dropWhile (~~/== "<table class=problems>") $ tags
-    problemCells = sections (~~== "<div class=problemname>") problemsTable
+    problemCells = sections (~~== "<div class=problemname>") tags
     problems = mapMaybe extractUrl problemCells
 
 
