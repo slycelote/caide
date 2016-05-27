@@ -68,10 +68,12 @@ initializeProblem problem = withLock $ do
     updateTests
     generateScaffoldSolution lang
 
+isAcceptableCharacter :: Char -> Bool
+isAcceptableCharacter c = isAscii c && (c == '_' || c == '-' || isAlphaNum c)
 
 createNewProblem :: ProblemID -> ProblemType -> CaideIO ()
 createNewProblem probId probType = do
-    when (T.any (\c -> not (isAscii c) || not (isAlphaNum c)) probId) $
+    when (T.any (not . isAcceptableCharacter) probId) $
         throw . T.concat $ [probId, " is not recognized as a supported URL. ",
             "To create an empty problem, input a valid problem ID (a string of alphanumeric characters)"]
 
