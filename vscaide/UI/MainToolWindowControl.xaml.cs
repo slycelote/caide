@@ -109,7 +109,7 @@ namespace slycelote.VsCaide
                     solutionDir = recentFolder = folderBrowserDialog.SelectedPath;
                 }
 
-                if (null == CaideExe.Run(new[] { "init", "--cpp-use-system-headers" }, loud: Loudness.LOUD, solutionDir: solutionDir))
+                if (null == CaideExe.Run(new[] { "init" }, loud: Loudness.LOUD, solutionDir: solutionDir))
                 {
                     return;
                 }
@@ -177,7 +177,7 @@ namespace slycelote.VsCaide
                     CHelperServer = null;
                 }
 
-                string enableChelperServerStr = 
+                string enableChelperServerStr =
                     CaideExe.Run(new[] { "getopt", "vscaide", "enable_http_server" }, loud: Loudness.QUIET) ?? "1";
                 if (new[] { "yes", "1", "true" }.Contains(enableChelperServerStr.ToLowerInvariant().Trim()))
                 {
@@ -231,7 +231,7 @@ namespace slycelote.VsCaide
             uiCtx.Post(_ => AfterProjectsLoaded(ReloadProblemList), null);
         }
 
-        
+
         private FileSystemWatcher fsWatcher;
         private DateTime lastChange = DateTime.MinValue;
         private readonly object fsWatcherLock = new object();
@@ -244,7 +244,7 @@ namespace slycelote.VsCaide
 
         private void EnableAll(bool enable)
         {
-            btnRun.IsEnabled = btnDebug.IsEnabled = 
+            btnRun.IsEnabled = btnDebug.IsEnabled =
                 cbProblems.IsEnabled = cbProgrammingLanguage.IsEnabled = btnEditTests.IsEnabled =
                 btnAddNewProblem.IsEnabled = btnParseContest.IsEnabled = btnArchive.IsEnabled = enable;
             btnCreateOrReloadCaideSolution.Content = enable ? "Reload problem list" : "Create caide solution";
