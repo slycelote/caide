@@ -1,4 +1,4 @@
-name:           caide
+name:           libcaide
 version:        2.2.1
 cabal-version:  >= 1.14
 build-type:     Custom

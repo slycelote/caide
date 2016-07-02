@@ -5,6 +5,9 @@
 /.cabal-sandbox
 /cabal.sandbox.config
 
+### Stack ###
+/.stack-work/
+
 ### Other build artifacts ###
 /cbits/build
 /tests/tmp

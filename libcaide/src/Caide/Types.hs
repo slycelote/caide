@@ -139,7 +139,7 @@ class Option a where
     optionFromString = optionFromText . pack
     optionFromText   = optionFromString . unpack
 
-newtype Monad m => CaideM m a = CaideM { unCaideM :: StateT CaideState (ExceptT C.CPError m) a }
+newtype CaideM m a = CaideM { unCaideM :: StateT CaideState (ExceptT C.CPError m) a }
     deriving (Functor, Applicative, Monad, MonadIO, MonadError C.CPError, MonadState CaideState)
 
 type CaideIO a = CaideM IO a
