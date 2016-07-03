@@ -1,4 +1,7 @@
-{-# LANGUAGE CPP, TemplateHaskell, OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
+#ifdef CLANG_INLINER
+{-# LANGUAGE TemplateHaskell #-}
+#endif
 
 module Caide.Commands.Init(
       initialize
@@ -36,7 +39,9 @@ initialize useSystemCppHeaders = do
     _ <- writeCaideConf $ defaultCaideConf curDir useSystemCppHeaders mscver
     _ <- writeCaideState defaultCaideState
     liftIO $ do
+#ifdef CLANG_INLINER
         unpackResources curDir
+#endif
         createTree $ curDir </> "templates"
         createTree $ curDir </> ".caide" </> "templates"
         forM_ templates $ \(fileName, cont) -> do
@@ -45,6 +50,7 @@ initialize useSystemCppHeaders = do
         T.putStrLn . T.concat $ ["Initialized caide directory at ", pathToText curDir]
 
 
+#ifdef CLANG_INLINER
 -- This zip file is prepared in advance in Setup.hs
 resourcesZipFile :: BS.ByteString
 resourcesZipFile = $(embedFile "res/init.zip")
@@ -55,4 +61,5 @@ unpackResources rootDir = do
         destination = encodeString rootDir
         options = [OptDestination destination]
     extractFilesFromArchive options archive
+#endif
 

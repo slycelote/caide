@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 
 module Caide.Configuration(
       -- * General utilities
@@ -161,12 +161,19 @@ setValue section key value conf = set conf section key value
 defaultCaideConf :: FilePath -> Bool -> Int -> ConfigParser
 defaultCaideConf root useSystemHeaders mscver = forceEither $
     addSection "core" emptyCP >>=
-    setValue "core" "language" "cpp" >>=
+    setValue "core" "language" defaultLanguage >>=
     setValue "core" "features" "" >>=
     addSection "cpp" >>=
     setValue "cpp" "keep_macros" "_WIN32,_WIN64,_MSC_VER,__GNUC__,__cplusplus" >>=
     setValue "cpp" "max_consequent_empty_lines" "2" >>=
     setValue "cpp" "clang_options" (intercalate ",\n  " $ clangOptions root useSystemHeaders mscver)
+  where
+#ifdef CLANG_INLINER
+    defaultLanguage = "cpp"
+#else
+    defaultLanguage = "simplecpp"
+#endif
+
 
 clangOptions :: FilePath -> Bool -> Int -> [String]
 clangOptions root False _ =

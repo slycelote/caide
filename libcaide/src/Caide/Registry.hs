@@ -63,11 +63,15 @@ findFeature name = snd <$> find ((== T.map toLower name). fst) features
 
 languages :: [([Text], ProgrammingLanguage)]
 languages = [ (["simplec++", "simplecpp"], CPPSimple.language)
-#ifdef CLANG_INLINER
-            , (["c++", "cpp"], CPP.language)
-#endif
+            , (["c++", "cpp"], cppLanguage)
             , (["c#", "csharp", "cs"], CSharpSimple.language)
             ]
+  where
+#ifdef CLANG_INLINER
+    cppLanguage = CPP.language
+#else
+    cppLanguage = CPPSimple.language
+#endif
 
 findLanguage :: Text -> Maybe ([Text], ProgrammingLanguage)
 findLanguage name = find (\(names, _) -> T.map toLower name `elem` names) languages
