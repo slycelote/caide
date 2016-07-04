@@ -106,3 +106,13 @@ stack build --ghc-options '-pgml ghc-linker.py'
 
 The resulting executable is at `.stack-work/install/**/bin/caide`.
 
+=== 8. Install additional dependencies to run tests
+
+For some of the tests, mono compiler is required:
+
+[source,bash]
+----
+yum install epel-release
+yum install mono-core
+----
+
