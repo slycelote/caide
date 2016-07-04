@@ -5,6 +5,9 @@
 *.swp
 *~
 
+### ctags ###
+tags
+
 ### IntelliJ ###
 # User-specific stuff:
 **/.idea/workspace.xml

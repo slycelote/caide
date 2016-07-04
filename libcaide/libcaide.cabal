@@ -76,7 +76,7 @@ executable caide
   if os(windows) {
     ghc-options:   -optl-static
   } else {
-    ghc-options:   -optl-pthread -optl-static-libstdc++
+    ghc-options:   -optl-pthread
   }
   if flag(debug) {
     -- run as cabal configure -fdebug --ghc-option=-debug -O0

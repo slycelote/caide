@@ -12,8 +12,7 @@ installed MinGW in the previous step.
 client or command line:
     > git clone https://github.com/slycelote/caide
     > cd caide
-    > git submodule init
-    > git submodule update
+    > git submodule update --init --recursive
 
 6. Open MSYS shell and CD to libcaide source directory.
 7. Edit the file mingw32.sh according to the installation path of Haskell Platform.
@@ -39,8 +38,8 @@ The first build will be quite long; later rebuilds take much less time.
 
 == Linux build
 1. Prerequisites:
-  * python 2
-  * reasonably new g++
+  * python 2.7
+  * g++ >= 4.9
   * ghc >= 7.8. Latest ghc can be downloaded here: https://www.haskell.org/ghc/download.
   * latest cabal. Can be downloaded here: https://www.haskell.org/cabal/download.html.
   * zlib and gmp development packages. (In Debian: apt-get install zlib1g-dev libgmp10-dev.)
@@ -50,8 +49,7 @@ To run tests, you will also need mono. In Debian: apt-get install mono-gmcs binf
 2. Clone source code repository and submodules:
     > git clone https://github.com/slycelote/caide
     > cd caide/libcaide
-    > git submodule init
-    > git submodule update
+    > git submodule update --init --recursive
 
 3. Update package database:
     > cabal update
