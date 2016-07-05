@@ -55,7 +55,7 @@ executable caide
                    file-embed,
                    filelock,
                    filepath,
-                   http-client >= 0.4,
+                   http-client >= 0.4 && < 0.5,
                    http-client-tls,
                    http-types >= 0.9,
                    mtl >= 2.2.1,
