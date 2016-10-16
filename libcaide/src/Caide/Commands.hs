@@ -8,6 +8,9 @@ import Control.Monad (void)
 #if !MIN_VERSION_base(4, 8, 0)
 import Data.Monoid (mconcat)
 #endif
+#if MIN_VERSION_optparse_applicative(13, 0, 0)
+import Data.Monoid ((<>))
+#endif
 import qualified Data.Text as T
 import System.Exit (exitWith, ExitCode(ExitFailure))
 import System.Environment (getExecutablePath)
