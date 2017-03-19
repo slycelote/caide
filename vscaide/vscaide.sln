@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.26014.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VsCaide", "VsCaide.csproj", "{86A07D56-FBE5-4FCE-AB05-7E6A270C0631}"
 EndProject
@@ -12,6 +12,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonUtilities", "CommonUtilities\CommonUtilities.csproj", "{F2954907-D6C2-48AC-A2BA-651E5BC280D5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vs2013", "VersionSpecific\Vs2013\Vs2013.csproj", "{68FBDFB4-EF32-46AE-9BA9-B5165DE398C4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vs2017", "VersionSpecific\Vs2017\Vs2017.csproj", "{8F37650D-5DC4-4558-B615-CF510B5A1D3F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{68FBDFB4-EF32-46AE-9BA9-B5165DE398C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{68FBDFB4-EF32-46AE-9BA9-B5165DE398C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{68FBDFB4-EF32-46AE-9BA9-B5165DE398C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F37650D-5DC4-4558-B615-CF510B5A1D3F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F37650D-5DC4-4558-B615-CF510B5A1D3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F37650D-5DC4-4558-B615-CF510B5A1D3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F37650D-5DC4-4558-B615-CF510B5A1D3F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

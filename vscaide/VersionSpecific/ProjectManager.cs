@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 
 using VsInterface;
@@ -17,7 +15,7 @@ using Microsoft.VisualStudio.VCProjectEngine;
 namespace slycelote.VsCaide.VsSpecific
 {
     /// <summary>
-    /// This is a common implementation for Vs2013 and Vs2015.
+    /// This is a common implementation for all Visual Studio versions.
     /// The only difference is which version of VCProjectEngine assembly the DLL references.
     /// </summary>
     public class ProjectManager : IProjectManager

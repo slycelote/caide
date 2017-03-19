@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 using slycelote.VsCaide.Utilities;
 using VsInterface;
@@ -23,7 +19,11 @@ namespace slycelote.VsCaide
             else
             {
                 var parts = version.Split('.');
-                if (parts.Length > 0 && parts[0] == "14")
+                if (parts.Length > 0 && parts[0] == "15")
+                {
+                    version = "2017";
+                }
+                else if (parts.Length > 0 && parts[0] == "14")
                 {
                     version = "2015";
                 }
