@@ -47,11 +47,11 @@ def collect_args(command, result):
 
 
 def find_library(lib):
-    for dir_path in ['/usr/lib64', '/usr/lib']:
+    for dir_path in ['/usr/lib64', '/usr/lib', '/usr/local/lib64', '/usr/local/lib']:
         path = dir_path + '/lib' + lib + '.a'
         if os.path.isfile(path):
             return path
-    raise "Could not find static library " + lib
+    raise IOError("Could not find static library " + lib)
 
 
 def main():
