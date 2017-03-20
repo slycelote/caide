@@ -16,6 +16,6 @@ function run_csharp_executable {
 }
 
 function render_js {
-    "$PHANTOMJS" --load-images=false --local-url-access=false "$cur_dir/render.js" "$1" .page.html
+    "$PHANTOMJS" --load-images=false "$cur_dir/render.js" "$1" .page.html
 }
 
