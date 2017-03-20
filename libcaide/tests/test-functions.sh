@@ -15,3 +15,7 @@ function run_csharp_executable {
     fi
 }
 
+function render_js {
+    "$PHANTOMJS" --load-images=false --local-url-access=false "$cur_dir/render.js" "$1" .page.html
+}
+
