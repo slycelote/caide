@@ -44,7 +44,7 @@ The first build will be quite long; later rebuilds take much less time.
   * latest cabal. Can be downloaded here: https://www.haskell.org/cabal/download.html.
   * zlib and gmp development packages. (In Debian: apt-get install zlib1g-dev libgmp10-dev.)
 
-To run tests, you will also need mono. In Debian: apt-get install mono-gmcs binfmt-support.
+To run tests, you will also need mono and phantomjs. In Debian: apt-get install mono-gmcs binfmt-support phantomjs.
 
 2. Clone source code repository and submodules:
     > git clone https://github.com/slycelote/caide
