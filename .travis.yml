@@ -14,6 +14,7 @@ addons:
             - binutils
             - cmake
             - mono-gmcs
+            - phantomjs
 
 install: true
 script: travis/build-and-test.sh
