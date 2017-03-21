@@ -6,15 +6,14 @@ module Caide.Parsers.HackerRank(
 #ifndef AMP
 import Control.Applicative ((<$>))
 #endif
-import Data.Char (isAlphaNum)
-import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
+import Data.Char (isAlphaNum, isSpace)
+import Data.Maybe (fromMaybe, listToMaybe)
 import qualified Data.Text as T
 import Network.URI (parseURI, uriAuthority, uriRegName)
 
-import Text.HTML.TagSoup (maybeTagText, parseTags, partitions)
+import Text.HTML.TagSoup (maybeTagText, parseTags, partitions,
+    Tag(TagText))
 import Text.HTML.TagSoup.Utils
-
-import Caide.Parsers.Common (normalizeText)
 
 import Caide.Types
 
@@ -45,14 +44,17 @@ doParse cont =
     title  = fromMaybe "Unknown" title'
     probId = T.append "hr" . fromMaybe "Unknown" $ probId'
 
-    problemStatement = takeWhile (~~/== "<footer>") . dropWhile (~~/== "<div class=challenge-text>") $ tags
+    problemStatement = dropWhile (~~/== "<div class=challenge-text>") $ tags
+    samples = partitions (\tag -> tag ~~== "<div class=challenge_sample_input_body>" || tag ~~== "<div class=challenge_sample_output_body>") problemStatement
 
-    pres = partitions (~~== "<pre>") problemStatement
-    codes = mapMaybe (listToMaybe . drop 1 . dropWhile (~~/== "<code>")) pres
-    texts = map normalizeText . mapMaybe maybeTagText $ codes
+    pres = map (drop 1 . takeWhile (~~/== "</pre>") . dropWhile (~~/== "<pre>") ) samples
+    texts = map extractText pres
     t = drop (length texts `mod` 2) texts
     testCases = [TestCase (t!!i) (t!!(i+1)) | i <- [0, 2 .. length t-2]]
 
     probType = Stream StdIn StdOut
     problem = (Problem title probId probType, testCases)
+
+extractText :: [Tag T.Text] -> T.Text
+extractText tags = T.unlines [t | TagText t <- tags, not (T.all isSpace t)]
 

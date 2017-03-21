@@ -19,3 +19,8 @@ function render_js {
     "$PHANTOMJS" --load-images=false "$cur_dir/render.js" "$1" .page.html
 }
 
+function parse_with_js {
+    render_js "$1"
+    "$CAIDE" problem --from-file .page.html "$1"
+}
+
