@@ -4,8 +4,6 @@ caide is a command line application which is the core of caide software suite.
  Simply unpack caide executable to your hard drive. Optionally, put it into a
 directory in your PATH for easier access.
 
- On Linux you will need to ensure certain libraries are installed, in
-particular libstdc++6, zlib1g, libgmp10.
 
 # Quick start
 1. Run `caide init` in an empty directory to initialize caide project.
@@ -190,8 +188,7 @@ code:
 and your compiler can parse it. In particular, avoid using compiler specific
 functions.
 
-   You can [setup](#cpp) caide to use your system headers instead. VsCaide
-will do this automatically.
+   You can [setup](#cpp) caide to use your system headers instead.
 
 2. You can think of inliner as roughly the following algorithm:
 
@@ -201,13 +198,35 @@ will do this automatically.
   * Remove unused code.
 
    This should give you an idea of what kind of code you should avoid:
-identically named classes/variables, `#define`s with different meaning in
-different files etc.
+   identically named classes/global variables, `#define`s with different
+   meaning in different files etc.
 
 3. Sometimes the inliner will erroneously remove a used declaration (a
-   function or a variable). You should report it, but for an immediate fix,
-mark the declaration with `/// caide keep` or `/** caide keep */` comment
-(note the triple slash and the double star).
+   function or a variable). You should [report it](#bugs), but for an
+   immediate fix, mark the declaration with `// caide keep` or `/* caide keep
+   */` comment.
+
+
+# Command reference
+
+Run `caide -h` for the list of commands. Commands marked with (Internal) are
+'plumbing layer' not meant for the end user but for use in scripts (such as
+[builders](#builder)), IDEs etc.
+
+
+<a name="bugs"/>
+# Troubleshooting
+
+You can report issues on [github](https://github.com/slycelote/caide/issues)
+or in [Codeforces thread](http://codeforces.com/blog/entry/18838). Try to
+include as much information as possible, such as:
+
+* Your operating system (in Linux, output of `uname -a`).
+* Your caide.ini file.
+* If the problem is related to C++ code inliner, add a `-v` option to
+  `clang_options` list in caide.ini file. This will produce more diagnostics
+output.
+
 
 # Description of files in caide folder
 
@@ -250,23 +269,4 @@ it here.
   to generate submission file.
 * `.caideproblem` directory contains internal caide files. Don't modify them
   unless you know what you're doing.
-
-
-# Command reference
-
-Run `caide -h` for the list of commands. Commands marked with (Internal) are
-'plumbing layer' not meant for the end user but for use in scripts (such as
-[builders](#builder)), IDEs etc.
-
-# Troubleshooting
-
-You can report issues on [github](https://github.com/slycelote/caide/issues)
-or in [Codeforces thread](http://codeforces.com/blog/entry/18838). Try to
-include as much information as possible, such as:
-
-* Your operating system (in Linux, output of `uname -a`).
-* Your caide.ini file.
-* If the problem is related to C++ code inliner, add a `-v` option to
-  `clang_options` list in caide.ini file. This will produce more diagnostics
-output.
 
