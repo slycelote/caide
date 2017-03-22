@@ -9,7 +9,8 @@ import Data.Maybe (isNothing)
 import qualified Data.Text as T
 import Network.HTTP.Client (HttpException(..), httpLbs, newManager, parseUrl,
                             responseStatus, responseBody, responseTimeout, requestHeaders, Request)
-import Network.HTTP.Client.TLS (tlsManagerSettings)
+import Network.Connection (TLSSettings(TLSSettingsSimple))
+import Network.HTTP.Client.TLS (mkManagerSettings)
 import Network.HTTP.Types.Header (hAccept, hAcceptEncoding, hConnection, hUserAgent)
 import Network.HTTP.Types.Status (ok200, statusMessage)
 import System.IO.Error (catchIOError, ioeGetErrorString)
@@ -60,6 +61,7 @@ statusExceptionHandler = return . Left . describeHttpException
 
 httpDownloader :: Request -> IO (Either T.Text T.Text)
 httpDownloader request = do
+    let tlsManagerSettings = mkManagerSettings (TLSSettingsSimple True False False) Nothing
     manager <- newManager tlsManagerSettings
     response <- httpLbs request manager
     let status = responseStatus response

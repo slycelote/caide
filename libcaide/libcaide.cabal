@@ -50,6 +50,7 @@ executable caide
                    async >= 2.0.1,
                    bytestring,
                    ConfigFile,
+                   connection,
                    containers >= 0.5.0.0,
                    directory,
                    file-embed,
