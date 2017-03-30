@@ -29,8 +29,8 @@ for a Visual Studio Extension.
 # Quick start
 
 Simply open a problem in Topcoder Arena. Solution template and testing code
-will be created automatically. Don't forget to hit 'Compile' button in Arena
-before submitting!
+will be created automatically. Don't forget to run `caide make` and hit 'Compile'
+button in Arena before submitting!
 
 
 # Configuration

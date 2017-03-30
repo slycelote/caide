@@ -35,8 +35,8 @@ bool customChecker(istream& input, istream& userOutput, istream& judgeOutput,
     // Declare and read judge return value
     CAIDE_TC_RETURN_TYPE judgeResult; tcread(judgeOutput, judgeResult);
     // Declare and read input parameters
-    char c;
-#define CAIDE_TC_PARAM(type, name) type name; input >> c; tcread(input, name);
+    char caide_char;
+#define CAIDE_TC_PARAM(type, name) type name; input >> caide_char; tcread(input, name);
     CAIDE_TC_PARAM_LIST
 #undef CAIDE_TC_PARAM
 #endif
@@ -207,8 +207,8 @@ void solve(istream& in, ostream& out) {
     out << std::setprecision(12);
 
     // Declare and read parameters
-    char c;
-#define CAIDE_TC_PARAM(type, name) type name; in >> c; tcread(in, name);
+    char caide_char;
+#define CAIDE_TC_PARAM(type, name) type name; in >> caide_char; tcread(in, name);
     CAIDE_TC_PARAM_LIST
 #undef CAIDE_TC_PARAM
 
