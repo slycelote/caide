@@ -44,7 +44,7 @@ file.
 # Configuration
 
 VsCaide should work out of the box. However, you can tweak most configuration
-options described in [libcaide
+options described in [caide
 README](https://github.com/slycelote/caide/tree/release/libcaide/README.md#configuration).
 Make sure to read the section on [C++
 inliner](https://github.com/slycelote/caide/tree/release/libcaide/README.md#inliner)

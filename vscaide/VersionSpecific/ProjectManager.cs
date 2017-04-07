@@ -236,14 +236,14 @@ namespace slycelote.VsCaide.VsSpecific
                 var debugSettings = (VCDebugSettings)conf.DebugSettings;
                 debugSettings.WorkingDirectory = "$(ProjectDir)";
 
-                var tools = (IVCCollection)conf.Tools; 
+                var tools = (IVCCollection)conf.Tools;
                 var linkerTool = (VCLinkerTool)tools.Item("VCLinkerTool");
                 linkerTool.SubSystem = subSystemOption.subSystemConsole;
 
                 var compileTool = (VCCLCompilerTool)tools.Item("VCCLCompilerTool");
                 var postBuildEventTool = (VCPostBuildEventTool)tools.Item("VCPostBuildEventTool");
 
-                postBuildEventTool.CommandLine = Paths.CaideExe + " make";
+                postBuildEventTool.CommandLine = "\"" + Paths.CaideExe + "\" make";
                 postBuildEventTool.Description = "Prepare final code for submission";
                 postBuildEventTool.ExcludedFromBuild = false;
 
@@ -323,7 +323,7 @@ namespace slycelote.VsCaide.VsSpecific
 
             var submissionFile = Path.Combine("..", "submission.cpp");
 
-            if (!project.ProjectItems.OfType<ProjectItem>().Any(item => 
+            if (!project.ProjectItems.OfType<ProjectItem>().Any(item =>
                 submissionFile.Equals(item.Name, StringComparison.CurrentCultureIgnoreCase)))
             {
                 project.ProjectItems.AddFromFile(submissionFile);
@@ -337,7 +337,7 @@ namespace slycelote.VsCaide.VsSpecific
                 var debugSettings = (VCDebugSettings)conf.DebugSettings;
                 debugSettings.WorkingDirectory = "$(ProjectDir)";
 
-                var tools = (IVCCollection)conf.Tools; 
+                var tools = (IVCCollection)conf.Tools;
                 var linkerTool = (VCLinkerTool)tools.Item("VCLinkerTool");
                 linkerTool.SubSystem = subSystemOption.subSystemConsole;
             }
@@ -354,7 +354,7 @@ namespace slycelote.VsCaide.VsSpecific
                 File.WriteAllText(submissionCs, "");
             }
 
-            if (!project.ProjectItems.OfType<ProjectItem>().Any(item => 
+            if (!project.ProjectItems.OfType<ProjectItem>().Any(item =>
                 "submission.cs".Equals(item.Name, StringComparison.CurrentCultureIgnoreCase)))
             {
                 project.ProjectItems.AddFromFile(submissionCs);

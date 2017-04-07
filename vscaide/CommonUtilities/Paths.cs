@@ -41,7 +41,7 @@ namespace slycelote.VsCaide.Utilities
                 {
                     var csProj = Path.Combine(PackageInstallationDir, "Resources", "vscaide_cs_template.csproj");
                     var template = File.ReadAllText(csProj);
-                    var newTemplate = template.Replace("CAIDE_EXE", Paths.CaideExe);
+                    var newTemplate = template.Replace("CAIDE_EXE", "\"" + Paths.CaideExe + "\"");
                     if (newTemplate != template)
                     {
                         File.WriteAllText(csProj, newTemplate);
@@ -57,6 +57,6 @@ namespace slycelote.VsCaide.Utilities
         {
             return Path.GetFullPath(new Uri(path).LocalPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         }
-    
+
     }
 }

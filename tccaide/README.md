@@ -6,7 +6,7 @@ in caide tools.
 Note: JRE 1.7+ is required.
 
 1. Create a caide project in one of caide tools. See
-   [libcaide](https://github.com/slycelote/caide/tree/release/libcaide/README.md)
+   [caide](https://github.com/slycelote/caide/tree/release/libcaide/README.md)
 for a command line tool or
 [VsCaide](https://github.com/slycelote/caide/tree/release/vscaide/README.md)
 for a Visual Studio Extension.
@@ -29,13 +29,13 @@ for a Visual Studio Extension.
 # Quick start
 
 Simply open a problem in Topcoder Arena. Solution template and testing code
-will be created automatically. Don't forget to run `caide make` and hit 'Compile'
-button in Arena before submitting!
+will be created automatically. Don't forget to hit 'Compile' button in Arena
+before submitting!
 
 
 # Configuration
 
-The topcoder plugin doesn't have any options. Refer to [libcaide
+The topcoder plugin doesn't have any options. Refer to [caide
 documentation](https://github.com/slycelote/caide/tree/release/libcaide/README.md)
 for general caide configuration.
 

@@ -33,7 +33,7 @@ Visual Studio:
 
 caide is split into the following components (click the links to learn more):
 
-* [libcaide](https://github.com/slycelote/caide/blob/release/libcaide/README.md)
+* [caide](https://github.com/slycelote/caide/blob/release/libcaide/README.md)
   is core command line application implementing all functionality. Windows and
 Linux are supported. Theoretically, it should also build on OS X.
 * [VsCaide](https://github.com/slycelote/caide/blob/release/vscaide/README.md)
