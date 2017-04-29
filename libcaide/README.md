@@ -41,7 +41,7 @@ server that will accept requests from Chrome. This is done in command line
 with `caide httpServer`. Hit Return to stop the server.
 
 
-<a name="configuration" />
+<a name="configuration"></a>
 # Configuration
 Most settings are stored in `caide.ini` file in the project root.
 
@@ -58,7 +58,7 @@ file.
 section of the file. Currently the only implemented feature is 'codelite'
 which enables a limited [support for Codelite IDE](#codelite).
 
-<a name="cpp"/>
+<a name="cpp"></a>
 ## [cpp] section
 [cpp] section contains settings for C++ language.
 
@@ -118,14 +118,14 @@ which controls the maximum admissible difference between a floating point
 number in the output and the corresponding floating point number in the
 etalon.
 
-<a name="templates"/>
+<a name="templates"></a>
 ## Templates
 
 `templates` folder contains skeleton code files and project files from which
 corresponding files for new problems are generated. For example, if you're
 unhappy with generated solution code, you can edit its template.
 
-<a name="builder"/>
+<a name="builder"></a>
 ## Builder
 
 A builder is a script that compiles and runs your solution. If a builder is
@@ -138,7 +138,7 @@ value of the setting should be the actual command that runs your builder.
 [Samples](https://github.com/slycelote/caide/tree/release/libcaide/doc/samples)
 directory contains examples of builders for C++ and C# programming languages.
 
-<a name="ide" />
+<a name="ide"></a>
 # IDE support
 ## Visual Studio
 
@@ -146,7 +146,7 @@ See
 [readme](https://github.com/slycelote/caide/tree/release/vscaide/README.md)
 for VsCaide extension in that project's directory.
 
-<a name="codelite"/>
+<a name="codelite"></a>
 ## Codelite
 
 caide core contains limited support for [Codelite IDE](http://codelite.org).
@@ -166,7 +166,7 @@ setup. You can edit the template in a text editor, or you can modify a
 generated project in Codelite GUI and replace the
 `codelite_project_template.project` file with the modified project.
 
-<a name="inliner"/>
+<a name="inliner"></a>
 # C++ code inliner
 
 Online judges typically require that you send a single code file. It makes
@@ -214,7 +214,7 @@ Run `caide -h` for the list of commands. Commands marked with (Internal) are
 [builders](#builder)), IDEs etc.
 
 
-<a name="bugs"/>
+<a name="bugs"></a>
 # Troubleshooting
 
 You can report issues on [github](https://github.com/slycelote/caide/issues)
