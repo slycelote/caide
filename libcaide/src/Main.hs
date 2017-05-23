@@ -9,6 +9,7 @@ import System.Exit (exitWith, ExitCode(ExitFailure))
 import System.IO (hIsTerminalDevice, stdin)
 
 import Caide.Commands (runMain)
+import Caide.Commands.FirefoxServer (runFirefoxServer)
 
 
 findRootCaideDir :: F.FilePath -> IO (Maybe F.FilePath)
@@ -27,14 +28,14 @@ data RunningMode
     deriving (Eq, Show)
 
 findRunningMode :: Bool -> IO RunningMode
-findRunningMode False = do
+findRunningMode True = do
     isTerminal <- hIsTerminalDevice stdin
     if isTerminal
-        then findRunningMode True
+        then findRunningMode False
         else return FirefoxServer
 
 
-findRunningMode True = do
+findRunningMode False = do
     workDir <- getWorkingDirectory
     caideDir <- findRootCaideDir workDir
     return $ case caideDir of
@@ -49,7 +50,7 @@ main = do
         mainAction = runMain args
     mode <- findRunningMode (null args)
     case (mode, mainAction) of
-        (FirefoxServer, _) -> undefined
+        (FirefoxServer, _) -> runFirefoxServer
         (_, Left ioAction) -> ioAction
         (NewDir dir, Right caideCmd) ->
             if cmd == "init"

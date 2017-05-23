@@ -46,8 +46,10 @@ executable caide
   }
 
   build-depends:
+                   aeson,
                    array,
                    async >= 2.0.1,
+                   binary,
                    bytestring,
                    ConfigFile,
                    connection,
@@ -69,6 +71,7 @@ executable caide
                    system-filepath,
                    tagsoup >= 0.13,
                    text >= 1.1.0,
+                   unordered-containers,
                    xml,
                    zip-archive
   other-extensions: CPP
