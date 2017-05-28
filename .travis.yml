@@ -1,5 +1,4 @@
-language: haskell
-ghc: 7.10.3
+language: c
 
 dist: trusty
 sudo: false
