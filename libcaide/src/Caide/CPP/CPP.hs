@@ -15,7 +15,7 @@ import Filesystem (copyFile, isDirectory)
 import Filesystem.Path.CurrentOS (fromText)
 import Filesystem.Path ((</>), FilePath, hasExtension)
 
-import Filesystem.Util (appendTextFile, listDir)
+import Filesystem.Util (appendTextFile, listDir, pathToText)
 
 import qualified Caide.CPP.CPPSimple as CPPSimple
 
@@ -40,7 +40,7 @@ inlineCPPCode probID = do
 
     hConf <- readCaideConf
     cmdLineOptions <- getProp hConf "cpp" "clang_options"
-    macrosToKeep <- withDefault ["ONLINE_JUDGE"] $ getProp hConf "cpp" "keep_macros"
+    macrosToKeep <- withDefault [] $ getProp hConf "cpp" "keep_macros"
     maxConsequentEmptyLines <- withDefault 2 $ getProp hConf "cpp" "max_consequent_empty_lines"
 
     hProbConf <- readProblemConfig probID
@@ -58,7 +58,7 @@ inlineCPPCode probID = do
         outputPath = problemDir </> "submission.cpp"
 
     ret <- liftIO $
-        inlineLibraryCode tempDir cmdLineOptions macrosToKeep maxConsequentEmptyLines allCppFiles outputPath
+        inlineLibraryCode tempDir (cmdLineOptions ++ ["-I", pathToText problemDir]) macrosToKeep maxConsequentEmptyLines allCppFiles outputPath
 
     when (ret /= 0) $
         throw . T.concat $ ["C++ inliner failed with error code ", tshow ret]

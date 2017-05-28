@@ -83,13 +83,19 @@ generateSolutionFiles DCJ root probID = do
     unless mainFileExists $ do
         mainTemplate <- getTemplate "dcj_main_template.cpp"
         liftIO $ writeTextFile mainProgramPath mainTemplate
-    copyTemplateUnlessExists "dcj_solution_template.cpp" scaffoldPath
+    solutionFileExists <- liftIO $ isFile solutionPath
+    unless solutionFileExists $ do
+        solutionTemplate <- getTemplate "dcj_solution_template.cpp"
+        liftIO $ writeTextFile solutionPath $
+            T.unlines [T.concat ["#include \"", probID, ".h\""], solutionTemplate]
     copyTemplateUnlessExists "dcj_test_template.cpp" testProgramPath
+    copyTemplateUnlessExists "message.h" messageApiPath
   where
     problemDir = root </> fromText probID
-    scaffoldPath    = problemDir </> fromText (T.append probID ".cpp")
+    solutionPath    = problemDir </> fromText (T.append probID ".cpp")
     testProgramPath = problemDir </> fromText (T.append probID "_test.cpp")
     mainProgramPath = problemDir </> "main.cpp"
+    messageApiPath  = problemDir </> "message.h"
 
 
 -- Note: this will fail if Topcoder ever adds a multi-argument template types
@@ -169,12 +175,8 @@ inlineCPPCode probID = do
             mainCode <- readTextFile' mainProgramPath
             liftIO $ appendTextFile inlinedCodePath mainCode
         DCJ        -> do
-            let dcjHeaders = T.unlines
-                    [ "#include <message.h>"
-                    , T.concat ["#include <", probID, ".h>"]
-                    ]
             mainCode <- readTextFile' mainProgramPath
-            liftIO $ appendTextFile inlinedCodePath $ T.unlines [dcjHeaders, mainCode]
+            liftIO $ appendTextFile inlinedCodePath mainCode
         Topcoder _ -> return ()
 
     liftIO $ copyFile inlinedCodePath $ root </> "submission.cpp"

@@ -1,14 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Caide.DCJ (
-      makeTestCasesHeader
-
-    , Variable(..)
-    , FunctionSignature(..)
-    , makeTestInterface
-    , makeTestCaseImpl
-    , makeFunctionImpl
-    , varParser
-    , funcParser
+      makeDcjProblemHeaders
 ) where
 
 import Control.Monad (when)
@@ -43,15 +35,23 @@ data ParsedHeader
     , headerId :: !Int
     }
 
-makeTestCasesHeader :: [Text] -> Text
-makeTestCasesHeader [] = ""
-makeTestCasesHeader headers = T.unlines $
-    includes ++ ["namespace dcj {", testInterface] ++ namespaces
-    ++ [customTestCase, testCaseArray, testCaseDispatch, "} // namespace dcj"]
-    ++ ["extern \"C\" {"]
-    ++ map dispatchFunction functions
-    ++ ["}"]
+makeDcjProblemHeaders :: [Text] -> (Text, Text)
+makeDcjProblemHeaders [] = ("", "")
+makeDcjProblemHeaders headers = (testHeader, problemApiHeader)
   where
+    testHeader = T.unlines $
+        includes ++ ["namespace dcj {", testInterface] ++ namespaces
+        ++ [customTestCase, testCaseArray, testCaseDispatch, "} // namespace dcj"]
+        ++ ["extern \"C\" {"]
+        ++ map dispatchFunction functions
+        ++ ["}"]
+    problemApiHeader = T.unlines $
+        [ "#pragma once"
+        , "extern \"C\" {"
+        ]
+        ++ [T.concat ["    ", displayFunc f, ";"] | f <- functions]
+        ++ ["}"]
+
     includes = concatMap headerIncludes parsedHeaders ++ ["#include <stdexcept>"]
     namespaces = map (encloseInNamespace functions) parsedHeaders
     functions = parseSignatures (head parsedHeaders)
