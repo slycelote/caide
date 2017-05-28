@@ -6,7 +6,6 @@ export CC=gcc-4.9
 
 git submodule update --init --recursive
 cd libcaide
-travis_retry cabal update
 cabal install --only-dependencies
 
 cabal configure
