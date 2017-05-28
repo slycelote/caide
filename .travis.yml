@@ -22,6 +22,10 @@ addons:
             - mono-gmcs
             - phantomjs
             - cabal-install-1.22
+            - ghc-7.10.3
+
+before_install:
+ - export PATH=/opt/ghc/7.10.3/bin:/opt/cabal/1.22/bin:$PATH
 
 install: true
 script: travis/build-and-test.sh
