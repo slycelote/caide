@@ -15,7 +15,7 @@ import Filesystem (copyFile, isDirectory)
 import Filesystem.Path.CurrentOS (fromText)
 import Filesystem.Path ((</>), FilePath, hasExtension)
 
-import Filesystem.Util (listDir)
+import Filesystem.Util (appendTextFile, listDir)
 
 import qualified Caide.CPP.CPPSimple as CPPSimple
 
@@ -54,6 +54,7 @@ inlineCPPCode probID = do
     let allCppFiles = case probType of
             Stream _ _ -> solutionPath:mainFilePath:libraryCPPFiles
             Topcoder _ -> solutionPath:libraryCPPFiles
+            DCJ        -> solutionPath:mainFilePath:libraryCPPFiles
         outputPath = problemDir </> "submission.cpp"
 
     ret <- liftIO $
@@ -61,6 +62,13 @@ inlineCPPCode probID = do
 
     when (ret /= 0) $
         throw . T.concat $ ["C++ inliner failed with error code ", tshow ret]
+
+    when (probType == DCJ) $ do
+        let dcjHeaders = T.unlines
+                [ "#include <message.h>"
+                , T.concat ["#include <", probID, ".h>"]
+                ]
+        liftIO $ appendTextFile outputPath dcjHeaders
 
     liftIO $ copyFile outputPath $ root </> "submission.cpp"
 

@@ -79,27 +79,29 @@ data Problem = Problem
     , problemType :: !ProblemType
     } deriving (Show)
 
-data ProblemType = Topcoder !TopcoderProblemDescriptor | Stream !InputSource !OutputTarget
-    deriving (Show)
+data ProblemType = Stream !InputSource !OutputTarget
+                 | Topcoder !TopcoderProblemDescriptor
+                 | DCJ
+    deriving (Eq, Show)
 data InputSource = StdIn | FileInput !F.FilePath
-    deriving (Show)
+    deriving (Eq, Show)
 data OutputTarget = StdOut | FileOutput !F.FilePath
-    deriving (Show)
+    deriving (Eq, Show)
 
 data TopcoderProblemDescriptor = TopcoderProblemDescriptor
     { tcClassName        :: !Text
     , tcMethod           :: !TopcoderValue
     , tcMethodParameters :: ![TopcoderValue]
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 data TopcoderValue = TopcoderValue
     { tcValueName      :: !Text          -- ^ Parameter/method name
     , tcValueType      :: !TopcoderType  -- ^ Base type of the parameter, e.g. int for vector<vector<int>>
     , tcValueDimension :: !Int           -- ^ Dimension, e.g. 2 for vector<vector<int>>
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 data TopcoderType = TCInt | TCLong | TCDouble | TCString
-    deriving (Show)
+    deriving (Eq, Show)
 
 type URL = Text
 
@@ -340,6 +342,7 @@ instance Option ProblemType where
                         map optionToText (tcMethod desc : tcMethodParameters desc))
     optionToString (Stream input output) = concat [
         "file,", inputSourceToString input, ",", outputTargetToString output]
+    optionToString DCJ = "dcj"
 
     optionFromText s | "topcoder," `T.isPrefixOf` s = case maybeParams of
         Just (method:params) -> Just $ Topcoder TopcoderProblemDescriptor
@@ -354,6 +357,8 @@ instance Option ProblemType where
         maybeParams = if length components >= 3
             then mapM optionFromText paramsStr
             else Nothing
+
+    optionFromText s | s == "dcj" = Just DCJ
 
     optionFromText s = case optionFromText s of
         Just [probType, inputSource, outputSource]

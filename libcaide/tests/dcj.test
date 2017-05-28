@@ -1,0 +1,15 @@
+#!/bin/bash
+
+(echo -ne "\xEC\x04\x00\x00" && cat request.json) | "$CAIDE"
+
+compare_with after-parse pancakes/{case{1,2,3}.in,problem.ini}
+
+cd pancakes
+"$CXX" -std=c++11 pancakes.cpp pancakes_test.cpp
+
+cd ..
+"$CAIDE" make
+touch stdinc/message.h
+touch stdinc/pancakes.h
+"$CXX" -isystem stdinc submission.cpp
+

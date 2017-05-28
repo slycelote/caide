@@ -93,6 +93,8 @@ generateSolutionFiles (Topcoder tcDesc) root probID = do
         "}"
         ]
 
+generateSolutionFiles DCJ _ _ = throw "C# is not supported at Distributed Code Jam"
+
 
 inlineCSharpCode :: ProblemID -> CaideIO ()
 inlineCSharpCode probID = do
@@ -111,6 +113,8 @@ inlineCSharpCode probID = do
             liftIO $ do
                 copyFile solutionPath inlinedCodePath
                 appendTextFile inlinedCodePath mainCode
+
+        DCJ -> throw "C# is not supported at Distributed Code Jam"
 
     liftIO $ copyFile inlinedCodePath $ root </> "submission.cs"
 

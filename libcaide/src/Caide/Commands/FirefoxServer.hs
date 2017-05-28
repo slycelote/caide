@@ -9,6 +9,7 @@ import Data.HashMap.Lazy ((!))
 import qualified Data.HashMap.Lazy as Map
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Vector as V
 import System.IO (hSetBuffering, stdout, BufferMode(NoBuffering))
 
 
@@ -29,8 +30,8 @@ import Caide.Types
 processMessage :: Value -> IO Value
 processMessage (Object kvMap) = do
     ret <- runInDirectory (fromText caideDir) $ case () of
-        () | probType == "default" -> processDefault kvMap
-           | probType == "dcj"     -> processDcj kvMap
+        () | probType `elem` ["default", "stream"] -> processDefault url doc
+           | probType == "dcj" -> processDcj probTitle (map getString $ V.toList sampleInputs)
         _ -> throw "Unexpected problem type"
     return $ case ret of
         Left err -> errorMessage . T.pack . describeError $ err
@@ -38,7 +39,13 @@ processMessage (Object kvMap) = do
 
   where
     String probType = kvMap!"problemType"
+    String probTitle = kvMap!"problemTitle"
     String caideDir = kvMap!"caideDir"
+    String url = kvMap!"url"
+    String doc = kvMap!"document"
+    Array sampleInputs = kvMap!"sampleInputs"
+    getString (String s) = s
+    getString _ = error "Unexpected JSON input"
 
 processMessage _ = error "Unexpected JSON input"
 
@@ -50,21 +57,26 @@ errorMessage :: Text -> Value
 errorMessage err = Object $ Map.singleton "error" (String err)
 
 
-processDefault :: Map.HashMap Text Value -> CaideIO ()
-processDefault kvMap = do
-    let String url = kvMap!"url"
-        String doc = kvMap!"document"
-        Just htmlParser = findHtmlParserForUrl url
+processDefault :: URL -> Text -> CaideIO ()
+processDefault url doc = do
+    let Just htmlParser = findHtmlParserForUrl url
         parseResult = parseFromHtml htmlParser doc
     case parseResult of
         Left err -> throw . T.unlines $ ["Encountered a problem while parsing:", err]
         Right (problem, samples) -> saveProblem problem samples
 
 
-processDcj :: Map.HashMap Text Value -> CaideIO ()
-processDcj = undefined
+processDcj :: Text -> [Text] -> CaideIO ()
+processDcj probTitle sampleInputHeaders = saveProblem problem samples
+  where
+    problem = Problem
+            { problemName = probTitle
+            , problemId = probTitle
+            , problemType = DCJ
+            }
+    samples = [TestCase input "" | input <- sampleInputHeaders]
 
--- In Firefox native messaging, a message in JSON is preceded by it's byte length in host order.
+-- In Firefox native messaging, a JSON message is preceded by its byte length in host order.
 data Messages = Messages [Value]
 
 putMessage :: Value -> Put

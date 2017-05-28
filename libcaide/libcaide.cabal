@@ -72,6 +72,7 @@ executable caide
                    tagsoup >= 0.13,
                    text >= 1.1.0,
                    unordered-containers,
+                   vector,
                    xml,
                    zip-archive
   other-extensions: CPP

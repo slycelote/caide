@@ -25,6 +25,7 @@ import Caide.Configuration (getDefaultLanguage, setActiveProblem, getProblemConf
                             getProblemStateFile, defaultProblemConfig, defaultProblemState)
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
+import Caide.DCJ (makeTestCasesHeader)
 import Caide.Registry (findHtmlParserForUrl, findProblemParser)
 import Caide.Util (mapWithLimitedThreads, readTextFile', withLock)
 
@@ -111,8 +112,16 @@ saveProblem problem samples = do
         forM_ (zip samples [1::Int ..]) $ \(sample, i) -> do
             let inFile  = problemDir </> decodeString ("case" ++ show i ++ ".in")
                 outFile = problemDir </> decodeString ("case" ++ show i ++ ".out")
-            writeTextFile inFile  $ testCaseInput sample
-            writeTextFile outFile $ testCaseOutput sample
+                input = if (problemType problem == DCJ) then T.pack (show i) else testCaseInput sample
+                output = testCaseOutput sample
+            writeTextFile inFile input
+            when (not (T.null output)) $
+                writeTextFile outFile output
+
+
+        let dcjTestsHeaderFile = problemDir </> decodeString "dcj_tests.h"
+        when (problemType problem == DCJ) $
+            writeTextFile dcjTestsHeaderFile (makeTestCasesHeader (map testCaseInput samples))
 
     initializeProblem problem
     liftIO $ T.putStrLn . T.concat $ ["Problem successfully parsed into folder ", probId]
