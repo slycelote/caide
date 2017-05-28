@@ -1,14 +1,19 @@
 language: haskell
-ghc: 7.8
+ghc: 7.10.3
 
 dist: trusty
 sudo: false
+
+cache:
+  directories:
+    - $HOME/.cabal/packages
 
 addons:
     apt:
         sources:
             - ubuntu-toolchain-r-test
             - kubuntu-backports
+            - hvr-ghc
         packages:
             - g++-4.9
             - gcc-4.9
@@ -16,6 +21,7 @@ addons:
             - cmake
             - mono-gmcs
             - phantomjs
+            - cabal-install-1.22
 
 install: true
 script: travis/build-and-test.sh
