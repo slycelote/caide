@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <queue>
 #include <sstream>
@@ -19,7 +20,7 @@
 #define CAIDE_DCJ_DEBUG
 //#define CAIDE_DCJ_TRACE
 
-#if defined(_MSCVER) && _MSCVER <= 1800
+#if defined(_MSC_VER) && _MSC_VER <= 1800
 #define thread_local _declspec(thread)
 #endif
 
