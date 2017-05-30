@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+import Data.List (isSuffixOf)
 import Filesystem (getWorkingDirectory, isDirectory)
 import qualified Filesystem.Path as F
 import Filesystem.Path.CurrentOS (encodeString, parent, (</>))
@@ -27,15 +28,16 @@ data RunningMode
     | FirefoxServer
     deriving (Eq, Show)
 
-findRunningMode :: Bool -> IO RunningMode
-findRunningMode True = do
+findRunningMode :: [String] -> IO RunningMode
+findRunningMode [arg] | ".json" `isSuffixOf` arg = do
+    -- TODO: Verify that the argument is a path to an app manifest.
     isTerminal <- hIsTerminalDevice stdin
     if isTerminal
-        then findRunningMode False
+        then findRunningMode []
         else return FirefoxServer
 
 
-findRunningMode False = do
+findRunningMode _ = do
     workDir <- getWorkingDirectory
     caideDir <- findRootCaideDir workDir
     return $ case caideDir of
@@ -48,7 +50,7 @@ main = do
     args <- getArgs
     let (cmd:_) = args
         mainAction = runMain args
-    mode <- findRunningMode (null args)
+    mode <- findRunningMode args
     case (mode, mainAction) of
         (FirefoxServer, _) -> runFirefoxServer
         (_, Left ioAction) -> ioAction

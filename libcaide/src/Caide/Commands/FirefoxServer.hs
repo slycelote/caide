@@ -3,20 +3,19 @@ module Caide.Commands.FirefoxServer(
       runFirefoxServer
 ) where
 
-import Control.Monad (mapM, mapM_)
 import qualified Data.ByteString.Lazy as BS
 import Data.HashMap.Lazy ((!))
 import qualified Data.HashMap.Lazy as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Vector as V
-import System.IO (hSetBuffering, stdout, BufferMode(NoBuffering))
+import System.IO (hFlush, hPutStrLn, hSetBuffering, stderr, stdout, BufferMode(NoBuffering))
 
 
 import Data.Aeson (Value(Object, Array, String), eitherDecode')
 import qualified Data.Aeson as Json
-import Data.Binary (Binary(get, put), Get, Put, decode, encode)
-import Data.Binary.Get (getWord32host, getLazyByteString, isEmpty)
+import Data.Binary (Binary(get, put), decodeOrFail, encode)
+import Data.Binary.Get (getWord32host, getLazyByteString)
 import Data.Binary.Put (putWord32host, putLazyByteString)
 import Filesystem.Path.CurrentOS (fromText)
 
@@ -77,39 +76,32 @@ processDcj probTitle sampleInputHeaders = saveProblem problem samples
     samples = [TestCase input "" | input <- sampleInputHeaders]
 
 -- In Firefox native messaging, a JSON message is preceded by its byte length in host order.
-data Messages = Messages [Value]
+newtype Message = Message Value
 
-putMessage :: Value -> Put
-putMessage value = putWord32host (fromIntegral $ BS.length ser) >> putLazyByteString ser
-  where ser = Json.encode value
+instance Binary Message where
+    put (Message value) = putWord32host (fromIntegral $ BS.length ser) >> putLazyByteString ser
+      where ser = Json.encode value
 
-getMessage :: Get Value
-getMessage = do
-    len <- getWord32host
-    ser <- getLazyByteString $ fromIntegral len
-    case eitherDecode' ser of
-        Right value -> return value
-        Left e      -> fail e
+    get = do
+        len <- getWord32host
+        ser <- getLazyByteString $ fromIntegral len
+        case eitherDecode' ser of
+            Right value -> return $ Message value
+            Left e      -> fail e
 
-instance Binary Messages where
-    put (Messages values) = mapM_ putMessage values
-
-    get = Messages <$> getValues
-      where
-        getValues = do
-            done <- isEmpty
-            if done
-                then return []
-                else do
-                    first <- getMessage
-                    rest <- getValues
-                    return (first:rest)
 
 runFirefoxServer :: IO ()
 runFirefoxServer = do
     hSetBuffering stdout NoBuffering
     input <- BS.getContents
-    let Messages inputMessages = decode input
-    outputMessages <- mapM processMessage inputMessages
-    BS.putStr . encode $ Messages outputMessages
+    processLoop input
+  where
+    processLoop s | BS.null s = return ()
+    processLoop s = case decodeOrFail s of
+        Left (_, _, err) -> hPutStrLn stderr err
+        Right (rest, _, Message value) -> do
+            outputValue <- processMessage value
+            BS.putStr . encode $ Message outputValue
+            hFlush stdout
+            processLoop rest
 

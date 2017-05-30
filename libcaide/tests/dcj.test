@@ -1,6 +1,6 @@
 #!/bin/bash
 
-(echo -ne "\xEC\x04\x00\x00" && cat request.json) | "$CAIDE"
+(echo -ne "\xEC\x04\x00\x00" && cat request.json) | "$CAIDE" app.json
 
 compare_with after-parse pancakes/{case{1,2,3}.in,problem.ini,pancakes.h,message.h}
 

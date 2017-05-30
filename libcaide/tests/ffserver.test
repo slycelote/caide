@@ -1,6 +1,6 @@
 #!/bin/bash
 
-(echo -ne "\xE7\xA4\x00\x00" && cat request.json) | "$CAIDE"
+(echo -ne "\xE7\xA4\x00\x00" && cat request.json) | "$CAIDE" app.json
 
 compare_with after-parse cf810B/{case{1,2}.{in,out},problem.ini}
 
