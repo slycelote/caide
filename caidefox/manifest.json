@@ -1,0 +1,41 @@
+{
+    "manifest_version": 2,
+    "name": "CaideFox",
+    "version": "3.0",
+    "description": "Helper extension for caide software suite",
+
+    "applications": {
+        "gecko": {
+            "id": "CaideFox@github.com",
+            "strict_min_version": "50.0"
+        }
+    },
+
+    "icons": {
+        "48": "icons/caidefox-48.png"
+    },
+
+    "browser_action": {
+        "default_icon": "icons/caidefox-32.png",
+        "default_title": "Parse problem"
+    },
+
+    "background": {
+        "scripts": [
+            "background.js"
+        ]
+    },
+
+    "options_ui": {
+        "page": "options.html"
+    },
+
+    "permissions": [
+        "activeTab",
+        "nativeMessaging",
+        "*://code.google.com/codejam/*",
+        "*://codejam.withgoogle.com/codejam/*",
+        "storage"
+    ]
+}
+

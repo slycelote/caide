@@ -1,0 +1,7 @@
+Explanation of permissions:
+* activeTab - required for all parsers to access contents of the current page.
+* nativeMessaging - required to run caide executable that creates problem
+  skeleton and possibly parses the problem.
+* code.google.com/codejam, codejam.withgoogle.com/codejam - required for
+  distributed Google Code Jam to download sample cases.
+* storage - for storing settings.

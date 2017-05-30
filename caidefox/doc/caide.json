@@ -1,0 +1,7 @@
+{
+    "name": "caide",
+    "description": "Programming competitions tool - sample app manifest",
+    "path": "/usr/bin/caide",
+    "type": "stdio",
+    "allowed_extensions": ["CaideFox@github.com"]
+}
