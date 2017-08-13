@@ -1,19 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace slycelote.VsCaide
 {
-    public class TestCase: IComparable<TestCase>, IEquatable<TestCase>
+    public class TestCase: IComparable<TestCase>, IEquatable<TestCase>, INotifyPropertyChanged
     {
+        // boiler-plate
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChangedEventHandler handler = PropertyChanged;
+            if (handler != null)
+                handler(this, new PropertyChangedEventArgs(propertyName));
+        }
+        protected bool SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
+        {
+            if (EqualityComparer<T>.Default.Equals(field, value))
+                return false;
+            field = value;
+            OnPropertyChanged(propertyName);
+            return true;
+        }
+
         public string Name { get; set; }
         public string Input { get; set; }
         public string Output { get; set; }
-        public bool IsSkipped { get; set; }
         public bool OutputIsKnown { get; set; }
+        private bool isEnabled;
+        public bool IsEnabled { get { return isEnabled; }
+                                set { SetField (ref isEnabled, value); } }
 
         public override string ToString()
         {
@@ -41,18 +62,18 @@ namespace slycelote.VsCaide
                 if (File.Exists(outFile))
                 {
                     testCase.Output = File.ReadAllText(outFile);
-                    testCase.IsSkipped = false;
+                    testCase.IsEnabled = true;
                     testCase.OutputIsKnown = true;
                 }
                 else if (File.Exists(skippedFile))
                 {
                     testCase.Output = File.ReadAllText(skippedFile);
-                    testCase.IsSkipped = true;
+                    testCase.IsEnabled = false;
                     testCase.OutputIsKnown = true;
                 }
                 else
                 {
-                    testCase.IsSkipped = false;
+                    testCase.IsEnabled = true;
                     testCase.OutputIsKnown = false;
                     var unknownOutputFile = Path.ChangeExtension(inFile, "unknown");
                     testCase.Output = File.Exists(unknownOutputFile) ? File.ReadAllText(unknownOutputFile) : "";
@@ -90,7 +111,7 @@ namespace slycelote.VsCaide
                 File.WriteAllText(inFile, testCase.Input);
 
                 // write output to a file with appropriate extension, depending on test state
-                string extension = testCase.IsSkipped ? "skip" : testCase.OutputIsKnown ? "out" : "unknown";
+                string extension = !testCase.IsEnabled ? "skip" : testCase.OutputIsKnown ? "out" : "unknown";
                 var outFile = Path.Combine(problemDirectory, testCase.Name + "." + extension);
                 File.WriteAllText(outFile, testCase.Output);
 
