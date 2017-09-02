@@ -1,22 +1,37 @@
-language: haskell
-ghc: 7.8
+language: c
 
+dist: trusty
 sudo: false
 
-addons:
-    apt:
-        sources:
-            - ubuntu-toolchain-r-test
-            - kubuntu-backports
-        packages:
-            - g++-4.9
-            - gcc-4.9
-            - binutils
-            - cmake
-            - mono-gmcs
-            - phantomjs
+cache:
+  directories:
+    - $HOME/.cabal/packages
 
-install: true
+before_cache:
+  - rm -fv $HOME/.cabal/packages/hackage.haskell.org/build-reports.log
+  - rm -fv $HOME/.cabal/packages/hackage.haskell.org/00-index.tar
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - kubuntu-backports
+      - hvr-ghc
+    packages:
+      - g++-4.9
+      - gcc-4.9
+      - binutils
+      - cmake
+      - mono-gmcs
+      - phantomjs
+      - cabal-install-1.22
+      - ghc-7.10.3
+
+before_install:
+  - export PATH=/opt/ghc/7.10.3/bin:/opt/cabal/1.22/bin:$PATH
+
+install: travis_retry cabal update -v
+
 script: travis/build-and-test.sh
 
 notifications:
