@@ -15,6 +15,10 @@ function run_csharp_executable {
     fi
 }
 
+function cxx {
+    "$CXX" "$CXXFLAGS" $*
+}
+
 function render_js {
     "$PHANTOMJS" --load-images=false "$cur_dir/render.js" "$1" .page.html
 }

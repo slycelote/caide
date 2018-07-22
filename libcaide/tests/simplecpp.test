@@ -4,12 +4,12 @@
 "$CAIDE" problem prob
 "$CAIDE" lang simplecpp
 cd prob
-"$CXX" prob*.cpp -o prob.exe
+cxx prob*.cpp -o prob.exe
 echo 1 >case1.in
 ./prob.exe
 "$CAIDE" make
 cd ..
 compare_with after-make prob/submission.cpp prob/.caideproblem/test/report.txt
 cd prob
-"$CXX" submission.cpp -o submission.exe
+cxx submission.cpp -o submission.exe
 

@@ -57,7 +57,7 @@ inlinerConfHook (pkg, pbi) flags = do
       createDirectoryIfMissingVerbose verbosity True inlinerBuildDir
 
       let cmakeOptions = ["-G", "Unix Makefiles", "-DCMAKE_BUILD_TYPE=" ++ cmakeBuildType,
-                          "-DCAIDE_USE_SYSTEM_CLANG=OFF", "-DCAIDE_SHARED_LIBRARY=OFF",
+                          "-DCAIDE_USE_SYSTEM_CLANG=OFF",
                           inlinerSrcDir]
 
       notice verbosity "Configuring C++ inliner..."
@@ -138,11 +138,13 @@ inlinerBuildHook pkg lbi usrHooks flags = do
                             , "clangAST"
                             , "clangLex"
                             , "clangBasic"
+                            , "LLVMProfileData"
                             , "LLVMOption"
                             , "LLVMMCParser"
                             , "LLVMMC"
                             , "LLVMBitReader"
                             , "LLVMCore"
+                            , "LLVMBinaryFormat"
                             , "LLVMSupport"
                             ] ++ extraLibs bi
             }

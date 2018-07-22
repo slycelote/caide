@@ -2,13 +2,12 @@ name:           libcaide
 version:        2.3.0
 cabal-version:  >= 1.14
 build-type:     Custom
-license:        BSD3
+license:        GPL-3
 license-file:   LICENSE
 author:         slycelote
 maintainer:     slycelot@yandex.ru
 synopsis:       Automate certain common tasks that you do during programming competitions.
 category:       Application
-license:        BSD3
 homepage:       https://github.com/slycelote/caide
 bug-reports:    https://github.com/slycelote/caide/issues
 description:
