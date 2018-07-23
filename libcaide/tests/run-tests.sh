@@ -5,13 +5,29 @@ set -u
 cur_dir=$( cd $(dirname "${BASH_SOURCE[0]}") ; pwd )
 [ -d $cur_dir ] || exit 255
 
+if [ ! -v CAIDE ]; then
+    for f in $cur_dir/../dist/build/caide/caide $cur_dir/../.stack-work/install/*/*/*/bin/caide
+    do
+        if [ -f "$f" ] ; then
+            CAIDE="$f"
+            break
+        fi
+    done
+fi
+
+if [ ! -v CAIDE ]; then
+    echo "Failed to find caide executable"
+    exit 255
+fi
+
 tmp_dir=$cur_dir/tmp
+
 export cur_dir
-export CAIDE=${CAIDE:-"$cur_dir/../dist/build/caide/caide"}
+export CAIDE
 # On Windows use something like CSC=/c/Windows/Microsoft.NET/Framework/v4.0.30319/csc.exe ./run-tests.sh
 export CSC=${CSC:-gmcs}
 export CXX=${CXX:-g++}
-export CXXFLAGS=${CXXFLAGS:-"-static-libstdc++ -static-libgcc"}
+export CXXFLAGS
 export MONO=${MONO:-}
 export PHANTOMJS=${PHANTOMJS:-phantomjs}
 

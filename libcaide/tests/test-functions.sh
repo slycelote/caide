@@ -16,7 +16,10 @@ function run_csharp_executable {
 }
 
 function cxx {
-    "$CXX" "$CXXFLAGS" $*
+    if [ "x$CXXFLAGS" = "x" ]
+    then "$CXX" $*
+    else "$CXX" "$CXXFLAGS" $*
+    fi
 }
 
 function render_js {
