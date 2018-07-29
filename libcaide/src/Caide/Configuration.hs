@@ -199,16 +199,7 @@ clangOptions root True mscver | "mingw" `isPrefixOf` os =
     , "i386-pc-windows-msvc"
     , "-fdiagnostics-format=msvc"
     , "-fmsc-version=" ++ show mscver
-    ] ++ (
-    if mscver >= 1900
-       then [ "-isystem"
-            , "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.10150.0\\ucrt"
-            , "-D__EDG__"
-            , "-D__is_assignable=__is_nothrow_assignable"
-            ]
-       else []
-    ) ++
-    [ "-fparse-all-comments"
+    , "-fparse-all-comments"
     , "-D_CRT_SECURE_NO_WARNINGS"
     , "-DONLINE_JUDGE"
     , "-I"
