@@ -28,7 +28,7 @@ addons:
       - ghc-8.0.1
 
 before_install:
-  - export PATH=/opt/ghc/7.10.3/bin:/opt/cabal/1.22/bin:$PATH
+  - export PATH=/opt/ghc/8.0.1/bin:/opt/cabal/1.22/bin:$PATH
 
 install: travis_retry cabal update -v
 
