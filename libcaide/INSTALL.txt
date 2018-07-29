@@ -1,66 +1,94 @@
-== Windows build
-1. Install Python 2 (https://www.python.org/downloads/)
-and CMake (https://cmake.org/download/).
-2. Install Haskell Platform 7.10.3 (https://www.haskell.org/platform/windows.html).
-    * Select a path WITHOUT SPACES or other special characters.
-    * UNCHECK the 'modify PATH' setting during install.
-3. Install Mingw-w64 from here: https://sourceforge.net/projects/mingw-w64/files/External%20binary%20packages%20%28Win64%20hosted%29/MSYS%20%2832-bit%29/
-4. Follow these instructions to install MSYS: https://sourceforge.net/p/mingw-w64/wiki2/MSYS/
-When asked about MinGW location in postinstall script, input the path where you
-installed MinGW in the previous step.
-5. Clone source code repository and submodules from your favourite GUI git
-client or command line:
-    > git clone https://github.com/slycelote/caide
-    > cd caide
-    > git submodule update --init --recursive
-
-6. Open MSYS shell and CD to libcaide source directory.
-7. Edit the file mingw32.sh according to the installation path of Haskell Platform.
-
-All of the following is done in MSYS shell, from libcaide directory.
-
-8. Setup PATH:
-    > source mingw32.sh
-9. Update package database:
-    > cabal update
-10. Initialize cabal sandbox:
-    > cabal sandbox init
-11. Install dependencies:
-    > cabal install --only-dependencies
-12. Build:
-    > cabal configure
-    > cabal build
-Resulting executable: dist\build\caide\caide.exe
-The first build will be quite long; later rebuilds take much less time.
-13. Optionally: reduce executable size
-    > strip dist/build/caide/caide.exe
+Building instructions for caide command line utility
+----------------------------------------------------
 
 
-== Linux build
-1. Prerequisites:
-  * python 2.7
-  * g++ >= 4.9
-  * ghc >= 7.8. Latest ghc can be downloaded here: https://www.haskell.org/ghc/download.
-  * latest cabal. Can be downloaded here: https://www.haskell.org/cabal/download.html.
-  * zlib and gmp development packages. (In Debian: apt-get install zlib1g-dev libgmp10-dev.)
+This document describes how to build caide from source code and run tests.
+If you're looking for a user manual, see README.md instead.
 
-To run tests, you will also need mono and phantomjs. In Debian: apt-get install mono-gmcs binfmt-support phantomjs.
 
-2. Clone source code repository and submodules:
+Obtaining source code
+---------------------
+
     > git clone https://github.com/slycelote/caide
     > cd caide/libcaide
     > git submodule update --init --recursive
 
-3. Update package database:
-    > cabal update
-4. Initialize cabal sandbox:
-    > cabal sandbox init
-5. Install dependencies:
-    > cabal install --only-dependencies
-6. Build:
-    > cabal configure
-    > cabal build
-Resulting executable: dist/build/caide/caide
-The first build will be quite long; later rebuilds take much less time.
-7. Optionally: reduce executable size
-    > strip dist/build/caide/caide
+
+General build requirements
+--------------------------
+
+CMake, make, g++, Python 2 and Haskell Stack (or cabal+ghc) are required to
+build.
+In addition, diff, PhantomJS, and a C# compiler are required to run tests.
+
+
+Linux build
+-----------
+
+All dependencies are likely to be present in your distribution's repositories.
+For example, in Debian:
+
+    > sudo apt-get install cmake g++ python haskell-stack
+
+Once the dependencies are installed, run the following commands from libcaide
+directory:
+
+    > stack init
+    > stack setup
+    > stack build
+
+The resulting executable is in $(stack path --local-install-root)/bin.
+
+Install test dependencies and run tests:
+    > sudo apt-get install diffutils mono-gmcs
+    > MONO=mono tests/run-tests.sh
+
+
+Windows build
+-------------
+
+First, install Haskell Stack tool (https://www.haskellstack.org/). Make sure
+it's in your PATH.
+
+From libcaide directory run:
+
+    > stack init
+    > stack setup
+
+Setup build environment. You need to do this every time you open a new console
+window.
+
+    > setup-env.bat
+
+Next, install make, cmake and Python 2. It can be done in two ways:
+  1. Install each utility individually and make sure they are in your PATH
+  (either by changing the system environment variable or by modifying
+  setup-env.bat accordingly.)
+  2. Install the utilities only inside MSYS environment bundled with Stack. To
+  do that, launch MSYS shell:
+
+    > %CAIDE_MSYS% -mingw32
+
+  In the new window that opens, run:
+
+    > pacman -S make cmake python2
+
+  and close this window.
+
+Once all dependencies are installed, you are ready to build with:
+
+    > stack build
+
+To run tests, launch MSYS shell again:
+
+    > %CAIDE_MSYS% -mingw32
+
+and setup test environment (you need to modify paths to PhantomJS and C#
+compiler in setup-test-env.sh file before):
+
+    > . setup-test-env.sh
+
+Now you can run tests with:
+
+    > tests/run-tests.sh
+

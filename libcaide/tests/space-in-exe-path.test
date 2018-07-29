@@ -8,7 +8,7 @@ cd repo
 "$CAIDE" problem prob
 "$CAIDE" make
 cd prob
-"$CXX" prob*.cpp -o prob.exe
+cxx prob*.cpp -o prob.exe
 cd .caideproblem/test
 ../../prob.exe
 

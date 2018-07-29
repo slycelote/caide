@@ -108,8 +108,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\libcaide\dist\build\caide\caide.exe">
-      <Link>Resources\caide.exe</Link>
+    <Content Include="Resources\caide.exe">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <Content Include="LICENSE.txt">

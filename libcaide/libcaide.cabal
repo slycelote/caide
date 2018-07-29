@@ -2,19 +2,18 @@ name:           libcaide
 version:        2.3.0
 cabal-version:  >= 1.14
 build-type:     Custom
-license:        BSD3
+license:        GPL-3
 license-file:   LICENSE
 author:         slycelote
 maintainer:     slycelot@yandex.ru
 synopsis:       Automate certain common tasks that you do during programming competitions.
 category:       Application
-license:        BSD3
 homepage:       https://github.com/slycelote/caide
 bug-reports:    https://github.com/slycelote/caide/issues
 description:
     Automates certain common tasks that you do during programming competitions:
     parsing, running and debugging problem tests, inlining library code.
-tested-with:    GHC == 7.8.4, GHC == 7.10.1
+tested-with:    GHC == 8.0.1
 
 source-repository head
   type:         git
@@ -89,7 +88,7 @@ executable caide
     c-sources:       cbits/cwrapper.c
 
     if os(windows) {
-      extra-libraries: imagehlp ole32 uuid
+      extra-libraries: imagehlp ole32 uuid version
     }
     extra-lib-dirs: cbits/build cbits/build/llvm/lib
   }

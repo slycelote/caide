@@ -15,6 +15,13 @@ function run_csharp_executable {
     fi
 }
 
+function cxx {
+    if [ "x$CXXFLAGS" = "x" ]
+    then "$CXX" $*
+    else "$CXX" "$CXXFLAGS" $*
+    fi
+}
+
 function render_js {
     "$PHANTOMJS" --load-images=false "$cur_dir/render.js" "$1" .page.html
 }

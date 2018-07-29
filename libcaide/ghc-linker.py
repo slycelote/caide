@@ -57,7 +57,7 @@ def find_library(lib):
 def main():
     args = []
     collect_args(sys.argv[1:], args)
-    args += ['-static-libstdc++']
+    args += ['-static-libstdc++', '-static-libgcc']
     args += [find_library(lib) for lib in LIBS_FOR_STATIC_LINK]
     args_file_name = None
     try:

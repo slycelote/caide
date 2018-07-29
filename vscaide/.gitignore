@@ -25,3 +25,7 @@ ipch/
 _ReSharper*/
 *.[Rr]e[Ss]harper
 *.DotSettings.user
+
+# This file should be built in libcaide project and copied manually here.
+Resources/caide.exe
+

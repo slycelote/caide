@@ -1,118 +1,110 @@
-== Build caide in CentOS 6
+= Build caide in CentOS 7
 
 The purpose of this guide is to build a single executable compatible with as
 many Linux distributions as possible. To this end, we need to:
 
 * Link all libraries except for glibc and libgcc statically.
-* Build on a system with an old-ish glibc (CentOS 6).
+* Build on a system with an old-ish glibc (CentOS 7).
 
-=== 1. Install CentOS 6
+
+== 1. Install CentOS 7
 You can download installation media for your architecture
-https://wiki.centos.org/Download[here]. "Minimal image" is sufficient as we
-will install all prerequisites ourselves.
+https://wiki.centos.org/Download[here]. Minimal image is
+sufficient as we will install all prerequisites ourselves.
 
-=== 2. Install g++ 4.9
+Create a non-root user `build` with password `build` during installation.  Add
+the user to sudoers.
 
-For 64-bit:
 
-[source,bash]
-----
-yum install centos-release-scl-rh
-yum install devtoolset-3-gcc devtoolset-3-gcc-c++
-----
+== 2. Install prerequisites
 
-For 32-bit:
-[source,bash]
-----
-yum install wget
-cd /etc/yum.repos.d
-wget http://linuxsoft.cern.ch/cern/scl/slc6-scl.repo
-yum --nogpgcheck install devtoolset-3-gcc devtoolset-3-gcc-c++
-----
-
-=== 3. Install other prerequisites
+We will use Nix to install newer version of some software.
 
 [source,bash]
-----
-yum install wget git zlib-devel make automake gmp-devel libffi zlib xz tar gnupg python27 cmake zlib-static gmp-static
-----
+sudo yum install wget tar xz bzip2 git gnupg python perl make automake gcc gcc-c++
+sudo yum install libmpc-devel mpfr-devel gmp-devel zlib-devel libffi zlib zlib-static gmp-static
+wget https://nixos.org/nix/install
+bash install
+. ~/.bash_profile
+nix-env -i cmake
 
-=== 4. Install stack
 
-For 64-bit:
-[source,bash]
-----
-cd /etc/yum.repos.d
-wget https://s3.amazonaws.com/download.fpcomplete.com/centos/6/fpco.repo
-yum install stack
-----
-
-For 32-bit:
-[source,bash]
-----
-wget https://www.stackage.org/stack/linux-i386-gmp4
-tar -x linux-i386-gmp4
-mv linux-i386-gmp4/stack /usr/local/bin
-----
-
-=== 5. Add a non-root user
+== 3. Install newer g++
 
 [source,bash]
-----
-useradd build
-passwd build
-----
+wget https://ftp.gnu.org/gnu/gcc/gcc-8.1.0/gcc-8.1.0.tar.gz
+tar -xf gcc-8.1.0.tar.gz
+cd gcc-8.1.0
+./configure --with-system-zlib --disable-multilib --without-isl --enable-languages=c,c++
+make
+sudo make install
 
-=== 6. Setup build environment
 
-Logout and login under `build` user. +
-Add the following lines to `~/.bashrc` to enable newer g++ and python:
+== 4. Install stack
 
 [source,bash]
-----
-source /opt/rh/devtoolset-3/enable
-source /opt/rh/python27/enable
-----
+wget -O install-stack.sh https://get.haskellstack.org/
+sh install-stack.sh
+
+Or, alternatively,
+
+[source,bash]
+nix-env -i stack
+
+
+== 5. Setup build environment
+
+Add paths to C and C++ compilers in `~/.bashrc`:
+
+[source,bash]
+export CC=/usr/local/bin/gcc
+export CXX=/usr/local/bin/g++
+#export CXXFLAGS=-static-libstdc++
+export LD_LIBRARY_PATH=/usr/local/lib64:/usr/local/lib:$LD_LIBRARY_PATH
 
 Create the file `~/.stack/config.yaml` with the following contents:
 
-----
+[source,yaml]
 build:
     split-objs: true
-----
 
 This will reduce the size of the final executable a little. +
 Copy the file
 link:../../ghc-linker.py[`ghc-linker.py`] to some place in your `PATH` (for
 example, to `~/bin`). We will use this script as a linker because this is the
-only way to supply the link options that we need. +
-Logout and login to apply changes.
+only way to supply the link options that we need.
+
+Log out and log back in.
 
 
-=== 7. Download source code and build
+== 6. Download source code and build
 
 [source,bash]
-----
 cd ~
-git clone https://github.com/slycelote/caide
+git clone -b master https://github.com/slycelote/caide
 cd caide
-git checkout master
 git submodule update --init --recursive
 cd libcaide
 stack init
 stack setup
 stack build --ghc-options '-pgml ghc-linker.py'
-----
 
 The resulting executable is at `.stack-work/install/**/bin/caide`.
 
-=== 8. Install additional dependencies to run tests
 
-For some of the tests, mono compiler is required:
+== 7. Run tests
+
+For some of the tests, mono compiler and phantomjs are required:
 
 [source,bash]
-----
-yum install epel-release
-yum install mono-core
-----
+nix-env -i mono
+sudo yum install fontconfig
+wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-$(uname -m).tar.bz2
+tar -xf phantomjs*
+mv phantomjs*/bin/phantomjs ~/bin/
+
+To run tests, execute:
+
+[source,bash]
+tests/run-tests.sh
 
