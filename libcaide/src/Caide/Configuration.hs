@@ -181,20 +181,16 @@ clangOptions root False _ =
     , "i386-pc-mingw32"
     , "-nostdinc"
     , "-isystem"
-    , encodeString $ root </> "include" </> "mingw-4.8.1"
+    , encodeString $ root </> "include" </> "c++"
     , "-isystem"
-    , encodeString $ root </> "include" </> "mingw-4.8.1" </> "c++"
+    , encodeString $ root </> "include" </> "c++" </> "i686-w64-mingw32"
     , "-isystem"
-    , encodeString $ root </> "include" </> "mingw-4.8.1" </> "c++" </> "mingw32"
+    , encodeString $ root </> "include" </> "crt"
     , "-isystem"
-    , encodeString $ root </> "include"
-    , "-I"
     , encodeString $ root </> "cpplib"
-    , "-std=c++11"
+    , "-std=c++14"
     , "-fparse-all-comments"
     , "-DONLINE_JUDGE"
-    , "-D__MSVCRT__=1"
-    , "_D__declspec="
     ]
 
 -- Windows with VS headers
@@ -203,16 +199,7 @@ clangOptions root True mscver | "mingw" `isPrefixOf` os =
     , "i386-pc-windows-msvc"
     , "-fdiagnostics-format=msvc"
     , "-fmsc-version=" ++ show mscver
-    ] ++ (
-    if mscver >= 1900
-       then [ "-isystem"
-            , "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.10150.0\\ucrt"
-            , "-D__EDG__"
-            , "-D__is_assignable=__is_nothrow_assignable"
-            ]
-       else []
-    ) ++
-    [ "-fparse-all-comments"
+    , "-fparse-all-comments"
     , "-D_CRT_SECURE_NO_WARNINGS"
     , "-DONLINE_JUDGE"
     , "-I"
@@ -223,9 +210,10 @@ clangOptions root True mscver | "mingw" `isPrefixOf` os =
 clangOptions root True _ =
     [ "-target"
     , arch ++ "-" ++ os
-    -- clang headers such as xmmintrin.h are still required
+    -- clang builtin headers are still required:
+    -- https://clang.llvm.org/docs/LibTooling.html#libtooling-builtin-includes
     , "-isystem"
-    , encodeString $ root </> "include"
+    , encodeString $ root </> "include" </> "clang-builtins"
     , "-I"
     , encodeString $ root </> "cpplib"
     , "-fparse-all-comments"

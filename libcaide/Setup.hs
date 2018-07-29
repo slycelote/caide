@@ -104,7 +104,9 @@ zipResources curDir verbosity inlinerSrcDir = do
         case inlinerSrcDir of
             Nothing -> B.writeFile initFile $ fromArchive archive
             Just dir -> do
-                archive' <- addFilesToZipFile archive "include" $
+                let clangBuiltinsDir = "include" </> "clang-builtins"
+                createDirectoryIfMissingVerbose verbosity True clangBuiltinsDir
+                archive' <- addFilesToZipFile archive clangBuiltinsDir $
                                 dir </> "clang" </> "lib" </> "Headers"
                 B.writeFile initFile $ fromArchive archive'
 
