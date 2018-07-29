@@ -1,14 +1,4 @@
-### Cabal ###
-/cabal-dev
-/dist
-/.dist-buildwrapper
-/.cabal-sandbox
-/cabal.sandbox.config
-
-### Stack ###
-/.stack-work/
-
-### Other build artifacts ###
+### Build artifacts ###
 /cbits/build
 /tests/tmp
 /res/*.zip
