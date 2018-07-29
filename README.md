@@ -27,7 +27,7 @@ Codelite in Windows: ([full size](http://i.imgur.com/mLmQDgD.png))
 
 Visual Studio:
 
-![ ](http://i.imgur.com/xjpp3tU.png)
+![ ](http://i.imgur.com/dSy9CQO.png)
 
 ## Download
 
