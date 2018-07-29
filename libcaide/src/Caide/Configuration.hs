@@ -219,9 +219,10 @@ clangOptions root True mscver | "mingw" `isPrefixOf` os =
 clangOptions root True _ =
     [ "-target"
     , arch ++ "-" ++ os
-    -- clang headers such as xmmintrin.h are still required
+    -- clang builtin headers are still required:
+    -- https://clang.llvm.org/docs/LibTooling.html#libtooling-builtin-includes
     , "-isystem"
-    , encodeString $ root </> "include"
+    , encodeString $ root </> "include" </> "clang-builtins"
     , "-I"
     , encodeString $ root </> "cpplib"
     , "-fparse-all-comments"
