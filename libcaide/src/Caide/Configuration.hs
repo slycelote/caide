@@ -186,7 +186,7 @@ clangOptions root False _ =
     , encodeString $ root </> "include" </> "c++" </> "i686-w64-mingw32"
     , "-isystem"
     , encodeString $ root </> "include" </> "crt"
-    , "-isystem"
+    , "-I"
     , encodeString $ root </> "cpplib"
     , "-std=c++14"
     , "-fparse-all-comments"
