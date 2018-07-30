@@ -30,11 +30,12 @@ initialize :: Bool -> CaideIO ()
 initialize useSystemCppHeaders = do
     curDir <- caideRoot
     mscver <- liftIO $ do
-        [vs12, vs14] <- mapM lookupEnv ["VS120COMNTOOLS", "VS140COMNTOOLS"]
-        return $ case (vs12, vs14) of
-            (_, Just _) -> 1900
-            (Just _, _) -> 1800
-            _           -> 1700
+        [vs12, vs14, vs15] <- mapM lookupEnv ["VS120COMNTOOLS", "VS140COMNTOOLS", "VS150COMNTOOLS"]
+        return $ case (vs12, vs14, vs15) of
+            (_, _, Just _) -> 1900
+            (_, Just _, _) -> 1900
+            (Just _, _, _) -> 1800
+            _              -> 1700
 
     _ <- writeCaideConf $ defaultCaideConf curDir useSystemCppHeaders mscver
     _ <- writeCaideState defaultCaideState
