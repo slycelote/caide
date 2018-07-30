@@ -67,7 +67,7 @@ Next, install make, cmake and Python 2. It can be done in two ways:
   2. Install the utilities only inside MSYS environment bundled with Stack. To
   do that, launch MSYS shell:
 
-    > %CAIDE_MSYS% -mingw32
+    > %CAIDE_MSYS%
 
   In the new window that opens, run:
 
@@ -81,10 +81,10 @@ Once all dependencies are installed, you are ready to build with:
 
 To run tests, launch MSYS shell again:
 
-    > %CAIDE_MSYS% -mingw32
+    > %CAIDE_MSYS%
 
-and setup test environment (you need to modify paths to PhantomJS and C#
-compiler in setup-test-env.sh file before):
+and setup test environment (you will need to modify paths to PhantomJS and C#
+compiler in setup-test-env.sh file if necessary):
 
     > . setup-test-env.sh
 
