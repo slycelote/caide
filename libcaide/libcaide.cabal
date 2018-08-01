@@ -45,6 +45,7 @@ executable caide
   }
 
   build-depends:
+                   aeson,
                    array,
                    async >= 2.0.1,
                    bytestring,
@@ -58,6 +59,7 @@ executable caide
                    http-client >= 0.4 && < 0.5,
                    http-client-tls,
                    http-types >= 0.9,
+                   httpd-shed,
                    mtl >= 2.2.1,
                    network >= 2.6,
                    network-uri >= 2.6,
