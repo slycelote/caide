@@ -1,4 +1,6 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 module Caide.Commands.CHelperHttpServer(
       runHttpServer
 ) where
@@ -6,8 +8,9 @@ module Caide.Commands.CHelperHttpServer(
 #ifndef AMP
 import Control.Applicative ((<$>), (<*>))
 #endif
+import Control.Applicative ((<|>))
 import Control.Concurrent (forkIO, killThread)
-import Control.Monad (void)
+import Control.Monad (forM_, void)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
@@ -20,7 +23,7 @@ import System.IO (hClose, hSetBuffering, stdout, stderr, BufferMode(NoBuffering)
 import System.IO.Error (tryIOError)
 
 import Data.Aeson (FromJSON(parseJSON), eitherDecode', withObject, (.:))
-import Network.Shed.Httpd (initServerBind, Request(..), Response(..))
+import Network.Shed.Httpd (initServerBind, Request(reqBody), Response(Response))
 
 import Data.Text.Encoding.Util (tryDecodeUtf8, universalNewlineConversionOnInput)
 import qualified Data.Text.IO.Util as T
@@ -46,14 +49,18 @@ runHttpServer root = withSocketsDo $ do
 
 data ParsedProblem = Parsed Problem [TestCase]
 
-createProblem :: F.FilePath -> ParsedProblem -> IO ()
-createProblem root (Parsed problem testCases) = do
-   ret <- runInDirectory root $ do
-       saveProblem problem testCases
-       setActiveProblem $ problemId problem
-   case ret of
-       Left err -> putStrLn $ describeError err
-       _        -> return ()
+createProblems :: F.FilePath -> [ParsedProblem] -> IO ()
+createProblems _ [] = putStrLn "The contest is empty"
+createProblems root parsedProblems = do
+    ret <- runInDirectory root $ do
+        forM_ parsedProblems $ \(Parsed problem testCases) ->
+            saveProblem problem testCases
+        let Parsed problem _ = head parsedProblems
+        setActiveProblem $ problemId problem
+
+    case ret of
+        Left err -> putStrLn $ describeError err
+        _        -> return ()
 
 
 ok, badRequest :: Int
@@ -65,12 +72,12 @@ makeResponse code message = Response code [] message
 
 
 instance FromJSON InputSource where
-  parseJSON = withObject "input" $ \o -> do
+  parseJSON = withObject "input description" $ \o -> do
     inputType <- o .: "type"
     if inputType == ("file" :: String) then FileInput . F.fromText <$> o .: "fileName" else pure StdIn
 
 instance FromJSON OutputTarget where
-  parseJSON = withObject "output" $ \o -> do
+  parseJSON = withObject "output description" $ \o -> do
     outputType <- o .: "type"
     if outputType == ("file" :: String) then FileOutput . F.fromText <$> o .: "fileName" else pure StdOut
 
@@ -78,8 +85,7 @@ instance FromJSON TestCase where
   parseJSON = withObject "test case" $ \o ->
     TestCase <$> o .: "input" <*> o .: "output"
 
-instance FromJSON ParsedProblem where
-  parseJSON = withObject "problem description" $ \o -> do
+parseProblemFromObject o = do
     input <- o .: "input"
     output <- o .: "output"
     probName <- o .: "name"
@@ -89,16 +95,29 @@ instance FromJSON ParsedProblem where
     probId <- java .: "taskClass"
     return $ Parsed (Problem probName probId (Stream input output)) tests
 
+instance FromJSON ParsedProblem where
+  parseJSON = withObject "problem description" parseProblemFromObject
+
+newtype Contest = Contest [ParsedProblem]
+instance FromJSON Contest where
+  parseJSON = withObject "a problem or a contest" $ \o -> oneProblem o <|> contest o
+    where
+      oneProblem o = do problem <- parseProblemFromObject o
+                        return $ Contest [problem]
+      contest o = do result <- o .: "result"
+                     Contest <$> parseJSON result
+
+
 processCompanionRequest :: F.FilePath -> Request -> IO Response
 processCompanionRequest root request = do
     let body = LBS.fromStrict . encodeUtf8 . T.pack $ reqBody request
-        mbParsed = eitherDecode' body
+        mbParsed = eitherDecode' body :: Either String Contest
     case mbParsed of
         Left err -> do
-            putStrLn err
+            putStrLn $ "Could not parse input JSON: " ++ err
             return $ makeResponse badRequest err
-        Right parsedProblem -> do
-            createProblem root parsedProblem
+        Right (Contest problems) -> do
+            createProblems root problems
             return $ makeResponse ok "OK"
 
 
@@ -126,5 +145,5 @@ process :: T.Text -> T.Text -> F.FilePath -> IO ()
 process chid page root = case parseFromHtml <$> findHtmlParser chid <*> Just page of
     Nothing -> T.putStrLn . T.concat $ ["'", chid, "' not supported"]
     Just (Left err) -> T.putStrLn . T.concat $ ["Error while parsing the problem: ", err]
-    Just (Right (problem, testCases)) -> createProblem root $ Parsed problem testCases
+    Just (Right (problem, testCases)) -> createProblems root [Parsed problem testCases]
 
