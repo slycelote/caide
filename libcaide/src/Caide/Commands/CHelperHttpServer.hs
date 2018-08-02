@@ -116,9 +116,10 @@ processRequest sock root = void . tryIOError $ do
 
             T.length page `seq` hClose h
 
-            if null body
-            then T.putStrLn "Invalid request!"
-            else process chid page root
+            case () of
+              _ | null body      -> T.putStrLn "Invalid request!"
+                | chid == "json" -> return () -- Processed by Companion server instead
+                | otherwise      -> process chid page root
 
 
 process :: T.Text -> T.Text -> F.FilePath -> IO ()
