@@ -22,30 +22,67 @@ import Network.Socket (tupleToHostAddress)
 import System.IO (hClose, hSetBuffering, stdout, stderr, BufferMode(NoBuffering))
 import System.IO.Error (tryIOError)
 
-import Data.Aeson (FromJSON(parseJSON), eitherDecode', withObject, (.:))
+import Data.Aeson (FromJSON(parseJSON), Object, eitherDecode', withObject, (.:))
+import Data.Aeson.Types (Parser)
 import Network.Shed.Httpd (initServerBind, Request(reqBody), Response(Response))
 
 import Data.Text.Encoding.Util (tryDecodeUtf8, universalNewlineConversionOnInput)
 import qualified Data.Text.IO.Util as T
 
-import Caide.Configuration (describeError, setActiveProblem)
+import Caide.Configuration (describeError, orDefault, readCaideConf, setActiveProblem)
 import Caide.Commands.ParseProblem (saveProblem)
 import Caide.Registry (findHtmlParser)
 import Caide.Types
 
 
 runHttpServer :: F.FilePath -> IO ()
-runHttpServer root = withSocketsDo $ do
+runHttpServer root = do
+    mbPorts <- runInDirectory root getPorts
+    case mbPorts of
+        Left err -> putStrLn $ describeError err
+        Right (companionPort, chelperPort) -> runServers root companionPort chelperPort
+
+
+runServers :: F.FilePath -> Int -> Int -> IO ()
+runServers root companionPort chelperPort = withSocketsDo $ do
     hSetBuffering stdout NoBuffering
     hSetBuffering stderr NoBuffering
-    sock <- listenOn $ PortNumber 4243
-    T.putStrLn "Running HTTP server for CHelper and Competitive Companion extensions. Press Return to terminate."
-    chelperThreadId <- forkIO $ void . sequence . repeat $ processRequest sock root
-    companionThreadId <- forkIO $ initServerBind 8080 (tupleToHostAddress (127,0,0,1)) (processCompanionRequest root)
-    _ <- getLine
-    killThread companionThreadId
-    killThread chelperThreadId
-    sClose sock
+
+    mbCompanion <- if companionPort <= 0
+        then return Nothing 
+        else Just <$> (forkIO $ initServerBind companionPort (tupleToHostAddress (127,0,0,1)) (processCompanionRequest root))
+    mbChelper <- if chelperPort <= 0
+        then return Nothing
+        else do
+            sock <- listenOn $ PortNumber $ fromIntegral chelperPort
+            chelperThreadId <- forkIO $ void . sequence . repeat $ processRequest sock root
+            return $ Just (sock, chelperThreadId)
+
+    let servers = case (mbCompanion, mbChelper) of
+            (Just _, Just _)   -> "CHelper and Competitive Companion extensions"
+            (Nothing, Just _)  -> "CHelper extension"
+            (Just _, Nothing)  -> "Competitive Companion extension"
+            (Nothing, Nothing) -> ""
+
+    if T.null servers
+    then T.putStrLn "Both CHelper and Competitive Companion servers are disabled. Exiting now."
+    else do
+        T.putStrLn $ T.concat ["Running HTTP server for ", servers, ". Press Return to terminate."]
+        _ <- getLine
+        case mbChelper of
+            Just (sock, chelperThreadId) -> killThread chelperThreadId >> sClose sock
+            Nothing                      -> return ()
+        case mbCompanion of
+            Just companionThreadId -> killThread companionThreadId
+            Nothing                -> return ()
+
+
+getPorts :: CaideIO (Int, Int)
+getPorts = do
+    h <- readCaideConf
+    companionPort <- getProp h "core" "companion_port" `orDefault` 8080
+    chelperPort <- getProp h "core" "chelper_port" `orDefault` 4243
+    return (companionPort, chelperPort)
 
 data ParsedProblem = Parsed Problem [TestCase]
 
@@ -85,6 +122,7 @@ instance FromJSON TestCase where
   parseJSON = withObject "test case" $ \o ->
     TestCase <$> o .: "input" <*> o .: "output"
 
+parseProblemFromObject :: Object -> Parser ParsedProblem
 parseProblemFromObject o = do
     input <- o .: "input"
     output <- o .: "output"

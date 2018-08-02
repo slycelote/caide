@@ -31,13 +31,15 @@ Caide can parse problem definitions (problem name and sample tests)
 automatically. You need to provide a URL of problem or contest (`caide
 problem` and `caide contest` commands).
 
-## CHelper Chrome extension
+<a name="http-server"></a>
+## CHelper and Competitive Companion browser extensions
 
 Caide is compatible with [chelper chrome
-extension](https://chrome.google.com/webstore/detail/chelper-extension/eicjndbmlajfjdhephbcjdeegmmoadip).
+extension](https://chrome.google.com/webstore/detail/chelper-extension/eicjndbmlajfjdhephbcjdeegmmoadip)
+and [Competitive Companion browser extension](https://github.com/jmerle/competitive-companion/).
 (To parse a problem, click the plus sign that appears in tab bar for supported
-sites.) Because of how the extension works, you have to be running a local
-server that will accept requests from Chrome. This is done in command line
+sites.) Because of how the extensions work, you have to be running a local
+server that will accept requests from the browser. This is done in command line
 with `caide httpServer`. Hit Return to stop the server.
 
 
@@ -49,14 +51,16 @@ Most settings are stored in `caide.ini` file in the project root.
 [core] section represents general settings:
 
 * `language` is default programming language for newly created/parsed
-  problems. Possible values: `cpp`, `simplecpp`, `csharp`. `simplecpp` is a
-fallback option that disables C++ code inliner in case you have problems with
-it. Settings for each language are kept in the corresponding section of the
-file.
+  problems. Possible values: `cpp`, `csharp`. Settings for each language are
+  kept in the corresponding section of the file.
 * `features` is a comma separated list of 'features' (optional pieces of
   functionality). Settings for each feature are kept in the corresponding
 section of the file. Currently the only implemented feature is 'codelite'
 which enables a limited [support for Codelite IDE](#codelite).
+* `chelper_port` (default 4243) and `companion_port` (default 8080) control 
+  ports that [`caide httpServer` command](#http-server) uses. Set a port to
+  -1 to disable the corresponding server.
+
 
 <a name="cpp"></a>
 ## [cpp] section
@@ -80,7 +84,7 @@ with `g++ -v -x c++ -E /dev/null`.
   - `-DONLINE_JUDGE` (or similar) - a preprocessor symbol defined on judge
     servers. This must be *on* because submitted file will be executed on a
     judge server.
-  - `-std=c++11` - you can remove this if you feel nostalgic.
+  - `-std=c++14` - set the version of C++ standard.
 
   The full list of command line options can be found in [clang user
 manual](http://clang.llvm.org/docs/UsersManual.html) or by running `clang++
