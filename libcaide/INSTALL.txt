@@ -19,7 +19,7 @@ General build requirements
 
 CMake, make, g++, Python 2 and Haskell Stack (or cabal+ghc) are required to
 build.
-In addition, diff, PhantomJS, and a C# compiler are required to run tests.
+In addition, curl, diff, PhantomJS, and a C# compiler are required to run tests.
 
 
 Linux build
@@ -40,7 +40,8 @@ directory:
 The resulting executable is in $(stack path --local-install-root)/bin.
 
 Install test dependencies and run tests:
-    > sudo apt-get install diffutils mono-gmcs
+
+    > sudo apt-get install curl diffutils mono-gmcs phantomjs
     > MONO=mono tests/run-tests.sh
 
 
@@ -64,24 +65,17 @@ Next, install make, cmake and Python 2. It can be done in two ways:
   1. Install each utility individually and make sure they are in your PATH
   (either by changing the system environment variable or by modifying
   setup-env.bat accordingly.)
-  2. Install the utilities only inside MSYS environment bundled with Stack. To
-  do that, launch MSYS shell:
+  2. Install the utilities only inside MSYS environment bundled with Stack:
 
-    > %CAIDE_MSYS%
-
-  In the new window that opens, run:
-
-    > pacman -S make cmake python2
-
-  and close this window.
+    > stack exec pacman -- -S make cmake python2
 
 Once all dependencies are installed, you are ready to build with:
 
     > stack build
 
-To run tests, launch MSYS shell again:
+To run tests, launch MSYS shell:
 
-    > %CAIDE_MSYS%
+    > stack exec bash
 
 and setup test environment (you will need to modify paths to PhantomJS and C#
 compiler in setup-test-env.sh file if necessary):
