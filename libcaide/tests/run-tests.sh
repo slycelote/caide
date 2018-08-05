@@ -6,7 +6,7 @@ cur_dir=$( cd $(dirname "${BASH_SOURCE[0]}") ; pwd )
 [ -d $cur_dir ] || exit 255
 
 if [ ! -v CAIDE ]; then
-    for f in $cur_dir/../dist/build/caide/caide{,.exe} $cur_dir/../.stack-work/install/**/bin/caide{,.exe}
+    for f in $cur_dir/../dist/build/caide/caide{,.exe} $cur_dir/../.stack-work/install/*/{,*{,/*}}/bin/caide{,.exe}
     do
         if [ -f "$f" ] ; then
             CAIDE="$f"
@@ -15,7 +15,9 @@ if [ ! -v CAIDE ]; then
     done
 fi
 
-if [ ! -v CAIDE ]; then
+if [ -v CAIDE ]; then
+    echo "Executable under test: $CAIDE"
+else
     echo "Failed to find caide executable"
     exit 255
 fi
