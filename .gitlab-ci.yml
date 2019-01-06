@@ -13,7 +13,7 @@ image: "ubuntu:bionic"
 before_script:
   - uname -a
   - apt-get update -yqq
-  - DEBIAN_FRONTEND=noninteractive apt-get install -yqq --no-install-recommends build-essential g++ gcc binutils cmake mono-mcs phantomjs cabal-install ghc
+  - DEBIAN_FRONTEND=noninteractive apt-get install -yqq --no-install-recommends build-essential g++ gcc binutils cmake mono-mcs phantomjs cabal-install ghc git
 
 build_and_test:
   script:

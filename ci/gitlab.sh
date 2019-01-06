@@ -26,6 +26,7 @@ cabal build --ghc-options="-pgml g++"
 date
 
 export MONO=mono
+export CSC=mcs
 tests/run-tests.sh
 date
 
