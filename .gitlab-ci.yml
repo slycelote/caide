@@ -3,7 +3,7 @@
 image: "ubuntu:bionic"
 
 variables:
-  - GIT_SUBMODULE_STRATEGY: recursive
+  GIT_SUBMODULE_STRATEGY: recursive
 
 # Optional: Pick zero or more services to be used on all builds.
 # Only needed when using a docker container to run your tests in.
