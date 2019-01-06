@@ -16,7 +16,7 @@ found in Visual Studio installer under Individual Components tab, section
 
 # Quick start
 
-Select View -> Other Windows -> Caide. Recommended (and default) location of
+Select View -> Other Windows -> Caide. Recommended location of
 Caide window is under Solution Explorer.
 
 In Caide window, click 'Create caide solution' button and select an empty
