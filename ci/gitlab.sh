@@ -14,8 +14,8 @@ mcs --version
 
 date
 
-git submodule update --init --recursive
-date
+# git submodule update --init --recursive
+# date
 
 cd libcaide
 cabal install --only-dependencies
