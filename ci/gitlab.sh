@@ -1,9 +1,6 @@
 #!/bin/bash
 set -ev
 
-export QT_QPA_PLATFORM=offscreen
-export QT_QPA_FONTDIR=/usr/share/fonts
-
 gcc --version
 g++ --version
 cmake --version
@@ -13,9 +10,6 @@ phantomjs --version
 mcs --version
 
 date
-
-# git submodule update --init --recursive
-# date
 
 cabal update -v
 date
@@ -30,6 +24,9 @@ date
 
 export MONO=mono
 export CSC=mcs
+# For phantomjs
+export QT_QPA_PLATFORM=offscreen
+export QT_QPA_FONTDIR=/usr/share/fonts
 tests/run-tests.sh
 date
 
