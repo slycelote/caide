@@ -17,6 +17,9 @@ date
 # git submodule update --init --recursive
 # date
 
+cabal update -v
+date
+
 cd libcaide
 cabal install --only-dependencies
 date
