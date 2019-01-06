@@ -1,6 +1,10 @@
 #!/bin/bash
 set -ev
 
+# For phantomjs
+export QT_QPA_PLATFORM=offscreen
+export QT_QPA_FONTDIR=/usr/share/fonts
+
 gcc --version
 g++ --version
 cmake --version
@@ -8,6 +12,8 @@ ghc --version
 cabal --version
 phantomjs --version
 mcs --version
+# Debugging https://github.com/snoyberg/http-client/issues/292
+cat /etc/hosts
 
 date
 
@@ -24,9 +30,6 @@ date
 
 export MONO=mono
 export CSC=mcs
-# For phantomjs
-export QT_QPA_PLATFORM=offscreen
-export QT_QPA_FONTDIR=/usr/share/fonts
 tests/run-tests.sh
 date
 
