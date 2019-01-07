@@ -3,6 +3,12 @@ image: "ubuntu:bionic"
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
+  GIT_STRATEGY: fetch
+
+cache:
+  paths:
+    - libcaide/dist/
+    - libcaide/cbits/build/
 
 before_script:
   - uname -a
@@ -12,4 +18,7 @@ before_script:
 Build and test:
   script:
     - ci/gitlab.sh
+  artifacts:
+    paths:
+      - libcaide/dist/build/caide/caide
 
