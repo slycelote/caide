@@ -30,6 +30,6 @@ date
 
 export MONO=mono
 export CSC=mcs
-tests/run-tests.sh
+# tests/run-tests.sh
 date
 
