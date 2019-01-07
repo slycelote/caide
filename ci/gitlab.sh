@@ -28,6 +28,8 @@ cabal configure
 cabal build --ghc-options="-pgml g++"
 date
 
+strip dist/build/caide/caide
+
 export MONO=mono
 export CSC=mcs
 # tests/run-tests.sh
