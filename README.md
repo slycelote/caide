@@ -2,19 +2,13 @@
 Automates certain common tasks that you do during programming competitions:
 parsing, running and debugging problem tests, inlining library code.
 
-caide is inspired by such projects as
-[chelper](https://code.google.com/p/idea-chelper) or
-[jhelper](https://github.com/AlexeyDmitriev/JHelper). Its purpose is to
-automate the following tasks:
+* Parses problem statement and extracts test cases
+* Generates solution scaffold
+* Inlines library code and prepares a single source file for submission
+* Runs the tests on your solution
+* Assists in debugging the tests
 
-* Parsing problem statement and extracting test cases
-* Generating solution scaffold
-* Inlining library code and preparing a single source file for submission
-* Running the tests on your solution
-* Debugging the tests
-
-Unlike other projects, caide is designed to support multiple programming
-languages and IDEs/editors.
+caide is designed to support multiple programming languages and IDEs/editors.
 
 ## Screenshots
 Codelite and command line caide in Linux: ([full size](http://i.imgur.com/cZsP6Z0.png))
