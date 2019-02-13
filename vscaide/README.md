@@ -36,6 +36,10 @@ Your library of prewritten code goes into `cpplib` project.
 For Topcoder support you will also need the [Arena
 plugin](https://github.com/slycelote/caide/tree/release/tccaide/README.md).
 
+# YouTube Tutorial
+
+Video tutorial on how install and use VsCaide: https://youtu.be/qNKBdqifxpU 
+
 # Supported online judges
 
 Caide can parse problem definitions (problem name and sample tests)
