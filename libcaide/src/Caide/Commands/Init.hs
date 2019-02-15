@@ -1,4 +1,6 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
 #ifdef CLANG_INLINER
 {-# LANGUAGE TemplateHaskell #-}
 #endif
@@ -12,32 +14,55 @@ import Control.Monad.State (liftIO)
 import Codec.Archive.Zip (extractFilesFromArchive, toArchive, ZipOption(..))
 import qualified Data.ByteString as BS
 import Data.ByteString.Lazy (fromStrict)
+import Data.Char (isSpace)
+import Data.List (takeWhile, dropWhile, dropWhileEnd, filter, isInfixOf)
+import Data.Maybe (fromMaybe)
 import Data.FileEmbed (embedFile)
 import qualified Data.Text as T
 import qualified Data.Text.IO.Util as T
 import System.Environment (lookupEnv)
+import System.Process (readProcessWithExitCode)
 
 import Filesystem (createTree)
 import Filesystem.Path.CurrentOS (encodeString, (</>))
 import qualified Filesystem.Path as FSP
 import Filesystem.Util (pathToText, writeTextFile)
 
-import Caide.Configuration (writeCaideConf, writeCaideState, defaultCaideConf, defaultCaideState)
+import Caide.Configuration (SystemCompilerInfo(..),
+    writeCaideConf, writeCaideState, defaultCaideConf, defaultCaideState)
 import Caide.Templates (templates)
 import Caide.Types
 
-initialize :: Bool -> CaideIO ()
-initialize useSystemCppHeaders = do
-    curDir <- caideRoot
-    mscver <- liftIO $ do
-        [vs12, vs14, vs15] <- mapM lookupEnv ["VS120COMNTOOLS", "VS140COMNTOOLS", "VS150COMNTOOLS"]
-        return $ case (vs12, vs14, vs15) of
+
+getSystemCompilerInfo :: IO SystemCompilerInfo
+getSystemCompilerInfo = do
+    [vs12, vs14, vs15] <- mapM lookupEnv ["VS120COMNTOOLS", "VS140COMNTOOLS", "VS150COMNTOOLS"]
+    let mscver = case (vs12, vs14, vs15) of
             (_, _, Just _) -> 1900
             (_, Just _, _) -> 1900
             (Just _, _, _) -> 1800
             _              -> 1700
+    gcc <- fromMaybe "g++" <$> lookupEnv "CXX"
+    -- TODO: More robust subprocess handling (e.g. timeout)
+    -- TODO: Set locale
+    (_exitCode, _stdOut, stdErr) <- readProcessWithExitCode gcc ["-x", "c++", "-E" ,"-v", "-"] ""
+    let gccIncludeDirectories = parseGccOutput stdErr
+    return $ SystemCompilerInfo { mscver, gccIncludeDirectories }
 
-    _ <- writeCaideConf $ defaultCaideConf curDir useSystemCppHeaders mscver
+parseGccOutput :: String -> [String]
+parseGccOutput output = map trim $ filter isDirectory $ takeWhile (not . endOfSearchListLine) $ dropWhile (not . searchStartsHereLine) $ lines output
+  where
+    trim = dropWhileEnd isSpace . dropWhile isSpace
+    isDirectory s = not (null s) && head s == ' '
+    endOfSearchListLine s = "End of search list." `isInfixOf` s
+    searchStartsHereLine s = "search starts here:" `isInfixOf` s
+
+
+initialize :: Bool -> CaideIO ()
+initialize useSystemCppHeaders = do
+    curDir <- caideRoot
+    compiler <- liftIO $ getSystemCompilerInfo
+    _ <- writeCaideConf $ defaultCaideConf curDir useSystemCppHeaders compiler
     _ <- writeCaideState defaultCaideState
     liftIO $ do
 #ifdef CLANG_INLINER

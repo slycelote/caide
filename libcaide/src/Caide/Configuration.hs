@@ -12,6 +12,7 @@ module Caide.Configuration(
     , readCaideState
     , writeCaideConf
     , writeCaideState
+    , SystemCompilerInfo(..)
     , defaultCaideConf
     , defaultCaideState
 
@@ -158,15 +159,20 @@ addSection section conf = add_section conf section
 setValue :: SectionSpec -> OptionSpec -> String -> ConfigParser -> Either CPError ConfigParser
 setValue section key value conf = set conf section key value
 
-defaultCaideConf :: FilePath -> Bool -> Int -> ConfigParser
-defaultCaideConf root useSystemHeaders mscver = forceEither $
+data SystemCompilerInfo = SystemCompilerInfo
+    { mscver :: Int
+    , gccIncludeDirectories :: [String]
+    }
+
+defaultCaideConf :: FilePath -> Bool -> SystemCompilerInfo -> ConfigParser
+defaultCaideConf root useSystemHeaders compiler = forceEither $
     addSection "core" emptyCP >>=
     setValue "core" "language" defaultLanguage >>=
     setValue "core" "features" "" >>=
     addSection "cpp" >>=
     setValue "cpp" "keep_macros" "_WIN32,_WIN64,_MSC_VER,__GNUC__,__cplusplus" >>=
     setValue "cpp" "max_consequent_empty_lines" "2" >>=
-    setValue "cpp" "clang_options" (intercalate ",\n  " $ clangOptions root useSystemHeaders mscver)
+    setValue "cpp" "clang_options" (intercalate ",\n  " $ clangOptions root useSystemHeaders compiler)
   where
 #ifdef CLANG_INLINER
     defaultLanguage = "cpp"
@@ -175,7 +181,7 @@ defaultCaideConf root useSystemHeaders mscver = forceEither $
 #endif
 
 
-clangOptions :: FilePath -> Bool -> Int -> [String]
+clangOptions :: FilePath -> Bool -> SystemCompilerInfo -> [String]
 clangOptions root False _ =
     [ "-target"
     , "i386-pc-mingw32"
@@ -194,11 +200,11 @@ clangOptions root False _ =
     ]
 
 -- Windows with VS headers
-clangOptions root True mscver | "mingw" `isPrefixOf` os =
+clangOptions root True compiler | "mingw" `isPrefixOf` os =
     [ "-target"
     , "i386-pc-windows-msvc"
     , "-fdiagnostics-format=msvc"
-    , "-fmsc-version=" ++ show mscver
+    , "-fmsc-version=" ++ show (mscver compiler)
     , "-fparse-all-comments"
     , "-D_CRT_SECURE_NO_WARNINGS"
     , "-DONLINE_JUDGE"
@@ -207,18 +213,25 @@ clangOptions root True mscver | "mingw" `isPrefixOf` os =
     ]
 
 -- Linux with system headers
-clangOptions root True _ =
+clangOptions root True compiler = 
     [ "-target"
     , arch ++ "-" ++ os
+    ] ++
+    gccHeadersOptions (gccIncludeDirectories compiler) ++
     -- clang builtin headers are still required:
     -- https://clang.llvm.org/docs/LibTooling.html#libtooling-builtin-includes
-    , "-isystem"
+    [ "-isystem"
     , encodeString $ root </> "include" </> "clang-builtins"
     , "-I"
     , encodeString $ root </> "cpplib"
     , "-fparse-all-comments"
     , "-DONLINE_JUDGE"
     ]
+
+gccHeadersOptions :: [String] -> [String]
+gccHeadersOptions [] = []
+gccHeadersOptions includeDirectories = ["-nostdinc"] ++
+    concat [["-isystem", dir] | dir <- includeDirectories]
 
 
 forceEither :: Either a c -> c
