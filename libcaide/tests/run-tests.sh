@@ -24,8 +24,8 @@ fi
 
 tmp_dir=$cur_dir/tmp
 
-# Required for phantomjs
-export QT_QPA_PLATFORM=offscreen
+# Depending on the OS distribution, this may be required for phantomjs
+# export QT_QPA_PLATFORM=offscreen
 
 export cur_dir
 export CAIDE
