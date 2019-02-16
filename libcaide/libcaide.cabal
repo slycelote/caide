@@ -27,6 +27,16 @@ Flag debug
   description: Debug build
   default: False
 
+
+custom-setup
+  setup-depends: base >= 4.7,
+                 bytestring,
+                 Cabal,
+                 directory,
+                 filepath,
+                 process,
+                 zip-archive
+
 executable caide
   -- Due to a cabal bug, linking custom Setup.hs fails when local version
   -- of unix package doesn't match ghc version. Older unix version in GHC 7.8
@@ -38,7 +48,7 @@ executable caide
                    time < 1.5
   } else {
     build-depends:
-                   base >= 4.8 && < 6,
+                   base >= 4.8,
                    time >= 1.5.0.1
     -- Functor-Applicative-Monad proposal
     cpp-options:   -DAMP

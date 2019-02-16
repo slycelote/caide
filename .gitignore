@@ -28,7 +28,9 @@ tags
 ### Cabal ###
 cabal-dev/
 dist/
+dist-newstyle/
 .dist-buildwrapper/
 .cabal-sandbox/
 cabal.sandbox.config
+cabal.project.local
 
