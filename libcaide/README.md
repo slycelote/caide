@@ -182,10 +182,7 @@ into `cpplib` directory and #include necessary headers. `caide make` command
 then will then generate a single submission file from your solution and
 library - this is referred to as 'inlining' the code.
 
-If you have troubles with C++ inliner, change the language to `simplecpp` - it
-will disable the inliner but you'll still be able to use other features, such
-as 'smart testing'. Here is what you need to be aware of when writing library
-code:
+Here is what you need to be aware of when writing library code:
 
 1. caide comes with a specific set of system headers (a MinGW implementation).
    You have to write standards-complying code to make sure both caide inliner
