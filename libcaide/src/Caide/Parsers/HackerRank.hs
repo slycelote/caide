@@ -6,12 +6,14 @@ module Caide.Parsers.HackerRank(
 #ifndef AMP
 import Control.Applicative ((<$>))
 #endif
+import Control.Applicative ((<|>))
 import Data.Char (isAlphaNum, isSpace)
+import Data.List (find)
 import Data.Maybe (fromMaybe, listToMaybe)
 import qualified Data.Text as T
 import Network.URI (parseURI, uriAuthority, uriRegName)
 
-import Text.HTML.TagSoup (maybeTagText, parseTags, partitions,
+import Text.HTML.TagSoup (fromAttrib, maybeTagText, parseTags, partitions,
     Tag(TagText))
 import Text.HTML.TagSoup.Utils
 
@@ -38,16 +40,26 @@ doParse cont =
   where
     tags = parseTags cont
 
-    h2Title = drop 1 . dropWhile (~~/== "<h2 class=hr_tour-challenge-name>") $ tags
-    title' = T.strip <$> (listToMaybe h2Title >>= maybeTagText)
-    probId' = T.filter isAlphaNum <$> title'
-    title  = fromMaybe "Unknown" title'
-    probId = T.append "hr" . fromMaybe "Unknown" $ probId'
+    metaTitle = do
+        meta <- find (~== "<meta property=og:title") tags
+        return $ fromAttrib "content" meta
 
-    problemStatement = dropWhile (~~/== "<div class=challenge-text>") $ tags
-    samples = partitions (\tag -> tag ~~== "<div class=challenge_sample_input_body>" || tag ~~== "<div class=challenge_sample_output_body>") problemStatement
+    pageTitle = do
+        titleText <- listToMaybe $ drop 1 . dropWhile (~/= "<title>") $ tags
+        maybeTagText titleText
 
-    pres = map (drop 1 . takeWhile (~~/== "</pre>") . dropWhile (~~/== "<pre>") ) samples
+    h2Title = do
+        h2Text <- listToMaybe $ drop 1 . dropWhile (~~/== "<h2 class=hr_tour-challenge-name>") $ tags
+        maybeTagText h2Text
+
+    rawTitle = fromMaybe "Unknown" $ pageTitle <|> metaTitle <|> h2Title
+    title = T.strip . T.takeWhile (/= '|') $ rawTitle
+
+    probId = T.append "hr" . T.filter isAlphaNum $ title
+
+    samples = partitions (\tag -> tag ~~== "<div class=challenge_sample_input_body>" || tag ~~== "<div class=challenge_sample_output_body>") tags
+
+    pres = map (drop 1 . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>") ) samples
     texts = map extractText pres
     t = drop (length texts `mod` 2) texts
     testCases = [TestCase (t!!i) (t!!(i+1)) | i <- [0, 2 .. length t-2]]

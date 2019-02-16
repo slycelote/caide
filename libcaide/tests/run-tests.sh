@@ -24,6 +24,9 @@ fi
 
 tmp_dir=$cur_dir/tmp
 
+# Required for phantomjs
+export QT_QPA_PLATFORM=offscreen
+
 export cur_dir
 export CAIDE
 # On Windows use something like CSC=/c/Windows/Microsoft.NET/Framework/v4.0.30319/csc.exe ./run-tests.sh

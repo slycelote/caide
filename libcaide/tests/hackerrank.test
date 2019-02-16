@@ -4,4 +4,5 @@ parse_with_js https://hackerrank.com/challenges/equal
 parse_with_js https://hackerrank.com/contests/hourrank-18/challenges/wheres-the-marble
 
 compare_with after-parse hrEqual/{case1.{in,out},problem.ini}
+compare_with after-parse hrWherestheMarble/{case1.{in,out},problem.ini}
 

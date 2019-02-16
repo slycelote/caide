@@ -23,7 +23,7 @@ function cxx {
 }
 
 function render_js {
-    "$PHANTOMJS" --load-images=false "$cur_dir/render.js" "$1" .page.html
+    "$PHANTOMJS" --load-images=false --ignore-ssl-errors=true --local-url-access=false "$cur_dir/render.js" "$1" .page.html
 }
 
 function parse_with_js {
