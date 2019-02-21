@@ -42,6 +42,10 @@ sites.) Because of how the extensions work, you have to be running a local
 server that will accept requests from the browser. This is done in command line
 with `caide httpServer`. Hit Return to stop the server.
 
+Default port for Competitive Companion is 8080. (It can be changed in
+[config](#configuration)). You need to add it as an additional port in
+the settings of the browser extension.
+
 
 <a name="configuration"></a>
 # Configuration
@@ -55,11 +59,11 @@ Most settings are stored in `caide.ini` file in the project root.
   kept in the corresponding section of the file.
 * `features` is a comma separated list of 'features' (optional pieces of
   functionality). Settings for each feature are kept in the corresponding
-section of the file. Currently the only implemented feature is 'codelite'
-which enables a limited [support for Codelite IDE](#codelite).
-* `chelper_port` (default 4243) and `companion_port` (default 8080) control 
-  ports that [`caide httpServer` command](#http-server) uses. Set a port to
-  -1 to disable the corresponding server.
+  section of the file. Currently the only implemented feature is 'codelite'
+  which enables a limited [support for Codelite IDE](#codelite).
+* `chelper_port` (default 4243) and `companion_port` (default 8080) control
+  ports that [`caide httpServer` command](#http-server) uses for communicating
+  with browser extensions. Set a port to -1 to disable the corresponding server.
 
 
 <a name="cpp"></a>
