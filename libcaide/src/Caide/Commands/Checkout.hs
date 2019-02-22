@@ -7,6 +7,7 @@ module Caide.Commands.Checkout (
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad (forM_, unless)
+import Control.Monad.Except (catchError)
 import Control.Monad.State (liftIO)
 import Data.Maybe (mapMaybe)
 
@@ -17,7 +18,7 @@ import Filesystem (isFile)
 import Filesystem.Path.CurrentOS (fromText, (</>))
 
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
-import Caide.Configuration (setActiveProblem, getActiveProblem, getFeatures, orDefault)
+import Caide.Configuration (setActiveProblem, getFeatures, orDefault)
 import Caide.Registry (findFeature)
 import Caide.Types
 import Caide.Util (withLock)
@@ -31,7 +32,8 @@ checkoutProblem probId' maybeLangStr = unless (T.null probId') $ do
 
     unless problemExists $ throw . T.concat $ ["Problem ", probId, " doesn't exist"]
 
-    currentProbId <- getActiveProblem `orDefault` ""
+    currentProbId <- getActiveProblem `catchError` (\_ -> return "")
+
     if currentProbId == probId
         then liftIO $ T.putStrLn . T.concat $ [probId, ": already checked out"]
         else withLock $ do
