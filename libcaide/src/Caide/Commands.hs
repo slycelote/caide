@@ -156,7 +156,7 @@ runMain args = case parseResult of
     _           -> Left . void $ handleParseResult parseResult
   where
     parseResult = execParserPure parsePrefs opts args
-    parsePrefs = ParserPrefs
+    parsePrefs = defaultPrefs
         { prefMultiSuffix = ""
         , prefDisambiguate = True
         , prefShowHelpOnError = True

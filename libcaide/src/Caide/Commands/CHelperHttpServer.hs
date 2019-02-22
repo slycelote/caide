@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Caide.Commands.CHelperHttpServer(
       runHttpServer
@@ -49,7 +50,7 @@ runServers root companionPort chelperPort = withSocketsDo $ do
     hSetBuffering stderr NoBuffering
 
     mbCompanion <- if companionPort <= 0
-        then return Nothing 
+        then return Nothing
         else Just <$> (forkIO $ initServerBind companionPort (tupleToHostAddress (127,0,0,1)) (processCompanionRequest root))
     mbChelper <- if chelperPort <= 0
         then return Nothing
