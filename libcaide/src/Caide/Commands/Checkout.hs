@@ -18,7 +18,7 @@ import Filesystem (isFile)
 import Filesystem.Path.CurrentOS (fromText, (</>))
 
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
-import Caide.Configuration (setActiveProblem, getFeatures, orDefault)
+import Caide.Configuration (getActiveProblem, setActiveProblem, getFeatures)
 import Caide.Registry (findFeature)
 import Caide.Types
 import Caide.Util (withLock)
