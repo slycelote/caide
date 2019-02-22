@@ -9,11 +9,14 @@ module Caide.Commands.ParseProblem(
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad (forM_, unless, when)
+import Control.Monad.Except (catchError)
 import Control.Monad.State (liftIO)
 import Data.Char (isAlphaNum, isAscii)
-import Data.Either (rights)
+import Data.Either (lefts)
+import Data.Maybe (fromJust)
 import qualified Data.Text as T
 import qualified Data.Text.IO.Util as T
+import Data.Text (Text)
 
 import Filesystem (createDirectory, createTree, writeTextFile, isDirectory)
 import Filesystem.Path.CurrentOS (fromText, decodeString, (</>))
@@ -22,7 +25,8 @@ import qualified Filesystem.Path.CurrentOS as F
 
 import Caide.Types
 import Caide.Configuration (getDefaultLanguage, setActiveProblem, getProblemConfigFile,
-                            getProblemStateFile, defaultProblemConfig, defaultProblemState)
+                            getProblemStateFile, defaultProblemConfig, defaultProblemState,
+                            describeError)
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
 import Caide.Registry (findHtmlParserForUrl, findProblemParser)
@@ -131,12 +135,25 @@ parseExistingProblem url parser = do
         Left err -> throw . T.unlines $ ["Encountered a problem while parsing:", err]
         Right (problem, samples) -> saveProblem problem samples
 
+-- Pair of URL and either error message or parsed problem
+type ParseResult = (URL, Either Text (Problem, [TestCase]))
+
+errorMessage :: ParseResult -> Maybe Text
+errorMessage (_, Right _) = Nothing
+errorMessage (url, Left err) = Just $ T.concat [url, ": ", err]
+
+trySaveProblem :: ParseResult -> CaideIO (Either Text ())
+trySaveProblem pr@(_, (Left _)) = return $ Left $ fromJust $ errorMessage $ pr
+trySaveProblem (url, Right (problem, tests)) =
+    (saveProblem problem tests >> return (Right ())) `catchError` \err ->
+        return $ Left $ T.concat [url, ": ", T.pack $ describeError err]
+
+
 parseProblems :: Int -> [URL] -> CaideIO ()
 parseProblems numThreads urls = do
-    results <- liftIO $ mapWithLimitedThreads numThreads tryParseProblem urls
-    let errors = [T.concat [url, ": ", err] | (url, Left err) <- zip urls results]
-        problems = rights results
-    forM_ (reverse problems) $ uncurry saveProblem
+    parseResults <- liftIO $ mapWithLimitedThreads numThreads tryParseProblem urls
+    results <- mapM trySaveProblem $ reverse $ zip urls parseResults
+    let errors = lefts results
     unless (null errors) $
         throw $ T.unlines ("Some problems failed to parse.": errors)
 
