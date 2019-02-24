@@ -3,6 +3,7 @@ set -ev
 
 date
 
+sudo apt update
 sudo apt install g++ cmake cabal-install ghc binutils python2.7
 date
 
