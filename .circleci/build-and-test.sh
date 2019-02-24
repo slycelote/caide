@@ -11,7 +11,7 @@ g++ --version
 ghc --version
 date
 
-export CXX=$CIRCLE_WORKING_DIRECTORY/.circleci/ccache-g++
+export CXX=`readlink -f $CIRCLE_WORKING_DIRECTORY/.circleci/ccache-g++`
 
 git submodule update --init --recursive
 date
