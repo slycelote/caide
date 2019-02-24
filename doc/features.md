@@ -2,6 +2,10 @@
 -->
 ## Supported online judges
 
+Note that a more extensive list of online judges is supported via [Competitive
+Companion](https://github.com/slycelote/caide/tree/release/libcaide#chelper-and-competitive-companion-browser-extension) browser add-on.
+
+
 | Online judge            | Sample Problem URL | Sample Contest URL | CHelper Chrome plugin |
 | :----------:            | :----------------: | :----------------: | :-------------------: |
 | CodeChef                | http://www.codechef.com/MAY15/problems/SETDIFF | http://www.codechef.com/COOK54 | + |
