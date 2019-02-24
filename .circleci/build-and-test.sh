@@ -26,6 +26,7 @@ sudo apt install phantomjs mono-mcs wget curl
 date
 
 export MONO=mono
+export CSC=mcs
 tests/run-tests.sh
 date
 
