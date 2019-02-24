@@ -5,5 +5,5 @@ jobs:
       - image: ubuntu/bionic
     steps:
       - checkout
-      - .circleci/build-and-test.sh
+      - run: .circleci/build-and-test.sh
 
