@@ -8,20 +8,20 @@ jobs:
 
       - run: git submodule status | md5sum | awk '{print $1}' > cppinliner-submodule-id.txt
       - restore_cache:
-          key: v1-caide-cppinliner-{{ checksum cppinliner-cppinliner-submodule-id.txt }}
+          key: v1-caide-cppinliner-{{ checksum "cppinliner-cppinliner-submodule-id.txt" }}
 
       - restore_cache:
-          key: v1-caide-cabal-sandbox-{{ checksum libcaide/cabal.config }}
+          key: v1-caide-cabal-sandbox-{{ checksum "libcaide/cabal.config" }}
 
       - run: .circleci/build-and-test.sh
 
       - save_cache:
-          key: v1-caide-cppinliner-{{ checksum cppinliner-submodule-id.txt }}
+          key: v1-caide-cppinliner-{{ checksum "cppinliner-submodule-id.txt" }}
           paths:
             - libcaide/cbits/build/
 
       - save_cache:
-          key: v1-caide-cabal-sandbox-{{ checksum libcaide/cabal.config }}
+          key: v1-caide-cabal-sandbox-{{ checksum "libcaide/cabal.config" }}
           paths:
             - libcaide/.cabal-sandbox/
 
