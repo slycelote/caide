@@ -18,7 +18,7 @@ jobs:
       - save_cache:
           key: v1-caide-cppinliner-{{ checksum "cppinliner-submodule-id.txt" }}
           paths:
-            - libcaide/cbits/build/
+            - ~/.ccache
 
       - save_cache:
           key: v1-caide-cabal-sandbox-{{ checksum "libcaide/cabal.config" }}
