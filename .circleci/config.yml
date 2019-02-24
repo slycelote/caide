@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: debian:stretch
+      - image: circleci/python:2.7.15
     steps:
       - checkout
       - run: .circleci/build-and-test.sh
