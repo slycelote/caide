@@ -3,7 +3,7 @@ set -ev
 
 date
 
-sudo apt install g++ cmake cabal-install ghc binutils
+sudo apt install g++ cmake cabal-install ghc binutils python2.7
 date
 
 export CXX=g++
