@@ -4,14 +4,12 @@ set -ev
 date
 
 sudo apt update
-sudo apt install g++ cmake cabal-install ghc binutils python2.7 ccache
+sudo apt install git g++ cmake cabal-install ghc binutils python2.7 ccache
 
 cmake --version
 g++ --version
 ghc --version
 date
-
-export CXX=`readlink -f $CIRCLE_WORKING_DIRECTORY/.circleci/ccache-g++`
 
 git submodule update --init --recursive
 date
@@ -21,6 +19,9 @@ cabal sandbox init
 cabal update -v
 cabal install --only-dependencies
 date
+
+export CXX=`readlink -f $CIRCLE_WORKING_DIRECTORY/.circleci/ccache-g++`
+echo $CXX
 
 cabal configure
 cabal build --ghc-options="-pgml $CXX"
