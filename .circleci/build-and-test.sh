@@ -3,8 +3,17 @@ set -ev
 
 date
 
+env
 pwd
 ls
+ls $CIRCLE_WORKING_DIRECTORY
+ls .circleci
+ls $CIRCLE_WORKING_DIRECTORY/.circleci
+file $CIRCLE_WORKING_DIRECTORY/.circleci/ccache-g++
+file .circleci/ccache-g++
+readlink -f .circleci/ccache-g++
+readlink -f $CIRCLE_WORKING_DIRECTORY/.circleci/ccache-g++
+
 
 sudo apt update
 sudo apt install git g++ cmake cabal-install ghc binutils python2.7 ccache
@@ -19,10 +28,6 @@ date
 
 git submodule update --init --recursive
 date
-
-env
-file $CIRCLE_WORKING_DIRECTORY/.circleci/ccache-g++
-readlink -f $CIRCLE_WORKING_DIRECTORY/.circleci/ccache-g++
 
 cd libcaide
 cabal sandbox init
