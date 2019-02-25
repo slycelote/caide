@@ -25,7 +25,7 @@ cabal update -v
 cabal install --only-dependencies
 date
 
-export CXX=`pwd`/.circleci/ccache-g++
+export CXX=`pwd`/../.circleci/ccache-g++
 echo $CXX
 
 cabal configure
