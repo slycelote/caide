@@ -1,6 +1,10 @@
 #!/bin/bash
 set -ev
 
+env
+file $CIRCLE_WORKING_DIRECTORY/.circleci/ccache-g++
+readlink -f $CIRCLE_WORKING_DIRECTORY/.circleci/ccache-g++
+
 date
 
 sudo apt update
