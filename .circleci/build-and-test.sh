@@ -1,19 +1,9 @@
 #!/bin/bash
 set -ev
 
-date
-
 env
 pwd
-ls
-ls $CIRCLE_WORKING_DIRECTORY
-ls .circleci
-ls $CIRCLE_WORKING_DIRECTORY/.circleci
-file $CIRCLE_WORKING_DIRECTORY/.circleci/ccache-g++
-file .circleci/ccache-g++
-readlink -f .circleci/ccache-g++
-readlink -f $CIRCLE_WORKING_DIRECTORY/.circleci/ccache-g++
-
+date
 
 sudo apt update
 sudo apt install git g++ cmake cabal-install ghc binutils python2.7 ccache
@@ -35,7 +25,7 @@ cabal update -v
 cabal install --only-dependencies
 date
 
-export CXX=`readlink -f $CIRCLE_WORKING_DIRECTORY/.circleci/ccache-g++`
+export CXX=`pwd`/.circleci/ccache-g++
 echo $CXX
 
 cabal configure
