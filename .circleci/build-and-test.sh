@@ -2,14 +2,10 @@
 set -ev
 
 env
-pwd
 date
 
 sudo apt update
 sudo apt install git g++ cmake cabal-install ghc binutils python2.7 ccache
-
-git status
-
 
 cmake --version
 g++ --version
@@ -30,9 +26,17 @@ export CXX=`pwd`/../.circleci/ccache-g++
 echo $CC
 echo $CXX
 
+ccache --print-config
+ccache --show-stats
+
 cabal configure
 cabal build --ghc-options="-pgml $CXX"
 date
+
+ccache --show-stats
+
+unset CC
+unset CXX
 
 sudo apt install phantomjs mono-mcs wget curl
 date
