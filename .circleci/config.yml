@@ -27,7 +27,7 @@ jobs:
 
 workflows:
   version: 2
-    on_commit:
-      jobs:
-        - build
+  on_commit:
+    jobs:
+      - build
 
