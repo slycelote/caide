@@ -25,7 +25,7 @@ cmake --version
 g++ --version
 ghc --version
 
-git submodule update --init --recursive --depth 1
+git submodule update --init --recursive
 timeit
 
 cd libcaide
