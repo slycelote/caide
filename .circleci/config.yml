@@ -25,3 +25,9 @@ jobs:
           paths:
             - libcaide/.cabal-sandbox/
 
+workflows:
+  version: 2
+    on_commit:
+      jobs:
+        - build
+
