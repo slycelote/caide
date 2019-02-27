@@ -2,28 +2,40 @@
 set -ev
 
 env
-date
+
+timeit() {
+    now=$(date +%s)
+    if [ -n "$last" ] ; then
+        diff=$(echo "$now - $last" | bc -l)
+        echo "Elapsed $diff seconds"
+    fi
+    last=$now
+}
+
+timeit
 
 sudo apt update
+timeit
 
 # Install build dependencies
 sudo apt install git g++ cmake cabal-install ghc binutils python2.7 ccache
+timeit
 
 cmake --version
 g++ --version
 ghc --version
-date
 
-git submodule update --init --recursive
-date
+git submodule update --init --recursive --depth 1
+timeit
 
 cd libcaide
 
 # Build Haskell dependencies
 cabal sandbox init
 cabal update -v
+timeit
 cabal install --only-dependencies
-date
+timeit
 
 # Build
 export CC=`pwd`/../.circleci/ccache-gcc
@@ -36,7 +48,7 @@ ccache --show-stats
 
 cabal configure
 cabal build --ghc-options="-pgml $CXX"
-date
+timeit
 
 ccache --show-stats
 
@@ -45,12 +57,12 @@ unset CXX
 
 # Install test dependencies
 sudo apt install phantomjs mono-mcs wget curl
-date
+timeit
 
 # Run tests
 export MONO=mono
 export CSC=mcs
 export QT_QPA_PLATFORM=offscreen
 tests/run-tests.sh
-date
+timeit
 
