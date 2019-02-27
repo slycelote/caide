@@ -6,7 +6,7 @@ env
 timeit() {
     now=$(date +%s)
     if [ -n "$last" ] ; then
-        diff=$(echo "$now - $last" | bc -l)
+        diff=$(expr $now - $last)
         echo "Elapsed $diff seconds"
     fi
     last=$now
