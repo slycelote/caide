@@ -1,6 +1,11 @@
 version: 2
 jobs:
   build:
+    parameters:
+      publish_artifacts:
+        type: string
+        default: ""
+
     docker:
       - image: circleci/python:2.7.15
     steps:
@@ -15,6 +20,12 @@ jobs:
 
       - run: .circleci/build-and-test.sh
 
+      - when:
+          condition: <<parameters.publish_artifacts>>
+          steps:
+            - store_artifacts:
+                path: libcaide/dist/build/caide/caide
+
       - save_cache:
           key: v2-ccache-{{ checksum "cppinliner-submodule-id.txt" }}
           paths:
@@ -25,6 +36,8 @@ jobs:
           paths:
             - libcaide/.cabal-sandbox/
 
+
+
 workflows:
   version: 2
   on_commit:
@@ -33,13 +46,12 @@ workflows:
 
   nightly:
     jobs:
-      - build
+      - build:
+          publish_artifacts: "true"
     triggers:
       - schedule:
           cron: "0 0 * * *"
           filters:
             branches:
-              only:
-                - release
-                - circleci
+              only: [ circleci ]
 

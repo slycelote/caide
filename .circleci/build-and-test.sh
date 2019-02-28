@@ -48,6 +48,7 @@ ccache --show-stats
 
 cabal configure
 cabal build --ghc-options="-pgml $CXX"
+strip dist/build/caide/caide
 timeit
 
 ccache --show-stats
