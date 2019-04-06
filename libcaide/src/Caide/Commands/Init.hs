@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 #ifdef CLANG_INLINER
 {-# LANGUAGE TemplateHaskell #-}
 #endif
@@ -9,6 +10,7 @@ module Caide.Commands.Init(
       initialize
 ) where
 
+import Control.Exception (try, IOException)
 import Control.Monad (forM_)
 import Control.Monad.State (liftIO)
 import Codec.Archive.Zip (extractFilesFromArchive, toArchive, ZipOption(..))
@@ -45,8 +47,10 @@ getSystemCompilerInfo = do
     gcc <- fromMaybe "g++" <$> lookupEnv "CXX"
     -- TODO: More robust subprocess handling (e.g. timeout)
     -- TODO: Set locale
-    (_exitCode, _stdOut, stdErr) <- readProcessWithExitCode gcc ["-x", "c++", "-E" ,"-v", "-"] ""
-    let gccIncludeDirectories = parseGccOutput stdErr
+    processResult <- try $ readProcessWithExitCode gcc ["-x", "c++", "-E" ,"-v", "-"] ""
+    let gccIncludeDirectories = case processResult of
+            Left  (_ex :: IOException)         -> []
+            Right (_exitCode, _stdOut, stdErr) -> parseGccOutput stdErr
     return $ SystemCompilerInfo { mscver, gccIncludeDirectories }
 
 parseGccOutput :: String -> [String]

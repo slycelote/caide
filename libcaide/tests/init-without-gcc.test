@@ -1,0 +1,4 @@
+#!/bin/bash
+# Just make sure all commands run successfully
+CXX=/_nonexistent "$CAIDE" init
+
