@@ -182,6 +182,10 @@
       <Project>{8f37650d-5dc4-4558-b615-cf510b5a1d3f}</Project>
       <Name>Vs2017</Name>
     </ProjectReference>
+    <ProjectReference Include="VersionSpecific\Vs2019\Vs2019.csproj">
+      <Project>{29a54bb9-5e03-4b41-b0f2-2e5f10480922}</Project>
+      <Name>Vs2019</Name>
+    </ProjectReference>
     <ProjectReference Include="VersionSpecific\VsInterface\VsInterface.csproj">
       <Project>{a34a05f8-cd09-48b2-a64a-5e32502b9c96}</Project>
       <Name>VsInterface</Name>

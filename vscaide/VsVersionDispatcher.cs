@@ -19,7 +19,11 @@ namespace slycelote.VsCaide
             else
             {
                 var parts = version.Split('.');
-                if (parts.Length > 0 && parts[0] == "15")
+                if (parts.Length > 0 && parts[0] == "16")
+                {
+                    version = "2019";
+                }
+                else if (parts.Length > 0 && parts[0] == "15")
                 {
                     version = "2017";
                 }
