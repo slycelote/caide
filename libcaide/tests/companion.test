@@ -1,7 +1,7 @@
 #!/bin/bash
 (sleep 10; echo .) | "$CAIDE" httpServer &
-curl -d @request.json -H "Content-Type: application/json" http://localhost:8080
-curl -d @request2.json -H "Content-Type: application/json" http://localhost:8080
+curl -d @request.json -H "Content-Type: application/json" http://localhost:10043
+curl -d @request2.json -H "Content-Type: application/json" http://localhost:10043
 
 compare_with after-parse {ADayOfTakahashi,BMaximumSum,GCastleDefense}/problem.ini
 compare_with after-parse {ADayOfTakahashi,GCastleDefense}/case{1,2,3}.{in,out}
