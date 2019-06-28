@@ -81,7 +81,7 @@ runServers root companionPort chelperPort = withSocketsDo $ do
 getPorts :: CaideIO (Int, Int)
 getPorts = do
     h <- readCaideConf
-    companionPort <- getProp h "core" "companion_port" `orDefault` 8080
+    companionPort <- getProp h "core" "companion_port" `orDefault` 10043
     chelperPort <- getProp h "core" "chelper_port" `orDefault` 4243
     return (companionPort, chelperPort)
 
