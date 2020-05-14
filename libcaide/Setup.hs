@@ -1,73 +1,151 @@
-import Codec.Archive.Zip
-import Control.Applicative
-import Control.Exception
-import Control.Monad
+{-# OPTIONS_GHC -Wall #-}
+import Distribution.Simple (defaultMainWithHooks, simpleUserHooks,
+    UserHooks(confHook, cleanHook, hookedPrograms), )
+import Distribution.Simple.BuildPaths (autogenComponentModulesDir)
+import Distribution.Simple.Program (ConfiguredProgram, Program, ProgramDb,
+    lookupProgram, runProgram, simpleProgram, )
+import Distribution.Simple.Setup (ConfigFlags(configDistPref, configVerbosity),
+    CleanFlags(cleanDistPref), Flag,
+    configConfigurationsFlags, fromFlag, )
+import Distribution.Simple.Utils (createDirectoryIfMissingVerbose,
+    getDirectoryContentsRecursive, notice, rawSystemExit, )
+
+import Distribution.System (OS(Windows), buildOS, )
+import Distribution.Types.BuildInfo (BuildInfo, extraLibDirs, extraLibs, )
+import Distribution.Types.Executable (Executable(buildInfo))
+import Distribution.Types.Flag (mkFlagName, lookupFlagAssignment)
+import Distribution.Types.GenericPackageDescription (GenericPackageDescription, packageDescription)
+import Distribution.Types.HookedBuildInfo (HookedBuildInfo)
+import Distribution.Types.LocalBuildInfo (LocalBuildInfo,
+    localPkgDescr, withAllTargetsInBuildOrder', )
+import Distribution.Types.PackageDescription (PackageDescription(executables))
+import Distribution.Types.TargetInfo (targetCLBI)
+import Distribution.Verbosity (Verbosity)
+
+import Codec.Archive.Zip (Archive, Entry, ZipOption(OptRecursive), eRelativePath, eUncompressedSize,
+    addEntryToArchive, fromArchive, emptyArchive, readEntry)
+
+import Control.Monad (unless, when)
 import qualified Data.ByteString.Lazy as B
 import Data.List (nub)
 import Data.Maybe (fromMaybe)
-import Distribution.PackageDescription
-import Distribution.Verbosity
-import Distribution.Simple
-import Distribution.Simple.BuildPaths
-import Distribution.Simple.LocalBuildInfo
-import Distribution.Simple.Program
-import Distribution.Simple.Program.Db
-import Distribution.Simple.Setup
-import Distribution.Simple.Utils
-import Distribution.System(OS(..), buildOS)
-import Distribution.Types.GenericPackageDescription (lookupFlagAssignment)
-import System.Directory
-import System.Environment(getEnvironment)
-import System.Exit (ExitCode(..))
-import System.FilePath
+import System.Directory (doesDirectoryExist, doesFileExist, makeAbsolute,
+    removeFile, removeDirectoryRecursive, withCurrentDirectory)
+import System.FilePath ((</>))
 
 
 main :: IO ()
 main =
   defaultMainWithHooks simpleUserHooks
       { confHook  = inlinerConfHook
-      , buildHook = inlinerBuildHook
       , cleanHook = inlinerCleanHook
-      , hookedPrograms = [ cmakeProgram
-                         , makeProgram
-                         ] ++ hookedPrograms simpleUserHooks
+      , hookedPrograms = [cmakeProgram] ++ hookedPrograms simpleUserHooks
       }
+
+cmakeProgram :: Program
+cmakeProgram = simpleProgram "cmake"
+
+inlinerSrcDir :: FilePath
+inlinerSrcDir = "cbits" </> "cpp-inliner" </> "src"
+
+getCmakeBuildDir :: Flag FilePath -> FilePath
+getCmakeBuildDir distDir = fromFlag distDir </> "build" </> "cbuild"
+
+getResourcesZipFile :: Flag FilePath -> FilePath
+getResourcesZipFile distDir = fromFlag distDir </> "build" </> "init.zip"
+
+lookupConfFlag :: ConfigFlags -> String -> Bool -> Bool
+lookupConfFlag flags flagName defaultValue = fromMaybe defaultValue $
+   lookupFlagAssignment (mkFlagName flagName) (configConfigurationsFlags flags)
+
+autogenModules :: PackageDescription -> LocalBuildInfo -> Flag FilePath -> IO ()
+autogenModules pkg lbi distDir = do
+    let haskellModuleName = "Paths_CaideExt" -- Must match autogen-modules/other-modules in the cabal file!
+        haskellSource = "module " ++ haskellModuleName ++ "(resourcesZipFilePath) where\n" ++
+                        "resourcesZipFilePath :: String\n" ++
+                        "resourcesZipFilePath = \"" ++ getResourcesZipFile distDir ++ "\"\n" -- TODO: Proper escape
+    withAllTargetsInBuildOrder' pkg lbi $ \targetInfo -> do
+        let componentLBI = targetCLBI targetInfo
+            targetDir = autogenComponentModulesDir lbi componentLBI
+        writeFile (targetDir </> (haskellModuleName ++ ".hs")) haskellSource
 
 
 inlinerConfHook :: (GenericPackageDescription, HookedBuildInfo) -> ConfigFlags
-                 -> IO LocalBuildInfo
+                -> IO LocalBuildInfo
 inlinerConfHook (pkg, pbi) flags = do
-  let verbosity = fromFlag (configVerbosity flags)
-      lookupConfFlag flagName defaultValue = fromMaybe defaultValue $
-            lookupFlagAssignment (mkFlagName flagName) (configConfigurationsFlags flags)
-      debug = lookupConfFlag "debug" False
-      cppinliner = lookupConfFlag "cppinliner" True
-
+  -- print flags
   lbi <- confHook simpleUserHooks (pkg, pbi) flags
 
-  when cppinliner $ do
-      curDir <- getCurrentDirectory
-      env <- getEnvironment
-      let cbitsSubdir = fromMaybe "build" $ lookup "CAIDE_CBITS_BUILDDIR" env
-          inlinerSrcDir    = curDir </> "cbits" </> "cpp-inliner" </> "src"
-          inlinerBuildDir  = curDir </> "cbits" </> cbitsSubdir
-          cmakeBuildType   = if debug then "Debug" else "Release"
+  let verbosity = fromFlag (configVerbosity flags)
+      debug = lookupConfFlag flags "debug" False
+      cppinliner = lookupConfFlag flags "cppinliner" True
+      cmakeBuildType  = if debug then "Debug" else "Release"
+      distDir = configDistPref flags
+      inlinerBuildDir = getCmakeBuildDir distDir
+      zipFile = getResourcesZipFile distDir
 
-      createDirectoryIfMissingVerbose verbosity True inlinerBuildDir
+  autogenModules (packageDescription pkg) lbi distDir
 
-      let cmakeOptions = ["-G", "Unix Makefiles", "-DCMAKE_BUILD_TYPE=" ++ cmakeBuildType,
-                          "-DCAIDE_USE_SYSTEM_CLANG=OFF",
-                          inlinerSrcDir]
+  lbi' <- if not cppinliner
+      then return lbi
+      else do
+          createDirectoryIfMissingVerbose verbosity True inlinerBuildDir
+          notice verbosity $ "Configuring C++ inliner in " ++ inlinerBuildDir ++ "..."
+          inlinerBuildAbsDir <- makeAbsolute inlinerBuildDir
+          inlinerSrcAbsDir <- makeAbsolute inlinerSrcDir
+          withCurrentDirectory inlinerBuildAbsDir $ rawSystemExit verbosity "cmake" [inlinerSrcAbsDir,
+                          "-G", "Unix Makefiles", "-DCMAKE_BUILD_TYPE=" ++ cmakeBuildType,
+                          "-DCAIDE_USE_SYSTEM_CLANG=OFF"]
 
-      notice verbosity $ show env
-      notice verbosity inlinerBuildDir
-      notice verbosity "Configuring C++ inliner..."
+          -- We build the C++ inliner library and create the zip file with resources in configure hook.
+          -- Doing this in the build hook is also possible, but would require overriding LocalBuildInfo
+          -- in build hook on the fly. Also, these things are typically needed to be done just once, so
+          -- it makes sense to do them in configure hook.
 
-      inDir inlinerBuildDir $
-          rawSystemExitWithEnv verbosity "cmake" cmakeOptions env
+          notice verbosity "Building C++ inliner..."
 
-  return lbi
+          -- TODO: We'd ideally like to use the -j option given to cabal-install itself.
+          -- Alternatively we could use a command-specific option like
+          -- 'cabal build --make-option=-j4', but see
+          -- https://github.com/haskell/cabal/issues/1380 for why this doesn't work.
 
+          -- -j4 hangs in MinGW on 64bit windows
+          let threadFlags = ["-j4" | buildOS /= Windows]
+              makeOptions = threadFlags
+
+          rawSystemExit verbosity "cmake" $ ["--build", inlinerBuildDir, "--target", "caideInliner", "--"] ++ makeOptions
+
+          -- TODO: ideally, this list should be generated by CMake and consumed by cabal
+          let addInlinerLibs bi = bi {
+                  extraLibs = [ "caideInliner"
+                              , "clangTooling"
+                              , "clangFrontend"
+                              , "clangDriver"
+                              , "clangSerialization"
+                              , "clangParse"
+                              , "clangSema"
+                              , "clangAnalysis"
+                              , "clangRewrite"
+                              , "clangEdit"
+                              , "clangAST"
+                              , "clangLex"
+                              , "clangBasic"
+                              , "LLVMProfileData"
+                              , "LLVMOption"
+                              , "LLVMMCParser"
+                              , "LLVMMC"
+                              , "LLVMBitReader"
+                              , "LLVMCore"
+                              , "LLVMBinaryFormat"
+                              , "LLVMSupport"
+                              ] ++ extraLibs bi,
+                  extraLibDirs = [inlinerBuildDir, inlinerBuildDir </> "llvm" </> "lib"] ++ extraLibDirs bi
+              }
+
+          return $ onLocalLibBuildInfo addInlinerLibs lbi
+
+  zipResources zipFile verbosity cppinliner
+  return lbi'
 
 -- A strict version of readEntry
 readEntry' :: [ZipOption] -> FilePath -> IO Entry
@@ -89,122 +167,44 @@ addFilesToArchive' opts archive files relPath = do
 
 
 -- Zip resources. The archive will be embedded into the executable.
-zipResources :: FilePath -> Verbosity -> Maybe FilePath -> IO ()
-zipResources curDir verbosity inlinerSrcDir = do
-    let initFile = curDir </> "res" </> "init.zip"
-    zipFileExists <- doesFileExist initFile
+zipResources :: FilePath -> Verbosity -> Bool -> IO ()
+zipResources zipFile verbosity includeClangHeaders = do
+    -- TODO: always recreate the archive if we do this in configure stage?
+    zipFileExists <- doesFileExist zipFile
     unless zipFileExists $ do
-        notice verbosity "Zipping resource files..."
-
         let addFilesToZipFile :: Archive -> FilePath -> FilePath -> IO Archive
-            addFilesToZipFile archive relPath filesPath = inDir filesPath $
+            addFilesToZipFile archive relPath filesPath = withCurrentDirectory filesPath $
                 addFilesToArchive' [OptRecursive] archive ["."] relPath
 
-        archive <- addFilesToZipFile emptyArchive "." $ curDir </> "res" </> "init"
-        case inlinerSrcDir of
-            Nothing -> B.writeFile initFile $ fromArchive archive
-            Just dir -> do
+        notice verbosity "Zipping resource files..."
+        archive <- addFilesToZipFile emptyArchive "." $ "res" </> "init"
+        if not includeClangHeaders
+            then B.writeFile zipFile $ fromArchive archive
+            else do
                 let clangBuiltinsDir = "include" </> "clang-builtins"
                 createDirectoryIfMissingVerbose verbosity True clangBuiltinsDir
                 archive' <- addFilesToZipFile archive clangBuiltinsDir $
-                                dir </> "clang" </> "lib" </> "Headers"
-                B.writeFile initFile $ fromArchive archive'
+                                inlinerSrcDir </> "clang" </> "lib" </> "Headers"
+                B.writeFile zipFile $ fromArchive archive'
 
 
-inlinerBuildHook :: PackageDescription -> LocalBuildInfo -> UserHooks -> BuildFlags -> IO ()
-inlinerBuildHook pkg lbi usrHooks flags = do
-  let verbosity = fromFlag (buildVerbosity flags)
-      lookupConfFlag flagName defaultValue = fromMaybe defaultValue $
-            lookupFlagAssignment (mkFlagName flagName) (configConfigurationsFlags $ configFlags lbi)
-      debug = lookupConfFlag "debug" False
-      cppinliner = lookupConfFlag "cppinliner" True
-  curDir <- getCurrentDirectory
-
-  -- Build C++ library, if necessary
-  if cppinliner
-     then do
-        env <- getEnvironment
-        let inlinerSrcDir = curDir </> "cbits" </> "cpp-inliner" </> "src"
-            cbitsSubdir = fromMaybe "build" $ lookup "CAIDE_CBITS_BUILDDIR" env
-            inlinerBuildDir  = curDir </> "cbits" </> cbitsSubdir
-            -- TODO: ideally, this list should be generated by CMake and consumed by cabal
-            addInlinerLibs bi = bi {
-                extraLibs = [ "caideInliner"
-                            , "clangTooling"
-                            , "clangFrontend"
-                            , "clangDriver"
-                            , "clangSerialization"
-                            , "clangParse"
-                            , "clangSema"
-                            , "clangAnalysis"
-                            , "clangRewrite"
-                            , "clangEdit"
-                            , "clangAST"
-                            , "clangLex"
-                            , "clangBasic"
-                            , "LLVMProfileData"
-                            , "LLVMOption"
-                            , "LLVMMCParser"
-                            , "LLVMMC"
-                            , "LLVMBitReader"
-                            , "LLVMCore"
-                            , "LLVMBinaryFormat"
-                            , "LLVMSupport"
-                            ] ++ extraLibs bi,
-                extraLibDirs = [inlinerBuildDir, inlinerBuildDir </> "llvm" </> "lib"] ++ extraLibDirs bi
-            }
-            lbi' = onLocalLibBuildInfo addInlinerLibs lbi
-
-        notice verbosity "Building C++ inliner..."
-
-        -- TODO: We'd ideally like to use the -j option given to cabal-install itself.
-        -- Alternatively we could use a command-specific option like
-        -- 'cabal build --make-option=-j4', but see
-        -- https://github.com/haskell/cabal/issues/1380 for why this doesn't work.
-
-        -- -j4 hangs in MinGW on 64bit windows
-        let threadFlags = ["-j4" | buildOS /= Windows]
-            makeOptions = threadFlags ++ ["caideInliner"]
-
-        env <- getEnvironment
-        inDir inlinerBuildDir $
-            rawSystemExitWithEnv verbosity "make" makeOptions env
-
-        zipResources curDir verbosity $ Just inlinerSrcDir
-
-        -- Build Haskell code
-        buildHook simpleUserHooks (localPkgDescr lbi') lbi' usrHooks flags
-
-      else do
-        -- No cppinliner flag
-        zipResources curDir verbosity Nothing
-        buildHook simpleUserHooks (localPkgDescr lbi) lbi usrHooks flags
-
-
+-- This hook doesn't seem to be called at all by cabal-install...
 inlinerCleanHook :: PackageDescription -> () -> UserHooks -> CleanFlags -> IO ()
 inlinerCleanHook pkg v hooks flags = do
-    curDir <- getCurrentDirectory
-    let verbosity = fromFlag (cleanVerbosity flags)
-        buildDir = curDir </> "cbits" </> "build" -- FIXME
-        resourcesZipFile = curDir </> "res" </> "init.zip"
-    buildDirExists <- doesDirectoryExist buildDir
-    when buildDirExists $ removeDirectoryRecursive buildDir
-    resourcesZipFileExists <- doesFileExist resourcesZipFile
-    when resourcesZipFileExists $ removeFile resourcesZipFile
+    -- print flags
+    let distDir = cleanDistPref flags
+        buildDir = getCmakeBuildDir distDir
+        resourcesZipFile = getResourcesZipFile distDir
+    whenM (doesDirectoryExist buildDir) $ removeDirectoryRecursive buildDir
+    whenM (doesFileExist resourcesZipFile) $ removeFile resourcesZipFile
 
     cleanHook simpleUserHooks pkg v hooks flags
 
 
-makeProgram, cmakeProgram :: Program
-makeProgram    = simpleProgram "make"
-cmakeProgram   = simpleProgram "cmake"
-
-inDir :: FilePath -> IO a -> IO a
-inDir dir act = do
-    curDir <- getCurrentDirectory
-    bracket_ (setCurrentDirectory dir)
-             (setCurrentDirectory curDir)
-             act
+whenM :: Monad m => m Bool -> m () -> m ()
+whenM mcondition maction = do
+    condition <- mcondition
+    when condition maction
 
 type Lifter a b = (a -> a) -> b -> b
 
@@ -219,7 +219,4 @@ onExeBuildInfo f exe = exe { buildInfo = f (buildInfo exe) }
 
 onLocalLibBuildInfo :: Lifter BuildInfo LocalBuildInfo
 onLocalLibBuildInfo = onLocalPkgDescr . onExecutables . onExeBuildInfo
-
-onPrograms :: Lifter ProgramDb LocalBuildInfo
-onPrograms f lbi = lbi { withPrograms = f (withPrograms lbi) }
 

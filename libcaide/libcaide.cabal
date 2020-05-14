@@ -31,10 +31,9 @@ Flag debug
 custom-setup
   setup-depends: base >= 4.7,
                  bytestring,
-                 Cabal,
-                 directory,
+                 Cabal >= 3.2,
+                 directory >= 1.2.3,
                  filepath,
-                 process,
                  zip-archive
 
 executable caide
@@ -105,4 +104,52 @@ executable caide
   }
   default-language: Haskell2010
   main-is:         Main.hs
+  autogen-modules: Paths_CaideExt
+  other-modules:
+        Caide.Builders.Custom
+        Caide.Builders.None
+        Caide.CPP.CBinding
+        Caide.CPP.CPP
+        Caide.CPP.CPPSimple
+        Caide.CSharp.CSharpSimple
+        Caide.Commands
+        Caide.Commands.Archive
+        Caide.Commands.BuildScaffold
+        Caide.Commands.CHelperHttpServer
+        Caide.Commands.Checkout
+        Caide.Commands.GetOpt
+        Caide.Commands.Init
+        Caide.Commands.Make
+        Caide.Commands.ParseContest
+        Caide.Commands.ParseProblem
+        Caide.Commands.RunTests
+        Caide.Configuration
+        Caide.Features.Codelite
+        Caide.Parsers.CodeChef
+        Caide.Parsers.CodeChefContest
+        Caide.Parsers.Codeforces
+        Caide.Parsers.CodeforcesContest
+        Caide.Parsers.Common
+        Caide.Parsers.GCJ
+        Caide.Parsers.HackerRank
+        Caide.Parsers.POJ
+        Caide.Parsers.RCC
+        Caide.Parsers.RccContest
+        Caide.Parsers.Timus
+        Caide.Parsers.Yandex
+        Caide.Registry
+        Caide.Templates
+        Caide.TestCases.TopcoderComparator
+        Caide.TestCases.TopcoderDeserializer
+        Caide.TestCases.Types
+        Caide.Types
+        Caide.Util
+        Caide.Xml
+        Data.Text.Encoding.Util
+        Data.Text.IO.Util
+        Filesystem.Util
+        Network.HTTP.Util
+        Paths_CaideExt
+        System.IO.Util
+        Text.HTML.TagSoup.Utils
 

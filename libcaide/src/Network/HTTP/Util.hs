@@ -7,7 +7,7 @@ import Control.Exception (catch)
 import Data.ByteString.Lazy (toStrict)
 import Data.Maybe (isNothing)
 import qualified Data.Text as T
-import Network.HTTP.Client (HttpException(..), HttpExceptionContent(..), httpLbs, newManager, parseUrl,
+import Network.HTTP.Client (HttpException(..), httpLbs, newManager, parseUrlThrow,
                             responseStatus, responseBody, responseTimeout, responseTimeoutMicro, requestHeaders, Request)
 import Network.Connection (TLSSettings(TLSSettingsSimple))
 import Network.HTTP.Client.TLS (mkManagerSettings)
@@ -25,7 +25,7 @@ downloadDocument url
     | isNothing mbRequest       = mkLiftedError "URL not supported"
     | otherwise                 = result
   where
-    mbRequest = parseUrl $ T.unpack url
+    mbRequest = parseUrlThrow $ T.unpack url
     Just request = mbRequest
     request' = request {
         responseTimeout = responseTimeoutMicro $ 15*1000*1000, -- 15 seconds
