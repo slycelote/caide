@@ -1,8 +1,8 @@
+cabal-version:  2.2.0
 name:           libcaide
 version:        2.4.1
-cabal-version:  >= 1.14
 build-type:     Custom
-license:        GPL-3
+license:        GPL-3.0-or-later
 license-file:   LICENSE
 author:         slycelote
 maintainer:     slycelot@yandex.ru
@@ -13,7 +13,7 @@ bug-reports:    https://github.com/slycelote/caide/issues
 description:
     Automates certain common tasks that you do during programming competitions:
     parsing, running and debugging problem tests, inlining library code.
-tested-with:    GHC == 8.0.1
+tested-with:    GHC == 8.8.2
 
 source-repository head
   type:         git
@@ -66,14 +66,14 @@ executable caide
                    file-embed,
                    filelock,
                    filepath,
-                   http-client >= 0.4 && < 0.5,
+                   http-client >= 0.5,
                    http-client-tls,
                    http-types >= 0.9,
                    httpd-shed,
                    mtl >= 2.2.1,
                    network >= 2.6,
                    network-uri >= 2.6,
-                   optparse-applicative,
+                   optparse-applicative >= 0.15,
                    parsec,
                    process,
                    system-fileio >= 0.3.16,
@@ -102,7 +102,6 @@ executable caide
     if os(windows) {
       extra-libraries: imagehlp ole32 uuid version
     }
-    extra-lib-dirs: cbits/build cbits/build/llvm/lib
   }
   default-language: Haskell2010
   main-is:         Main.hs

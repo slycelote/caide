@@ -18,8 +18,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import qualified Filesystem.Path as F
 import qualified Filesystem.Path.CurrentOS as F
-import Network (accept, listenOn, sClose, withSocketsDo, PortID(PortNumber), Socket)
-import Network.Socket (tupleToHostAddress)
+import Network.Socket (tupleToHostAddress, withSocketsDo)
 import System.IO (hClose, hSetBuffering, stdout, stderr, BufferMode(NoBuffering))
 import System.IO.Error (tryIOError)
 
@@ -54,10 +53,7 @@ runServers root companionPort chelperPort = withSocketsDo $ do
         else Just <$> (forkIO $ initServerBind companionPort (tupleToHostAddress (127,0,0,1)) (processCompanionRequest root))
     mbChelper <- if chelperPort <= 0
         then return Nothing
-        else do
-            sock <- listenOn $ PortNumber $ fromIntegral chelperPort
-            chelperThreadId <- forkIO $ void . sequence . repeat $ processRequest sock root
-            return $ Just (sock, chelperThreadId)
+        else Just <$> (forkIO $ initServerBind chelperPort (tupleToHostAddress (127,0,0,1)) (processCHelperRequest root))
 
     let servers = case (mbCompanion, mbChelper) of
             (Just _, Just _)   -> "CHelper and Competitive Companion extensions"
@@ -71,8 +67,8 @@ runServers root companionPort chelperPort = withSocketsDo $ do
         T.putStrLn $ T.concat ["Running HTTP server for ", servers, ". Press Return to terminate."]
         _ <- getLine
         case mbChelper of
-            Just (sock, chelperThreadId) -> killThread chelperThreadId >> sClose sock
-            Nothing                      -> return ()
+            Just chelperThreadId -> killThread chelperThreadId
+            Nothing              -> return ()
         case mbCompanion of
             Just companionThreadId -> killThread companionThreadId
             Nothing                -> return ()
@@ -101,9 +97,10 @@ createProblems root parsedProblems = do
         _        -> return ()
 
 
-ok, badRequest :: Int
+ok, badRequest, internalServerError :: Int
 ok = 200
 badRequest = 400
+internalServerError = 500
 
 makeResponse :: Int -> String -> Response
 makeResponse code message = Response code [] message
@@ -160,29 +157,28 @@ processCompanionRequest root request = do
             return $ makeResponse ok "OK"
 
 
-processRequest :: Socket -> F.FilePath -> IO ()
-processRequest sock root = void . tryIOError $ do
-    (h, _, _) <- accept sock
-    decoded <- tryDecodeUtf8 <$> BS.hGetContents h
-    case decoded of
-        Left err -> T.putStrLn . T.concat $ ["Invalid request: ", err]
-        Right cont -> do
-            let body = drop 1 . dropWhile (not . T.null . T.strip) .
-                       T.lines . universalNewlineConversionOnInput $ cont
-                chid = T.strip $ head body
-                page = T.unlines $ drop 1 body
+processCHelperRequest :: F.FilePath -> Request -> IO Response
+processCHelperRequest root request = do
+    let body = T.pack $ reqBody request
+        bodyLines = T.lines body
+        chid = T.strip $ head bodyLines
+        page = T.unlines $ drop 1 bodyLines
 
-            T.length page `seq` hClose h
+    case () of
+      _ | null bodyLines -> do
+            T.putStrLn "Invalid request!"
+            return $ makeResponse badRequest "Invalid request!"
+        | chid == "json"   -> return $ makeResponse ok "" -- Processed by Companion server instead
+        | otherwise        -> do
+            err <- process chid page root
+            return $ case err of
+                Nothing -> makeResponse ok "OK"
+                Just e  -> makeResponse internalServerError $ T.unpack e
 
-            case () of
-              _ | null body      -> T.putStrLn "Invalid request!"
-                | chid == "json" -> return () -- Processed by Companion server instead
-                | otherwise      -> process chid page root
 
-
-process :: T.Text -> T.Text -> F.FilePath -> IO ()
+process :: T.Text -> T.Text -> F.FilePath -> IO (Maybe T.Text)
 process chid page root = case parseFromHtml <$> findHtmlParser chid <*> Just page of
-    Nothing -> T.putStrLn . T.concat $ ["'", chid, "' not supported"]
-    Just (Left err) -> T.putStrLn . T.concat $ ["Error while parsing the problem: ", err]
-    Just (Right (problem, testCases)) -> createProblems root [Parsed problem testCases]
+    Nothing -> return . Just $ T.concat $ ["'", chid, "' not supported"]
+    Just (Left err) -> return . Just $ T.concat $ ["Error while parsing the problem: ", err]
+    Just (Right (problem, testCases)) -> createProblems root [Parsed problem testCases] >> return Nothing
 

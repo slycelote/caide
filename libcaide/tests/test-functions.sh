@@ -17,8 +17,8 @@ function run_csharp_executable {
 
 function cxx {
     if [ "x$CXXFLAGS" = "x" ]
-    then "$CXX" $*
-    else "$CXX" "$CXXFLAGS" $*
+    then "$CXX" "$@"
+    else "$CXX" $CXXFLAGS "$@"
     fi
 }
 

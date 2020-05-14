@@ -19,6 +19,7 @@ import qualified Filesystem.Path as F
 import qualified Filesystem.Path.CurrentOS as F
 import Filesystem.Path.CurrentOS ((</>))
 import Options.Applicative
+import Options.Applicative.Types (Backtracking(..))
 
 import System.IO.Util (writeFileAtomic)
 
@@ -160,7 +161,7 @@ runMain args = case parseResult of
         { prefMultiSuffix = ""
         , prefDisambiguate = True
         , prefShowHelpOnError = True
-        , prefBacktrack = True
+        , prefBacktrack = Backtrack
         , prefColumns = 80
         }
 
