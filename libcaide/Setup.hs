@@ -29,9 +29,10 @@ import Control.Monad (unless, when)
 import qualified Data.ByteString.Lazy as B
 import Data.List (nub)
 import Data.Maybe (fromMaybe)
-import System.Directory (doesDirectoryExist, doesFileExist, makeAbsolute,
+import System.Directory (createDirectoryIfMissing, doesDirectoryExist, doesFileExist, makeAbsolute,
     removeFile, removeDirectoryRecursive, withCurrentDirectory)
 import System.FilePath ((</>))
+import System.IO (writeFile)
 
 
 main :: IO ()
@@ -67,6 +68,7 @@ autogenModules pkg lbi distDir = do
     withAllTargetsInBuildOrder' pkg lbi $ \targetInfo -> do
         let componentLBI = targetCLBI targetInfo
             targetDir = autogenComponentModulesDir lbi componentLBI
+        createDirectoryIfMissing True targetDir
         writeFile (targetDir </> (haskellModuleName ++ ".hs")) haskellSource
 
 
