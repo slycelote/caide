@@ -1,15 +1,15 @@
-#!/usr/bin/python
+#!/bin/env python
 import os, shutil, subprocess, sys, tempfile
 
 # This script, based on the idea from [1], should be used as a linker with GHC
 # to produce an 'as static as possible' executable.
-# For instance, with stack: stack build --ghc-option '-pgml ghc-linker.py'
-# [1] https://tesser.org/doc/posts/2015-08-21-statically-linking-libgmp-in-haskell-programs.html
+# For instance, with cabal: cabal build --ghc-option '-pgml ghc-linker.py'
+# [1]: https://tesser.org/doc/posts/2015-08-21-statically-linking-libgmp-in-haskell-programs.html
 
 
 LIBS_FOR_STATIC_LINK = ['gmp', 'z']
 
-def collect_args(command, result):
+def all_args(command):
     """Quoting 'man ld' (or 'man g++'):
 
        @file
@@ -29,25 +29,25 @@ def collect_args(command, result):
     Note that some quoted arguments may be processed incorrectly (e.g. if a quoted argument contains the substring ' @')
     """
     for arg in command:
+        s = None
         if arg[0] == '@':
-            s = None
             try:
                 with open(arg[1:], 'r') as f:
                     s = f.read()
             except IOError:
                 s = None
-            if s:
-                collect_args(s.split(), result)
-            else:
-                result.append(arg)
+        if s:
+            for arg1 in all_args(s.split()):
+                yield arg1
         else:
-            static_link_args = sum([['-l'+lib, '"-l'+lib+'"', "'-l"+lib+"'"] for lib in LIBS_FOR_STATIC_LINK], [])
-            if arg not in static_link_args:
-                result.append(arg)
-
+            yield arg
 
 def find_library(lib):
-    for dir_path in ['/usr/lib64', '/usr/lib', '/usr/local/lib64', '/usr/local/lib']:
+    if ('CFLAGS' in os.environ and '-m32' in os.environ['CFLAGS']) or ('GHC_LINKER_32' in os.environ):
+        lib_dirs = ['/lib', '/usr/lib', '/usr/local/lib'] # for 32-bit
+    else:
+        lib_dirs = ['/lib64', '/usr/lib64', '/usr/local/lib64'] # for 64-bit
+    for dir_path in lib_dirs:
         path = dir_path + '/lib' + lib + '.a'
         if os.path.isfile(path):
             return path
@@ -55,10 +55,15 @@ def find_library(lib):
 
 
 def main():
-    args = []
-    collect_args(sys.argv[1:], args)
-    args += ['-static-libstdc++', '-static-libgcc']
-    args += [find_library(lib) for lib in LIBS_FOR_STATIC_LINK]
+    args = list(all_args(sys.argv[1:]))
+    # cabal-install insists on compiling shared libraries even when we ask it not to.
+    # Don't try to statically link in that case.
+    if '-shared' not in args and '"-shared"' not in args:
+        static_link_args = sum([['-l'+lib, '"-l'+lib+'"', "'-l"+lib+"'"] for lib in LIBS_FOR_STATIC_LINK], [])
+        args = [arg for arg in args if arg not in static_link_args]
+        args += ['-static-libstdc++', '-static-libgcc']
+        args += [find_library(lib) for lib in LIBS_FOR_STATIC_LINK]
+
     args_file_name = None
     try:
         with tempfile.NamedTemporaryFile(prefix='linker.args.', delete=False) as f:
@@ -70,6 +75,13 @@ def main():
     finally:
         if args_file_name:
             try:
+                if False:
+                    # For debugging
+                    with open(args_file_name) as f:
+                        args = f.read()
+                    with open('linker-log.txt', 'a') as f:
+                        f.write(args)
+                        f.write('\n')
                 os.unlink(args_file_name)
             except:
                 pass
