@@ -1,0 +1,2 @@
+#!/bin/env bash
+/usr/local/bin/g++ -m32 $@

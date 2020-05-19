@@ -17,7 +17,7 @@ Obtaining source code
 General build requirements
 --------------------------
 
-CMake, make, g++, Python 2 and Haskell Stack (or cabal+ghc) are required to
+CMake, make, g++, Python and Haskell Stack (or cabal+ghc) are required to
 build.
 In addition, curl, diff, PhantomJS, and a C# compiler are required to run tests.
 
