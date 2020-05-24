@@ -44,7 +44,7 @@ doParse tags =
     inputDivs = sections (~~== "<div class=input>") statement
     outputDivs = sections (~~== "<div class=output>") statement
 
-    extractText = innerText . replaceBr . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>")
+    extractText = T.dropWhile (`elem` ['\r', '\n']) . innerText . replaceBr . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>")
     inputs = map extractText inputDivs
     outputs = map extractText outputDivs
     testCases = zipWith TestCase inputs outputs
