@@ -11,22 +11,19 @@ import Control.Applicative ((<$>), (<*>))
 #endif
 import Control.Applicative ((<|>))
 import Control.Concurrent (forkIO, killThread)
-import Control.Monad (forM_, void)
-import qualified Data.ByteString as BS
+import Control.Monad (forM_)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import qualified Filesystem.Path as F
 import qualified Filesystem.Path.CurrentOS as F
 import Network.Socket (tupleToHostAddress, withSocketsDo)
-import System.IO (hClose, hSetBuffering, stdout, stderr, BufferMode(NoBuffering))
-import System.IO.Error (tryIOError)
+import System.IO (hSetBuffering, stdout, stderr, BufferMode(NoBuffering))
 
 import Data.Aeson (FromJSON(parseJSON), Object, eitherDecode', withObject, (.:))
 import Data.Aeson.Types (Parser)
 import Network.Shed.Httpd (initServerBind, Request(reqBody), Response(Response))
 
-import Data.Text.Encoding.Util (tryDecodeUtf8, universalNewlineConversionOnInput)
 import qualified Data.Text.IO.Util as T
 
 import Caide.Configuration (describeError, orDefault, readCaideConf, setActiveProblem)
