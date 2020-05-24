@@ -59,7 +59,7 @@ doParse tags =
     probIdPrefix = if length contestIds == 1
                    then T.append "cf" (head contestIds)
                    else "cfproblem"
-    probId = T.snoc probIdPrefix (T.head title)
+    probId = T.append probIdPrefix (T.takeWhile (/= '.') title)
 
     inputFileDiv = dropWhile (~~/== "<div class=input-file") statement
     inputFileName = innerText . takeWhile (~~/== "</div>") . drop 1 . dropWhile (~~/== "</div>" ) $ inputFileDiv
