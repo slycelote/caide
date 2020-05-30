@@ -2,6 +2,7 @@
 "$CAIDE" problem http://www.codechef.com/problems/MAXCIR
 "$CAIDE" problem http://www.codechef.com/problems/POWERMUL
 "$CAIDE" problem http://www.codechef.com/problems/MX
+"$CAIDE" problem https://www.codechef.com/problems/LIFTME
 
-compare_with parsed chefMAXCIR/case{1,2}.{in,out} chef{MX,POWERMUL}/case1.{in,out}
+compare_with parsed {MAXCIR,POWERMUL,MX,LIFTME}/*.{in,out}
 

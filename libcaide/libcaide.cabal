@@ -79,6 +79,7 @@ executable caide
                    system-filepath,
                    tagsoup >= 0.13,
                    text >= 1.1.0,
+                   unordered-containers,
                    xml,
                    zip-archive
   other-extensions: CPP

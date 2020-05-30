@@ -39,11 +39,11 @@ import Caide.Parsers.Yandex
 
 
 htmlParsers :: [HtmlParser]
-htmlParsers = [codeforcesParser, codeChefParser, timusParser, gcjParser, pojParser, rccParser, hackerRankParser, yandexParser]
+htmlParsers = [codeforcesParser, codeChefHtmlParser, timusParser, gcjParser, pojParser, rccParser, hackerRankParser, yandexParser]
 
 problemParsers :: [ProblemParser]
-problemParsers = map htmlParserToProblemParser [codeforcesParser, codeChefParser, timusParser,
-    pojParser, rccParser]
+problemParsers = map htmlParserToProblemParser [codeforcesParser, timusParser,
+    pojParser, rccParser] ++ [codeChefParser]
 
 findHtmlParser :: Text -> Maybe HtmlParser
 findHtmlParser chid = find ((== chid) . chelperId) htmlParsers

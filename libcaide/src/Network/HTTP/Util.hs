@@ -7,12 +7,12 @@ import Control.Exception (catch)
 import Data.ByteString.Lazy (toStrict)
 import Data.Maybe (isNothing)
 import qualified Data.Text as T
-import Network.HTTP.Client (HttpException(..), httpLbs, newManager, parseUrlThrow,
+import Network.HTTP.Client (HttpException(..), HttpExceptionContent(..), httpLbs, newManager, parseUrlThrow,
                             responseStatus, responseBody, responseTimeout, responseTimeoutMicro, requestHeaders, Request)
 import Network.Connection (TLSSettings(TLSSettingsSimple))
 import Network.HTTP.Client.TLS (mkManagerSettings)
-import Network.HTTP.Types.Header (hAccept, hAcceptEncoding, hConnection, hUserAgent)
-import Network.HTTP.Types.Status (ok200, statusMessage)
+import Network.HTTP.Types.Header (hAccept, hAcceptEncoding, hUserAgent)
+import Network.HTTP.Types.Status (ok200, statusCode, statusMessage)
 import System.IO.Error (catchIOError, ioeGetErrorString)
 
 import Data.Text.Encoding.Util (safeDecodeUtf8, tryDecodeUtf8)
@@ -27,24 +27,37 @@ downloadDocument url
   where
     mbRequest = parseUrlThrow $ T.unpack url
     Just request = mbRequest
+    seconds = 1000 * 1000
     request' = request {
-        responseTimeout = responseTimeoutMicro $ 15*1000*1000, -- 15 seconds
+        responseTimeout = responseTimeoutMicro $ 10*seconds,
         requestHeaders  =
-            [ (hUserAgent, "wget")
+            [ (hAcceptEncoding, "") -- omit this header
+            , (hUserAgent, "wget")
             , (hAccept, "*/*")
-            , (hAcceptEncoding, "")
-            , (hConnection, "Keep-Alive")
             ]
     }
     mkLiftedError = return . Left
     errorHandler = mkLiftedError . T.pack . ioeGetErrorString
-    result = httpDownloader request' `catchIOError` errorHandler `catch` statusExceptionHandler
+    result = httpDownloader request' `catchIOError` errorHandler `catch` statusExceptionHandler url
 
 describeHttpException :: HttpException -> T.Text
-describeHttpException e = T.pack . show $ e
+describeHttpException (InvalidUrlException url reason) = T.concat ["URL '", T.pack url, "' is invalid: ", T.pack reason]
+describeHttpException (HttpExceptionRequest _ content) = describeExceptionContent content
 
-statusExceptionHandler :: HttpException -> IO (Either T.Text T.Text)
-statusExceptionHandler = return . Left . describeHttpException
+describeExceptionContent :: HttpExceptionContent -> T.Text
+describeExceptionContent (StatusCodeException response _) =
+    T.concat ["HTTP status ", tshow (statusCode status), ": ", tshow (statusMessage status)]
+  where
+    status = responseStatus response
+
+describeExceptionContent (TooManyRedirects _) = "Too many redirects"
+describeExceptionContent e = tshow e
+
+tshow :: Show a => a -> T.Text
+tshow = T.pack . show
+
+statusExceptionHandler :: T.Text -> HttpException -> IO (Either T.Text T.Text)
+statusExceptionHandler url e = return . Left $ T.concat ["Error fetching URL '", url, "'. ", describeHttpException e]
 
 httpDownloader :: Request -> IO (Either T.Text T.Text)
 httpDownloader request = do
