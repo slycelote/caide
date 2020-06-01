@@ -76,68 +76,68 @@ autogenModules pkg lbi distDir = do
 inlinerConfHook :: (GenericPackageDescription, HookedBuildInfo) -> ConfigFlags
                 -> IO LocalBuildInfo
 inlinerConfHook (pkg, pbi) flags = do
-  -- print flags
-  lbi <- confHook simpleUserHooks (pkg, pbi) flags
+    -- print flags
+    lbi <- confHook simpleUserHooks (pkg, pbi) flags
 
-  let verbosity = fromFlag (configVerbosity flags)
-      debug = lookupConfFlag flags "debug" False
-      cppinliner = lookupConfFlag flags "cppinliner" True
-      cmakeBuildType  = if debug then "Debug" else "Release"
-      distDir = configDistPref flags
-      inlinerBuildDir = getCmakeBuildDir distDir
-      zipFile = getResourcesZipFile distDir
+    let verbosity = fromFlag (configVerbosity flags)
+        debug = lookupConfFlag flags "debug" False
+        cppinliner = lookupConfFlag flags "cppinliner" True
+        cmakeBuildType  = if debug then "Debug" else "Release"
+        distDir = configDistPref flags
+        inlinerBuildDir = getCmakeBuildDir distDir
+        zipFile = getResourcesZipFile distDir
 
-  autogenModules (packageDescription pkg) lbi distDir
+    autogenModules (packageDescription pkg) lbi distDir
 
-  lbi' <- if not cppinliner
-      then return lbi
-      else do
-          env <- getEnvironment
-          -- TODO: We'd ideally like to use the -j option given to cabal-install itself by default.
+    lbi' <- if not cppinliner
+        then return lbi
+        else do
+            env <- getEnvironment
+            -- TODO: We'd ideally like to use the -j option given to cabal-install itself by default.
 
-          nproc <- getNumProcessors
-          let defaultConfigureOptions = ["-G", "Unix Makefiles"]
-              -- -j$(nproc) can hang in MinGW make on 64bit windows
-              defaultBuildOptions = if buildOS == Windows then [] else ["--", "-j" ++ show nproc]
+            nproc <- getNumProcessors
+            let defaultConfigureOptions = ["-G", "Unix Makefiles"]
+                -- -j$(nproc) can hang in MinGW make on 64bit windows
+                defaultBuildOptions = if buildOS == Windows then [] else ["--", "-j" ++ show nproc]
 
-              getOptions name defaultValue = case List.lookup name env of
-                  Just val | val /= "" -> split ',' val
-                  _ -> defaultValue
-              -- TODO: instead of passing these options through environment variables, we could use
-              -- something like 'cabal build --make-option=-j4', but see
-              -- https://github.com/haskell/cabal/issues/1380 for why this doesn't work.
-              cmakeConfigureArgs = getOptions "CAIDE_CMAKE_CONFIGURE_ARGS" defaultConfigureOptions
-              cmakeBuildArgs = getOptions "CAIDE_CMAKE_BUILD_ARGS" defaultBuildOptions
+                getOptions name defaultValue = case List.lookup name env of
+                    Just val | val /= "" -> split ',' val
+                    _ -> defaultValue
+                -- TODO: instead of passing these options through environment variables, we could use
+                -- something like 'cabal build --make-option=-j4', but see
+                -- https://github.com/haskell/cabal/issues/1380 for why this doesn't work.
+                cmakeConfigureArgs = getOptions "CAIDE_CMAKE_CONFIGURE_ARGS" defaultConfigureOptions
+                cmakeBuildArgs = getOptions "CAIDE_CMAKE_BUILD_ARGS" defaultBuildOptions
 
-          createDirectoryIfMissingVerbose verbosity True inlinerBuildDir
-          notice verbosity $ "Configuring C++ inliner in " ++ inlinerBuildDir ++ "..."
-          inlinerBuildAbsDir <- makeAbsolute inlinerBuildDir
-          inlinerSrcAbsDir <- makeAbsolute inlinerSrcDir
-          withCurrentDirectory inlinerBuildAbsDir $ rawSystemExit verbosity "cmake" $ [
-                          "-DCMAKE_BUILD_TYPE=" ++ cmakeBuildType,
-                          "-DCAIDE_USE_SYSTEM_CLANG=OFF"] ++ cmakeConfigureArgs ++ [inlinerSrcAbsDir]
+            createDirectoryIfMissingVerbose verbosity True inlinerBuildDir
+            notice verbosity $ "Configuring C++ inliner in " ++ inlinerBuildDir ++ "..."
+            inlinerBuildAbsDir <- makeAbsolute inlinerBuildDir
+            inlinerSrcAbsDir <- makeAbsolute inlinerSrcDir
+            withCurrentDirectory inlinerBuildAbsDir $ rawSystemExit verbosity "cmake" $ [
+                            "-DCMAKE_BUILD_TYPE=" ++ cmakeBuildType,
+                            "-DCAIDE_USE_SYSTEM_CLANG=OFF"] ++ cmakeConfigureArgs ++ [inlinerSrcAbsDir]
 
-          -- We build the C++ inliner library and create the zip file with resources in configure hook.
-          -- Doing this in the build hook is also possible, but would require overriding LocalBuildInfo
-          -- in build hook on the fly. Also, these things are typically needed to be done just once, so
-          -- it makes sense to do them in configure hook.
+            -- We build the C++ inliner library and create the zip file with resources in configure hook.
+            -- Doing this in the build hook is also possible, but would require overriding LocalBuildInfo
+            -- in build hook on the fly. Also, these things are typically needed to be done just once, so
+            -- it makes sense to do them in configure hook.
 
-          notice verbosity "Building C++ inliner..."
+            notice verbosity "Building C++ inliner..."
 
-          rawSystemExit verbosity "cmake" $ ["--build", inlinerBuildDir, "--target", "caideInliner"] ++ cmakeBuildArgs
+            rawSystemExit verbosity "cmake" $ ["--build", inlinerBuildDir, "--target", "caideInliner"] ++ cmakeBuildArgs
 
-          -- Read the list of dependencies generated by CMake at configure stage.
-          clangLibs <- split ';' <$> readFile (inlinerBuildDir </> "caide-libs.txt")
+            -- Read the list of dependencies generated by CMake at configure stage.
+            clangLibs <- split ';' <$> readFile (inlinerBuildDir </> "caide-libs.txt")
 
-          let addInlinerLibs bi = bi {
-                  extraLibs = ["caideInliner"] ++ clangLibs ++ extraLibs bi,
-                  extraLibDirs = [inlinerBuildDir, inlinerBuildDir </> "llvm-project" </> "llvm" </> "lib"] ++ extraLibDirs bi
-              }
+            let addInlinerLibs bi = bi {
+                    extraLibs = ["caideInliner"] ++ clangLibs ++ extraLibs bi,
+                    extraLibDirs = [inlinerBuildDir, inlinerBuildDir </> "llvm-project" </> "llvm" </> "lib"] ++ extraLibDirs bi
+                }
 
-          return $ onLocalLibBuildInfo addInlinerLibs lbi
+            return $ onLocalLibBuildInfo addInlinerLibs lbi
 
-  zipResources zipFile verbosity cppinliner
-  return lbi'
+    zipResources zipFile verbosity cppinliner
+    return lbi'
 
 -- A strict version of readEntry
 readEntry' :: [ZipOption] -> FilePath -> IO Entry
