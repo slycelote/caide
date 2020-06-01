@@ -65,7 +65,7 @@ autogenModules pkg lbi distDir = do
     let haskellModuleName = "Paths_CaideExt" -- Must match autogen-modules/other-modules in the cabal file!
         haskellSource = "module " ++ haskellModuleName ++ "(resourcesZipFilePath) where\n" ++
                         "resourcesZipFilePath :: String\n" ++
-                        "resourcesZipFilePath = \"" ++ getResourcesZipFile distDir ++ "\"\n" -- TODO: Proper escape
+                        "resourcesZipFilePath = " ++ show (getResourcesZipFile distDir) ++ "\n"
     withAllTargetsInBuildOrder' pkg lbi $ \targetInfo -> do
         let componentLBI = targetCLBI targetInfo
             targetDir = autogenComponentModulesDir lbi componentLBI
