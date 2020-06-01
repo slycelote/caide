@@ -113,9 +113,9 @@ inlinerConfHook (pkg, pbi) flags = do
           notice verbosity $ "Configuring C++ inliner in " ++ inlinerBuildDir ++ "..."
           inlinerBuildAbsDir <- makeAbsolute inlinerBuildDir
           inlinerSrcAbsDir <- makeAbsolute inlinerSrcDir
-          withCurrentDirectory inlinerBuildAbsDir $ rawSystemExit verbosity "cmake" $ [inlinerSrcAbsDir,
+          withCurrentDirectory inlinerBuildAbsDir $ rawSystemExit verbosity "cmake" $ [
                           "-DCMAKE_BUILD_TYPE=" ++ cmakeBuildType,
-                          "-DCAIDE_USE_SYSTEM_CLANG=OFF"] ++ cmakeConfigureArgs
+                          "-DCAIDE_USE_SYSTEM_CLANG=OFF"] ++ cmakeConfigureArgs ++ [inlinerSrcAbsDir]
 
           -- We build the C++ inliner library and create the zip file with resources in configure hook.
           -- Doing this in the build hook is also possible, but would require overriding LocalBuildInfo
