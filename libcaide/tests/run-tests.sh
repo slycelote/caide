@@ -1,14 +1,15 @@
 #!/bin/bash
 set -e
 set -u
+shopt -s nullglob
 
 cur_dir=$( cd $(dirname "${BASH_SOURCE[0]}") ; pwd )
 [ -d $cur_dir ] || exit 255
 
 if [ ! -v CAIDE ]; then
-    for f in $cur_dir/../dist-newstyle/build/*/{,*}/build/caide/caide{,.exe} $cur_dir/../dist/build/caide/caide{,.exe} $cur_dir/../.stack-work/install/*/{,*{,/*}}/bin/caide{,.exe}
+    for f in $cur_dir/../dist-newstyle/build/*/{,*{,/libcaide-*}}/build/caide/caide{,.exe} $cur_dir/../dist/build/caide/caide{,.exe} $cur_dir/../.stack-work/install/*/{,*{,/*}}/bin/caide{,.exe}
     do
-        if [ -f "$f" ] ; then
+        if [ -f "$f" && -x "$f" ] ; then
             CAIDE="$f"
             break
         fi
@@ -43,7 +44,6 @@ mkdir -p $tmp_dir
 failed=0
 passed=0
 failed_tests=""
-shopt -s nullglob
 
 if [ "$#" -eq 0 ]; then
     tests=($( cd $cur_dir ; ls *.test ))
