@@ -170,7 +170,7 @@ defaultCaideConf root useSystemHeaders compiler = forceEither $
     setValue "core" "language" defaultLanguage >>=
     setValue "core" "features" "" >>=
     addSection "cpp" >>=
-    setValue "cpp" "keep_macros" "_WIN32,_WIN64,_MSC_VER,__GNUC__,__cplusplus" >>=
+    setValue "cpp" "keep_macros" "_WIN32,_WIN64,_MSC_VER,__GNUC__,__clang__,__cplusplus,__STDC_VERSION__,__linux,__linux__" >>=
     setValue "cpp" "max_consequent_empty_lines" "2" >>=
     setValue "cpp" "clang_options" (intercalate ",\n  " $ clangOptions root useSystemHeaders compiler)
   where
@@ -194,7 +194,7 @@ clangOptions root False _ =
     , encodeString $ root </> "include" </> "crt"
     , "-I"
     , encodeString $ root </> "cpplib"
-    , "-std=c++14"
+    , "-std=c++17"
     , "-fparse-all-comments"
     , "-DONLINE_JUDGE"
     ]
@@ -213,7 +213,7 @@ clangOptions root True compiler | "mingw" `isPrefixOf` os =
     ]
 
 -- Linux with system headers
-clangOptions root True compiler = 
+clangOptions root True compiler =
     [ "-target"
     , arch ++ "-" ++ os
     ] ++
