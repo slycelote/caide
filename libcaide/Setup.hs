@@ -161,23 +161,20 @@ addFilesToArchive' opts archive files relPath = do
 -- Zip resources. The archive will be embedded into the executable.
 zipResources :: FilePath -> Verbosity -> Bool -> IO ()
 zipResources zipFile verbosity includeClangHeaders = do
-    -- TODO: always recreate the archive if we do this in configure stage?
-    zipFileExists <- doesFileExist zipFile
-    unless zipFileExists $ do
-        let addFilesToZipFile :: Archive -> FilePath -> FilePath -> IO Archive
-            addFilesToZipFile archive relPath filesPath = withCurrentDirectory filesPath $
-                addFilesToArchive' [OptRecursive] archive ["."] relPath
+    let addFilesToZipFile :: Archive -> FilePath -> FilePath -> IO Archive
+        addFilesToZipFile archive relPath filesPath = withCurrentDirectory filesPath $
+            addFilesToArchive' [OptRecursive] archive ["."] relPath
 
-        notice verbosity "Zipping resource files..."
-        archive <- addFilesToZipFile emptyArchive "." $ "res" </> "init"
-        if not includeClangHeaders
-            then B.writeFile zipFile $ fromArchive archive
-            else do
-                let clangBuiltinsDir = "include" </> "clang-builtins"
-                createDirectoryIfMissingVerbose verbosity True clangBuiltinsDir
-                archive' <- addFilesToZipFile archive clangBuiltinsDir $
-                                inlinerSrcDir </> "llvm-project" </> "clang" </> "lib" </> "Headers"
-                B.writeFile zipFile $ fromArchive archive'
+    notice verbosity "Zipping resource files..."
+    archive <- addFilesToZipFile emptyArchive "." $ "res" </> "init"
+    if not includeClangHeaders
+        then B.writeFile zipFile $ fromArchive archive
+        else do
+            let clangBuiltinsDir = "include" </> "clang-builtins"
+            createDirectoryIfMissingVerbose verbosity True clangBuiltinsDir
+            archive' <- addFilesToZipFile archive clangBuiltinsDir $
+                            inlinerSrcDir </> "llvm-project" </> "clang" </> "lib" </> "Headers"
+            B.writeFile zipFile $ fromArchive archive'
 
 
 -- This hook doesn't seem to be called at all by cabal-install...
