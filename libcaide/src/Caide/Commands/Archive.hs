@@ -27,7 +27,7 @@ import Filesystem.Util (copyTreeToDir, copyFileToDir, listDir, pathToText)
 import System.IO.Error (catchIOError, ioeGetErrorString, isPermissionError)
 
 import Caide.Commands.Checkout (checkoutProblem)
-import Caide.Configuration (getActiveProblem, getFeatures)
+import Caide.Configuration (getActiveProblem, getFeatures, setActiveProblem)
 import Caide.Registry (findFeature)
 import Caide.Types
 import Caide.Util (tshow, withLock)
@@ -65,8 +65,9 @@ archiveProblem probId' = withLock $ do
     activeProblem <- getActiveProblem
     when (activeProblem == probId) $ do
         allProblems <- liftIO $ caideProblems root
-        let newActiveProblem = if null allProblems then "" else head allProblems
-        checkoutProblem newActiveProblem Nothing
+        case allProblems of
+            (p:_) -> checkoutProblem p Nothing
+            []    -> setActiveProblem ""
 
     featureNames <- getFeatures
     let features = mapMaybe findFeature featureNames

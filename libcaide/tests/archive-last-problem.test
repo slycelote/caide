@@ -1,0 +1,4 @@
+#!/bin/bash
+"$CAIDE" problem prob1
+"$CAIDE" archive prob1
+compare_with after-archive .caide/config
