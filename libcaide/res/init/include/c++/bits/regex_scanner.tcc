@@ -1,6 +1,6 @@
 // class template regex -*- C++ -*-
 
-// Copyright (C) 2013-2016 Free Software Foundation, Inc.
+// Copyright (C) 2013-2020 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -48,10 +48,10 @@
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
-namespace __detail
-{
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
+namespace __detail
+{
   template<typename _CharT>
     _Scanner<_CharT>::
     _Scanner(typename _Scanner::_IterT __begin,
@@ -210,7 +210,9 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
       auto __c = *_M_current++;
 
-      if (__c == '[')
+      if (__c == '-')
+	_M_token = _S_token_bracket_dash;
+      else if (__c == '[')
 	{
 	  if (_M_current == _M_end)
 	    __throw_regex_error(regex_constants::error_brack,
@@ -582,6 +584,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     }
 #endif
 
-_GLIBCXX_END_NAMESPACE_VERSION
 } // namespace __detail
+_GLIBCXX_END_NAMESPACE_VERSION
 } // namespace

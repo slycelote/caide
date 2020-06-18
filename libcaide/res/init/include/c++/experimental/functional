@@ -1,6 +1,6 @@
 // <experimental/functional> -*- C++ -*-
 
-// Copyright (C) 2014-2016 Free Software Foundation, Inc.
+// Copyright (C) 2014-2020 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -24,6 +24,7 @@
 
 /** @file experimental/functional
  *  This is a TS C++ Library header.
+ *  @ingroup libfund-ts
  */
 
 #ifndef _GLIBCXX_EXPERIMENTAL_FUNCTIONAL
@@ -31,9 +32,7 @@
 
 #pragma GCC system_header
 
-#if __cplusplus <= 201103L
-# include <bits/c++14_warning.h>
-#else
+#if __cplusplus >= 201402L
 
 #include <functional>
 #include <tuple>
@@ -49,13 +48,13 @@
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
+_GLIBCXX_BEGIN_NAMESPACE_VERSION
+
 namespace experimental
 {
 inline namespace fundamentals_v1
 {
-_GLIBCXX_BEGIN_NAMESPACE_VERSION
-
-  // See C++14 §20.9.9, Function object binders
+  // See C++14 20.9.9, Function object binders
 
   /// Variable template for std::is_bind_expression
   template<typename _Tp>
@@ -159,20 +158,13 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       std::tuple<_GLIBCXX_STD_C::array<_Tp, _Len>, _Pred> _M_bad_char;
     };
 
-  template<typename _Pred>
-    struct __is_std_equal_to : std::false_type { };
-
-  template<>
-    struct __is_std_equal_to<std::equal_to<void>> : std::true_type { };
-
   // Use __boyer_moore_array_base when pattern consists of narrow characters
-  // and uses std::equal_to as the predicate.
+  // (or std::byte) and uses std::equal_to as the predicate.
   template<typename _RAIter, typename _Hash, typename _Pred,
            typename _Val = typename iterator_traits<_RAIter>::value_type,
 	   typename _Diff = typename iterator_traits<_RAIter>::difference_type>
     using __boyer_moore_base_t
-      = std::conditional_t<sizeof(_Val) == 1 && is_integral<_Val>::value
-			   && __is_std_equal_to<_Pred>::value,
+      = std::conditional_t<std::__is_byte_like<_Val, _Pred>::value,
 			   __boyer_moore_array_base<_Diff, 256, _Pred>,
 			   __boyer_moore_map_base<_Val, _Diff, _Hash, _Pred>>;
 
@@ -368,61 +360,11 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	}
       return __last;
     }
-
-_GLIBCXX_END_NAMESPACE_VERSION
 } // namespace fundamentals_v1
 
 inline namespace fundamentals_v2
 {
-_GLIBCXX_BEGIN_NAMESPACE_VERSION
-
 #define __cpp_lib_experimental_not_fn 201406
-
-  /// Generalized negator.
-  template<typename _Fn>
-    class _Not_fn
-    {
-      _Fn _M_fn;
-
-    public:
-      template<typename _Fn2>
-	explicit
-	_Not_fn(_Fn2&& __fn, int) : _M_fn(std::forward<_Fn2>(__fn)) { }
-
-      _Not_fn(const _Not_fn& __fn) = default;
-      _Not_fn(_Not_fn&& __fn) = default;
-      _Not_fn& operator=(const _Not_fn& __fn) = default;
-      _Not_fn& operator=(_Not_fn&& __fn) = default;
-      ~_Not_fn() = default;
-
-      template<typename... _Args>
-	auto
-	operator()(_Args&&... __args)
-	noexcept(noexcept(!_M_fn(std::forward<_Args>(__args)...)))
-	-> decltype(!_M_fn(std::forward<_Args>(__args)...))
-	{ return !_M_fn(std::forward<_Args>(__args)...); }
-
-      template<typename... _Args>
-	auto
-	operator()(_Args&&... __args) const
-	noexcept(noexcept(!_M_fn(std::forward<_Args>(__args)...)))
-	-> decltype(!_M_fn(std::forward<_Args>(__args)...))
-	{ return !_M_fn(std::forward<_Args>(__args)...); }
-
-      template<typename... _Args>
-	auto
-	operator()(_Args&&... __args) volatile
-	noexcept(noexcept(!_M_fn(std::forward<_Args>(__args)...)))
-	-> decltype(!_M_fn(std::forward<_Args>(__args)...))
-	{ return !_M_fn(std::forward<_Args>(__args)...); }
-
-      template<typename... _Args>
-	auto
-	operator()(_Args&&... __args) const volatile
-	noexcept(noexcept(!_M_fn(std::forward<_Args>(__args)...)))
-	-> decltype(!_M_fn(std::forward<_Args>(__args)...))
-	{ return !_M_fn(std::forward<_Args>(__args)...); }
-    };
 
   /// [func.not_fn] Function template not_fn
   template<typename _Fn>
@@ -430,13 +372,12 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     not_fn(_Fn&& __fn)
     noexcept(std::is_nothrow_constructible<std::decay_t<_Fn>, _Fn&&>::value)
     {
-      using __maybe_type = _Maybe_wrap_member_pointer<std::decay_t<_Fn>>;
-      return _Not_fn<typename __maybe_type::type>{std::forward<_Fn>(__fn), 0};
+      return std::_Not_fn<std::decay_t<_Fn>>{std::forward<_Fn>(__fn), 0};
     }
-
-_GLIBCXX_END_NAMESPACE_VERSION
 } // namespace fundamentals_v2
 } // namespace experimental
+
+_GLIBCXX_END_NAMESPACE_VERSION
 } // namespace std
 
 #endif // C++14

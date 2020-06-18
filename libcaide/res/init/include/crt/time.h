@@ -109,10 +109,21 @@ extern "C" {
 
 #define CLOCKS_PER_SEC 1000
 
+#ifdef _UCRT
+  _CRTIMP int *__cdecl __daylight(void);
+  _CRTIMP long *__cdecl __dstbias(void);
+  _CRTIMP long *__cdecl __timezone(void);
+  _CRTIMP char **__cdecl __tzname(void);
+#define _daylight (* __daylight())
+#define _dstbias (* __dstbias())
+#define _timezone (* __timezone())
+#define _tzname (__tzname())
+#else
   __MINGW_IMPORT int _daylight;
   __MINGW_IMPORT long _dstbias;
   __MINGW_IMPORT long _timezone;
   __MINGW_IMPORT char * _tzname[2];
+#endif
 
   _CRTIMP errno_t __cdecl _get_daylight(int *_Daylight);
   _CRTIMP errno_t __cdecl _get_dstbias(long *_Daylight_savings_bias);
@@ -120,13 +131,13 @@ extern "C" {
   _CRTIMP errno_t __cdecl _get_tzname(size_t *_ReturnValue,char *_Buffer,size_t _SizeInBytes,int _Index);
   char *__cdecl asctime(const struct tm *_Tm) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
   _SECIMP errno_t __cdecl asctime_s (char *_Buf,size_t _SizeInWords,const struct tm *_Tm);
-  char *__cdecl _ctime32(const __time32_t *_Time) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
+  _CRTIMP char *__cdecl _ctime32(const __time32_t *_Time) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
   _SECIMP errno_t __cdecl _ctime32_s (char *_Buf,size_t _SizeInBytes,const __time32_t *_Time);
   clock_t __cdecl clock(void);
-  double __cdecl _difftime32(__time32_t _Time1,__time32_t _Time2);
-  struct tm *__cdecl _gmtime32(const __time32_t *_Time) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
+  _CRTIMP double __cdecl _difftime32(__time32_t _Time1,__time32_t _Time2);
+  _CRTIMP struct tm *__cdecl _gmtime32(const __time32_t *_Time) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
   _SECIMP errno_t __cdecl _gmtime32_s (struct tm *_Tm,const __time32_t *_Time);
-  struct tm *__cdecl _localtime32(const __time32_t *_Time) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
+  _CRTIMP struct tm *__cdecl _localtime32(const __time32_t *_Time) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
   _SECIMP errno_t __cdecl _localtime32_s (struct tm *_Tm,const __time32_t *_Time);
   size_t __cdecl strftime(char * __restrict__ _Buf,size_t _SizeInBytes,const char * __restrict__ _Format,const struct tm * __restrict__ _Tm);
   _CRTIMP size_t __cdecl _strftime_l(char * __restrict__ _Buf,size_t _Max_size,const char * __restrict__ _Format,const struct tm * __restrict__ _Tm,_locale_t _Locale);
@@ -134,18 +145,21 @@ extern "C" {
   _SECIMP errno_t __cdecl _strdate_s (char *_Buf,size_t _SizeInBytes);
   _CRTIMP char *__cdecl _strtime(char *_Buffer) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
   _SECIMP errno_t __cdecl _strtime_s (char *_Buf ,size_t _SizeInBytes);
-  __time32_t __cdecl _time32(__time32_t *_Time);
-  __time32_t __cdecl _mktime32(struct tm *_Tm);
-  __time32_t __cdecl _mkgmtime32(struct tm *_Tm);
+  _CRTIMP __time32_t __cdecl _time32(__time32_t *_Time);
+  _CRTIMP __time32_t __cdecl _mktime32(struct tm *_Tm);
+  _CRTIMP __time32_t __cdecl _mkgmtime32(struct tm *_Tm);
 
 #if defined (_POSIX_) || defined(__GNUC__)
   void __cdecl tzset(void) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
 #endif
 #if !defined (_POSIX_)
-  _CRTIMP void __cdecl _tzset(void);
+#ifndef _UCRT
+  _CRTIMP
+#endif
+  void __cdecl _tzset(void);
 #endif
 
-  double __cdecl _difftime64(__time64_t _Time1,__time64_t _Time2);
+  _CRTIMP double __cdecl _difftime64(__time64_t _Time1,__time64_t _Time2);
   _CRTIMP char *__cdecl _ctime64(const __time64_t *_Time) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
   _SECIMP errno_t __cdecl _ctime64_s (char *_Buf,size_t _SizeInBytes,const __time64_t *_Time);
   _CRTIMP struct tm *__cdecl _gmtime64(const __time64_t *_Time) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
@@ -200,55 +214,48 @@ extern "C" {
 #endif
 
 #ifndef RC_INVOKED
-double __cdecl difftime(time_t _Time1,time_t _Time2);
-char *__cdecl ctime(const time_t *_Time) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
-struct tm *__cdecl gmtime(const time_t *_Time) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
-struct tm *__cdecl localtime(const time_t *_Time) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
-
-time_t __cdecl mktime(struct tm *_Tm);
-time_t __cdecl _mkgmtime(struct tm *_Tm);
-time_t __cdecl time(time_t *_Time);
-
-#ifndef __CRT__NO_INLINE
-#if !defined(_USE_32BIT_TIME_T)
-__CRT_INLINE double __cdecl difftime(time_t _Time1,time_t _Time2)
-  { return _difftime64(_Time1,_Time2); }
-__CRT_INLINE char *__cdecl ctime(const time_t *_Time) { return _ctime64(_Time); }
-__CRT_INLINE struct tm *__cdecl gmtime(const time_t *_Time) { return _gmtime64(_Time); }
-__CRT_INLINE struct tm *__cdecl localtime(const time_t *_Time) { return _localtime64(_Time); }
-__CRT_INLINE time_t __cdecl mktime(struct tm *_Tm) { return _mktime64(_Tm); }
-__CRT_INLINE time_t __cdecl _mkgmtime(struct tm *_Tm) { return _mkgmtime64(_Tm); }
-__CRT_INLINE time_t __cdecl time(time_t *_Time) { return _time64(_Time); }
-#else
-__CRT_INLINE double __cdecl difftime(time_t _Time1,time_t _Time2)
-  { return _difftime32(_Time1,_Time2); }
-__CRT_INLINE char *__cdecl ctime(const time_t *_Time) { return _ctime32(_Time); }
-__CRT_INLINE struct tm *__cdecl localtime(const time_t *_Time) { return _localtime32(_Time); }
-__CRT_INLINE time_t __cdecl mktime(struct tm *_Tm) { return _mktime32(_Tm); }
-__CRT_INLINE struct tm *__cdecl gmtime(const time_t *_Time) { return _gmtime32(_Time); }
-__CRT_INLINE time_t __cdecl _mkgmtime(struct tm *_Tm) { return _mkgmtime32(_Tm); }
-__CRT_INLINE time_t __cdecl time(time_t *_Time) { return _time32(_Time); }
-#endif /* !_USE_32BIT_TIME_T */
-#endif /* !__CRT__NO_INLINE */
 
 #ifdef _USE_32BIT_TIME_T
-__forceinline errno_t __cdecl localtime_s(struct tm *_Tm,const time_t *_Time) { return _localtime32_s(_Tm,_Time); }
-__forceinline errno_t __cdecl gmtime_s(struct tm *_Tm, const time_t *_Time)   { return _gmtime32_s(_Tm, _Time); }
-__forceinline errno_t __cdecl ctime_s(char *_Buf,size_t _SizeInBytes,const time_t *_Time) { return _ctime32_s(_Buf,_SizeInBytes,_Time); }
-
+static __inline time_t __CRTDECL time(time_t *_Time) { return _time32(_Time); }
+static __inline double __CRTDECL difftime(time_t _Time1,time_t _Time2)  { return _difftime32(_Time1,_Time2); }
+static __inline struct tm *__CRTDECL localtime(const time_t *_Time) { return _localtime32(_Time); }
+static __inline errno_t __CRTDECL localtime_s(struct tm *_Tm,const time_t *_Time) { return _localtime32_s(_Tm,_Time); }
+static __inline struct tm *__CRTDECL gmtime(const time_t *_Time) { return _gmtime32(_Time); }
+static __inline errno_t __CRTDECL gmtime_s(struct tm *_Tm, const time_t *_Time)   { return _gmtime32_s(_Tm, _Time); }
+static __inline char *__CRTDECL ctime(const time_t *_Time) { return _ctime32(_Time); }
+static __inline errno_t __CRTDECL ctime_s(char *_Buf,size_t _SizeInBytes,const time_t *_Time) { return _ctime32_s(_Buf,_SizeInBytes,_Time); }
+static __inline time_t __CRTDECL mktime(struct tm *_Tm) { return _mktime32(_Tm); }
+static __inline time_t __CRTDECL _mkgmtime(struct tm *_Tm) { return _mkgmtime32(_Tm); }
 #else
-__forceinline errno_t __cdecl localtime_s(struct tm *_Tm,const time_t *_Time) { return _localtime64_s(_Tm,_Time); }
-__forceinline errno_t __cdecl gmtime_s(struct tm *_Tm, const time_t *_Time) { return _gmtime64_s(_Tm, _Time); }
-__forceinline errno_t __cdecl ctime_s(char *_Buf,size_t _SizeInBytes,const time_t *_Time) { return _ctime64_s(_Buf,_SizeInBytes,_Time); }
+static __inline time_t __CRTDECL time(time_t *_Time) { return _time64(_Time); }
+static __inline double __CRTDECL difftime(time_t _Time1,time_t _Time2) { return _difftime64(_Time1,_Time2); }
+static __inline struct tm *__CRTDECL localtime(const time_t *_Time) { return _localtime64(_Time); }
+static __inline errno_t __CRTDECL localtime_s(struct tm *_Tm,const time_t *_Time) { return _localtime64_s(_Tm,_Time); }
+static __inline struct tm *__CRTDECL gmtime(const time_t *_Time) { return _gmtime64(_Time); }
+static __inline errno_t __CRTDECL gmtime_s(struct tm *_Tm, const time_t *_Time) { return _gmtime64_s(_Tm, _Time); }
+static __inline char *__CRTDECL ctime(const time_t *_Time) { return _ctime64(_Time); }
+static __inline errno_t __CRTDECL ctime_s(char *_Buf,size_t _SizeInBytes,const time_t *_Time) { return _ctime64_s(_Buf,_SizeInBytes,_Time); }
+static __inline time_t __CRTDECL mktime(struct tm *_Tm) { return _mktime64(_Tm); }
+static __inline time_t __CRTDECL _mkgmtime(struct tm *_Tm) { return _mkgmtime64(_Tm); }
 #endif
+
 #endif /* !RC_INVOKED */
 
 #if !defined(NO_OLDNAMES) || defined(_POSIX)
 #define CLK_TCK CLOCKS_PER_SEC
 
-  _CRTIMP extern int daylight;
-  _CRTIMP extern long timezone;
-  _CRTIMP extern char *tzname[2];
+#ifdef _UCRT
+#define __MINGW_ATTRIB_DEPRECATED_UCRT \
+    __MINGW_ATTRIB_DEPRECATED_MSG( \
+        "Only provided for source compatibility; this variable might " \
+        "not always be accurate when linking to UCRT.")
+#else
+#define __MINGW_ATTRIB_DEPRECATED_UCRT
+#endif
+
+  _CRTIMP extern int daylight __MINGW_ATTRIB_DEPRECATED_UCRT;
+  _CRTIMP extern long timezone __MINGW_ATTRIB_DEPRECATED_UCRT;
+  _CRTIMP extern char *tzname[2] __MINGW_ATTRIB_DEPRECATED_UCRT;
   void __cdecl tzset(void) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
 #endif
 
@@ -275,16 +282,16 @@ struct timezone {
 #endif
 
 #ifdef _POSIX_THREAD_SAFE_FUNCTIONS
-__forceinline struct tm *__cdecl localtime_r(const time_t *_Time, struct tm *_Tm) {
+__forceinline struct tm *__CRTDECL localtime_r(const time_t *_Time, struct tm *_Tm) {
   return localtime_s(_Tm, _Time) ? NULL : _Tm;
 }
-__forceinline struct tm *__cdecl gmtime_r(const time_t *_Time, struct tm *_Tm) {
+__forceinline struct tm *__CRTDECL gmtime_r(const time_t *_Time, struct tm *_Tm) {
   return gmtime_s(_Tm, _Time) ? NULL : _Tm;
 }
-__forceinline char *__cdecl ctime_r(const time_t *_Time, char *_Str) {
+__forceinline char *__CRTDECL ctime_r(const time_t *_Time, char *_Str) {
   return ctime_s(_Str, 0x7fffffff, _Time) ? NULL : _Str;
 }
-__forceinline char *__cdecl asctime_r(const struct tm *_Tm, char * _Str) {
+__forceinline char *__CRTDECL asctime_r(const struct tm *_Tm, char * _Str) {
   return asctime_s(_Str, 0x7fffffff, _Tm) ? NULL : _Str;
 }
 #endif

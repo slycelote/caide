@@ -1,6 +1,6 @@
 // Nested Exception support header (nested_exception class) for -*- C++ -*-
 
-// Copyright (C) 2009-2016 Free Software Foundation, Inc.
+// Copyright (C) 2009-2020 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -39,12 +39,6 @@
 #include <bits/c++config.h>
 #include <bits/move.h>
 
-#if !(defined(__ARM_EABI__) && !defined(__ARM_PCS_VFP))
-#if ATOMIC_INT_LOCK_FREE < 2
-#  error This platform does not support exception propagation.
-#endif
-#endif
-
 extern "C++" {
 
 namespace std
@@ -82,6 +76,8 @@ namespace std
     { return _M_ptr; }
   };
 
+  /// @cond undocumented
+
   template<typename _Except>
     struct _Nested_exception : public _Except, public nested_exception
     {
@@ -98,6 +94,7 @@ namespace std
   // Throw an exception of unspecified type that is publicly derived from
   // both remove_reference_t<_Tp> and nested_exception.
   template<typename _Tp>
+    [[noreturn]]
     inline void
     __throw_with_nested_impl(_Tp&& __t, true_type)
     {
@@ -106,9 +103,12 @@ namespace std
     }
 
   template<typename _Tp>
+    [[noreturn]]
     inline void
     __throw_with_nested_impl(_Tp&& __t, false_type)
     { throw std::forward<_Tp>(__t); }
+
+  /// @endcond
 
   /// If @p __t is derived from nested_exception, throws @p __t.
   /// Else, throws an implementation-defined object derived from both.
@@ -126,6 +126,8 @@ namespace std
 			    __not_<is_base_of<nested_exception, _Up>>>;
       std::__throw_with_nested_impl(std::forward<_Tp>(__t), __nest{});
     }
+
+  /// @cond undocumented
 
   // Determine if dynamic_cast<const nested_exception&> would be well-formed.
   template<typename _Tp>
@@ -148,6 +150,8 @@ namespace std
   inline void
   __rethrow_if_nested_impl(const void*)
   { }
+
+  /// @endcond
 
   /// If @p __ex is derived from nested_exception, @p __ex.rethrow_nested().
   template<typename _Ex>

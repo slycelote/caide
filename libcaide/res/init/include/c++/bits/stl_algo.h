@@ -1,6 +1,6 @@
 // Algorithm implementation -*- C++ -*-
 
-// Copyright (C) 2001-2016 Free Software Foundation, Inc.
+// Copyright (C) 2001-2020 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -74,6 +74,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   /// Swaps the median value of *__a, *__b and *__c under __comp to *__result
   template<typename _Iterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     void
     __move_median_to_first(_Iterator __result,_Iterator __a, _Iterator __b,
 			   _Iterator __c, _Compare __comp)
@@ -95,75 +96,9 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	std::iter_swap(__result, __b);
     }
 
-  /// This is an overload used by find algos for the Input Iterator case.
-  template<typename _InputIterator, typename _Predicate>
-    inline _InputIterator
-    __find_if(_InputIterator __first, _InputIterator __last,
-	      _Predicate __pred, input_iterator_tag)
-    {
-      while (__first != __last && !__pred(__first))
-	++__first;
-      return __first;
-    }
-
-  /// This is an overload used by find algos for the RAI case.
-  template<typename _RandomAccessIterator, typename _Predicate>
-    _RandomAccessIterator
-    __find_if(_RandomAccessIterator __first, _RandomAccessIterator __last,
-	      _Predicate __pred, random_access_iterator_tag)
-    {
-      typename iterator_traits<_RandomAccessIterator>::difference_type
-	__trip_count = (__last - __first) >> 2;
-
-      for (; __trip_count > 0; --__trip_count)
-	{
-	  if (__pred(__first))
-	    return __first;
-	  ++__first;
-
-	  if (__pred(__first))
-	    return __first;
-	  ++__first;
-
-	  if (__pred(__first))
-	    return __first;
-	  ++__first;
-
-	  if (__pred(__first))
-	    return __first;
-	  ++__first;
-	}
-
-      switch (__last - __first)
-	{
-	case 3:
-	  if (__pred(__first))
-	    return __first;
-	  ++__first;
-	case 2:
-	  if (__pred(__first))
-	    return __first;
-	  ++__first;
-	case 1:
-	  if (__pred(__first))
-	    return __first;
-	  ++__first;
-	case 0:
-	default:
-	  return __last;
-	}
-    }
-
-  template<typename _Iterator, typename _Predicate>
-    inline _Iterator
-    __find_if(_Iterator __first, _Iterator __last, _Predicate __pred)
-    {
-      return __find_if(__first, __last, __pred,
-		       std::__iterator_category(__first));
-    }
-
   /// Provided for stable_partition to use.
   template<typename _InputIterator, typename _Predicate>
+    _GLIBCXX20_CONSTEXPR
     inline _InputIterator
     __find_if_not(_InputIterator __first, _InputIterator __last,
 		  _Predicate __pred)
@@ -177,10 +112,11 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   /// remaining range length instead of comparing against an end
   /// iterator.
   template<typename _InputIterator, typename _Predicate, typename _Distance>
+    _GLIBCXX20_CONSTEXPR
     _InputIterator
     __find_if_not_n(_InputIterator __first, _Distance& __len, _Predicate __pred)
     {
-      for (; __len; --__len, ++__first)
+      for (; __len; --__len,  (void) ++__first)
 	if (!__pred(__first))
 	  break;
       return __first;
@@ -201,6 +137,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   template<typename _ForwardIterator1, typename _ForwardIterator2,
 	   typename _BinaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     _ForwardIterator1
     __search(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 	     _ForwardIterator2 __first2, _ForwardIterator2 __last2,
@@ -217,7 +154,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 		__gnu_cxx::__ops::__iter_comp_iter(__predicate, __first2));
 
       // General case.
-      _ForwardIterator2 __p;
       _ForwardIterator1 __current = __first1;
 
       for (;;)
@@ -229,7 +165,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	  if (__first1 == __last1)
 	    return __last1;
 
-	  __p = __p1;
+	  _ForwardIterator2 __p = __p1;
 	  __current = __first1;
 	  if (++__current == __last1)
 	    return __last1;
@@ -253,6 +189,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   */
   template<typename _ForwardIterator, typename _Integer,
 	   typename _UnaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     _ForwardIterator
     __search_n_aux(_ForwardIterator __first, _ForwardIterator __last,
 		   _Integer __count, _UnaryPredicate __unary_pred,
@@ -285,6 +222,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   */
   template<typename _RandomAccessIter, typename _Integer,
 	   typename _UnaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     _RandomAccessIter
     __search_n_aux(_RandomAccessIter __first, _RandomAccessIter __last,
 		   _Integer __count, _UnaryPredicate __unary_pred,
@@ -315,6 +253,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   template<typename _ForwardIterator, typename _Integer,
 	   typename _UnaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     _ForwardIterator
     __search_n(_ForwardIterator __first, _ForwardIterator __last,
 	       _Integer __count,
@@ -333,6 +272,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   // find_end for forward iterators.
   template<typename _ForwardIterator1, typename _ForwardIterator2,
 	   typename _BinaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     _ForwardIterator1
     __find_end(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 	       _ForwardIterator2 __first2, _ForwardIterator2 __last2,
@@ -361,6 +301,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   // find_end for bidirectional iterators (much faster).
   template<typename _BidirectionalIterator1, typename _BidirectionalIterator2,
 	   typename _BinaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     _BidirectionalIterator1
     __find_end(_BidirectionalIterator1 __first1,
 	       _BidirectionalIterator1 __last1,
@@ -421,6 +362,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  [__first1,__last1-(__last2-__first2))
   */
   template<typename _ForwardIterator1, typename _ForwardIterator2>
+    _GLIBCXX20_CONSTEXPR
     inline _ForwardIterator1
     find_end(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 	     _ForwardIterator2 __first2, _ForwardIterator2 __last2)
@@ -470,6 +412,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   */
   template<typename _ForwardIterator1, typename _ForwardIterator2,
 	   typename _BinaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     inline _ForwardIterator1
     find_end(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 	     _ForwardIterator2 __first2, _ForwardIterator2 __last2,
@@ -504,6 +447,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  @p [__first,__last), and false otherwise.
   */
   template<typename _InputIterator, typename _Predicate>
+    _GLIBCXX20_CONSTEXPR
     inline bool
     all_of(_InputIterator __first, _InputIterator __last, _Predicate __pred)
     { return __last == std::find_if_not(__first, __last, __pred); }
@@ -521,6 +465,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  @p [__first,__last), and false otherwise.
   */
   template<typename _InputIterator, typename _Predicate>
+    _GLIBCXX20_CONSTEXPR
     inline bool
     none_of(_InputIterator __first, _InputIterator __last, _Predicate __pred)
     { return __last == _GLIBCXX_STD_A::find_if(__first, __last, __pred); }
@@ -539,6 +484,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  otherwise.
   */
   template<typename _InputIterator, typename _Predicate>
+    _GLIBCXX20_CONSTEXPR
     inline bool
     any_of(_InputIterator __first, _InputIterator __last, _Predicate __pred)
     { return !std::none_of(__first, __last, __pred); }
@@ -554,6 +500,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  such that @p __pred(*i) is false, or @p __last if no such iterator exists.
   */
   template<typename _InputIterator, typename _Predicate>
+    _GLIBCXX20_CONSTEXPR
     inline _InputIterator
     find_if_not(_InputIterator __first, _InputIterator __last,
 		_Predicate __pred)
@@ -578,11 +525,15 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  do not.
   */
   template<typename _InputIterator, typename _Predicate>
+    _GLIBCXX20_CONSTEXPR
     inline bool
     is_partitioned(_InputIterator __first, _InputIterator __last,
 		   _Predicate __pred)
     {
       __first = std::find_if_not(__first, __last, __pred);
+      if (__first == __last)
+	return true;
+      ++__first;
       return std::none_of(__first, __last, __pred);
     }
 
@@ -596,6 +547,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *           and @p none_of(mid, __last, __pred) are both true.
   */
   template<typename _ForwardIterator, typename _Predicate>
+    _GLIBCXX20_CONSTEXPR
     _ForwardIterator
     partition_point(_ForwardIterator __first, _ForwardIterator __last,
 		    _Predicate __pred)
@@ -612,13 +564,11 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	_DistanceType;
 
       _DistanceType __len = std::distance(__first, __last);
-      _DistanceType __half;
-      _ForwardIterator __middle;
 
       while (__len > 0)
 	{
-	  __half = __len >> 1;
-	  __middle = __first;
+	  _DistanceType __half = __len >> 1;
+	  _ForwardIterator __middle = __first;
 	  std::advance(__middle, __half);
 	  if (__pred(*__middle))
 	    {
@@ -635,6 +585,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   template<typename _InputIterator, typename _OutputIterator,
 	   typename _Predicate>
+    _GLIBCXX20_CONSTEXPR
     _OutputIterator
     __remove_copy_if(_InputIterator __first, _InputIterator __last,
 		     _OutputIterator __result, _Predicate __pred)
@@ -663,6 +614,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  are copied is unchanged.
   */
   template<typename _InputIterator, typename _OutputIterator, typename _Tp>
+    _GLIBCXX20_CONSTEXPR
     inline _OutputIterator
     remove_copy(_InputIterator __first, _InputIterator __last,
 		_OutputIterator __result, const _Tp& __value)
@@ -696,6 +648,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   */
   template<typename _InputIterator, typename _OutputIterator,
 	   typename _Predicate>
+    _GLIBCXX20_CONSTEXPR
     inline _OutputIterator
     remove_copy_if(_InputIterator __first, _InputIterator __last,
 		   _OutputIterator __result, _Predicate __pred)
@@ -730,6 +683,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   */
   template<typename _InputIterator, typename _OutputIterator,
 	   typename _Predicate>
+    _GLIBCXX20_CONSTEXPR
     _OutputIterator
     copy_if(_InputIterator __first, _InputIterator __last,
 	    _OutputIterator __result, _Predicate __pred)
@@ -752,9 +706,9 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     }
 
   template<typename _InputIterator, typename _Size, typename _OutputIterator>
+    _GLIBCXX20_CONSTEXPR
     _OutputIterator
-    __copy_n(_InputIterator __first, _Size __n,
-	     _OutputIterator __result, input_iterator_tag)
+    __copy_n_a(_InputIterator __first, _Size __n, _OutputIterator __result)
     {
       if (__n > 0)
 	{
@@ -770,9 +724,26 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	}
       return __result;
     }
+ 
+  template<typename _CharT, typename _Size>
+    __enable_if_t<__is_char<_CharT>::__value, _CharT*>
+    __copy_n_a(istreambuf_iterator<_CharT, char_traits<_CharT>>,
+	       _Size, _CharT*);
+
+  template<typename _InputIterator, typename _Size, typename _OutputIterator>
+    _GLIBCXX20_CONSTEXPR
+    _OutputIterator
+    __copy_n(_InputIterator __first, _Size __n,
+	     _OutputIterator __result, input_iterator_tag)
+    {
+      return std::__niter_wrap(__result,
+			       __copy_n_a(__first, __n,
+					  std::__niter_base(__result)));
+    }
 
   template<typename _RandomAccessIterator, typename _Size,
 	   typename _OutputIterator>
+    _GLIBCXX20_CONSTEXPR
     inline _OutputIterator
     __copy_n(_RandomAccessIterator __first, _Size __n,
 	     _OutputIterator __result, random_access_iterator_tag)
@@ -792,6 +763,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  optimizations such as unrolling).
   */
   template<typename _InputIterator, typename _Size, typename _OutputIterator>
+    _GLIBCXX20_CONSTEXPR
     inline _OutputIterator
     copy_n(_InputIterator __first, _Size __n, _OutputIterator __result)
     {
@@ -799,6 +771,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       __glibcxx_function_requires(_InputIteratorConcept<_InputIterator>)
       __glibcxx_function_requires(_OutputIteratorConcept<_OutputIterator,
 	    typename iterator_traits<_InputIterator>::value_type>)
+      __glibcxx_requires_can_increment(__first, __n);
+      __glibcxx_requires_can_increment(__result, __n);
 
       return std::__copy_n(__first, __n, __result,
 			   std::__iterator_category(__first));
@@ -821,6 +795,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   */
   template<typename _InputIterator, typename _OutputIterator1,
 	   typename _OutputIterator2, typename _Predicate>
+    _GLIBCXX20_CONSTEXPR
     pair<_OutputIterator1, _OutputIterator2>
     partition_copy(_InputIterator __first, _InputIterator __last,
 		   _OutputIterator1 __out_true, _OutputIterator2 __out_false,
@@ -850,9 +825,10 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
       return pair<_OutputIterator1, _OutputIterator2>(__out_true, __out_false);
     }
-#endif
+#endif // C++11
 
   template<typename _ForwardIterator, typename _Predicate>
+    _GLIBCXX20_CONSTEXPR
     _ForwardIterator
     __remove_if(_ForwardIterator __first, _ForwardIterator __last,
 		_Predicate __pred)
@@ -889,6 +865,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  are still present, but their value is unspecified.
   */
   template<typename _ForwardIterator, typename _Tp>
+    _GLIBCXX20_CONSTEXPR
     inline _ForwardIterator
     remove(_ForwardIterator __first, _ForwardIterator __last,
 	   const _Tp& __value)
@@ -922,6 +899,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  are still present, but their value is unspecified.
   */
   template<typename _ForwardIterator, typename _Predicate>
+    _GLIBCXX20_CONSTEXPR
     inline _ForwardIterator
     remove_if(_ForwardIterator __first, _ForwardIterator __last,
 	      _Predicate __pred)
@@ -938,6 +916,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     }
 
   template<typename _ForwardIterator, typename _BinaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     _ForwardIterator
     __adjacent_find(_ForwardIterator __first, _ForwardIterator __last,
 		    _BinaryPredicate __binary_pred)
@@ -955,6 +934,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     }
 
   template<typename _ForwardIterator, typename _BinaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     _ForwardIterator
     __unique(_ForwardIterator __first, _ForwardIterator __last,
 	     _BinaryPredicate __binary_pred)
@@ -988,6 +968,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  are still present, but their value is unspecified.
   */
   template<typename _ForwardIterator>
+    _GLIBCXX20_CONSTEXPR
     inline _ForwardIterator
     unique(_ForwardIterator __first, _ForwardIterator __last)
     {
@@ -1018,6 +999,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  are still present, but their value is unspecified.
   */
   template<typename _ForwardIterator, typename _BinaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     inline _ForwardIterator
     unique(_ForwardIterator __first, _ForwardIterator __last,
 	   _BinaryPredicate __binary_pred)
@@ -1042,6 +1024,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   */
   template<typename _ForwardIterator, typename _OutputIterator,
 	   typename _BinaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     _OutputIterator
     __unique_copy(_ForwardIterator __first, _ForwardIterator __last,
 		  _OutputIterator __result, _BinaryPredicate __binary_pred,
@@ -1071,6 +1054,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   */
   template<typename _InputIterator, typename _OutputIterator,
 	   typename _BinaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     _OutputIterator
     __unique_copy(_InputIterator __first, _InputIterator __last,
 		  _OutputIterator __result, _BinaryPredicate __binary_pred,
@@ -1103,6 +1087,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   */
   template<typename _InputIterator, typename _ForwardIterator,
 	   typename _BinaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     _ForwardIterator
     __unique_copy(_InputIterator __first, _InputIterator __last,
 		  _ForwardIterator __result, _BinaryPredicate __binary_pred,
@@ -1125,6 +1110,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  overloaded for bidirectional iterators.
   */
   template<typename _BidirectionalIterator>
+    _GLIBCXX20_CONSTEXPR
     void
     __reverse(_BidirectionalIterator __first, _BidirectionalIterator __last,
 	      bidirectional_iterator_tag)
@@ -1145,6 +1131,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  overloaded for random access iterators.
   */
   template<typename _RandomAccessIterator>
+    _GLIBCXX20_CONSTEXPR
     void
     __reverse(_RandomAccessIterator __first, _RandomAccessIterator __last,
 	      random_access_iterator_tag)
@@ -1173,6 +1160,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  swaps @p *(__first+i) and @p *(__last-(i+1))
   */
   template<typename _BidirectionalIterator>
+    _GLIBCXX20_CONSTEXPR
     inline void
     reverse(_BidirectionalIterator __first, _BidirectionalIterator __last)
     {
@@ -1200,6 +1188,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  [__result,__result+(__last-__first)) must not overlap.
   */
   template<typename _BidirectionalIterator, typename _OutputIterator>
+    _GLIBCXX20_CONSTEXPR
     _OutputIterator
     reverse_copy(_BidirectionalIterator __first, _BidirectionalIterator __last,
 		 _OutputIterator __result)
@@ -1225,6 +1214,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  It returns the greatest common divisor of two integer values.
   */
   template<typename _EuclideanRingElement>
+    _GLIBCXX20_CONSTEXPR
     _EuclideanRingElement
     __gcd(_EuclideanRingElement __m, _EuclideanRingElement __n)
     {
@@ -1242,6 +1232,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   /// This is a helper function for the rotate algorithm.
   template<typename _ForwardIterator>
+    _GLIBCXX20_CONSTEXPR
     _ForwardIterator
     __rotate(_ForwardIterator __first,
 	     _ForwardIterator __middle,
@@ -1250,7 +1241,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     {
       if (__first == __middle)
 	return __last;
-      else if (__last  == __middle)
+      else if (__last == __middle)
 	return __first;
 
       _ForwardIterator __first2 = __middle;
@@ -1283,6 +1274,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
    /// This is a helper function for the rotate algorithm.
   template<typename _BidirectionalIterator>
+    _GLIBCXX20_CONSTEXPR
     _BidirectionalIterator
     __rotate(_BidirectionalIterator __first,
 	     _BidirectionalIterator __middle,
@@ -1295,7 +1287,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
       if (__first == __middle)
 	return __last;
-      else if (__last  == __middle)
+      else if (__last == __middle)
 	return __first;
 
       std::__reverse(__first,  __middle, bidirectional_iterator_tag());
@@ -1321,6 +1313,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   /// This is a helper function for the rotate algorithm.
   template<typename _RandomAccessIterator>
+    _GLIBCXX20_CONSTEXPR
     _RandomAccessIterator
     __rotate(_RandomAccessIterator __first,
 	     _RandomAccessIterator __middle,
@@ -1333,7 +1326,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
       if (__first == __middle)
 	return __last;
-      else if (__last  == __middle)
+      else if (__last == __middle)
 	return __first;
 
       typedef typename iterator_traits<_RandomAccessIterator>::difference_type
@@ -1427,6 +1420,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  for each @p n in the range @p [0,__last-__first).
   */
   template<typename _ForwardIterator>
+    _GLIBCXX20_CONSTEXPR
     inline _ForwardIterator
     rotate(_ForwardIterator __first, _ForwardIterator __middle,
 	   _ForwardIterator __last)
@@ -1464,6 +1458,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  for each @p n in the range @p [0,__last-__first).
   */
   template<typename _ForwardIterator, typename _OutputIterator>
+    _GLIBCXX20_CONSTEXPR
     inline _OutputIterator
     rotate_copy(_ForwardIterator __first, _ForwardIterator __middle,
 		_ForwardIterator __last, _OutputIterator __result)
@@ -1481,6 +1476,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   /// This is a helper function...
   template<typename _ForwardIterator, typename _Predicate>
+    _GLIBCXX20_CONSTEXPR
     _ForwardIterator
     __partition(_ForwardIterator __first, _ForwardIterator __last,
 		_Predicate __pred, forward_iterator_tag)
@@ -1506,6 +1502,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   /// This is a helper function...
   template<typename _BidirectionalIterator, typename _Predicate>
+    _GLIBCXX20_CONSTEXPR
     _BidirectionalIterator
     __partition(_BidirectionalIterator __first, _BidirectionalIterator __last,
 		_Predicate __pred, bidirectional_iterator_tag)
@@ -1598,9 +1595,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 					   __right_len,
 					   __buffer, __buffer_size);
 
-      std::rotate(__left_split, __middle, __right_split);
-      std::advance(__left_split, std::distance(__middle, __right_split));
-      return __left_split;
+      return std::rotate(__left_split, __middle, __right_split);
     }
 
   template<typename _ForwardIterator, typename _Predicate>
@@ -1618,7 +1613,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       typedef typename iterator_traits<_ForwardIterator>::difference_type
 	_DistanceType;
 
-      _Temporary_buffer<_ForwardIterator, _ValueType> __buf(__first, __last);
+      _Temporary_buffer<_ForwardIterator, _ValueType>
+	__buf(__first, std::distance(__first, __last));
       return
 	std::__stable_partition_adaptive(__first, __last, __pred,
 					 _DistanceType(__buf.requested_size()),
@@ -1661,6 +1657,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   /// This is a helper function for the sort routines.
   template<typename _RandomAccessIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     void
     __heap_select(_RandomAccessIterator __first,
 		  _RandomAccessIterator __middle,
@@ -1676,6 +1673,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   template<typename _InputIterator, typename _RandomAccessIterator,
 	   typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     _RandomAccessIterator
     __partial_sort_copy(_InputIterator __first, _InputIterator __last,
 			_RandomAccessIterator __result_first,
@@ -1730,6 +1728,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  The value returned is @p __result_first+N.
   */
   template<typename _InputIterator, typename _RandomAccessIterator>
+    _GLIBCXX20_CONSTEXPR
     inline _RandomAccessIterator
     partial_sort_copy(_InputIterator __first, _InputIterator __last,
 		      _RandomAccessIterator __result_first,
@@ -1780,6 +1779,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   */
   template<typename _InputIterator, typename _RandomAccessIterator,
 	   typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline _RandomAccessIterator
     partial_sort_copy(_InputIterator __first, _InputIterator __last,
 		      _RandomAccessIterator __result_first,
@@ -1814,6 +1814,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   /// This is a helper function for the sort routine.
   template<typename _RandomAccessIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     void
     __unguarded_linear_insert(_RandomAccessIterator __last,
 			      _Compare __comp)
@@ -1833,6 +1834,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   /// This is a helper function for the sort routine.
   template<typename _RandomAccessIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     void
     __insertion_sort(_RandomAccessIterator __first,
 		     _RandomAccessIterator __last, _Compare __comp)
@@ -1856,6 +1858,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   /// This is a helper function for the sort routine.
   template<typename _RandomAccessIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline void
     __unguarded_insertion_sort(_RandomAccessIterator __first,
 			       _RandomAccessIterator __last, _Compare __comp)
@@ -1873,6 +1876,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   /// This is a helper function for the sort routine.
   template<typename _RandomAccessIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     void
     __final_insertion_sort(_RandomAccessIterator __first,
 			   _RandomAccessIterator __last, _Compare __comp)
@@ -1889,6 +1893,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   /// This is a helper function...
   template<typename _RandomAccessIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     _RandomAccessIterator
     __unguarded_partition(_RandomAccessIterator __first,
 			  _RandomAccessIterator __last,
@@ -1910,6 +1915,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   /// This is a helper function...
   template<typename _RandomAccessIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline _RandomAccessIterator
     __unguarded_partition_pivot(_RandomAccessIterator __first,
 				_RandomAccessIterator __last, _Compare __comp)
@@ -1921,6 +1927,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     }
 
   template<typename _RandomAccessIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline void
     __partial_sort(_RandomAccessIterator __first,
 		   _RandomAccessIterator __middle,
@@ -1933,6 +1940,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   /// This is a helper function for the sort routine.
   template<typename _RandomAccessIterator, typename _Size, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     void
     __introsort_loop(_RandomAccessIterator __first,
 		     _RandomAccessIterator __last,
@@ -1956,6 +1964,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   // sort
 
   template<typename _RandomAccessIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline void
     __sort(_RandomAccessIterator __first, _RandomAccessIterator __last,
 	   _Compare __comp)
@@ -1970,6 +1979,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     }
 
   template<typename _RandomAccessIterator, typename _Size, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     void
     __introselect(_RandomAccessIterator __first, _RandomAccessIterator __nth,
 		  _RandomAccessIterator __last, _Size __depth_limit,
@@ -2016,6 +2026,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  the function used for the initial sort.
   */
   template<typename _ForwardIterator, typename _Tp, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline _ForwardIterator
     lower_bound(_ForwardIterator __first, _ForwardIterator __last,
 		const _Tp& __val, _Compare __comp)
@@ -2032,6 +2043,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     }
 
   template<typename _ForwardIterator, typename _Tp, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     _ForwardIterator
     __upper_bound(_ForwardIterator __first, _ForwardIterator __last,
 		  const _Tp& __val, _Compare __comp)
@@ -2070,6 +2082,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  @ingroup binary_search_algorithms
   */
   template<typename _ForwardIterator, typename _Tp>
+    _GLIBCXX20_CONSTEXPR
     inline _ForwardIterator
     upper_bound(_ForwardIterator __first, _ForwardIterator __last,
 		const _Tp& __val)
@@ -2100,6 +2113,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  the function used for the initial sort.
   */
   template<typename _ForwardIterator, typename _Tp, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline _ForwardIterator
     upper_bound(_ForwardIterator __first, _ForwardIterator __last,
 		const _Tp& __val, _Compare __comp)
@@ -2117,6 +2131,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   template<typename _ForwardIterator, typename _Tp,
 	   typename _CompareItTp, typename _CompareTpIt>
+    _GLIBCXX20_CONSTEXPR
     pair<_ForwardIterator, _ForwardIterator>
     __equal_range(_ForwardIterator __first, _ForwardIterator __last,
 		  const _Tp& __val,
@@ -2171,6 +2186,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  but does not actually call those functions.
   */
   template<typename _ForwardIterator, typename _Tp>
+    _GLIBCXX20_CONSTEXPR
     inline pair<_ForwardIterator, _ForwardIterator>
     equal_range(_ForwardIterator __first, _ForwardIterator __last,
 		const _Tp& __val)
@@ -2207,6 +2223,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  but does not actually call those functions.
   */
   template<typename _ForwardIterator, typename _Tp, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline pair<_ForwardIterator, _ForwardIterator>
     equal_range(_ForwardIterator __first, _ForwardIterator __last,
 		const _Tp& __val, _Compare __comp)
@@ -2240,6 +2257,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  that, use std::find or a container's specialized find member functions.
   */
   template<typename _ForwardIterator, typename _Tp>
+    _GLIBCXX20_CONSTEXPR
     bool
     binary_search(_ForwardIterator __first, _ForwardIterator __last,
 		  const _Tp& __val)
@@ -2273,6 +2291,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  the function used for the initial sort.
   */
   template<typename _ForwardIterator, typename _Tp, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     bool
     binary_search(_ForwardIterator __first, _ForwardIterator __last,
 		  const _Tp& __val, _Compare __comp)
@@ -2398,11 +2417,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	    return __last;
 	}
       else
-	{
-	  std::rotate(__first, __middle, __last);
-	  std::advance(__first, std::distance(__middle, __last));
-	  return __first;
-	}
+	return std::rotate(__first, __middle, __last);
     }
 
   /// This is a helper function for the merge routines.
@@ -2509,9 +2524,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	  __len11 = std::distance(__first, __first_cut);
 	}
 
-      std::rotate(__first_cut, __middle, __second_cut);
-      _BidirectionalIterator __new_middle = __first_cut;
-      std::advance(__new_middle, std::distance(__middle, __second_cut));
+      _BidirectionalIterator __new_middle
+	= std::rotate(__first_cut, __middle, __second_cut);
       std::__merge_without_buffer(__first, __first_cut, __new_middle,
 				  __len11, __len22, __comp);
       std::__merge_without_buffer(__new_middle, __second_cut, __last,
@@ -2537,7 +2551,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       const _DistanceType __len2 = std::distance(__middle, __last);
 
       typedef _Temporary_buffer<_BidirectionalIterator, _ValueType> _TmpBuf;
-      _TmpBuf __buf(__first, __last);
+      _TmpBuf __buf(__first, __len1 + __len2);
 
       if (__buf.begin() == 0)
 	std::__merge_without_buffer
@@ -2682,6 +2696,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   template<typename _RandomAccessIterator, typename _Distance,
 	   typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     void
     __chunk_insertion_sort(_RandomAccessIterator __first,
 			   _RandomAccessIterator __last,
@@ -2781,6 +2796,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   template<typename _InputIterator1, typename _InputIterator2,
 	   typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     bool
     __includes(_InputIterator1 __first1, _InputIterator1 __last1,
 	       _InputIterator2 __first2, _InputIterator2 __last2,
@@ -2819,6 +2835,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  returned.
   */
   template<typename _InputIterator1, typename _InputIterator2>
+    _GLIBCXX20_CONSTEXPR
     inline bool
     includes(_InputIterator1 __first1, _InputIterator1 __last1,
 	     _InputIterator2 __first2, _InputIterator2 __last2)
@@ -2864,6 +2881,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   */
   template<typename _InputIterator1, typename _InputIterator2,
 	   typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline bool
     includes(_InputIterator1 __first1, _InputIterator1 __last1,
 	     _InputIterator2 __first2, _InputIterator2 __last2,
@@ -2898,6 +2916,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   // max_element
 
   template<typename _BidirectionalIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     bool
     __next_permutation(_BidirectionalIterator __first,
 		       _BidirectionalIterator __last, _Compare __comp)
@@ -2947,6 +2966,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  is the largest of the set, the smallest is generated and false returned.
   */
   template<typename _BidirectionalIterator>
+    _GLIBCXX20_CONSTEXPR
     inline bool
     next_permutation(_BidirectionalIterator __first,
 		     _BidirectionalIterator __last)
@@ -2979,6 +2999,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  smallest is generated and false returned.
   */
   template<typename _BidirectionalIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline bool
     next_permutation(_BidirectionalIterator __first,
 		     _BidirectionalIterator __last, _Compare __comp)
@@ -2997,6 +3018,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     }
 
   template<typename _BidirectionalIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     bool
     __prev_permutation(_BidirectionalIterator __first,
 		       _BidirectionalIterator __last, _Compare __comp)
@@ -3047,6 +3069,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  returned.
   */
   template<typename _BidirectionalIterator>
+    _GLIBCXX20_CONSTEXPR
     inline bool
     prev_permutation(_BidirectionalIterator __first,
 		     _BidirectionalIterator __last)
@@ -3079,6 +3102,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  the largest is generated and false returned.
   */
   template<typename _BidirectionalIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline bool
     prev_permutation(_BidirectionalIterator __first,
 		     _BidirectionalIterator __last, _Compare __comp)
@@ -3101,6 +3125,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   template<typename _InputIterator, typename _OutputIterator,
 	   typename _Predicate, typename _Tp>
+    _GLIBCXX20_CONSTEXPR
     _OutputIterator
     __replace_copy_if(_InputIterator __first, _InputIterator __last,
 		      _OutputIterator __result,
@@ -3129,6 +3154,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  equal to @p __old_value with @p __new_value.
   */
   template<typename _InputIterator, typename _OutputIterator, typename _Tp>
+    _GLIBCXX20_CONSTEXPR
     inline _OutputIterator
     replace_copy(_InputIterator __first, _InputIterator __last,
 		 _OutputIterator __result,
@@ -3164,6 +3190,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   */
   template<typename _InputIterator, typename _OutputIterator,
 	   typename _Predicate, typename _Tp>
+    _GLIBCXX20_CONSTEXPR
     inline _OutputIterator
     replace_copy_if(_InputIterator __first, _InputIterator __last,
 		    _OutputIterator __result,
@@ -3182,17 +3209,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 					      __new_value);
     }
 
-  template<typename _InputIterator, typename _Predicate>
-    typename iterator_traits<_InputIterator>::difference_type
-    __count_if(_InputIterator __first, _InputIterator __last, _Predicate __pred)
-    {
-      typename iterator_traits<_InputIterator>::difference_type __n = 0;
-      for (; __first != __last; ++__first)
-	if (__pred(__first))
-	  ++__n;
-      return __n;
-    }
-
 #if __cplusplus >= 201103L
   /**
    *  @brief  Determines whether the elements of a sequence are sorted.
@@ -3202,6 +3218,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  @return  True if the elements are sorted, false otherwise.
   */
   template<typename _ForwardIterator>
+    _GLIBCXX20_CONSTEXPR
     inline bool
     is_sorted(_ForwardIterator __first, _ForwardIterator __last)
     { return std::is_sorted_until(__first, __last) == __last; }
@@ -3216,12 +3233,14 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  @return  True if the elements are sorted, false otherwise.
   */
   template<typename _ForwardIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline bool
     is_sorted(_ForwardIterator __first, _ForwardIterator __last,
 	      _Compare __comp)
     { return std::is_sorted_until(__first, __last, __comp) == __last; }
 
   template<typename _ForwardIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     _ForwardIterator
     __is_sorted_until(_ForwardIterator __first, _ForwardIterator __last,
 		      _Compare __comp)
@@ -3245,6 +3264,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *           for which the range [__first, i) is sorted.
   */
   template<typename _ForwardIterator>
+    _GLIBCXX20_CONSTEXPR
     inline _ForwardIterator
     is_sorted_until(_ForwardIterator __first, _ForwardIterator __last)
     {
@@ -3269,6 +3289,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *           for which the range [__first, i) is sorted.
   */
   template<typename _ForwardIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline _ForwardIterator
     is_sorted_until(_ForwardIterator __first, _ForwardIterator __last,
 		    _Compare __comp)
@@ -3485,72 +3506,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       return std::make_pair(*__p.first, *__p.second);
     }
 
-  template<typename _ForwardIterator1, typename _ForwardIterator2,
-	   typename _BinaryPredicate>
-    bool
-    __is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
-		     _ForwardIterator2 __first2, _BinaryPredicate __pred)
-    {
-      // Efficiently compare identical prefixes:  O(N) if sequences
-      // have the same elements in the same order.
-      for (; __first1 != __last1; ++__first1, (void)++__first2)
-	if (!__pred(__first1, __first2))
-	  break;
-
-      if (__first1 == __last1)
-	return true;
-
-      // Establish __last2 assuming equal ranges by iterating over the
-      // rest of the list.
-      _ForwardIterator2 __last2 = __first2;
-      std::advance(__last2, std::distance(__first1, __last1));
-      for (_ForwardIterator1 __scan = __first1; __scan != __last1; ++__scan)
-	{
-	  if (__scan != std::__find_if(__first1, __scan,
-			  __gnu_cxx::__ops::__iter_comp_iter(__pred, __scan)))
-	    continue; // We've seen this one before.
-	  
-	  auto __matches
-	    = std::__count_if(__first2, __last2,
-			__gnu_cxx::__ops::__iter_comp_iter(__pred, __scan));
-	  if (0 == __matches ||
-	      std::__count_if(__scan, __last1,
-			__gnu_cxx::__ops::__iter_comp_iter(__pred, __scan))
-	      != __matches)
-	    return false;
-	}
-      return true;
-    }
-
-  /**
-   *  @brief  Checks whether a permutation of the second sequence is equal
-   *          to the first sequence.
-   *  @ingroup non_mutating_algorithms
-   *  @param  __first1  Start of first range.
-   *  @param  __last1   End of first range.
-   *  @param  __first2  Start of second range.
-   *  @return true if there exists a permutation of the elements in the range
-   *          [__first2, __first2 + (__last1 - __first1)), beginning with 
-   *          ForwardIterator2 begin, such that equal(__first1, __last1, begin)
-   *          returns true; otherwise, returns false.
-  */
-  template<typename _ForwardIterator1, typename _ForwardIterator2>
-    inline bool
-    is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
-		   _ForwardIterator2 __first2)
-    {
-      // concept requirements
-      __glibcxx_function_requires(_ForwardIteratorConcept<_ForwardIterator1>)
-      __glibcxx_function_requires(_ForwardIteratorConcept<_ForwardIterator2>)
-      __glibcxx_function_requires(_EqualOpConcept<
-		typename iterator_traits<_ForwardIterator1>::value_type,
-		typename iterator_traits<_ForwardIterator2>::value_type>)
-      __glibcxx_requires_valid_range(__first1, __last1);
-
-      return std::__is_permutation(__first1, __last1, __first2,
-				   __gnu_cxx::__ops::__iter_equal_to_iter());
-    }
-
   /**
    *  @brief  Checks whether a permutation of the second sequence is equal
    *          to the first sequence.
@@ -3567,6 +3522,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   */
   template<typename _ForwardIterator1, typename _ForwardIterator2,
 	   typename _BinaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     inline bool
     is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 		   _ForwardIterator2 __first2, _BinaryPredicate __pred)
@@ -3586,6 +3542,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 #if __cplusplus > 201103L
   template<typename _ForwardIterator1, typename _ForwardIterator2,
 	   typename _BinaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     bool
     __is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 		     _ForwardIterator2 __first2, _ForwardIterator2 __last2,
@@ -3659,6 +3616,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *          otherwise, returns false.
   */
   template<typename _ForwardIterator1, typename _ForwardIterator2>
+    _GLIBCXX20_CONSTEXPR
     inline bool
     is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 		   _ForwardIterator2 __first2, _ForwardIterator2 __last2)
@@ -3687,6 +3645,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   */
   template<typename _ForwardIterator1, typename _ForwardIterator2,
 	   typename _BinaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     inline bool
     is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 		   _ForwardIterator2 __first2, _ForwardIterator2 __last2,
@@ -3698,9 +3657,79 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       return std::__is_permutation(__first1, __last1, __first2, __last2,
 				   __gnu_cxx::__ops::__iter_comp_iter(__pred));
     }
-#endif
+
+#if __cplusplus > 201402L
+
+#define __cpp_lib_clamp 201603
+
+  /**
+   *  @brief  Returns the value clamped between lo and hi.
+   *  @ingroup sorting_algorithms
+   *  @param  __val  A value of arbitrary type.
+   *  @param  __lo   A lower limit of arbitrary type.
+   *  @param  __hi   An upper limit of arbitrary type.
+   *  @return max(__val, __lo) if __val < __hi or min(__val, __hi) otherwise.
+   */
+  template<typename _Tp>
+    constexpr const _Tp&
+    clamp(const _Tp& __val, const _Tp& __lo, const _Tp& __hi)
+    {
+      __glibcxx_assert(!(__hi < __lo));
+      return (__val < __lo) ? __lo : (__hi < __val) ? __hi : __val;
+    }
+
+  /**
+   *  @brief  Returns the value clamped between lo and hi.
+   *  @ingroup sorting_algorithms
+   *  @param  __val   A value of arbitrary type.
+   *  @param  __lo    A lower limit of arbitrary type.
+   *  @param  __hi    An upper limit of arbitrary type.
+   *  @param  __comp  A comparison functor.
+   *  @return max(__val, __lo, __comp) if __comp(__val, __hi)
+   *	      or min(__val, __hi, __comp) otherwise.
+   */
+  template<typename _Tp, typename _Compare>
+    constexpr const _Tp&
+    clamp(const _Tp& __val, const _Tp& __lo, const _Tp& __hi, _Compare __comp)
+    {
+      __glibcxx_assert(!__comp(__hi, __lo));
+      return __comp(__val, __lo) ? __lo : __comp(__hi, __val) ? __hi : __val;
+    }
+#endif // C++17
+#endif // C++14
 
 #ifdef _GLIBCXX_USE_C99_STDINT_TR1
+  /**
+   *  @brief Generate two uniformly distributed integers using a
+   *         single distribution invocation.
+   *  @param  __b0    The upper bound for the first integer.
+   *  @param  __b1    The upper bound for the second integer.
+   *  @param  __g     A UniformRandomBitGenerator.
+   *  @return  A pair (i, j) with i and j uniformly distributed
+   *           over [0, __b0) and [0, __b1), respectively.
+   *
+   *  Requires: __b0 * __b1 <= __g.max() - __g.min().
+   *
+   *  Using uniform_int_distribution with a range that is very
+   *  small relative to the range of the generator ends up wasting
+   *  potentially expensively generated randomness, since
+   *  uniform_int_distribution does not store leftover randomness
+   *  between invocations.
+   *
+   *  If we know we want two integers in ranges that are sufficiently
+   *  small, we can compose the ranges, use a single distribution
+   *  invocation, and significantly reduce the waste.
+  */
+  template<typename _IntType, typename _UniformRandomBitGenerator>
+    pair<_IntType, _IntType>
+    __gen_two_uniform_ints(_IntType __b0, _IntType __b1,
+			   _UniformRandomBitGenerator&& __g)
+    {
+      _IntType __x
+	= uniform_int_distribution<_IntType>{0, (__b0 * __b1) - 1}(__g);
+      return std::make_pair(__x / __b1, __x % __b1);
+    }
+
   /**
    *  @brief Shuffle the elements of a sequence using a uniform random
    *         number generator.
@@ -3733,6 +3762,48 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       typedef typename std::make_unsigned<_DistanceType>::type __ud_type;
       typedef typename std::uniform_int_distribution<__ud_type> __distr_type;
       typedef typename __distr_type::param_type __p_type;
+
+      typedef typename remove_reference<_UniformRandomNumberGenerator>::type
+	_Gen;
+      typedef typename common_type<typename _Gen::result_type, __ud_type>::type
+	__uc_type;
+
+      const __uc_type __urngrange = __g.max() - __g.min();
+      const __uc_type __urange = __uc_type(__last - __first);
+
+      if (__urngrange / __urange >= __urange)
+        // I.e. (__urngrange >= __urange * __urange) but without wrap issues.
+      {
+	_RandomAccessIterator __i = __first + 1;
+
+	// Since we know the range isn't empty, an even number of elements
+	// means an uneven number of elements /to swap/, in which case we
+	// do the first one up front:
+
+	if ((__urange % 2) == 0)
+	{
+	  __distr_type __d{0, 1};
+	  std::iter_swap(__i++, __first + __d(__g));
+	}
+
+	// Now we know that __last - __i is even, so we do the rest in pairs,
+	// using a single distribution invocation to produce swap positions
+	// for two successive elements at a time:
+
+	while (__i != __last)
+	{
+	  const __uc_type __swap_range = __uc_type(__i - __first) + 1;
+
+	  const pair<__uc_type, __uc_type> __pospos =
+	    __gen_two_uniform_ints(__swap_range, __swap_range + 1, __g);
+
+	  std::iter_swap(__i++, __first + __pospos.first);
+	  std::iter_swap(__i++, __first + __pospos.second);
+	}
+
+	return;
+      }
+
       __distr_type __d;
 
       for (_RandomAccessIterator __i = __first + 1; __i != __last; ++__i)
@@ -3742,8 +3813,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
 #endif // C++11
 
-_GLIBCXX_END_NAMESPACE_VERSION
-
 _GLIBCXX_BEGIN_NAMESPACE_ALGO
 
   /**
@@ -3752,13 +3821,14 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  @param  __first  An input iterator.
    *  @param  __last   An input iterator.
    *  @param  __f      A unary function object.
-   *  @return   @p __f (std::move(@p __f) in C++0x).
+   *  @return   @p __f
    *
    *  Applies the function object @p __f to each element in the range
    *  @p [first,last).  @p __f must not modify the order of the sequence.
    *  If @p __f has a return value it is ignored.
   */
   template<typename _InputIterator, typename _Function>
+    _GLIBCXX20_CONSTEXPR
     _Function
     for_each(_InputIterator __first, _InputIterator __last, _Function __f)
     {
@@ -3767,8 +3837,47 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
       __glibcxx_requires_valid_range(__first, __last);
       for (; __first != __last; ++__first)
 	__f(*__first);
-      return _GLIBCXX_MOVE(__f);
+      return __f; // N.B. [alg.foreach] says std::move(f) but it's redundant.
     }
+
+#if __cplusplus >= 201703L
+  /**
+   *  @brief Apply a function to every element of a sequence.
+   *  @ingroup non_mutating_algorithms
+   *  @param  __first  An input iterator.
+   *  @param  __n      A value convertible to an integer.
+   *  @param  __f      A unary function object.
+   *  @return   `__first+__n`
+   *
+   *  Applies the function object `__f` to each element in the range
+   *  `[first, first+n)`.  `__f` must not modify the order of the sequence.
+   *  If `__f` has a return value it is ignored.
+  */
+  template<typename _InputIterator, typename _Size, typename _Function>
+    _InputIterator
+    for_each_n(_InputIterator __first, _Size __n, _Function __f)
+    {
+      auto __n2 = std::__size_to_integer(__n);
+      using _Cat = typename iterator_traits<_InputIterator>::iterator_category;
+      if constexpr (is_base_of_v<random_access_iterator_tag, _Cat>)
+	{
+	  if (__n2 <= 0)
+	    return __first;
+	  auto __last = __first + __n2;
+	  std::for_each(__first, __last, std::move(__f));
+	  return __last;
+	}
+      else
+	{
+	  while (__n2-->0)
+	    {
+	      __f(*__first);
+	      ++__first;
+	    }
+	  return __first;
+	}
+    }
+#endif // C++17
 
   /**
    *  @brief Find the first occurrence of a value in a sequence.
@@ -3780,6 +3889,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  such that @c *i == @p __val, or @p __last if no such iterator exists.
   */
   template<typename _InputIterator, typename _Tp>
+    _GLIBCXX20_CONSTEXPR
     inline _InputIterator
     find(_InputIterator __first, _InputIterator __last,
 	 const _Tp& __val)
@@ -3804,6 +3914,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  such that @p __pred(*i) is true, or @p __last if no such iterator exists.
   */
   template<typename _InputIterator, typename _Predicate>
+    _GLIBCXX20_CONSTEXPR
     inline _InputIterator
     find_if(_InputIterator __first, _InputIterator __last,
 	    _Predicate __pred)
@@ -3835,6 +3946,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  otherwise returns @p __last1.
   */
   template<typename _InputIterator, typename _ForwardIterator>
+    _GLIBCXX20_CONSTEXPR
     _InputIterator
     find_first_of(_InputIterator __first1, _InputIterator __last1,
 		  _ForwardIterator __first2, _ForwardIterator __last2)
@@ -3876,6 +3988,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   */
   template<typename _InputIterator, typename _ForwardIterator,
 	   typename _BinaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     _InputIterator
     find_first_of(_InputIterator __first1, _InputIterator __last1,
 		  _ForwardIterator __first2, _ForwardIterator __last2,
@@ -3907,6 +4020,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  or @p __last if no such iterator exists.
   */
   template<typename _ForwardIterator>
+    _GLIBCXX20_CONSTEXPR
     inline _ForwardIterator
     adjacent_find(_ForwardIterator __first, _ForwardIterator __last)
     {
@@ -3932,6 +4046,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  exists.
   */
   template<typename _ForwardIterator, typename _BinaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     inline _ForwardIterator
     adjacent_find(_ForwardIterator __first, _ForwardIterator __last,
 		  _BinaryPredicate __binary_pred)
@@ -3957,6 +4072,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  for which @c *i == @p __value
   */
   template<typename _InputIterator, typename _Tp>
+    _GLIBCXX20_CONSTEXPR
     inline typename iterator_traits<_InputIterator>::difference_type
     count(_InputIterator __first, _InputIterator __last, const _Tp& __value)
     {
@@ -3980,6 +4096,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  for which @p __pred(*i) is true.
   */
   template<typename _InputIterator, typename _Predicate>
+    _GLIBCXX20_CONSTEXPR
     inline typename iterator_traits<_InputIterator>::difference_type
     count_if(_InputIterator __first, _InputIterator __last, _Predicate __pred)
     {
@@ -4020,6 +4137,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  @p [__first1,__last1-(__last2-__first2))
   */
   template<typename _ForwardIterator1, typename _ForwardIterator2>
+    _GLIBCXX20_CONSTEXPR
     inline _ForwardIterator1
     search(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 	   _ForwardIterator2 __first2, _ForwardIterator2 __last2)
@@ -4060,6 +4178,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   */
   template<typename _ForwardIterator1, typename _ForwardIterator2,
 	   typename _BinaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     inline _ForwardIterator1
     search(_ForwardIterator1 __first1, _ForwardIterator1 __last1,
 	   _ForwardIterator2 __first2, _ForwardIterator2 __last2,
@@ -4094,6 +4213,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  equal to @p __val.
   */
   template<typename _ForwardIterator, typename _Integer, typename _Tp>
+    _GLIBCXX20_CONSTEXPR
     inline _ForwardIterator
     search_n(_ForwardIterator __first, _ForwardIterator __last,
 	     _Integer __count, const _Tp& __val)
@@ -4128,6 +4248,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   */
   template<typename _ForwardIterator, typename _Integer, typename _Tp,
 	   typename _BinaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     inline _ForwardIterator
     search_n(_ForwardIterator __first, _ForwardIterator __last,
 	     _Integer __count, const _Tp& __val,
@@ -4143,6 +4264,20 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
 		__gnu_cxx::__ops::__iter_comp_val(__binary_pred, __val));
     }
 
+#if __cplusplus > 201402L
+  /** @brief Search a sequence using a Searcher object.
+   *
+   *  @param  __first        A forward iterator.
+   *  @param  __last         A forward iterator.
+   *  @param  __searcher     A callable object.
+   *  @return @p __searcher(__first,__last).first
+  */
+  template<typename _ForwardIterator, typename _Searcher>
+    inline _ForwardIterator
+    search(_ForwardIterator __first, _ForwardIterator __last,
+	   const _Searcher& __searcher)
+    { return __searcher(__first, __last).first; }
+#endif
 
   /**
    *  @brief Perform an operation on a sequence.
@@ -4162,6 +4297,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   */
   template<typename _InputIterator, typename _OutputIterator,
 	   typename _UnaryOperation>
+    _GLIBCXX20_CONSTEXPR
     _OutputIterator
     transform(_InputIterator __first, _InputIterator __last,
 	      _OutputIterator __result, _UnaryOperation __unary_op)
@@ -4199,6 +4335,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   */
   template<typename _InputIterator1, typename _InputIterator2,
 	   typename _OutputIterator, typename _BinaryOperation>
+    _GLIBCXX20_CONSTEXPR
     _OutputIterator
     transform(_InputIterator1 __first1, _InputIterator1 __last1,
 	      _InputIterator2 __first2, _OutputIterator __result,
@@ -4231,6 +4368,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  @p __old_value then the assignment @c *i = @p __new_value is performed.
   */
   template<typename _ForwardIterator, typename _Tp>
+    _GLIBCXX20_CONSTEXPR
     void
     replace(_ForwardIterator __first, _ForwardIterator __last,
 	    const _Tp& __old_value, const _Tp& __new_value)
@@ -4263,6 +4401,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  is true then the assignment @c *i = @p __new_value is performed.
   */
   template<typename _ForwardIterator, typename _Predicate, typename _Tp>
+    _GLIBCXX20_CONSTEXPR
     void
     replace_if(_ForwardIterator __first, _ForwardIterator __last,
 	       _Predicate __pred, const _Tp& __new_value)
@@ -4295,6 +4434,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  @p [__first,__last).
   */
   template<typename _ForwardIterator, typename _Generator>
+    _GLIBCXX20_CONSTEXPR
     void
     generate(_ForwardIterator __first, _ForwardIterator __last,
 	     _Generator __gen)
@@ -4322,10 +4462,13 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  Performs the assignment @c *i = @p __gen() for each @c i in the range
    *  @p [__first,__first+__n).
    *
-   *  _GLIBCXX_RESOLVE_LIB_DEFECTS
-   *  DR 865. More algorithms that throw away information
+   * If @p __n is negative, the function does nothing and returns @p __first.
   */
+  // _GLIBCXX_RESOLVE_LIB_DEFECTS
+  // DR 865. More algorithms that throw away information
+  // DR 426. search_n(), fill_n(), and generate_n() with negative n
   template<typename _OutputIterator, typename _Size, typename _Generator>
+    _GLIBCXX20_CONSTEXPR
     _OutputIterator
     generate_n(_OutputIterator __first, _Size __n, _Generator __gen)
     {
@@ -4334,8 +4477,9 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
 	    // "the type returned by a _Generator"
 	    __typeof__(__gen())>)
 
-      for (__decltype(__n + 0) __niter = __n;
-	   __niter > 0; --__niter, ++__first)
+      typedef __decltype(std::__size_to_integer(__n)) _IntSize;
+      for (_IntSize __niter = std::__size_to_integer(__n);
+	   __niter > 0; --__niter, (void) ++__first)
 	*__first = __gen();
       return __first;
     }
@@ -4362,6 +4506,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  Assignable?
   */
   template<typename _InputIterator, typename _OutputIterator>
+    _GLIBCXX20_CONSTEXPR
     inline _OutputIterator
     unique_copy(_InputIterator __first, _InputIterator __last,
 		_OutputIterator __result)
@@ -4403,6 +4548,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   */
   template<typename _InputIterator, typename _OutputIterator,
 	   typename _BinaryPredicate>
+    _GLIBCXX20_CONSTEXPR
     inline _OutputIterator
     unique_copy(_InputIterator __first, _InputIterator __last,
 		_OutputIterator __result,
@@ -4510,6 +4656,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  @p stable_partition() if this is needed.
   */
   template<typename _ForwardIterator, typename _Predicate>
+    _GLIBCXX20_CONSTEXPR
     inline _ForwardIterator
     partition(_ForwardIterator __first, _ForwardIterator __last,
 	      _Predicate   __pred)
@@ -4543,6 +4690,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  the range @p [__middle,__last) then *j<*i and *k<*i are both false.
   */
   template<typename _RandomAccessIterator>
+    _GLIBCXX20_CONSTEXPR
     inline void
     partial_sort(_RandomAccessIterator __first,
 		 _RandomAccessIterator __middle,
@@ -4581,6 +4729,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  are both false.
   */
   template<typename _RandomAccessIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline void
     partial_sort(_RandomAccessIterator __first,
 		 _RandomAccessIterator __middle,
@@ -4617,6 +4766,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  holds that *j < *i is false.
   */
   template<typename _RandomAccessIterator>
+    _GLIBCXX20_CONSTEXPR
     inline void
     nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth,
 		_RandomAccessIterator __last)
@@ -4656,6 +4806,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  holds that @p __comp(*j,*i) is false.
   */
   template<typename _RandomAccessIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline void
     nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth,
 		_RandomAccessIterator __last, _Compare __comp)
@@ -4693,6 +4844,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  @p stable_sort() if this is needed.
   */
   template<typename _RandomAccessIterator>
+    _GLIBCXX20_CONSTEXPR
     inline void
     sort(_RandomAccessIterator __first, _RandomAccessIterator __last)
     {
@@ -4723,6 +4875,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  @p stable_sort() if this is needed.
   */
   template<typename _RandomAccessIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline void
     sort(_RandomAccessIterator __first, _RandomAccessIterator __last,
 	 _Compare __comp)
@@ -4741,6 +4894,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
 
   template<typename _InputIterator1, typename _InputIterator2,
 	   typename _OutputIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     _OutputIterator
     __merge(_InputIterator1 __first1, _InputIterator1 __last1,
 	    _InputIterator2 __first2, _InputIterator2 __last2,
@@ -4772,8 +4926,8 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  @param  __last1   Another iterator.
    *  @param  __last2   Another iterator.
    *  @param  __result  An iterator pointing to the end of the merged range.
-   *  @return         An iterator pointing to the first element <em>not less
-   *                  than</em> @e val.
+   *  @return   An output iterator equal to @p __result + (__last1 - __first1)
+   *            + (__last2 - __first2).
    *
    *  Merges the ranges @p [__first1,__last1) and @p [__first2,__last2) into
    *  the sorted range @p [__result, __result + (__last1-__first1) +
@@ -4785,6 +4939,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   */
   template<typename _InputIterator1, typename _InputIterator2,
 	   typename _OutputIterator>
+    _GLIBCXX20_CONSTEXPR
     inline _OutputIterator
     merge(_InputIterator1 __first1, _InputIterator1 __last1,
 	  _InputIterator2 __first2, _InputIterator2 __last2,
@@ -4819,8 +4974,8 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  @param  __last2   Another iterator.
    *  @param  __result  An iterator pointing to the end of the merged range.
    *  @param  __comp    A functor to use for comparisons.
-   *  @return         An iterator pointing to the first element "not less
-   *                  than" @e val.
+   *  @return   An output iterator equal to @p __result + (__last1 - __first1)
+   *            + (__last2 - __first2).
    *
    *  Merges the ranges @p [__first1,__last1) and @p [__first2,__last2) into
    *  the sorted range @p [__result, __result + (__last1-__first1) +
@@ -4835,6 +4990,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   */
   template<typename _InputIterator1, typename _InputIterator2,
 	   typename _OutputIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline _OutputIterator
     merge(_InputIterator1 __first1, _InputIterator1 __last1,
 	  _InputIterator2 __first2, _InputIterator2 __last2,
@@ -4871,7 +5027,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
 	_DistanceType;
 
       typedef _Temporary_buffer<_RandomAccessIterator, _ValueType> _TmpBuf;
-      _TmpBuf __buf(__first, __last);
+      _TmpBuf __buf(__first, std::distance(__first, __last));
 
       if (__buf.begin() == 0)
 	std::__inplace_stable_sort(__first, __last, __comp);
@@ -4952,6 +5108,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   template<typename _InputIterator1, typename _InputIterator2,
 	   typename _OutputIterator,
 	   typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     _OutputIterator
     __set_union(_InputIterator1 __first1, _InputIterator1 __last1,
 		_InputIterator2 __first2, _InputIterator2 __last2,
@@ -4988,6 +5145,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  @param  __last1   End of first range.
    *  @param  __first2  Start of second range.
    *  @param  __last2   End of second range.
+   *  @param  __result  Start of output range.
    *  @return  End of the output range.
    *  @ingroup set_algorithms
    *
@@ -5001,6 +5159,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   */
   template<typename _InputIterator1, typename _InputIterator2,
 	   typename _OutputIterator>
+    _GLIBCXX20_CONSTEXPR
     inline _OutputIterator
     set_union(_InputIterator1 __first1, _InputIterator1 __last1,
 	      _InputIterator2 __first2, _InputIterator2 __last2,
@@ -5036,6 +5195,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  @param  __last1   End of first range.
    *  @param  __first2  Start of second range.
    *  @param  __last2   End of second range.
+   *  @param  __result  Start of output range.
    *  @param  __comp    The comparison functor.
    *  @return  End of the output range.
    *  @ingroup set_algorithms
@@ -5050,6 +5210,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   */
   template<typename _InputIterator1, typename _InputIterator2,
 	   typename _OutputIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline _OutputIterator
     set_union(_InputIterator1 __first1, _InputIterator1 __last1,
 	      _InputIterator2 __first2, _InputIterator2 __last2,
@@ -5081,6 +5242,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   template<typename _InputIterator1, typename _InputIterator2,
 	   typename _OutputIterator,
 	   typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     _OutputIterator
     __set_intersection(_InputIterator1 __first1, _InputIterator1 __last1,
 		       _InputIterator2 __first2, _InputIterator2 __last2,
@@ -5108,6 +5270,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  @param  __last1   End of first range.
    *  @param  __first2  Start of second range.
    *  @param  __last2   End of second range.
+   *  @param  __result  Start of output range.
    *  @return  End of the output range.
    *  @ingroup set_algorithms
    *
@@ -5120,6 +5283,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   */
   template<typename _InputIterator1, typename _InputIterator2,
 	   typename _OutputIterator>
+    _GLIBCXX20_CONSTEXPR
     inline _OutputIterator
     set_intersection(_InputIterator1 __first1, _InputIterator1 __last1,
 		     _InputIterator2 __first2, _InputIterator2 __last2,
@@ -5154,6 +5318,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  @param  __last1   End of first range.
    *  @param  __first2  Start of second range.
    *  @param  __last2   End of second range.
+   *  @param  __result  Start of output range.
    *  @param  __comp    The comparison functor.
    *  @return  End of the output range.
    *  @ingroup set_algorithms
@@ -5168,6 +5333,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   */
   template<typename _InputIterator1, typename _InputIterator2,
 	   typename _OutputIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline _OutputIterator
     set_intersection(_InputIterator1 __first1, _InputIterator1 __last1,
 		     _InputIterator2 __first2, _InputIterator2 __last2,
@@ -5197,6 +5363,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   template<typename _InputIterator1, typename _InputIterator2,
 	   typename _OutputIterator,
 	   typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     _OutputIterator
     __set_difference(_InputIterator1 __first1, _InputIterator1 __last1,
 		     _InputIterator2 __first2, _InputIterator2 __last2,
@@ -5226,6 +5393,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  @param  __last1   End of first range.
    *  @param  __first2  Start of second range.
    *  @param  __last2   End of second range.
+   *  @param  __result  Start of output range.
    *  @return  End of the output range.
    *  @ingroup set_algorithms
    *
@@ -5240,6 +5408,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   */
   template<typename _InputIterator1, typename _InputIterator2,
 	   typename _OutputIterator>
+    _GLIBCXX20_CONSTEXPR
     inline _OutputIterator
     set_difference(_InputIterator1 __first1, _InputIterator1 __last1,
 		   _InputIterator2 __first2, _InputIterator2 __last2,
@@ -5274,6 +5443,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  @param  __last1   End of first range.
    *  @param  __first2  Start of second range.
    *  @param  __last2   End of second range.
+   *  @param  __result  Start of output range.
    *  @param  __comp    The comparison functor.
    *  @return  End of the output range.
    *  @ingroup set_algorithms
@@ -5290,6 +5460,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   */
   template<typename _InputIterator1, typename _InputIterator2,
 	   typename _OutputIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline _OutputIterator
     set_difference(_InputIterator1 __first1, _InputIterator1 __last1,
 		   _InputIterator2 __first2, _InputIterator2 __last2,
@@ -5319,6 +5490,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   template<typename _InputIterator1, typename _InputIterator2,
 	   typename _OutputIterator,
 	   typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     _OutputIterator
     __set_symmetric_difference(_InputIterator1 __first1,
 			       _InputIterator1 __last1,
@@ -5356,6 +5528,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  @param  __last1   End of first range.
    *  @param  __first2  Start of second range.
    *  @param  __last2   End of second range.
+   *  @param  __result  Start of output range.
    *  @return  End of the output range.
    *  @ingroup set_algorithms
    *
@@ -5368,6 +5541,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   */
   template<typename _InputIterator1, typename _InputIterator2,
 	   typename _OutputIterator>
+    _GLIBCXX20_CONSTEXPR
     inline _OutputIterator
     set_symmetric_difference(_InputIterator1 __first1, _InputIterator1 __last1,
 			     _InputIterator2 __first2, _InputIterator2 __last2,
@@ -5404,6 +5578,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
    *  @param  __last1   End of first range.
    *  @param  __first2  Start of second range.
    *  @param  __last2   End of second range.
+   *  @param  __result  Start of output range.
    *  @param  __comp    The comparison functor.
    *  @return  End of the output range.
    *  @ingroup set_algorithms
@@ -5418,6 +5593,7 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
   */
   template<typename _InputIterator1, typename _InputIterator2,
 	   typename _OutputIterator, typename _Compare>
+    _GLIBCXX20_CONSTEXPR
     inline _OutputIterator
     set_symmetric_difference(_InputIterator1 __first1, _InputIterator1 __last1,
 			     _InputIterator2 __first2, _InputIterator2 __last2,
@@ -5576,7 +5752,133 @@ _GLIBCXX_BEGIN_NAMESPACE_ALGO
 				__gnu_cxx::__ops::__iter_comp_iter(__comp));
     }
 
+#if __cplusplus >= 201402L
+  /// Reservoir sampling algorithm.
+  template<typename _InputIterator, typename _RandomAccessIterator,
+           typename _Size, typename _UniformRandomBitGenerator>
+    _RandomAccessIterator
+    __sample(_InputIterator __first, _InputIterator __last, input_iterator_tag,
+	     _RandomAccessIterator __out, random_access_iterator_tag,
+	     _Size __n, _UniformRandomBitGenerator&& __g)
+    {
+      using __distrib_type = uniform_int_distribution<_Size>;
+      using __param_type = typename __distrib_type::param_type;
+      __distrib_type __d{};
+      _Size __sample_sz = 0;
+      while (__first != __last && __sample_sz != __n)
+	{
+	  __out[__sample_sz++] = *__first;
+	  ++__first;
+	}
+      for (auto __pop_sz = __sample_sz; __first != __last;
+	  ++__first, (void) ++__pop_sz)
+	{
+	  const auto __k = __d(__g, __param_type{0, __pop_sz});
+	  if (__k < __n)
+	    __out[__k] = *__first;
+	}
+      return __out + __sample_sz;
+    }
+
+  /// Selection sampling algorithm.
+  template<typename _ForwardIterator, typename _OutputIterator, typename _Cat,
+           typename _Size, typename _UniformRandomBitGenerator>
+    _OutputIterator
+    __sample(_ForwardIterator __first, _ForwardIterator __last,
+	     forward_iterator_tag,
+	     _OutputIterator __out, _Cat,
+	     _Size __n, _UniformRandomBitGenerator&& __g)
+    {
+      using __distrib_type = uniform_int_distribution<_Size>;
+      using __param_type = typename __distrib_type::param_type;
+      using _USize = make_unsigned_t<_Size>;
+      using _Gen = remove_reference_t<_UniformRandomBitGenerator>;
+      using __uc_type = common_type_t<typename _Gen::result_type, _USize>;
+
+      __distrib_type __d{};
+      _Size __unsampled_sz = std::distance(__first, __last);
+      __n = std::min(__n, __unsampled_sz);
+
+      // If possible, we use __gen_two_uniform_ints to efficiently produce
+      // two random numbers using a single distribution invocation:
+
+      const __uc_type __urngrange = __g.max() - __g.min();
+      if (__urngrange / __uc_type(__unsampled_sz) >= __uc_type(__unsampled_sz))
+        // I.e. (__urngrange >= __unsampled_sz * __unsampled_sz) but without
+	// wrapping issues.
+        {
+	  while (__n != 0 && __unsampled_sz >= 2)
+	    {
+	      const pair<_Size, _Size> __p =
+		__gen_two_uniform_ints(__unsampled_sz, __unsampled_sz - 1, __g);
+
+	      --__unsampled_sz;
+	      if (__p.first < __n)
+		{
+		  *__out++ = *__first;
+		  --__n;
+		}
+
+	      ++__first;
+
+	      if (__n == 0) break;
+
+	      --__unsampled_sz;
+	      if (__p.second < __n)
+		{
+		  *__out++ = *__first;
+		  --__n;
+		}
+
+	      ++__first;
+	    }
+        }
+
+      // The loop above is otherwise equivalent to this one-at-a-time version:
+
+      for (; __n != 0; ++__first)
+	if (__d(__g, __param_type{0, --__unsampled_sz}) < __n)
+	  {
+	    *__out++ = *__first;
+	    --__n;
+	  }
+      return __out;
+    }
+
+#if __cplusplus > 201402L
+#define __cpp_lib_sample 201603
+  /// Take a random sample from a population.
+  template<typename _PopulationIterator, typename _SampleIterator,
+           typename _Distance, typename _UniformRandomBitGenerator>
+    _SampleIterator
+    sample(_PopulationIterator __first, _PopulationIterator __last,
+	   _SampleIterator __out, _Distance __n,
+	   _UniformRandomBitGenerator&& __g)
+    {
+      using __pop_cat = typename
+	std::iterator_traits<_PopulationIterator>::iterator_category;
+      using __samp_cat = typename
+	std::iterator_traits<_SampleIterator>::iterator_category;
+
+      static_assert(
+	  __or_<is_convertible<__pop_cat, forward_iterator_tag>,
+		is_convertible<__samp_cat, random_access_iterator_tag>>::value,
+	  "output range must use a RandomAccessIterator when input range"
+	  " does not meet the ForwardIterator requirements");
+
+      static_assert(is_integral<_Distance>::value,
+		    "sample size must be an integer type");
+
+      typename iterator_traits<_PopulationIterator>::difference_type __d = __n;
+      return _GLIBCXX_STD_A::
+	__sample(__first, __last, __pop_cat{}, __out, __samp_cat{}, __d,
+		 std::forward<_UniformRandomBitGenerator>(__g));
+    }
+#endif // C++17
+#endif // C++14
+
 _GLIBCXX_END_NAMESPACE_ALGO
+_GLIBCXX_END_NAMESPACE_VERSION
 } // namespace std
 
 #endif /* _STL_ALGO_H */

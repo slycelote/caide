@@ -1,6 +1,6 @@
 // Special functions -*- C++ -*-
 
-// Copyright (C) 2006-2016 Free Software Foundation, Inc.
+// Copyright (C) 2006-2020 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -44,7 +44,9 @@
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
-#if __STDCPP_WANT_MATH_SPEC_FUNCS__
+_GLIBCXX_BEGIN_NAMESPACE_VERSION
+
+#if _GLIBCXX_USE_STD_SPEC_FUNCS
 #elif defined(_GLIBCXX_TR1_CMATH)
 namespace tr1
 {
@@ -56,8 +58,6 @@ namespace tr1
   // Implementation-space details.
   namespace __detail
   {
-  _GLIBCXX_BEGIN_NAMESPACE_VERSION
-
     /**
      *   @brief Return the Carlson elliptic function @f$ R_F(x,y,z) @f$
      *          of the first kind.
@@ -370,18 +370,17 @@ namespace tr1
               __zn = __c0 * (__zn + __lambda);
             }
 
-	  // Note: __ea is an SPU badname.
-          _Tp __eaa = __xndev * __yndev;
+          _Tp __ea = __xndev * __yndev;
           _Tp __eb = __zndev * __zndev;
-          _Tp __ec = __eaa - __eb;
-          _Tp __ed = __eaa - _Tp(6) * __eb;
+          _Tp __ec = __ea - __eb;
+          _Tp __ed = __ea - _Tp(6) * __eb;
           _Tp __ef = __ed + __ec + __ec;
           _Tp __s1 = __ed * (-__c1 + __c3 * __ed
                                    / _Tp(3) - _Tp(3) * __c4 * __zndev * __ef
                                    / _Tp(2));
           _Tp __s2 = __zndev
                    * (__c2 * __ef
-                    + __zndev * (-__c3 * __ec - __zndev * __c4 - __eaa));
+                    + __zndev * (-__c3 * __ec - __zndev * __c4 - __ea));
 
           return _Tp(3) * __sigma + __power4 * (_Tp(1) + __s1 + __s2)
                                         / (__mu * std::sqrt(__mu));
@@ -634,17 +633,16 @@ namespace tr1
               __pn = __c0 * (__pn + __lambda);
             }
 
-	  // Note: __ea is an SPU badname.
-          _Tp __eaa = __xndev * (__yndev + __zndev) + __yndev * __zndev;
+          _Tp __ea = __xndev * (__yndev + __zndev) + __yndev * __zndev;
           _Tp __eb = __xndev * __yndev * __zndev;
           _Tp __ec = __pndev * __pndev;
-          _Tp __e2 = __eaa - _Tp(3) * __ec;
-          _Tp __e3 = __eb + _Tp(2) * __pndev * (__eaa - __ec);
+          _Tp __e2 = __ea - _Tp(3) * __ec;
+          _Tp __e3 = __eb + _Tp(2) * __pndev * (__ea - __ec);
           _Tp __s1 = _Tp(1) + __e2 * (-__c1 + _Tp(3) * __c3 * __e2 / _Tp(4)
                             - _Tp(3) * __c4 * __e3 / _Tp(2));
           _Tp __s2 = __eb * (__c2 / _Tp(2)
                    + __pndev * (-__c3 - __c3 + __pndev * __c4));
-          _Tp __s3 = __pndev * __eaa * (__c2 - __pndev * __c3)
+          _Tp __s3 = __pndev * __ea * (__c2 - __pndev * __c3)
                    - __c2 * __pndev * __ec;
 
           return _Tp(3) * __sigma + __power4 * (__s1 + __s2 + __s3)
@@ -685,8 +683,8 @@ namespace tr1
           const _Tp __kk = __k * __k;
 
           return __ellint_rf(_Tp(0), _Tp(1) - __kk, _Tp(1))
-               - __nu
-               * __ellint_rj(_Tp(0), _Tp(1) - __kk, _Tp(1), _Tp(1) + __nu)
+               + __nu
+               * __ellint_rj(_Tp(0), _Tp(1) - __kk, _Tp(1), _Tp(1) - __nu)
                / _Tp(3);
         }
     }
@@ -735,9 +733,9 @@ namespace tr1
 
           const _Tp __Pi = __s
                          * __ellint_rf(__cc, _Tp(1) - __kk * __ss, _Tp(1))
-                         - __nu * __sss
+                         + __nu * __sss
                          * __ellint_rj(__cc, _Tp(1) - __kk * __ss, _Tp(1),
-                                       _Tp(1) + __nu * __ss) / _Tp(3);
+                                       _Tp(1) - __nu * __ss) / _Tp(3);
 
           if (__n == 0)
             return __Pi;
@@ -745,12 +743,12 @@ namespace tr1
             return __Pi + _Tp(2) * __n * __comp_ellint_3(__k, __nu);
         }
     }
-
-  _GLIBCXX_END_NAMESPACE_VERSION
   } // namespace __detail
-#if ! __STDCPP_WANT_MATH_SPEC_FUNCS__ && defined(_GLIBCXX_TR1_CMATH)
+#if ! _GLIBCXX_USE_STD_SPEC_FUNCS && defined(_GLIBCXX_TR1_CMATH)
 } // namespace tr1
 #endif
+
+_GLIBCXX_END_NAMESPACE_VERSION
 }
 
 #endif // _GLIBCXX_TR1_ELL_INTEGRAL_TCC

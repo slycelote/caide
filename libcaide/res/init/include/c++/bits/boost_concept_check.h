@@ -1,6 +1,6 @@
 // -*- C++ -*-
 
-// Copyright (C) 2004-2016 Free Software Foundation, Inc.
+// Copyright (C) 2004-2020 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -48,13 +48,16 @@ namespace __gnu_cxx _GLIBCXX_VISIBILITY(default)
 {
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-local-typedefs"
+
 #define _IsUnused __attribute__ ((__unused__))
 
 // When the C-C code is in use, we would like this function to do as little
 // as possible at runtime, use as few resources as possible, and hopefully
 // be elided out of existence... hmmm.
 template <class _Concept>
-inline void __function_requires()
+_GLIBCXX14_CONSTEXPR inline void __function_requires()
 {
   void (_Concept::*__x)() _IsUnused = &_Concept::__constraints;
 }
@@ -783,6 +786,7 @@ struct _Aux_require_same<_Tp,_Tp> { typedef _Tp _Type; };
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace
 
+#pragma GCC diagnostic pop
 #undef _IsUnused
 
 #endif // _GLIBCXX_BOOST_CONCEPT_CHECK

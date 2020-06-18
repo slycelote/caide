@@ -1,6 +1,6 @@
 // ABI Support -*- C++ -*-
 
-// Copyright (C) 2000-2016 Free Software Foundation, Inc.
+// Copyright (C) 2000-2020 Free Software Foundation, Inc.
 //
 // This file is part of GCC.
 //
@@ -49,10 +49,7 @@
 #include <bits/c++config.h>
 #include <bits/cxxabi_tweaks.h>
 #include <bits/cxxabi_forced.h>
-
-#ifndef _GLIBCXX_CDTOR_CALLABI
-#define _GLIBCXX_CDTOR_CALLABI
-#endif
+#include <bits/cxxabi_init_exception.h>
 
 #ifdef __cplusplus
 namespace __cxxabiv1
@@ -168,10 +165,11 @@ namespace __cxxabiv1
    *  in that case, the demangled name is placed in a region of memory
    *  allocated with malloc.
    *
-   *  @param __length If @a __length is non-NULL, the length of the
+   *  @param __length If @a __length is non-null, the length of the
    *  buffer containing the demangled name is placed in @a *__length.
    *
-   *  @param __status @a *__status is set to one of the following values:
+   *  @param __status If @a __status is non-null, @a *__status is set to
+   *  one of the following values:
    *   0: The demangling operation succeeded.
    *  -1: A memory allocation failure occurred.
    *  -2: @a mangled_name is not a valid name under the C++ ABI mangling rules.
@@ -185,7 +183,7 @@ namespace __cxxabiv1
    *  with GNU extensions. For example, this function is used in
    *  __gnu_cxx::__verbose_terminate_handler.
    *
-   *  See http://gcc.gnu.org/onlinedocs/libstdc++/manual/bk01pt12ch39.html
+   *  See https://gcc.gnu.org/onlinedocs/libstdc++/manual/ext_demangling.html
    *  for other examples of use.
    *
    *  @note The same demangling functionality is available via
@@ -282,7 +280,8 @@ namespace __cxxabiv1
 	__restrict_mask = 0x4,
 	__incomplete_mask = 0x8,
 	__incomplete_class_mask = 0x10,
-	__transaction_safe_mask = 0x20
+	__transaction_safe_mask = 0x20,
+	__noexcept_mask = 0x40
       };
 
   protected:
@@ -608,10 +607,6 @@ namespace __cxxabiv1
   __cxa_eh_globals*
   __cxa_get_globals_fast() _GLIBCXX_NOTHROW __attribute__ ((__const__));
 
-  // Allocate memory for the primary exception plus the thrown object.
-  void*
-  __cxa_allocate_exception(size_t) _GLIBCXX_NOTHROW;
-
   // Free the space allocated for the primary exception.
   void 
   __cxa_free_exception(void*) _GLIBCXX_NOTHROW;
@@ -689,8 +684,9 @@ namespace __gnu_cxx
    *  @brief Exception thrown by __cxa_guard_acquire.
    *  @ingroup exceptions
    *
-   *  6.7[stmt.dcl]/4: If control re-enters the declaration (recursively)
-   *  while the object is being initialized, the behavior is undefined.
+   *  C++ 2011 6.7 [stmt.dcl]/4: If control re-enters the declaration
+   *  recursively while the variable is being initialized, the behavior
+   *  is undefined.
    *
    *  Since we already have a library function to handle locking, we might
    *  as well check for this situation and throw an exception.
@@ -700,8 +696,8 @@ namespace __gnu_cxx
   class recursive_init_error: public std::exception
   {
   public:
-    recursive_init_error() throw() { }
-    virtual ~recursive_init_error() throw ();
+    recursive_init_error() _GLIBCXX_NOTHROW;
+    virtual ~recursive_init_error() _GLIBCXX_NOTHROW;
   };
 }
 #endif // __cplusplus

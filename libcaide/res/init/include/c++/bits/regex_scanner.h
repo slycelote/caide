@@ -1,6 +1,6 @@
 // class template regex -*- C++ -*-
 
-// Copyright (C) 2013-2016 Free Software Foundation, Inc.
+// Copyright (C) 2013-2020 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -30,10 +30,10 @@
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
-namespace __detail
-{
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
+namespace __detail
+{
   /**
    * @addtogroup regex-detail
    * @{
@@ -43,7 +43,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   {
   public:
     /// Token types returned from the scanner.
-    enum _TokenT
+    enum _TokenT : unsigned
     {
       _S_token_anychar,
       _S_token_ord_char,
@@ -73,7 +73,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       _S_token_comma,
       _S_token_dup_count,
       _S_token_eof,
-      _S_token_unknown
+      _S_token_bracket_dash,
+      _S_token_unknown = -1u
     };
 
   protected:
@@ -264,8 +265,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     };
 
  //@} regex-detail
-_GLIBCXX_END_NAMESPACE_VERSION
 } // namespace __detail
+_GLIBCXX_END_NAMESPACE_VERSION
 } // namespace std
 
 #include <bits/regex_scanner.tcc>

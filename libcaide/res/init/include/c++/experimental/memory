@@ -1,6 +1,6 @@
 // <experimental/memory> -*- C++ -*-
 
-// Copyright (C) 2015-2016 Free Software Foundation, Inc.
+// Copyright (C) 2015-2020 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -24,6 +24,7 @@
 
 /** @file experimental/memory
  *  This is a TS C++ Library header.
+ *  @ingroup libfund-ts
  */
 
 //
@@ -35,24 +36,22 @@
 
 #pragma GCC system_header
 
-#if __cplusplus <= 201103L
-# include <bits/c++14_warning.h>
-#else
+#if __cplusplus >= 201402L
 
 #include <memory>
 #include <type_traits>
 #include <utility>
-#include <functional>
 #include <experimental/bits/shared_ptr.h>
+#include <bits/functional_hash.h>
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
+_GLIBCXX_BEGIN_NAMESPACE_VERSION
+
 namespace experimental
 {
 inline namespace fundamentals_v2
 {
-_GLIBCXX_BEGIN_NAMESPACE_VERSION
-
 #define __cpp_lib_experimental_observer_ptr 201411
 
   template <typename _Tp>
@@ -65,12 +64,12 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       using __reference = add_lvalue_reference_t<_Tp>; // exposition-only
 
       // 3.2.2, observer_ptr constructors
-      // default c’tor
+      // default c'tor
       constexpr observer_ptr() noexcept
       : __t()
       { }
 
-      // pointer-accepting c’tors
+      // pointer-accepting c'tors
       constexpr observer_ptr(nullptr_t) noexcept
       : __t()
       { }
@@ -79,7 +78,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       : __t(__p)
       { }
 
-      // copying c’tors (in addition to compiler-generated copy c’tor)
+      // copying c'tors (in addition to compiler-generated copy c'tor)
       template <typename _Up,
 		typename = typename enable_if<
 		  is_convertible<typename add_pointer<_Up>::type, __pointer
@@ -231,8 +230,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     {
       return !(__p1 < __p2);
     }
-
-_GLIBCXX_END_NAMESPACE_VERSION
 } // namespace fundamentals_v2
 } // namespace experimental
 
@@ -250,6 +247,8 @@ template <typename _Tp>
     }
   };
 
+
+_GLIBCXX_END_NAMESPACE_VERSION
 } // namespace std
 
 #endif // __cplusplus <= 201103L

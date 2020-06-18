@@ -1,6 +1,6 @@
 // Components for manipulating sequences of characters -*- C++ -*-
 
-// Copyright (C) 1997-2016 Free Software Foundation, Inc.
+// Copyright (C) 1997-2020 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -351,7 +351,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       if (__size < __n)
 	this->append(__n - __size, __c);
       else if (__n < __size)
-	this->_M_erase(__n, __size - __n);
+	this->_M_set_length(__n);
     }
 
   template<typename _CharT, typename _Traits, typename _Alloc>
@@ -381,7 +381,9 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 			  _InputIterator __k1, _InputIterator __k2,
 			  std::__false_type)
       {
-	const basic_string __s(__k1, __k2);
+	// _GLIBCXX_RESOLVE_LIB_DEFECTS
+	// 2788. unintentionally require a default constructible allocator
+	const basic_string __s(__k1, __k2, this->get_allocator());
 	const size_type __n1 = __i2 - __i1;
 	return _M_replace(__i1 - begin(), __n1, __s._M_data(),
 			  __s.size());
@@ -617,6 +619,16 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     basic_string<_CharT, _Traits, _Alloc>::
     basic_string(const _Alloc& __a)
     : _M_dataplus(_S_construct(size_type(), _CharT(), __a), __a)
+    { }
+
+  template<typename _CharT, typename _Traits, typename _Alloc>
+    basic_string<_CharT, _Traits, _Alloc>::
+    basic_string(const basic_string& __str, size_type __pos, const _Alloc& __a)
+    : _M_dataplus(_S_construct(__str._M_data()
+			       + __str._M_check(__pos,
+						"basic_string::basic_string"),
+			       __str._M_data() + __str._M_limit(__pos, npos)
+			       + __pos, __a), __a)
     { }
 
   template<typename _CharT, typename _Traits, typename _Alloc>
@@ -957,6 +969,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     void
     basic_string<_CharT, _Traits, _Alloc>::
     swap(basic_string& __s)
+    _GLIBCXX_NOEXCEPT_IF(allocator_traits<_Alloc>::is_always_equal::value)
     {
       if (_M_rep()->_M_is_leaked())
 	_M_rep()->_M_set_sharable();
@@ -1150,8 +1163,12 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       __glibcxx_requires_string(__lhs);
       typedef basic_string<_CharT, _Traits, _Alloc> __string_type;
       typedef typename __string_type::size_type	  __size_type;
+      typedef typename __gnu_cxx::__alloc_traits<_Alloc>::template
+	rebind<_CharT>::other _Char_alloc_type;
+      typedef __gnu_cxx::__alloc_traits<_Char_alloc_type> _Alloc_traits;
       const __size_type __len = _Traits::length(__lhs);
-      __string_type __str;
+      __string_type __str(_Alloc_traits::_S_select_on_copy(
+          __rhs.get_allocator()));
       __str.reserve(__len + __rhs.size());
       __str.append(__lhs, __len);
       __str.append(__rhs);
@@ -1164,7 +1181,11 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     {
       typedef basic_string<_CharT, _Traits, _Alloc> __string_type;
       typedef typename __string_type::size_type	  __size_type;
-      __string_type __str;
+      typedef typename __gnu_cxx::__alloc_traits<_Alloc>::template
+	rebind<_CharT>::other _Char_alloc_type;
+      typedef __gnu_cxx::__alloc_traits<_Char_alloc_type> _Alloc_traits;
+      __string_type __str(_Alloc_traits::_S_select_on_copy(
+          __rhs.get_allocator()));
       const __size_type __len = __rhs.size();
       __str.reserve(__len + 1);
       __str.append(__size_type(1), __lhs);
@@ -1176,21 +1197,34 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     typename basic_string<_CharT, _Traits, _Alloc>::size_type
     basic_string<_CharT, _Traits, _Alloc>::
     find(const _CharT* __s, size_type __pos, size_type __n) const
+    _GLIBCXX_NOEXCEPT
     {
       __glibcxx_requires_string_len(__s, __n);
       const size_type __size = this->size();
-      const _CharT* __data = _M_data();
 
       if (__n == 0)
 	return __pos <= __size ? __pos : npos;
+      if (__pos >= __size)
+	return npos;
 
-      if (__n <= __size)
+      const _CharT __elem0 = __s[0];
+      const _CharT* const __data = data();
+      const _CharT* __first = __data + __pos;
+      const _CharT* const __last = __data + __size;
+      size_type __len = __size - __pos;
+
+      while (__len >= __n)
 	{
-	  for (; __pos <= __size - __n; ++__pos)
-	    if (traits_type::eq(__data[__pos], __s[0])
-		&& traits_type::compare(__data + __pos + 1,
-					__s + 1, __n - 1) == 0)
-	      return __pos;
+	  // Find the first occurrence of __elem0:
+	  __first = traits_type::find(__first, __len - __n + 1, __elem0);
+	  if (!__first)
+	    return npos;
+	  // Compare the full strings from the first occurrence of __elem0.
+	  // We already know that __first[0] == __s[0] but compare them again
+	  // anyway because __s is probably aligned, which helps memcmp.
+	  if (traits_type::compare(__first, __s, __n) == 0)
+	    return __first - __data;
+	  __len = __last - ++__first;
 	}
       return npos;
     }
@@ -1217,6 +1251,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     typename basic_string<_CharT, _Traits, _Alloc>::size_type
     basic_string<_CharT, _Traits, _Alloc>::
     rfind(const _CharT* __s, size_type __pos, size_type __n) const
+    _GLIBCXX_NOEXCEPT
     {
       __glibcxx_requires_string_len(__s, __n);
       const size_type __size = this->size();
@@ -1255,6 +1290,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     typename basic_string<_CharT, _Traits, _Alloc>::size_type
     basic_string<_CharT, _Traits, _Alloc>::
     find_first_of(const _CharT* __s, size_type __pos, size_type __n) const
+    _GLIBCXX_NOEXCEPT
     {
       __glibcxx_requires_string_len(__s, __n);
       for (; __n && __pos < this->size(); ++__pos)
@@ -1270,6 +1306,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     typename basic_string<_CharT, _Traits, _Alloc>::size_type
     basic_string<_CharT, _Traits, _Alloc>::
     find_last_of(const _CharT* __s, size_type __pos, size_type __n) const
+    _GLIBCXX_NOEXCEPT
     {
       __glibcxx_requires_string_len(__s, __n);
       size_type __size = this->size();
@@ -1291,6 +1328,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     typename basic_string<_CharT, _Traits, _Alloc>::size_type
     basic_string<_CharT, _Traits, _Alloc>::
     find_first_not_of(const _CharT* __s, size_type __pos, size_type __n) const
+    _GLIBCXX_NOEXCEPT
     {
       __glibcxx_requires_string_len(__s, __n);
       for (; __pos < this->size(); ++__pos)
@@ -1314,6 +1352,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     typename basic_string<_CharT, _Traits, _Alloc>::size_type
     basic_string<_CharT, _Traits, _Alloc>::
     find_last_not_of(const _CharT* __s, size_type __pos, size_type __n) const
+    _GLIBCXX_NOEXCEPT
     {
       __glibcxx_requires_string_len(__s, __n);
       size_type __size = this->size();
@@ -1387,7 +1426,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   template<typename _CharT, typename _Traits, typename _Alloc>
     int
     basic_string<_CharT, _Traits, _Alloc>::
-    compare(const _CharT* __s) const
+    compare(const _CharT* __s) const _GLIBCXX_NOEXCEPT
     {
       __glibcxx_requires_string(__s);
       const size_type __size = this->size();
@@ -1569,8 +1608,21 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   // Inhibit implicit instantiations for required instantiations,
   // which are defined via explicit instantiations elsewhere.
-#if _GLIBCXX_EXTERN_TEMPLATE > 0
+#if _GLIBCXX_EXTERN_TEMPLATE
+  // The explicit instantiation definitions in src/c++11/string-inst.cc and
+  // src/c++17/string-inst.cc only instantiate the members required for C++17
+  // and earlier standards (so not C++20's starts_with and ends_with).
+  // Suppress the explicit instantiation declarations for C++20, so C++20
+  // code will implicitly instantiate std::string and std::wstring as needed.
+# if __cplusplus <= 201703L && _GLIBCXX_EXTERN_TEMPLATE > 0
   extern template class basic_string<char>;
+# elif ! _GLIBCXX_USE_CXX11_ABI
+  // Still need to prevent implicit instantiation of the COW empty rep,
+  // to ensure the definition in libstdc++.so is unique (PR 86138).
+  extern template basic_string<char>::size_type
+    basic_string<char>::_Rep::_S_empty_rep_storage[];
+# endif
+
   extern template
     basic_istream<char>&
     operator>>(basic_istream<char>&, string&);
@@ -1585,7 +1637,13 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     getline(basic_istream<char>&, string&);
 
 #ifdef _GLIBCXX_USE_WCHAR_T
+# if __cplusplus <= 201703L && _GLIBCXX_EXTERN_TEMPLATE > 0
   extern template class basic_string<wchar_t>;
+# elif ! _GLIBCXX_USE_CXX11_ABI
+  extern template basic_string<wchar_t>::size_type
+    basic_string<wchar_t>::_Rep::_S_empty_rep_storage[];
+# endif
+
   extern template
     basic_istream<wchar_t>&
     operator>>(basic_istream<wchar_t>&, wstring&);
@@ -1598,8 +1656,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   extern template
     basic_istream<wchar_t>&
     getline(basic_istream<wchar_t>&, wstring&);
-#endif
-#endif
+#endif // _GLIBCXX_USE_WCHAR_T
+#endif // _GLIBCXX_EXTERN_TEMPLATE
 
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace std

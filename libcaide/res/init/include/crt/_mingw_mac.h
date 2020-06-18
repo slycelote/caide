@@ -11,8 +11,9 @@
 #define __MINGW64_STRINGIFY(x) \
   __STRINGIFY(x)
 
-#define __MINGW64_VERSION_MAJOR 5
+#define __MINGW64_VERSION_MAJOR 7
 #define __MINGW64_VERSION_MINOR 0
+#define __MINGW64_VERSION_BUGFIX 0
 
 /* This macro holds an monotonic increasing value, which indicates
    a specific fix/patch is present on trunk.  This value isn't related to
@@ -25,7 +26,9 @@
 #define __MINGW64_VERSION_STR	\
   __MINGW64_STRINGIFY(__MINGW64_VERSION_MAJOR) \
   "." \
-  __MINGW64_STRINGIFY(__MINGW64_VERSION_MINOR)
+  __MINGW64_STRINGIFY(__MINGW64_VERSION_MINOR) \
+  "." \
+  __MINGW64_STRINGIFY(__MINGW64_VERSION_BUGFIX)
 
 #define __MINGW64_VERSION_STATE "alpha"
 
@@ -47,10 +50,10 @@
 #    define _M_IX86 400
 #  elif defined(__i586__)
 #    define _M_IX86 500
-#  else
-     /* This gives wrong (600 instead of 300) value if -march=i386 is specified
-      but we cannot check for__i386__ as it is defined for all 32-bit CPUs. */
+#  elif defined(__i686__)
 #    define _M_IX86 600
+#  else
+#    define _M_IX86 300
 #  endif
 #endif /* if defined(_X86_) && !defined(_M_IX86) && !defined(_M_IA64) ... */
 
@@ -75,6 +78,13 @@
 #  endif
 #  ifndef _M_ARM_NT
 #    define _M_ARM_NT 1
+#  endif
+#endif
+
+#if defined(__aarch64__) && !defined(_M_ARM64)
+#  define _M_ARM64 1
+#  ifndef _ARM64_
+#    define _ARM64_ 1
 #  endif
 #endif
 
@@ -116,6 +126,9 @@
 #  define __MINGW_USYMBOL(sym) _##sym
 #  define __MINGW_LSYMBOL(sym) sym
 #endif /* if __MINGW_USE_UNDERSCORE_PREFIX == 0 */
+
+#define __MINGW_ASM_CALL(func) __asm__(__MINGW64_STRINGIFY(__MINGW_USYMBOL(func)))
+#define __MINGW_ASM_CRT_CALL(func) __asm__(__STRINGIFY(func))
 
 #ifndef __PTRDIFF_TYPE__
 #  ifdef _WIN64
@@ -267,14 +280,82 @@
   __attribute__((__format__(gnu_scanf, __format,__args)))
 
 #undef __mingw_ovr
+#undef __mingw_static_ovr
 
 #ifdef __cplusplus
 #  define __mingw_ovr  inline __cdecl
+#  define __mingw_static_ovr static __mingw_ovr
 #elif defined (__GNUC__)
 #  define __mingw_ovr static \
       __attribute__ ((__unused__)) __inline__ __cdecl
+#  define __mingw_static_ovr __mingw_ovr
 #else
 #  define __mingw_ovr static __cdecl
+#  define __mingw_static_ovr __mingw_ovr
 #endif /* __cplusplus */
+
+#if __MINGW_GNUC_PREREQ(4, 3) && !defined(__clang__)
+#  define __mingw_attribute_artificial \
+     __attribute__((__artificial__))
+#else
+#  define __mingw_attribute_artificial
+#endif
+
+#if _FORTIFY_SOURCE > 0 && __OPTIMIZE__ > 0 && __MINGW_GNUC_PREREQ(4, 1)
+#  if _FORTIFY_SOURCE > 1
+#    define __MINGW_FORTIFY_LEVEL 2
+#  else
+#    define __MINGW_FORTIFY_LEVEL 1
+#  endif
+#else
+#  define __MINGW_FORTIFY_LEVEL 0
+#endif
+
+#if __MINGW_FORTIFY_LEVEL > 0
+   /* Calling an function with __attribute__((__warning__("...")))
+      from a system include __inline__ function does not print
+      a warning unless caller has __attribute__((__artificial__)). */
+#  define __mingw_bos_declare \
+     void __cdecl __chk_fail(void) __attribute__((__noreturn__)); \
+     void __cdecl __mingw_chk_fail_warn(void) __MINGW_ASM_CALL(__chk_fail) \
+     __attribute__((__noreturn__)) \
+     __attribute__((__warning__("Buffer overflow detected")))
+#  define __mingw_bos(p, maxtype) \
+     __builtin_object_size((p), ((maxtype) > 0) && (__MINGW_FORTIFY_LEVEL > 1))
+#  define __mingw_bos_known(p) \
+     (__mingw_bos(p, 0) != (size_t)-1)
+#  define __mingw_bos_cond_chk(c) \
+     (__builtin_expect((c), 1) ? (void)0 : __chk_fail())
+#  define __mingw_bos_ptr_chk(p, n, maxtype) \
+     __mingw_bos_cond_chk(!__mingw_bos_known(p) || __mingw_bos(p, maxtype) >= (size_t)(n))
+#  define __mingw_bos_ptr_chk_warn(p, n, maxtype) \
+     (__mingw_bos_known(p) && __builtin_constant_p((n)) && __mingw_bos(p, maxtype) < (size_t)(n) \
+     ? __mingw_chk_fail_warn() : __mingw_bos_ptr_chk(p, n, maxtype))
+#  define __mingw_bos_ovr __mingw_ovr \
+     __attribute__((__always_inline__)) \
+     __mingw_attribute_artificial
+#  define __mingw_bos_extern_ovr extern __inline__ __cdecl \
+     __attribute__((__always_inline__, __gnu_inline__)) \
+     __mingw_attribute_artificial
+#else
+#  define __mingw_bos_ovr __mingw_ovr
+#endif /* __MINGW_FORTIFY_LEVEL > 0 */
+
+/* If _FORTIFY_SOURCE is enabled, some inline functions may use
+   __builtin_va_arg_pack().  GCC may report an error if the address
+   of such a function is used.  Set _FORTIFY_VA_ARG=0 in this case.  */
+#if __MINGW_FORTIFY_LEVEL > 0 && __MINGW_GNUC_PREREQ(4, 3) && !defined(__clang__) \
+    && (!defined(_FORTIFY_VA_ARG) || _FORTIFY_VA_ARG > 0)
+#  define __MINGW_FORTIFY_VA_ARG 1
+#else
+#  define __MINGW_FORTIFY_VA_ARG 0
+#endif
+
+/* Enable workaround for ABI incompatibility on affected platforms */
+#ifndef WIDL_EXPLICIT_AGGREGATE_RETURNS
+#if defined(__GNUC__) && defined(__cplusplus) && (defined(__x86_64__) || defined(__i386__))
+#define  WIDL_EXPLICIT_AGGREGATE_RETURNS
+#endif
+#endif
 
 #endif	/* _INC_CRTDEFS_MACRO */

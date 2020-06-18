@@ -1,6 +1,6 @@
 // Debugging support implementation -*- C++ -*-
 
-// Copyright (C) 2003-2016 Free Software Foundation, Inc.
+// Copyright (C) 2003-2020 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -56,12 +56,18 @@ namespace std
 namespace __gnu_debug
 {
   using namespace std::__debug;
+
+  template<typename _Ite, typename _Seq, typename _Cat>
+    struct _Safe_iterator;
 }
 
 #ifndef _GLIBCXX_DEBUG
 
 # define __glibcxx_requires_cond(_Cond,_Msg)
 # define __glibcxx_requires_valid_range(_First,_Last)
+# define __glibcxx_requires_can_increment(_First,_Size)
+# define __glibcxx_requires_can_increment_range(_First1,_Last1,_First2)
+# define __glibcxx_requires_can_decrement_range(_First1,_Last1,_First2)
 # define __glibcxx_requires_sorted(_First,_Last)
 # define __glibcxx_requires_sorted_pred(_First,_Last,_Pred)
 # define __glibcxx_requires_sorted_set(_First1,_Last1,_First2)
@@ -74,23 +80,10 @@ namespace __gnu_debug
 # define __glibcxx_requires_heap_pred(_First,_Last,_Pred)
 # define __glibcxx_requires_string(_String)
 # define __glibcxx_requires_string_len(_String,_Len)
-# define __glibcxx_requires_subscript(_N)
 # define __glibcxx_requires_irreflexive(_First,_Last)
 # define __glibcxx_requires_irreflexive2(_First,_Last)
 # define __glibcxx_requires_irreflexive_pred(_First,_Last,_Pred)
 # define __glibcxx_requires_irreflexive_pred2(_First,_Last,_Pred)
-
-#ifdef _GLIBCXX_ASSERTIONS
-// Verify that [_First, _Last) forms a non-empty iterator range.
-# define __glibcxx_requires_non_empty_range(_First,_Last) \
-  __glibcxx_assert(_First != _Last)
-// Verify that the container is nonempty
-# define __glibcxx_requires_nonempty() \
-  __glibcxx_assert(! this->empty())
-#else
-# define __glibcxx_requires_non_empty_range(_First,_Last)
-# define __glibcxx_requires_nonempty()
-#endif
 
 #else
 
@@ -99,8 +92,12 @@ namespace __gnu_debug
 # define __glibcxx_requires_cond(_Cond,_Msg) _GLIBCXX_DEBUG_VERIFY(_Cond,_Msg)
 # define __glibcxx_requires_valid_range(_First,_Last)	\
   __glibcxx_check_valid_range(_First,_Last)
-# define __glibcxx_requires_non_empty_range(_First,_Last)	\
-  __glibcxx_check_non_empty_range(_First,_Last)
+# define __glibcxx_requires_can_increment(_First,_Size)	\
+  __glibcxx_check_can_increment(_First,_Size)
+# define __glibcxx_requires_can_increment_range(_First1,_Last1,_First2)	\
+  __glibcxx_check_can_increment_range(_First1,_Last1,_First2)
+# define __glibcxx_requires_can_decrement_range(_First1,_Last1,_First2)	\
+  __glibcxx_check_can_decrement_range(_First1,_Last1,_First2)
 # define __glibcxx_requires_sorted(_First,_Last)	\
   __glibcxx_check_sorted(_First,_Last)
 # define __glibcxx_requires_sorted_pred(_First,_Last,_Pred)	\
@@ -121,11 +118,9 @@ namespace __gnu_debug
   __glibcxx_check_heap(_First,_Last)
 # define __glibcxx_requires_heap_pred(_First,_Last,_Pred)	\
   __glibcxx_check_heap_pred(_First,_Last,_Pred)
-# define __glibcxx_requires_nonempty() __glibcxx_check_nonempty()
 # define __glibcxx_requires_string(_String) __glibcxx_check_string(_String)
 # define __glibcxx_requires_string_len(_String,_Len)	\
   __glibcxx_check_string_len(_String,_Len)
-# define __glibcxx_requires_subscript(_N) __glibcxx_check_subscript(_N)
 # define __glibcxx_requires_irreflexive(_First,_Last)	\
   __glibcxx_check_irreflexive(_First,_Last)
 # define __glibcxx_requires_irreflexive2(_First,_Last)	\

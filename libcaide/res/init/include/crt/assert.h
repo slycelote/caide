@@ -37,15 +37,13 @@ extern "C" {
 
 #pragma push_macro("abort")
 #undef abort
-  void __cdecl __declspec(noreturn) abort(void);
+  void __cdecl __MINGW_ATTRIB_NORETURN abort(void);
 #pragma pop_macro("abort")
 
 #endif /* _CRT_TERMINATE_DEFINED */
 
-extern void __cdecl
-_wassert(const wchar_t *_Message,const wchar_t *_File,unsigned _Line);
-extern void __cdecl
-_assert (const char *_Message, const char *_File, unsigned _Line);
+_CRTIMP void __cdecl _wassert(const wchar_t *_Message,const wchar_t *_File,unsigned _Line);
+_CRTIMP void __cdecl _assert (const char *_Message, const char *_File, unsigned _Line);
 
 #ifdef __cplusplus
 }

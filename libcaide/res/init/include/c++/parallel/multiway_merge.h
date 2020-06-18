@@ -1,6 +1,6 @@
 // -*- C++ -*-
 
-// Copyright (C) 2007-2016 Free Software Foundation, Inc.
+// Copyright (C) 2007-2020 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the terms
@@ -46,7 +46,7 @@
 #include <parallel/parallel.h>
 #include <parallel/losertree.h>
 #include <parallel/multiseq_selection.h>
-#if _GLIBCXX_ASSERTIONS
+#if _GLIBCXX_PARALLEL_ASSERTIONS
 #include <parallel/checkers.h>
 #endif
 
@@ -232,7 +232,7 @@ namespace __gnu_parallel
    *
    * @return End iterator of output sequence.
    */
-  template<template<typename RAI, typename C> class iterator,
+  template<template<typename _RAI, typename _Cp> class iterator,
            typename _RAIterIterator,
            typename _RAIter3,
            typename _DifferenceTp,
@@ -256,7 +256,7 @@ namespace __gnu_parallel
       if (__length == 0)
 	return __target;
 
-#if _GLIBCXX_ASSERTIONS
+#if _GLIBCXX_PARALLEL_ASSERTIONS
       _DifferenceTp __orig_length = __length;
 #endif
 
@@ -310,7 +310,7 @@ namespace __gnu_parallel
     __finish:
       ;
 
-#if _GLIBCXX_ASSERTIONS
+#if _GLIBCXX_PARALLEL_ASSERTIONS
     _GLIBCXX_PARALLEL_ASSERT(
 	((_RAIter1)__seq0 - __seqs_begin[0].first) +
 	((_RAIter1)__seq1 - __seqs_begin[1].first) +
@@ -351,7 +351,7 @@ namespace __gnu_parallel
    *
    * @return End iterator of output sequence.
    */
-  template<template<typename RAI, typename C> class iterator,
+  template<template<typename _RAI, typename _Cp> class iterator,
            typename _RAIterIterator,
            typename _RAIter3,
            typename _DifferenceTp,
@@ -597,7 +597,7 @@ namespace __gnu_parallel
 
       for (_SeqNumber __t = 0; __t < __k; ++__t)
 	{
-#if _GLIBCXX_ASSERTIONS
+#if _GLIBCXX_PARALLEL_ASSERTIONS
           _GLIBCXX_PARALLEL_ASSERT(__seqs_begin[__t].first
                                    != __seqs_begin[__t].second);
 #endif
@@ -608,7 +608,7 @@ namespace __gnu_parallel
 
       _SeqNumber __source;
 
-#if _GLIBCXX_ASSERTIONS
+#if _GLIBCXX_PARALLEL_ASSERTIONS
       _DifferenceType __i = 0;
 #endif
 
@@ -618,7 +618,7 @@ namespace __gnu_parallel
           // Take out.
           __source = __lt.__get_min_source();
 
-#if _GLIBCXX_ASSERTIONS
+#if _GLIBCXX_PARALLEL_ASSERTIONS
           _GLIBCXX_PARALLEL_ASSERT(0 <= __source && __source < __k);
           _GLIBCXX_PARALLEL_ASSERT(__i == 0
               || !__comp(*(__seqs_begin[__source].first), *(__target - 1)));
@@ -627,7 +627,7 @@ namespace __gnu_parallel
           // Feed.
           *(__target++) = *(__seqs_begin[__source].first++);
 
-#if _GLIBCXX_ASSERTIONS
+#if _GLIBCXX_PARALLEL_ASSERTIONS
           ++__i;
 #endif
           // Replace from same __source.
@@ -641,8 +641,8 @@ namespace __gnu_parallel
   /** @brief Multi-way merging procedure for a high branching factor,
    *         requiring sentinels to exist.
    *
-   * @tparam UnguardedLoserTree _Loser Tree variant to use for the unguarded
-   *   merging.
+   * @tparam _UnguardedLoserTree Loser Tree variant to use for the unguarded
+   *				 merging.
    *
    * @param __seqs_begin Begin iterator of iterator pair input sequence.
    * @param __seqs_end End iterator of iterator pair input sequence.
@@ -653,7 +653,7 @@ namespace __gnu_parallel
    *
    * @return End iterator of output sequence.
    */
-  template<typename UnguardedLoserTree,
+  template<typename _UnguardedLoserTree,
 	   typename _RAIterIterator,
 	   typename _RAIter3,
 	   typename _DifferenceTp,
@@ -687,10 +687,10 @@ namespace __gnu_parallel
 	// non-sentinel elements as we have.
 	++((*__s).second);
 
-      __target_end = multiway_merge_loser_tree_unguarded<UnguardedLoserTree>
+      __target_end = multiway_merge_loser_tree_unguarded<_UnguardedLoserTree>
 	(__seqs_begin, __seqs_end, __target, __sentinel, __length, __comp);
 
-#if _GLIBCXX_ASSERTIONS
+#if _GLIBCXX_PARALLEL_ASSERTIONS
       _GLIBCXX_PARALLEL_ASSERT(__target_end == __target + __length);
       _GLIBCXX_PARALLEL_ASSERT(__is_sorted(__target, __target_end, __comp));
 #endif
@@ -936,7 +936,7 @@ namespace __gnu_parallel
       typedef typename std::iterator_traits<_RAIter1>::value_type
 	_ValueType;
 
-#if _GLIBCXX_ASSERTIONS
+#if _GLIBCXX_PARALLEL_ASSERTIONS
       for (_RAIterIterator __s = __seqs_begin; __s != __seqs_end; ++__s)
 	{
           _GLIBCXX_PARALLEL_ASSERT(__is_sorted((*__s).first,
@@ -990,7 +990,7 @@ namespace __gnu_parallel
 	    (__seqs_begin, __seqs_end, __target, __sentinel, __length, __comp);
 	  break;
 	}
-#if _GLIBCXX_ASSERTIONS
+#if _GLIBCXX_PARALLEL_ASSERTIONS
       _GLIBCXX_PARALLEL_ASSERT(
 	__is_sorted(__target, __target + __length, __comp));
 #endif
@@ -1230,7 +1230,7 @@ namespace __gnu_parallel
                             _Compare __comp,
                             _ThreadIndex __num_threads)
       {
-#if _GLIBCXX_ASSERTIONS
+#if _GLIBCXX_PARALLEL_ASSERTIONS
 	_GLIBCXX_PARALLEL_ASSERT(__seqs_end - __seqs_begin > 1);
 #endif
 
@@ -1318,7 +1318,7 @@ namespace __gnu_parallel
 	  delete[] __chunks;
 	} // parallel
 
-#if _GLIBCXX_ASSERTIONS
+#if _GLIBCXX_PARALLEL_ASSERTIONS
 	_GLIBCXX_PARALLEL_ASSERT(
           __is_sorted(__target, __target + __length, __comp));
 #endif
