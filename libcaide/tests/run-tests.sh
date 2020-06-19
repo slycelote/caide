@@ -9,7 +9,7 @@ cur_dir=$( cd $(dirname "${BASH_SOURCE[0]}") ; pwd )
 if [ ! -v CAIDE ]; then
     for f in $cur_dir/../dist-newstyle/build/*/{,*{,/libcaide-*}}/build/caide/caide{,.exe} $cur_dir/../dist/build/caide/caide{,.exe} $cur_dir/../.stack-work/install/*/{,*{,/*}}/bin/caide{,.exe}
     do
-        if [ -f "$f" && -x "$f" ] ; then
+        if [[ -f "$f" && -x "$f" ]] ; then
             CAIDE="$f"
             break
         fi
