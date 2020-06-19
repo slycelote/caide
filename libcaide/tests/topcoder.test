@@ -4,7 +4,8 @@
 cd prob1
 cxx prob1*.cpp -o prob1_test.exe
 "$CAIDE" make
-cxx submission.cpp -c -o /dev/null
+cxx submission.cpp -c -o submission.exe
+rm submission.exe
 
 cd ..
 rm -rf prob1/
@@ -13,7 +14,9 @@ rm -rf prob1/
 cd prob1
 cxx prob1*.cpp -o prob1_test.exe
 "$CAIDE" make
-cxx submission.cpp -c -o /dev/null
+cxx submission.cpp -c -o submission.exe
+rm submission.exe
+
 cd ..
 compare_with inlined prob1/submission.cpp
 
