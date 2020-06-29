@@ -2,8 +2,7 @@
 import Distribution.Simple (defaultMainWithHooks, simpleUserHooks,
     UserHooks(confHook, cleanHook, hookedPrograms), )
 import Distribution.Simple.BuildPaths (autogenComponentModulesDir)
-import Distribution.Simple.Program (ConfiguredProgram, Program, ProgramDb,
-    lookupProgram, runProgram, simpleProgram, )
+import Distribution.Simple.Program (Program, simpleProgram, )
 import Distribution.Simple.Setup (ConfigFlags(configDistPref, configVerbosity),
     CleanFlags(cleanDistPref), Flag,
     configConfigurationsFlags, fromFlag, )
@@ -96,7 +95,7 @@ inlinerConfHook (pkg, pbi) flags = do
             -- TODO: We'd ideally like to use the -j option given to cabal-install itself by default.
 
             nproc <- getNumProcessors
-            let defaultConfigureOptions = ["-G", "Unix Makefiles"]
+            let defaultConfigureOptions = ["-G", if buildOS == Windows then "MinGW Makefiles" else "Unix Makefiles"]
                 -- -j$(nproc) can hang in MinGW make on 64bit windows
                 defaultBuildOptions = if buildOS == Windows then [] else ["--", "-j" ++ show nproc]
 
