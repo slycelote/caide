@@ -61,7 +61,7 @@ window.
 
     > setup-env.bat
 
-Next, install make, cmake and Python 2. It can be done in two ways:
+Next, install make, cmake and Python. It can be done in two ways:
   1. Install each utility individually and make sure they are in your PATH
   (either by changing the system environment variable or by modifying
   setup-env.bat accordingly.)
