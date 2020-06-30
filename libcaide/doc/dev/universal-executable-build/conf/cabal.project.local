@@ -1,0 +1,6 @@
+package *
+  split-sections: True
+
+package libcaide
+  ghc-options: -pgml ghc-linker.py
+
