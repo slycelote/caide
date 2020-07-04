@@ -70,7 +70,8 @@ parseTestCasesFromHtml tags = do
         inputsAndOutputs = filter (not . T.null) . map (T.strip . fromTagText) $ rootTextNodes
         testCases = [TestCase (inputsAndOutputs!!i) (inputsAndOutputs!!(i+1)) |
                         i <- [0, 2 .. length inputsAndOutputs-2]]
-    when (null testCases) $ throwError $ T.concat ["Couldn't find tests ", tshow rootTextNodes]
+    when (null pres || null testCases) $
+        throwError $ T.concat ["Couldn't find tests ", tshow rootTextNodes]
     return testCases
 
 fromAesonString :: Aeson.Value -> Maybe Text
