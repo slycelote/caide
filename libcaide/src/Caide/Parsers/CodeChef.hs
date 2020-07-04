@@ -59,7 +59,8 @@ parseTestCasesFromMarkdown body = do
             { testCaseInput  = chunks!!ix
             , testCaseOutput = chunks!!ox
             }
-    when (null idxPairs) $ throwError $ T.concat ["Couldn't find tests ", tshow chunks, tshow idxPairs]
+    when (null idxPairs) $
+        throwError "Couldn't find tests"
     return $ map mkTestCase idxPairs
 
 parseTestCasesFromHtml :: [Tag Text] -> Either Text [TestCase]
@@ -71,7 +72,7 @@ parseTestCasesFromHtml tags = do
         testCases = [TestCase (inputsAndOutputs!!i) (inputsAndOutputs!!(i+1)) |
                         i <- [0, 2 .. length inputsAndOutputs-2]]
     when (null pres || null testCases) $
-        throwError $ T.concat ["Couldn't find tests ", tshow rootTextNodes]
+        throwError "Couldn't find tests"
     return testCases
 
 fromAesonString :: Aeson.Value -> Maybe Text
