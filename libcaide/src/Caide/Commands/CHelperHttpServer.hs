@@ -168,9 +168,11 @@ processCHelperRequest root request = do
         | chid == "json"   -> return $ makeResponse ok "" -- Processed by Companion server instead
         | otherwise        -> do
             err <- process chid page root
-            return $ case err of
-                Nothing -> makeResponse ok "OK"
-                Just e  -> makeResponse internalServerError $ T.unpack e
+            case err of
+                Nothing -> return $ makeResponse ok "OK"
+                Just e  -> do
+                    T.putStrLn e
+                    return $ makeResponse internalServerError $ T.unpack e
 
 
 process :: T.Text -> T.Text -> F.FilePath -> IO (Maybe T.Text)
