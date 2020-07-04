@@ -9,11 +9,11 @@ import Control.Applicative ((<$>))
 import Control.Applicative ((<|>))
 import Data.Char (isAlphaNum, isSpace)
 import Data.List (find)
-import Data.Maybe (fromMaybe, listToMaybe)
+import Data.Maybe (catMaybes, fromMaybe, listToMaybe)
 import qualified Data.Text as T
 import Network.URI (parseURI, uriAuthority, uriRegName)
 
-import Text.HTML.TagSoup (fromAttrib, maybeTagText, parseTags, partitions,
+import Text.HTML.TagSoup (fromAttrib, maybeTagText, parseTags, partitions, sections,
     Tag(TagText))
 import Text.HTML.TagSoup.Utils
 
@@ -52,10 +52,20 @@ doParse cont =
         h2Text <- listToMaybe $ drop 1 . dropWhile (~~/== "<h2 class=hr_tour-challenge-name>") $ tags
         maybeTagText h2Text
 
-    rawTitle = fromMaybe "Unknown" $ pageTitle <|> metaTitle <|> h2Title
-    title = T.strip . T.takeWhile (/= '|') $ rawTitle
+    h1Title = let
+        pageLabels = sections (~~== "<h1 class=page-label") tags
+        possibleTitles = catMaybes $ map (listToMaybe . drop 1) pageLabels
+        titles = catMaybes $ map maybeTagText possibleTitles
+        nonEmptyTitles = filter (not . T.null) $ map T.strip titles
+      in
+        listToMaybe nonEmptyTitles
 
-    probId = T.append "hr" . T.filter isAlphaNum $ title
+    rawTitle = h1Title <|> pageTitle <|> metaTitle <|> h2Title
+    title = T.strip . T.takeWhile (/= '|') <$> rawTitle
+
+    probId = fromMaybe "hrUnknown" $ T.filter isAlphaNum <$> title
+
+    name = fromMaybe "Unknown" title
 
     samples = partitions (\tag -> tag ~~== "<div class=challenge_sample_input_body>" || tag ~~== "<div class=challenge_sample_output_body>") tags
 
@@ -65,7 +75,7 @@ doParse cont =
     testCases = [TestCase (t!!i) (t!!(i+1)) | i <- [0, 2 .. length t-2]]
 
     probType = Stream StdIn StdOut
-    problem = (Problem title probId probType, testCases)
+    problem = (Problem name probId probType, testCases)
 
 extractText :: [Tag T.Text] -> T.Text
 extractText tags = T.unlines [t | TagText t <- tags, not (T.all isSpace t)]

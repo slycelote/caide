@@ -9,7 +9,7 @@ var page = require('webpage').create();
 page.open(url, function() {
     setTimeout(function() {
         var html = page.evaluate(function() {
-            return document.documentElement.outerHTML;
+            return document.body.innerHTML; // body.innerHTML is what CHelper extension sends
         });
         fs.write(filePath, html, 'w');
         phantom.exit();
