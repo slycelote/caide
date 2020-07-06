@@ -1,0 +1,988 @@
+codechef
+<div id="MathJax_Message" style="display: none;"></div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div style="display:none;" id="cfcd208495d565ef66e7dff9f98764da" cfcd208495d565ef66e7dff9f98764da="1855a1bbf448b254c03a9cfdd6e3d257"> </div> <script async="" src="https://connect.facebook.net/en_US/fbevents.js"></script><script async="" src="https://www.googletagmanager.com/gtm.js?id=GTM-TV5X2M"></script><script> '(function() { var element = document.getElementById("cfcd208495d565ef66e7dff9f98764da"); window.csrfToken; element.parentNode.removeChild(element);})()';</script></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div>
+<div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div style="display:none;" id="c4ca4238a0b923820dcc509a6f75849b" c4ca4238a0b923820dcc509a6f75849b="1855a1bbf448b254c03a9cfdd6e3d257"> </div> <script> '(function() { var element = document.getElementById("c4ca4238a0b923820dcc509a6f75849b"); window.csrfToken; element.parentNode.removeChild(element);})()';</script></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div>
+<div><div><div><div><div><div><div><div><div><div><div><div><div style="display:none;" id="c81e728d9d4c2f636f067f89cc14862c" c81e728d9d4c2f636f067f89cc14862c="1855a1bbf448b254c03a9cfdd6e3d257"> </div> <script> '(function() { var element = document.getElementById("c81e728d9d4c2f636f067f89cc14862c"); window.csrfToken; element.parentNode.removeChild(element);})()';</script></div></div></div></div></div></div></div></div></div></div></div></div>
+<div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div style="display:none;" id="eccbc87e4b5ce2fe28308fd9f2a7baf3" eccbc87e4b5ce2fe28308fd9f2a7baf3="1855a1bbf448b254c03a9cfdd6e3d257"> </div> <script> '(function() { var element = document.getElementById("eccbc87e4b5ce2fe28308fd9f2a7baf3"); window.csrfToken; element.parentNode.removeChild(element);})()';</script></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div>
+<div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div style="display:none;" id="a87ff679a2f3e71d9181a67b7542122c" a87ff679a2f3e71d9181a67b7542122c="1855a1bbf448b254c03a9cfdd6e3d257"> </div> <script> '(function() { var element = document.getElementById("a87ff679a2f3e71d9181a67b7542122c"); window.csrfToken; element.parentNode.removeChild(element);})()';</script></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div>
+<div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div style="display:none;" id="e4da3b7fbbce2345d7772b0674a318d5" e4da3b7fbbce2345d7772b0674a318d5="1855a1bbf448b254c03a9cfdd6e3d257"> </div> <script> '(function() { var element = document.getElementById("e4da3b7fbbce2345d7772b0674a318d5"); window.csrfToken; element.parentNode.removeChild(element);})()';</script></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div>
+<div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div> <script> (function() { var element = document.getElementById("d41d8cd98f00b204e9800998ecf8427e"); window.csrfToken = element.getAttribute("d41d8cd98f00b204e9800998ecf8427e");	element.parentNode.removeChild(element);})(); </script></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div>
+<div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div style="display:none;" id="8f14e45fceea167a5a36dedd4bea2543" 8f14e45fceea167a5a36dedd4bea2543="1855a1bbf448b254c03a9cfdd6e3d257"> </div> <script> '(function() { var element = document.getElementById("8f14e45fceea167a5a36dedd4bea2543"); window.csrfToken; element.parentNode.removeChild(element);})()';</script></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div>
+<div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div style="display:none;" id="c9f0f895fb98ab9159f51fd0297e236d" c9f0f895fb98ab9159f51fd0297e236d="1855a1bbf448b254c03a9cfdd6e3d257"> </div> <script> '(function() { var element = document.getElementById("c9f0f895fb98ab9159f51fd0297e236d"); window.csrfToken; element.parentNode.removeChild(element);})()';</script></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div>
+<div><div><div><div><div><div><div><div><div><div><div><div style="display:none;" id="45c48cce2e2d7fbdea1afc51c7c6ad26" 45c48cce2e2d7fbdea1afc51c7c6ad26="1855a1bbf448b254c03a9cfdd6e3d257"> </div> <script> '(function() { var element = document.getElementById("45c48cce2e2d7fbdea1afc51c7c6ad26"); window.csrfToken; element.parentNode.removeChild(element);})()';</script></div></div></div></div></div></div></div></div></div></div></div>
+<div><div><div><div><div><div><div><div><div><div><div><div style="display:none;" id="d3d9446802a44259755d38e6d163e820" d3d9446802a44259755d38e6d163e820="1855a1bbf448b254c03a9cfdd6e3d257"> </div> <script> '(function() { var element = document.getElementById("d3d9446802a44259755d38e6d163e820"); window.csrfToken; element.parentNode.removeChild(element);})()';</script></div></div></div></div></div></div></div></div></div></div></div>
+<div><div><div><div><div><div><div><div><div><div><div><div><div style="display:none;" id="6512bd43d9caa6e02c990b0a82652dca" 6512bd43d9caa6e02c990b0a82652dca="1855a1bbf448b254c03a9cfdd6e3d257"> </div> <script> '(function() { var element = document.getElementById("6512bd43d9caa6e02c990b0a82652dca"); window.csrfToken; element.parentNode.removeChild(element);})()';</script></div></div></div></div></div></div></div></div></div></div></div></div>
+<div><div><div><div><div><div><div><div><div><div><div><div><div><div><div style="display:none;" id="c20ad4d76fe97759aa27a0c99bff6710" c20ad4d76fe97759aa27a0c99bff6710="1855a1bbf448b254c03a9cfdd6e3d257"> </div> <script> '(function() { var element = document.getElementById("c20ad4d76fe97759aa27a0c99bff6710"); window.csrfToken; element.parentNode.removeChild(element);})()';</script></div></div></div></div></div></div></div></div></div></div></div></div></div></div>
+<div><div><div><div><div><div><div><div><div><div><div><div><div><div><div style="display:none;" id="c51ce410c124a10e0db5e4b97fc2af39" c51ce410c124a10e0db5e4b97fc2af39="1855a1bbf448b254c03a9cfdd6e3d257"> </div> <script> '(function() { var element = document.getElementById("c51ce410c124a10e0db5e4b97fc2af39"); window.csrfToken; element.parentNode.removeChild(element);})()';</script></div></div></div></div></div></div></div></div></div></div></div></div></div></div>
+<div><div><div><div><div><div><div><div><div><div><div><div><div style="display:none;" id="aab3238922bcc25a6f606eb525ffdc56" aab3238922bcc25a6f606eb525ffdc56="1855a1bbf448b254c03a9cfdd6e3d257"> </div> <script> '(function() { var element = document.getElementById("aab3238922bcc25a6f606eb525ffdc56"); window.csrfToken; element.parentNode.removeChild(element);})()';</script></div></div></div></div></div></div></div></div></div></div></div></div>
+<div><div><div><div><div><div><div><div><div><div><div style="display:none;" id="9bf31c7ff062936a96d3c8bd1f8f2ff3" 9bf31c7ff062936a96d3c8bd1f8f2ff3="1855a1bbf448b254c03a9cfdd6e3d257"> </div> <script> '(function() { var element = document.getElementById("9bf31c7ff062936a96d3c8bd1f8f2ff3"); window.csrfToken; element.parentNode.removeChild(element);})()';</script></div></div></div></div></div></div></div></div></div></div>
+  <script type="text/x-mathjax-config;executed=true">
+    MathJax.Hub.Config({
+      "HTML-CSS": {
+        preferredFont: "TeX",
+        availableFonts: ["STIX","TeX"],
+        linebreaks: { automatic:true },
+        EqnChunk: (MathJax.Hub.Browser.isMobile ? 10 : 50)
+      },
+      ShowMathMenu: false,
+      TeX: {
+        extensions: ["color.js"],
+        noUndefined: {
+          attributes: {
+            mathcolor: "red",
+            mathbackground: "#FFEEEE",
+            mathsize: "90%"
+          }
+        },
+        Macros: { href: "{}" }
+      },
+      tex2jax: {
+        inlineMath: [['$','$'], ['\\(','\\)']],
+        displayMath: [ ["$$","$$"], ["\\[", "\\]"] ],
+        multiline: true,
+        processEscapes: true,
+        ignoreClass: "[a-zA-Z1-9]*",
+        processClass: "mathjax-support"
+      },
+      menuSettings: {
+        context: "Browser"
+      },
+      messageStyle: "none"
+    });
+    </script>
+
+
+    <!-- Google Tag Manager -->
+        <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-TV5X2M');
+        </script>
+    <!-- End Google Tag Manager -->
+
+  <!-- Facebook Pixel Code -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window,document,'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '2444182835820350');
+    fbq('track', 'PageView');
+  </script>
+  <noscript>
+    <img height="1" width="1"
+         src="https://www.facebook.com/tr?id=2444182835820350&ev=PageView
+&noscript=1"/>
+  </noscript>
+  <!-- End Facebook Pixel Code -->
+
+
+  <script type="text/javascript" src="/em/libs/mathjax/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+  </script>
+
+  <script type="text/javascript" src="/em/libs/showdown/showdown-1.8.6.min.js">
+  </script>
+  <script>
+    (function (_, e, rr, s) {
+      _errs = [s];
+      var c = _.onerror;
+      _.onerror = function () {
+        var a = arguments;
+        _errs.push(a);
+        c && c.apply(this, a)
+      };
+      var b = function () {
+        var c = e.createElement(rr),
+                b = e.getElementsByTagName(rr)[0];
+        c.src = "//beacon.errorception.com/" + s + ".js";
+        c.async = !0;
+        b.parentNode.insertBefore(c, b)
+      };
+      _.addEventListener ? _.addEventListener("load", b, !1) : _.attachEvent("onload", b)
+    })
+    (window, document, "script", "4e7c8fce06a9ab05530008e5");
+  </script>
+  <link rel="dns-prefetch" href="//codechef_shared.s3.amazonaws.com">
+  <link rel="dns-prefetch" href="//beacon.errorception.com">
+  <link rel="dns-prefetch" href="//static.ak.facebook.com">
+  <link rel="dns-prefetch" href="//fbcdn-profile-a.akamaihd.net">
+  <script type="text/javascript">
+    var _sf_startpt = (new Date()).getTime()
+  </script>
+  <title>Sorting device | CodeChef</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="keywords" content="programming, language, algorithm, contest, contester, Java, C#, Pascal, C, C++, python, ruby, caml, ocaml, perl, haskell, lisp, prolog, fortran, assembler, asembler, functional, online, judge, problem, problemset, ACM">
+  <link rel="shortcut icon" href="/misc/favicon.ico" type="image/x-icon">
+  <script src="https://apis.google.com/js/platform.js" async="" defer="" gapi_processed="true"></script>
+  <script src="/em/libs/remove_prototype.js"></script>
+  <script src="/sites/all/themes/abessive/js/contest-problem.js?v=10.0"></script>
+  <link rel="stylesheet" href="/sites/all/themes/abessive/css/contest-problem.css?v=cregflow_build_002">
+
+
+
+<style>
+  a.div-link {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  a.div-link span {
+    cursor: pointer;
+    color: #3b5998;
+    text-decoration: underline;
+  }
+
+  a.div-link span:hover {
+    text-decoration: none;
+  }
+</style>
+<div id="ember-root" class="ember-application">
+
+
+  <!--#application handlebars template-->
+
+
+  <!--#recentActivityRow handlebars template-->
+
+
+  <!--#contestPageRow handlebars template-->
+
+
+  <!--#singleRow handlebars template-->
+
+
+  <!--#contestPage handlebars template-->
+
+
+  <!--#problemPage handlebars template-->
+<div id="ember242" class="ember-view">
+    <section class="topbar">
+      <div class="row">
+        <div class="small-12 columns">
+          <ul class="inline-list right social-login">
+
+            <form action="/node?destination=/problems/MX" data-bindattr-262="262" accept-charset="UTF-8" method="post" id="oauth-login-form">
+                  <div>
+                      <input type="hidden" name="csrfToken" id="edit-csrfToken-1" value="f82ab12893d7f7908edca94662509a38" data-bindattr-263="263">
+                      <input type="hidden" name="form_build_id" id="form-BRg6KQ8KqH91u2Y2UaNjP98rHrMae0z6mDjBq1ueCaw" value="form-BRg6KQ8KqH91u2Y2UaNjP98rHrMae0z6mDjBq1ueCaw">
+                      <input type="hidden" name="form_id" id="edit-oauth-login-form" value="oauth_login_form">
+                  </div>
+            </form>
+
+
+            <div id="user-bar">
+              <form action="/node?destination=/problems/MX" data-bindattr-264="264" accept-charset="UTF-8" method="post" id="new-login-form">
+                <div>
+                  <div class="form-item" id="edit-name-wrapper">
+                    <label for="edit-name">Username: <span class="form-required" title="This field is required.">*</span></label>
+                    <input maxlength="60" name="name" id="edit-name" size="60" value="" class="form-text required new-input" placeholder="Username" tabindex="1" type="text">
+                  </div>
+                  <div class="form-item" id="edit-pass-wrapper">
+                    <label for="edit-pass">Password: <span class="form-required" title="This field is required.">*</span></label>
+                    <input name="pass" id="edit-pass" maxlength="128" size="60" class="form-text required new-input" placeholder="Password" tabindex="2" type="password">
+                  </div>
+                  <input type="hidden" name="csrfToken" id="edit-csrfToken" value="f82ab12893d7f7908edca94662509a38" data-bindattr-265="265">
+                  <a href="/user/password" tabindex="4">Forgot Password</a>
+                  <input name="form_build_id" id="form-vPQU4c4cYe6482C2tQm1QL2K36YeNildVLh2ZwJfDrM" value="form-vPQU4c4cYe6482C2tQm1QL2K36YeNildVLh2ZwJfDrM" type="hidden">
+                  <input name="form_id" id="edit-new-login-form" value="new_login_form" type="hidden">
+                  <input name="op" id="edit-submit" value="Login" class="form-submit btn new-input-button" tabindex="3" type="submit">
+                </div>
+              </form>
+            </div>
+            <!--#user-bar-->
+
+
+
+
+            <div id="facebook-login">
+              <div id="oauth-buttons" class="oauth-buttons-header">
+                <li><a class="icon-social oauth_button oauth_button-small connect" title="Google Login" id="button_google" onclick="connectOauth(event, '/OAuth/google?state=initiate');"></a></li><li><a class="icon-social oauth_button oauth_button-small connect" title="Github Login" id="button_github" onclick="connectOauth(event, '/OAuth/github?state=initiate');"></a></li><li><a class="icon-social oauth_button oauth_button-small connect" title="Facebook Login" id="button_facebook" onclick="connectOauth(event, '/fb/auth?src=');"></a></li>
+              </div>
+            </div>
+
+            <!--#facebook-login-->
+
+
+            <div class="signup"><a href="/signup" class="new-input-button btn">New User</a></div>
+
+
+          </ul>
+          <div id="custom-login"></div>
+        </div>
+      </div>
+    </section>
+    <!--.topbar-->
+
+    <header class="site">
+      <div class="row">
+        <div class="small-12 columns">
+          <h1 class="left">
+            <a href="/" title=""><img src="/sites/all/themes/abessive/cc-logo.svg" alt="CodeChef is a non-commercial competitive programming community" id="logo"><span></span></a>
+          </h1>
+          <nav class="right">
+            <div id="block-nice_menus-1" class="block block-nice_menus block-header">
+              <div class="content">
+                <h2><span class="nice-menu-hide-title">Site Navigation</span></h2>
+                 <ul class="nice-menu nice-menu-down" id="nice-menu-0"><li id="menu-302" class="menuparent menu-path-https--www.codechef.com-#"><a href="https://www.codechef.com/#" title="">PRACTICE &amp; LEARN</a><ul><li id="menu-5215" class="menu-path-https--www.codechef.com-ide-itm_mediumnavmenuitm_campaignide"><a href="https://www.codechef.com/ide/?itm_medium=navmenu&amp;itm_campaign=ide" title="">Code, Compile &amp; Run (IDE)</a></li>
+<li id="menu-9424" class="menu-path-https--www.codechef.com-LEARNDSA-itm_mediumnavmenuitm_campaignlearndsa"><a href="https://www.codechef.com/LEARNDSA/?itm_medium=navmenu&amp;itm_campaign=learndsa" title="">DSA Learning Series</a></li>
+<li id="menu-2602" class="menu-path-https--www.codechef.com-tags-problems-itm_mediumnavmenuitm_campaigntagsproblems"><a href="https://www.codechef.com/tags/problems/?itm_medium=navmenu&amp;itm_campaign=tagsproblems" title="">Search Problems by Tags</a></li>
+<li id="menu-303" class="menu-path-https--www.codechef.com-problems-school-itm_mediumnavmenuitm_campaignproblems"><a href="https://www.codechef.com/problems/school/?itm_medium=navmenu&amp;itm_campaign=problems" title="">Practice Problems by Difficulty Level</a></li>
+<li id="menu-304" class="menu-path-https--www.codechef.com-wiki-itm_mediumnavmenuitm_campaignwiki"><a href="https://www.codechef.com/wiki/?itm_medium=navmenu&amp;itm_campaign=wiki" title="">CodeChef Wiki</a></li>
+</ul>
+</li>
+<li id="menu-309" class="menuparent menu-path-contests"><a href="/contests" title="">COMPETE</a><ul><li id="menu-5225" class="menu-path-https--www.codechef.com-JULY20-itm_mediumnavmenuitm_campaignJULY20"><a href="https://www.codechef.com/JULY20/?itm_medium=navmenu&amp;itm_campaign=JULY20" title="">July Challenge 2020</a></li>
+<li id="menu-5679" class="menu-path-https--www.codechef.com-COOK120-itm_mediumnavmenuitm_campaignCOOK120"><a href="https://www.codechef.com/COOK120/?itm_medium=navmenu&amp;itm_campaign=COOK120" title="">July Cook-Off 2020</a></li>
+<li id="menu-6466" class="menu-path-https--www.codechef.com-LTIME85-itm_mediumnavmenuitm_campaignLTIME85"><a href="https://www.codechef.com/LTIME85/?itm_medium=navmenu&amp;itm_campaign=LTIME85" title="">June Lunchtime 2020</a></li>
+<li id="menu-2203" class="menu-path-https--www.codechef.com-contests-itm_mediumnavmenuitm_campaignallcontests#present-contests"><a href="https://www.codechef.com/contests/?itm_medium=navmenu&amp;itm_campaign=allcontests#present-contests" title="">All Running Contests</a></li>
+<li id="menu-5224" class="menu-path-https--www.codechef.com-contests-itm_mediumnavmenuitm_campaignallcontests#future-contests"><a href="https://www.codechef.com/contests/?itm_medium=navmenu&amp;itm_campaign=allcontests#future-contests" title="">All Future Contests</a></li>
+<li id="menu-6868" class="menu-path-https--www.codechef.com-contests-itm_mediumnavmenuitm_campaignallcontests#past-contests"><a href="https://www.codechef.com/contests/?itm_medium=navmenu&amp;itm_campaign=allcontests#past-contests" title="">All Past Contests</a></li>
+<li id="menu-1820" class="menu-path-https--www.codechef.com-event-calendar-itm_mediumnavmenuitm_campaigncalendar"><a href="https://www.codechef.com/event-calendar/?itm_medium=navmenu&amp;itm_campaign=calendar" title="Event Calendar">Contest Calendar</a></li>
+<li id="menu-6689" class="menu-path-https--www.codechef.com-ratings-divisions-itm_mediumnavmenuitm_campaigndivisions"><a href="https://www.codechef.com/ratings/divisions/?itm_medium=navmenu&amp;itm_campaign=divisions" title="Rating Divisions">Contest Divisions</a></li>
+</ul>
+</li>
+<li id="menu-138" class="menuparent menu-path-discuss.codechef.com-"><a href="http://discuss.codechef.com/" title="">DISCUSS</a><ul><li id="menu-139" class="menu-path-https--discuss.codechef.com-itm_mediumnavmenuitm_campaigndiscuss"><a href="https://discuss.codechef.com/?itm_medium=navmenu&amp;itm_campaign=discuss" title="">Discussion Forum</a></li>
+<li id="menu-140" class="menu-path-https--blog.codechef.com-itm_mediumnavmenuitm_campaignblog"><a href="https://blog.codechef.com/?itm_medium=navmenu&amp;itm_campaign=blog" title="">CodeChef Blog</a></li>
+<li id="menu-9517" class="menu-path-https--www.codechef.com-webinar-conversations-itm_mediumnavmenuitm_campaignconversations"><a href="https://www.codechef.com/webinar/conversations/?itm_medium=navmenu&amp;itm_campaign=conversations" title="">Conversations with CodeChef</a></li>
+<li id="menu-2202" class="menu-path-https--www.facebook.com-CodeChef-groups-itm_mediumnavmenuitm_campaignfbgroups"><a href="https://www.facebook.com/CodeChef/groups/?itm_medium=navmenu&amp;itm_campaign=fbgroups" title="">Our Facebook Communities</a></li>
+</ul>
+</li>
+<li id="menu-143" class="menuparent menu-path-https--www.codechef.com-monthly-programming-contestsitm_campaignnavmenu"><a href="https://www.codechef.com/monthly-programming-contests?itm_campaign=navmenu" title="">OUR INITIATIVES</a><ul><li id="menu-715" class="menu-path-https--www.codechef.com-monthly-programming-contests-itm_mediumnavmenuitm_campaignmonthlycontests"><a href="https://www.codechef.com/monthly-programming-contests/?itm_medium=navmenu&amp;itm_campaign=monthlycontests" title="Programming Contests">Monthly Contests</a></li>
+<li id="menu-733" class="menu-path-https--www.codechef.com-hostyourcontest-itm_mediumnavmenuitm_campaignhyc"><a href="https://www.codechef.com/hostyourcontest/?itm_medium=navmenu&amp;itm_campaign=hyc" title="Hosting Contest on CodeChef">Host your Contest</a></li>
+<li id="menu-650" class="menu-path-https--www.codechef.com-certification-data-structures-and-algorithms-about-itm_mediumnavmenuitm_campaigncertification"><a href="https://www.codechef.com/certification/data-structures-and-algorithms/about/?itm_medium=navmenu&amp;itm_campaign=certification" title="">CodeChef Certification</a></li>
+<li id="menu-5741" class="menu-path-https--www.codechef.com-school-itm_mediumnavmenuitm_campaignschool"><a href="https://www.codechef.com/school/?itm_medium=navmenu&amp;itm_campaign=school" title="">CodeChef for Schools</a></li>
+<li id="menu-3830" class="menu-path-https--www.codechef.com-campus_chapter-about-itm_mediumnavmenuitm_campaigncampuschapters"><a href="https://www.codechef.com/campus_chapter/about/?itm_medium=navmenu&amp;itm_campaign=campuschapters" title="">Campus Chapters</a></li>
+<li id="menu-1371" class="menu-path-https--www.facebook.com-groups-womenincp-itm_mediumnavmenuitm_campaignwicp"><a href="https://www.facebook.com/groups/womenincp/?itm_medium=navmenu&amp;itm_campaign=wicp" title="">Women In Competitive Programming</a></li>
+<li id="menu-2310" class="menu-path-https--www.codechef.com-goforgold-itm_mediumnavmenuitm_campaigngoforgold"><a href="https://www.codechef.com/goforgold/?itm_medium=navmenu&amp;itm_campaign=goforgold" title="">Go for Gold</a></li>
+<li id="menu-5866" class="menu-path-https--www.codechef.com-snackdown-itm_mediumnavmenuitm_campaignsnackdown"><a href="https://www.codechef.com/snackdown/?itm_medium=navmenu&amp;itm_campaign=snackdown" title="">SnackDown</a></li>
+</ul>
+</li>
+<li id="menu-147" class="menuparent menu-path-https--www.codechef.com-corporates"><a href="https://www.codechef.com/corporates" title="">ASSOCIATE WITH US</a><ul><li id="menu-146" class="menu-path-https--www.codechef.com-corporates-itm_mediumnavmenuitm_campaigncorporates"><a href="https://www.codechef.com/corporates/?itm_medium=navmenu&amp;itm_campaign=corporates" title="">Business Partnerships</a></li>
+<li id="menu-5824" class="menu-path-https--www.codechef.com-volunteer-itm_mediumnavmenuitm_campaignvolunteer"><a href="https://www.codechef.com/volunteer/?itm_medium=navmenu&amp;itm_campaign=volunteer" title="">Volunteer with Us</a></li>
+<li id="menu-1389" class="menu-path-https--www.codechef.com-problemsetting-itm_mediumnavmenuitm_campaignproblemsetting"><a href="https://www.codechef.com/problemsetting/?itm_medium=navmenu&amp;itm_campaign=problemsetting" title="Codechef Problem Creation">Become a Problem Setter</a></li>
+<li id="menu-9149" class="menu-path-https--www.codechef.com-careers-itm_mediumnavmenuitm_campaigncareers"><a href="https://www.codechef.com/careers/?itm_medium=navmenu&amp;itm_campaign=careers" title="">Careers Opportunities</a></li>
+<li id="menu-850" class="menu-path-https--www.codechef.com-contactus-itm_mediumnavmenuitm_campaigncontactus"><a href="https://www.codechef.com/contactus/?itm_medium=navmenu&amp;itm_campaign=contactus" title="">Contact Us</a></li>
+</ul>
+</li>
+<li id="menu-5681" class="menuparent menu-path-https--www.codechef.com-ratings-all"><a href="https://www.codechef.com/ratings/all" title="">MORE</a><ul><li id="menu-708" class="menu-path-https--www.codechef.com-ratings-all-itm_mediumnavmenuitm_campaignratings"><a href="https://www.codechef.com/ratings/all/?itm_medium=navmenu&amp;itm_campaign=ratings" title="">CodeChef Ratings</a></li>
+<li id="menu-6030" class="menu-path-https--goodies.codechef.com-itm_mediumnavmenuitm_campaigngoodies"><a href="https://goodies.codechef.com/?itm_medium=navmenu&amp;itm_campaign=goodies" title="">CodeChef Goodies</a></li>
+<li id="menu-1858" class="menu-path-https--www.codechef.com-workshops-itm_mediumnavmenuitm_campaignworkshops"><a href="https://www.codechef.com/workshops/?itm_medium=navmenu&amp;itm_campaign=workshops" title="">CodeChef Workshops</a></li>
+<li id="menu-826" class="menu-path-https--www.codechef.com-icpc-itm_mediumnavmenuitm_campaignicpc"><a href="https://www.codechef.com/icpc/?itm_medium=navmenu&amp;itm_campaign=icpc" title="">ICPC</a></li>
+<li id="menu-2372" class="menu-path-https--www.codechef.com-ioi-itm_mediumnavmenuitm_campaignioi"><a href="https://www.codechef.com/ioi/?itm_medium=navmenu&amp;itm_campaign=ioi" title="">IOI</a></li>
+<li id="menu-643" class="menu-path-https--www.codechef.com-wiki-faq-itm_mediumnavmenuitm_campaignfaq"><a href="https://www.codechef.com/wiki/faq/?itm_medium=navmenu&amp;itm_campaign=faq" title="">Frequently Asked Questions</a></li>
+<li id="menu-151" class="menu-path-https--www.codechef.com-aboutus-itm_mediumnavmenuitm_campaignaboutus"><a href="https://www.codechef.com/aboutus/?itm_medium=navmenu&amp;itm_campaign=aboutus" title="">About Us</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </nav>
+        </div>
+      </div>
+    </header>
+    <!--.site header-->
+    <div id="ember251" class="ember-view">
+    <main class="problem-container contest-container content" id="content-regions">
+
+
+      <div>
+        <aside class="breadcrumbs">
+          <a href="/">Home</a>&nbsp;»&nbsp;<a href="/problems/challenge/">Practice(Challenge)</a>&nbsp;»&nbsp;Sorting device
+        </aside>
+      </div>
+
+      <header>
+        <div class="row collapse">
+          <div class="large-12 columns">
+            <h1>
+              Sorting device
+              <span>Problem Code: <strong id="problem-code">MX</strong></span>
+              <i class="icon-add-todo right">
+
+                <div class="todo-widget" style="visibility: visible; position: relative;top: 5px;"><input style="outline: none;" type="image" src="/sites/all/themes/abessive/images/add1.png" title="Add problem to Todo list" class="todo-button" problem="MX" contest="" width="25" height="25"><div class="todo-button-message"></div></div>
+
+              </i>
+
+              <a class="button blue right" href="/submit/MX" data-bindattr-274="274">Submit</a>
+
+
+            </h1>
+            <div class="social-share social-button-container cc-visible" data-bindattr-270="270">
+              <div class="social-button twitter-position">
+                <div style="width: 80px; height: 20px;margin-top: -2px;"><a href="https://twitter.com/share" class="twitter-share-button" data-via="codechef">Tweet</a></div>
+              </div>
+              <div class="social-button">
+                <div class="fb-like" data-width="370px" data-layout="standard" data-action="like" data-show-faces="true" data-share="true"></div>
+              </div>
+              <div class="clearfix"></div>
+            </div>
+          </div>
+          <!--.social-share-->
+
+          <div class="clearfix"></div>
+
+          <h2>
+            <section class="is-admin-block">
+
+            </section>
+          </h2>
+        </div>
+      </header>
+
+      <section class="content-area small-8 columns pl0">
+        <div class="problem-statement mathjax-support" id="problem-statement">
+
+          <p class=" mathjax-support">You work for a large company, and your job is to design sorting devices. Devices are built from:</p>
+<ul class=" mathjax-support">
+<li class=" mathjax-support"><var class=" mathjax-support">n</var> inputs,</li>
+<li class=" mathjax-support"><var class=" mathjax-support">n</var> outputs,</li>
+<li class=" mathjax-support">gates which have two inputs and send to output the minimum ("min gates") or maximum ("max gates") of the two numbers given at their input,</li>
+<li class=" mathjax-support">connecting wires.</li>
+</ul>
+<p class=" mathjax-support">You are competing in a bid for a Bytelandian Ministry of Information contract to design the smallest possible device (in terms of the number of gates) which sorts any input. Each device will go through a rigorous test process on a number of data sets. However, through some Good Friends in High Places you have managed to acquire some additional information concerning the exact data sets (permutations) your device will be tested on. Make use of this, and of course your superior programming skills, to win the bid!</p>
+<h3 class=" mathjax-support">Input</h3>
+<p class=" mathjax-support">First, two numbers, 2≤<var class=" mathjax-support">n</var>≤20, 1≤<var class=" mathjax-support">k</var>≤1000, the number of inputs and the number of different permutations for which your device will be tested. The next <var class=" mathjax-support">k</var> lines contain permutations of the numbers <var class=" mathjax-support">1 .. n</var>.</p>
+<h3 class=" mathjax-support">Output</h3>
+<p class=" mathjax-support">First, output <var class=" mathjax-support">p</var>, the number of gates in your device (0≤<var class=" mathjax-support">p</var>≤10<sup class=" mathjax-support">6</sup>). The next <var class=" mathjax-support">p</var> lines should contain definitions of the gates used, in the form of a pair of integers, <var class=" mathjax-support">x<sub class=" mathjax-support">i</sub>,y<sub class=" mathjax-support">i</sub></var>, and exactly one of the strings "min" or "max". To be able to use the output of a gate as the input of a subsequent gate, we use the following convention. First of all, the range for inputs <var class=" mathjax-support">x<sub class=" mathjax-support">i</sub></var> and <var class=" mathjax-support">y<sub class=" mathjax-support">i</sub></var> is as follows: 1 ≤ <var class=" mathjax-support">x<sub class=" mathjax-support">i</sub>,y<sub class=" mathjax-support">i</sub></var> &lt; <var class=" mathjax-support">n+p</var>. The output of the <var class=" mathjax-support">i</var>-th gate is assumed to be input <var class=" mathjax-support">n+i</var>.
+</p><p class=" mathjax-support">
+Finally, a sequence of exactly <var class=" mathjax-support">n</var> integers in the range <var class=" mathjax-support">1</var>..<var class=" mathjax-support">n+p</var> should follow, describing which of the "inputs" should be hard-wired to successive outputs of the device.</p>
+<h3 class=" mathjax-support">Scoring</h3>
+<p class=" mathjax-support">If your program does not produce a sorting machine which works for every input (sorting it in ascending order), it will be deemed incorrect. Otherwise, you will score <var class=" mathjax-support">p</var> penalty points for each test case solved.</p>
+<h3 class=" mathjax-support">Example</h3>
+<pre class=" mathjax-support"><strong class=" mathjax-support">Input:</strong><br class=" mathjax-support">3 2<br class=" mathjax-support">1 2 3<br class=" mathjax-support">1 3 2<br class=" mathjax-support"><br class=" mathjax-support"><strong class=" mathjax-support">Output:</strong><br class=" mathjax-support">2<br class=" mathjax-support">2 3 min<br class=" mathjax-support">2 3 max<br class=" mathjax-support">1 4 5<br class=" mathjax-support"><br class=" mathjax-support"><strong class=" mathjax-support">Score:</strong><br class=" mathjax-support"> 0.5</pre>
+<aside style="background: #f8f8f8;padding: 10px 15px;" class=" mathjax-support"><div class=" mathjax-support">All submissions for this problem are available.</div></aside>
+
+
+        <!--.problem-statement-->
+
+        <aside class="problem-info mathjax-support">
+
+
+          <p class=" mathjax-support">
+            <label class=" mathjax-support">Author:</label>
+            <span class=" mathjax-support"><a href="/users/admin" data-bindattr-280="280" class=" mathjax-support">admin</a></span>
+          </p>
+
+          <p class=" mathjax-support">
+            <label class=" mathjax-support">Tags:</label>
+            <span class=" mathjax-support"><a class="problem-tag-small  mathjax-support" href="/tags/problems/admin">admin</a></span>
+          </p>
+
+          <p class=" mathjax-support">
+            <label class=" mathjax-support">Date Added:</label>
+            <span class=" mathjax-support">15-01-2010</span>
+          </p>
+
+          <p class=" mathjax-support">
+            <label class=" mathjax-support">Time Limit:</label>
+            <span class=" mathjax-support">1 secs</span>
+          </p>
+          <p class=" mathjax-support">
+            <label class=" mathjax-support">Source Limit:</label>
+            <span class=" mathjax-support">50000 Bytes</span>
+          </p>
+          <p class=" mathjax-support">
+            <label class=" mathjax-support">Languages:</label>
+            <span class=" mathjax-support">ADA, ASM, BASH, BF, C, CAML, CLOJ, CLPS, COB, CPP14, CS2, D, ERL, FORT, FS, GO, HASK, ICK, ICON, JAVA, JS, kotlin, LISP clisp, LISP sbcl, LUA, NEM, NICE, NODEJS, PAS fpc, PAS gpc, PERL, PHP, PIKE, PRLG, PYP3, PYPY, PYTH, PYTH 3.6, R, RUBY, rust, SCALA, SCM chicken, SCM guile, SCM qobi, SQL, ST, swift, TEXT, WSPC</span>
+          </p>
+        </aside>
+        <!--.problem-info-->
+
+        <div class="text-center mathjax-support">
+          <input type="hidden" value="value" data-bindattr-279="279" class=" mathjax-support">
+
+          <a class="button blue mathjax-support" href="/submit/MX" data-bindattr-284="284" style="padding:0.4rem 1.5rem 0.425rem;">Submit</a>
+
+          </div>
+        </div>
+
+      </section>
+      <!--.content-area-->
+
+      <aside class="sidebar small-4 columns pr0">
+        <div class="button-submissions">
+
+          <a class="button grey full-width-1" href="/status/MX" data-bindattr-285="285">All Submissions</a>
+
+        </div>
+
+        <div class="successful-submissions widget pb0">
+          <div>
+            <h5 data-ember-action="271"> Successful Submissions
+            <button class="button grey toogle-button fa fa-plus" data-bindattr-272="272"></button>
+            </h5>
+          </div>
+          <div class="content table-component">
+            <div id="rankContentDiv"></div>
+          </div>
+        </div>
+      </aside>
+      <!--.sidebar-->
+
+      <section class="comments" id="problem-comments">
+        <div class="row collapse">
+          <div class="large-12 columns">
+             <div id="ember304" class="ember-view"><section class="cc-comments-section"><div class="comment-topmost-header"><h2 class="noselect cc-comments-title" data-ember-action="305">Comments <i class="fa fa-caret-right"></i></h2></div></section></div>
+          </div>
+        </div>
+      </section>
+      <!--.comments-->
+
+
+    </main>
+    <!--.problem-container-->
+  </div>
+  </div></div>
+<script type="text/javascript">
+    String.prototype.capitalize = function () {
+        return this.charAt(0).toUpperCase() + this.slice(1);
+    };
+
+    disconnectOauth = function (event, account) {
+        if (event != undefined) {
+            event.preventDefault();
+        }
+        var r = confirm("Are you sure you want to disconnect " + account.capitalize() + " account?");
+        if (r == true) {
+            clearUserCache();
+            $.ajax({
+                url: '/OAuth/' + account,
+                type: 'DELETE',
+                success: function () {
+                    window.location.reload();
+                },
+                error: function () {
+                    invokeGenericModal({
+                        message: "Couldn't complete your request. Please try again.",
+                        id: account + '-error-message'
+                    });
+                }
+            });
+        }
+    };
+
+    connectOauth = function (event, url) {
+        if (event != undefined) {
+            event.preventDefault();
+        }
+        clearUserCache();
+        var oauthEnterForm = document.getElementById('oauth-login-form');
+        oauthEnterForm.action = url;
+        oauthEnterForm.submit();
+    };
+</script>
+    <footer id="cc-footer-div">
+        <style>
+            .center-desc {
+                text-align: center;
+                margin-bottom: 20px;
+                font-size: 11px !important;
+            }
+
+            #cc-footer-div {
+                background: #fff;
+                border-top: 2px solid #cbcbcb;
+                padding-top: 55px;
+                font-family: Arial, sans-serif !important;
+                text-align: left !important;
+            }
+
+            .horizontal-list {
+                display: flex;
+                margin-left: 0 !important;
+                padding: 0px !important;
+                margin-bottom: 20px;
+            }
+
+            .horizontal-list li {
+                list-style: none;
+                font-size: 11px !important;
+                padding: 0px 5px 0px 0px !important;
+                height: 12px !important;
+            }
+
+            .horizontal-list li a {
+                color: #4a4a4a !important;
+                font-size: 11px !important;
+                text-decoration: underline;
+            }
+
+            .horizontal-list li a:hover {
+                text-decoration: underline !important;
+            }
+
+            .li-hr {
+                height: 11px;
+                width: 1px;
+                background: #4a4a4a;
+                display: block;
+                align-self: center;
+                margin-right: 5px;
+                position: relative;
+                top: 0.2em;
+            }
+
+            .footer-row {
+                width: 100%;
+                margin: 0 auto;
+                max-width: 950px;
+            }
+
+            .flex-row-footer {
+                display: flex;
+                justify-content: space-between;
+            }
+
+            .flex-row-footer p {
+                font-size: 11px !important;
+                color: #4a4a4a !important;
+                margin-bottom: 5px !important;
+            }
+
+            .flex-row-footer p a {
+                color: #4a4a4a !important;
+                text-decoration: underline !important;
+            }
+
+            .flex-row-footer p a:hover {
+                text-decoration: underline !important;
+            }
+
+            .flex-row-footer span {
+                color: #4a4a4a !important;
+                font-size: 11px !important;
+            }
+
+            .footer-uniq-div {
+                color: #4a4a4a !important;
+                font-size: 11px !important;
+                text-align: right;
+            }
+
+            .para-div {
+                margin: 10px 0 0 0 !important;
+            }
+
+            .para-div article h6 {
+                font-weight: 700 !important;
+                font-size: 13px !important;
+                color: #666 !important;
+                margin-bottom: 0 !important;
+            }
+
+            .para-div article h6 a {
+                text-decoration: underline !important;
+                color: #666 !important;
+            }
+
+            .para-div article h6 a:hover {
+                text-decoration: underline !important;
+            }
+
+            .para-div article p {
+                font-size: 12px !important;
+                color: #777 !important;
+                text-align: justify !important;
+                margin-bottom: 5px;
+                line-height: 1.6 !important;
+            }
+
+            .footer-flex-list {
+                display: flex;
+                justify-content: space-between;
+                margin-top: 10px !important;
+                width: 795px;
+            }
+
+            .footer-flex-list h6 {
+                font-size: 13px !important;
+                font-weight: 700 !important;
+                text-decoration: underline !important;
+                color: #777 !important;
+            }
+
+            .inner-footer-div ul li {
+                list-style: none !important;
+                height: 25px !important;
+                padding: 0px !important;
+            }
+
+            .inner-footer-div li a {
+                list-style: none !important;
+                font-size: 12px !important;
+                color: #666 !important;
+                padding: 0 0 5px 0 !important;
+                text-decoration: underline !important;
+            }
+
+            .inner-footer-div li a:hover {
+                text-decoration: underline !important;
+            }
+
+            .inner-footer-div ul {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+        </style>
+
+
+        <script language="javascript" type="text/javascript">
+            function savedServerOffset(ts) {
+                ts = ts * 1000;
+                now = Date.now();
+                offset = now - ts;
+                return offset;
+            }
+
+            function formatTime(offset) {
+                ts = Date.now() - offset;
+                now = new Date(ts);
+                localtime = new Date();
+                hour = now.getHours();
+                min = now.getMinutes();
+                sec = now.getSeconds();
+
+                if (min <= 9) {
+                    min = "0" + min;
+                }
+                if (sec <= 9) {
+                    sec = "0" + sec;
+                }
+                if (hour > 12) {
+                    hour = hour - 12;
+                    add = " PM";
+                } else {
+                    hour = hour;
+                    add = " AM";
+                }
+                if (hour == 12) {
+                    add = " PM";
+                }
+                if (hour == 00) {
+                    hour = "12";
+                }
+
+                $('#server-time').html(((hour <= 9) ? "0" + hour : hour) + ":" + min + ":" + sec + add);
+
+                nextSec = (now.getTime() + 1000);
+
+                setTimeout("formatTime(" + offset + ")", 1000);
+            }
+
+            function getDtTimeZone() {
+                var rightNow = new Date();
+                var toDay = new Date(rightNow.getFullYear(), 0, 1, 0, 0, 0, 0);
+                var temp = toDay.toGMTString();
+                var date2 = new Date(temp.substring(0, temp.lastIndexOf(" ") - 1));
+                var stdTime = (toDay - date2) / (1000 * 60 * 60);
+                return stdTime;
+            }
+
+        </script>
+        <div class="footer-row">
+            <p class="center-desc"><u>CodeChef is a non-profit competitive programming community</u></p>
+        </div>
+        <div class="footer-row flex-row-footer">
+            <div>
+                <ul class="horizontal-list">
+                    <li><a href="/aboutus/">About CodeChef</a></li>
+                    <div class="li-hr"></div>
+                    <li><a href="/ceoscorner/">CEO's Corner</a></li>
+                    <div class="li-hr"></div>
+                    <li><a href="/contactus">Contact Us</a></li>
+                </ul>
+                <p>CodeChef uses SPOJ © by <a href="https://www.sphere-research.com" target="_blank">Sphere
+                        Research
+                        Labs</a><br>In order to report copyright violations of any kind, send in an email to <a href="mailto:copyright@codechef.com">copyright@codechef.com</a></p>
+            </div>
+
+            <div>
+                <div class="footer-uniq-div">The time now is: <span id="server-time">05:00:18 PM</span><br>
+                    <span>Your IP: <span>50.34.81.185</span></span>
+                    <script language="javascript">formatTime(savedServerOffset('1593907213'));</script>                </div>
+            </div>
+        </div>
+        <div class="footer-row">
+            <div class="para-div">
+                <article>
+                    <h6><a href="/">CodeChef</a> - A Platform for Aspiring Programmers</h6>
+                    <p>CodeChef was created as a platform to help programmers make it big in the world of
+                        <strong>algorithms</strong>, <strong>computer programming</strong>, and <strong>programming
+                            contests</strong>. At CodeChef we work hard to revive the geek in you by hosting a
+                        <strong>programming
+                            contest</strong> at the start of the month and two smaller programming challenges at the
+                        middle and
+                        end of the month. We also aim to have training sessions and discussions related to
+                        <strong>algorithms</strong>, <strong>binary search</strong>, technicalities like <strong>array
+                            size</strong> and the likes. Apart from providing a platform for <strong>programming
+                            competitions</strong>, CodeChef also has various algorithm tutorials and forum
+                        discussions
+                        to help
+                        those who are new to the world of <strong>computer programming</strong>.</p>
+                </article>
+
+                <article>
+                    <h6><a href="/problems/easy">Practice Section</a> - A Place to hone your 'Computer Programming
+                        Skills'</h6>
+                    <p>Try your hand at one of our many practice problems and submit your solution in the language
+                        of
+                        your
+                        choice. Our <strong>programming contest</strong> judge accepts solutions in over 55+
+                        programming
+                        languages. Preparing for coding contests were never this much fun! Receive points, and move
+                        up
+                        through
+                        the CodeChef ranks. Use our practice section to better prepare yourself for the multiple
+                        <strong>programming
+                            challenges</strong> that take place through-out the month on CodeChef.</p>
+                </article>
+
+                <article>
+                    <h6><a href="/contests">Compete</a> - Monthly Programming Contests, Cook-off and Lunchtime</h6>
+                    <p>Here is where you can show off your <strong>computer programming skills</strong>. Take part
+                        in
+                        our 10
+                        days long monthly coding contest and the shorter format Cook-off and Lunchtime <strong>coding
+                            contests</strong>. Put yourself up for recognition and win great prizes. Our <strong>programming
+                            contests</strong> have prizes worth up to INR 20,000 (for Indian Community), $700 (for
+                        Global
+                        Community) and lots more CodeChef goodies up for grabs.</p>
+                </article>
+            </div>
+        </div>
+
+        <div class="footer-row">
+            <div class="footer-flex-list">
+                <div class="inner-footer-div">
+                    <h6>Programming Tools</h6>
+                    <ul>
+                        <li><a href="/ide">Online IDE</a></li>
+                        <li><a href="/contests#future-contests">Upcoming Coding Contests</a></li>
+                        <li><a href="/hostyourcontest">Contest Hosting</a></li>
+                        <li><a href="/problemsetting">Problem Setting</a></li>
+                        <li><a href="/wiki/tutorials">CodeChef Tutorials</a></li>
+                        <li><a href="/wiki">CodeChef Wiki</a></li>
+                    </ul>
+                </div>
+
+                <div class="inner-footer-div">
+                    <h6>Practice Problems</h6>
+                    <ul>
+                        <li><a href="/problems/easy">Easy</a></li>
+                        <li><a href="/problems/medium">Medium</a></li>
+                        <li><a href="/problems/hard">Hard</a></li>
+                        <li><a href="/problems/challenge">Challenge</a></li>
+                        <li><a href="/problems/extcontest">Peer</a></li>
+                        <li><a href="/problems/school">School</a></li>
+                        <li><a href="/wiki/faq">FAQ's</a></li>
+                    </ul>
+                </div>
+
+                <div class="inner-footer-div">
+                    <h6>Initiatives</h6>
+                    <ul class="">
+                        <li><a href="/goforgold">Go for Gold</a></li>
+                        <li><a href="/school">CodeChef for Schools</a></li>
+                        <li><a href="/campus_chapter">Campus Chapters</a></li>
+                        <li><a href="/corporates">CodeChef for Business</a></li>
+
+                    </ul>
+                </div>
+
+                <div class="inner-footer-div">
+                    <h6>Policy</h6>
+                    <ul>
+                        <li><a href="/terms">Terms of Service</a></li>
+                        <li><a href="/privacy-policy">Privacy Policy</a></li>
+                        <li><a href="/refund-policy">Refund Policy</a></li>
+                        <li><a href="/codeofconduct">Code of Conduct</a></li>
+                        <li><a href="/bug-bounty-program">Bug Bounty Program</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <script type="text/javascript">
+            var _gaq = _gaq || [];
+            _gaq.push(['_setAccount', 'UA-53602-42']);
+            _gaq.push(['_trackPageview']);
+
+            (function () {
+                var ga = document.createElement('script');
+                ga.type = 'text/javascript';
+                ga.async = true;
+                ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+                var s = document.getElementsByTagName('script')[0];
+                s.parentNode.insertBefore(ga, s);
+            })();
+        </script>
+
+        <!-- Start Alexa Certify Javascript -->
+        <script type="text/javascript">
+            _atrk_opts = {
+                atrk_acct: "q16Cj1a8gN00iz",
+                domain: "codechef.com",
+                dynamic: true
+            };
+            (function () {
+                var as = document.createElement('script');
+                as.type = 'text/javascript';
+                as.async = true;
+                as.src = "https://d31qbv1cthcecs.cloudfront.net/atrk.js";
+                var s = document.getElementsByTagName('script')[0];
+                s.parentNode.insertBefore(as, s);
+            })();
+        </script>
+        <noscript>
+            <img src="https://d5nxst8fruw4z.cloudfront.net/atrk.gif?account=q16Cj1a8gN00iz" style="display:none"
+                 height="1" width="1"
+                 alt=""/>
+        </noscript>
+        <!-- End Alexa Certify Javascript -->
+    </footer>
+
+<div id="gdpr-cookie-notif" style="width: 100%; padding-top: 5px; padding-bottom: 5px;" class="global--announcement">
+  <div class="global--announcement__content">
+    <p>We use cookies to improve your experience and for analytical purposes. Read our <a href="/privacy-policy">Privacy Policy</a> and <a href="/terms">Terms</a> to know more. You consent to our cookies if you continue to use our website.</p>
+  </div>
+  <div style="margin-right: 30px;">
+    <button id="gdpr-i-love-cookies" class="button grey">Okay</button>
+  </div>
+</div>
+<script>
+  var sscache = {};
+
+  function getPage(url, data, page) {
+    var cacheId = url + JSON.stringify(data);
+    var cache = sscache;
+    var success = function (data) {
+      cache[cacheId] = data;
+      $('#rankContentDiv').html(data['content']);
+      var newpage = page === undefined ? 1 : (parseInt(page) + 1);
+      var pageinfo = "<div align='center' class='pageinfo'> - </div>";
+      if (data['max_page'] > 0) {
+        pageinfo = "<div align='center' class='pageinfo'>" + newpage + " of " + data['max_page'] + "</div>";
+      }
+      $("#loader").html(pageinfo);
+
+    };
+
+    var error = function (request, errorType) {
+      try {
+        if (page === undefined) {
+          retryButton = '<input id="retryButton" type="button" value="Retry"/>';
+          $('#rankContentDiv').html(retryButton);
+          $('#retryButton').click(function () {
+            $('#rankContentDiv').html('<p align="center"><img src="/sites/all/themes/abessive/images/ajax-loader.gif" /> Fetching content</p>');
+            getPage(url, data, page);
+          });
+        } else {
+          $("#loader").html("Oops! It couldn't load. Try again.");
+        }
+      } catch (e) {
+      }
+    };
+
+    if (cache.hasOwnProperty(cacheId)) {
+      success(cache[cacheId]);
+      return;
+    }
+
+    cAjax({
+      url: url,
+      type: "GET",
+      data: data,
+      cache: false,
+      timeout: 10000,
+      dataType: "json",
+      success: success,
+      error: error
+    });
+
+  }
+
+
+  function set_page(element) {
+    var page;
+
+    if (element == "prev")
+      page = $("#prev_p").val();
+    else if (element == "next")
+      page = $("#next_p").val();
+
+    return page;
+  }
+
+  function onload_getpage_ssubmissions(element) {
+    $('#loader').html('<p><img src="/misc/ajax_loader_d.gif" style="width: 120px; height:15px;"/></p>');
+    var contest = "";
+    if ($("#ccode").length != 0) {
+      contest = '&ccode=' + $("#ccode").val();
+    }
+
+    var page = set_page(element);
+    var data = "page=" + page + "&pcode=" + $("#pcode").val() + contest;
+    var url = "/ssubmission/prob";
+    getPage(url, data, page);
+  }
+</script>
+
+<script>
+  (function (h, o, t, j, a, r) {
+    h.hj = h.hj || function () {
+              (h.hj.q = h.hj.q || []).push(arguments)
+            };
+    h._hjSettings = {
+      hjid: 167687,
+      hjsv: 5
+    };
+    a = o.getElementsByTagName('head')[0];
+    r = o.createElement('script');
+    r.async = 1;
+    r.src = t + h._hjSettings.hjid + j + h._hjSettings.hjsv;
+    a.appendChild(r);
+  })(window, document, '//static.hotjar.com/c/hotjar-', '.js?sv=');
+</script>
+<script>
+  $(document).ready(function () {
+    var cookie_name = 'i-love-cookies';
+    show_hide_cookie_notification(cookie_name);
+    $('#gdpr-i-love-cookies').click(function () {
+      cCookie(cookie_name, "yes", {expires: 30, path: "/"});
+      show_hide_cookie_notification(cookie_name);
+    });
+
+    function show_hide_cookie_notification(cookie_name) {
+      var value = cCookie(cookie_name);
+      if (value == 'yes') {
+        $('#gdpr-cookie-notif').fadeOut();
+      } else {
+        $('#gdpr-cookie-notif').fadeIn();
+      }
+    }
+
+  });
+</script>
+
+
+
+
+<div class="campaign-visibility">
+    <script>
+$(document).ready(function () {
+    var url_parts = window.location.pathname.split('/');
+    var contests = ['SNCK1A19','SNCK1B19','SNCKPE19','SNCKEL19','SNCKFL19'];
+    var is_valid_page = (url_parts.length == 2 && contests.indexOf(url_parts[1]) != -1);
+
+    if(is_valid_page) {
+        hidetimer();
+       setInterval(hidetimer,1000);
+    }
+
+    function hidetimer(){
+        $('#timer').remove();
+        $('#contest-register').remove();
+    }
+});
+    </script>
+    </div><div class="campaign-visibility"></div>

@@ -1,8 +1,10 @@
 #!/bin/bash
 "$CAIDE" problem http://www.codechef.com/problems/MAXCIR
-"$CAIDE" problem http://www.codechef.com/problems/POWERMUL
-"$CAIDE" problem http://www.codechef.com/problems/MX
+"$CAIDE" problem https://www.codechef.com/problems/POWERMUL
+"$CAIDE" problem https://www.codechef.com/problems/MX
 "$CAIDE" problem https://www.codechef.com/problems/LIFTME
+"$CAIDE" problem https://www.codechef.com/problems/DEMTREE
 
-compare_with parsed {MAXCIR,POWERMUL,MX,LIFTME}/*.{in,out}
+compare_with parsed {DEMTREE,MAXCIR,POWERMUL,MX,LIFTME}/{problem.ini,case1.in,case1.out}
+compare_with parsed MAXCIR/{case2.in,case2.out}
 

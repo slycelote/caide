@@ -1,7 +1,16 @@
 #!/bin/bash
 (sleep 10; echo .) | "$CAIDE" httpServer &
 sleep 1
+
 curl --data-binary @request-codeforces.txt -H "Content-Type: text/html" http://localhost:4243
 
-compare_with after-parse cf1333B/{problem.ini,case1.in,case1.out}
+curl --data-binary @request-DEMTREE.txt -H "Content-Type: text/html" http://localhost:4243
+curl --data-binary @request-MAXCIR.txt -H "Content-Type: text/html" http://localhost:4243
+curl --data-binary @request-POWERMUL.txt -H "Content-Type: text/html" http://localhost:4243
+curl --data-binary @request-MX.txt -H "Content-Type: text/html" http://localhost:4243
+curl --data-binary @request-LIFTME.txt -H "Content-Type: text/html" http://localhost:4243
+
+
+compare_with after-parse {cf1333B,DEMTREE,MAXCIR,POWERMUL,MX,LIFTME}/{problem.ini,case1.in,case1.out}
+compare_with after-parse MAXCIR/{case2.in,case2.out}
 

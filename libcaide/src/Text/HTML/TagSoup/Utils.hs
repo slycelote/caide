@@ -5,6 +5,7 @@ module Text.HTML.TagSoup.Utils (
     , (~~==)
     , (~~/==)
     , isTagName
+    , matching
 ) where
 
 #ifndef AMP
@@ -23,6 +24,9 @@ import Text.HTML.TagSoup hiding ((~==), (~/=))
 -- | Constrained version of TagSoup operator
 (~/=) :: StringLike str => Tag str -> String -> Bool
 (~/=) = (S.~/=)
+
+matching :: StringLike str => Tag str -> Tag str -> Bool
+matching = flip (S.~==)
 
 -- | Like '(~==)', but splits values of attributes on whitespace. Useful mainly for `class` attribute,
 -- so that `TagOpen "table" [("class", "class1 class2")] ~~== "<table class=class1>"`.

@@ -9,6 +9,8 @@ import Control.Monad (when)
 import Control.Monad.Except (throwError)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.HashMap.Strict as HashMap
+import Data.Either (fromRight, rights,)
+import qualified Data.List as List
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import Data.Text (Text)
@@ -22,12 +24,12 @@ import Network.HTTP.Util (downloadDocument)
 import Network.URI (parseURI, uriAuthority, uriPath, uriRegName)
 
 import Text.HTML.TagSoup (Tag(..), innerText, fromTagText, parseTags,
-                         isTagCloseName, sections)
+                         isTagClose, isTagCloseName, sections, )
 
 import Caide.Parsers.Common (mergeTextTags, replaceBr)
 import Caide.Types
 import Caide.Util (tshow)
-import Text.HTML.TagSoup.Utils ((~==), (~/=), (~~/==))
+import Text.HTML.TagSoup.Utils ((~==), (~/=), (~~/==), matching)
 
 
 codeChefParser :: ProblemParser
@@ -48,6 +50,31 @@ isCodeChefUrl url = case parseURI (T.unpack url) >>= uriAuthority of
     Nothing   -> False
     Just auth -> uriRegName auth `elem` ["codechef.com", "www.codechef.com"]
 
+orElse :: Either e a -> Either e a -> Either e a
+orElse (Right a) _ = Right a
+orElse (Left _) b = b
+
+parseMarkdown2 :: Text -> Either Text [TestCase]
+parseMarkdown2 body = do
+    let suffixes = drop 1 $ T.splitOn "###Sample Input" body
+        parseChunk :: Text -> Text
+        parseChunk text = T.strip $ T.dropWhile (not . (`elem` ['\r', '\n'])) text
+
+        parseSuffix :: Text -> Either Text TestCase
+        parseSuffix suffix = do
+            let chunks = take 2 $ T.splitOn "###" suffix
+            when (length chunks /= 2) $
+                throwError "Couldn't parse test output"
+            let [input, output] = map parseChunk chunks
+            when (T.null input || T.null output) $
+                throwError "Empty test input and/or output"
+            return $ TestCase input output
+
+        parsedSuffixes = map parseSuffix suffixes
+        testCases = rights parsedSuffixes
+
+    return testCases
+
 parseTestCasesFromMarkdown :: Text -> Either Text [TestCase]
 parseTestCasesFromMarkdown body = do
     let chunks = map T.strip $ T.splitOn "```" body
@@ -59,30 +86,63 @@ parseTestCasesFromMarkdown body = do
             { testCaseInput  = chunks!!ix
             , testCaseOutput = chunks!!ox
             }
-    when (null idxPairs) $
-        throwError "Couldn't find tests"
-    return $ map mkTestCase idxPairs
+        testCases1 = map mkTestCase idxPairs
+        testCases2 = fromRight [] $ parseMarkdown2 body
+
+    case List.find (not . null) [testCases1, testCases2] of
+        Just testCases -> return testCases
+        _ -> throwError "Couldn't find tests"
+
+
+parseHtml1 :: [Tag Text] -> Either Text TestCase
+parseHtml1 [] = Left ""
+parseHtml1 tags = do
+    let pres = take 2 $ sections (~== "<pre>") tags
+    when (length pres /= 2) $ throwError "Can't find <pre> tags"
+    let pres' = map (takeWhile (~/= "</pre>")) pres
+        [input, output] = map (T.strip . innerText) pres'
+    when (T.null input || T.null output) $
+        throwError "Empty input and/or output"
+    return $ TestCase input output
+
+
+parseHtml2 :: [Tag Text] -> Either Text TestCase
+parseHtml2 [] = Left ""
+parseHtml2 tags = do
+    let ps = take 2 $ sections (~== "<p>") tags
+    when (length ps /= 2) $ throwError "Can't find <p> tags"
+    let ps' = map (takeWhile (~/= "</p>")) ps
+        [input, output] = map (T.strip . innerText) ps'
+    when (T.null input || T.null output) $
+        throwError "Empty input and/or output"
+    return $ TestCase input output
+
 
 parseTestCasesFromHtml :: [Tag Text] -> Either Text [TestCase]
 parseTestCasesFromHtml tags = do
-    let pres = sections (~== "<pre>") tags
+    let candidates1 = sections (matching (TagOpen "" [("id", "exampleinput")])) tags
+        candidates2 = sections (matching (TagOpen "" [("id", "sampleinput")])) tags
+        parsedCandidates1 = map parseHtml1 candidates1
+        parsedCandidates2 = map parseHtml2 candidates2
+        testCases1 = rights parsedCandidates1
+        testCases2 = rights parsedCandidates2
+
+        pres = sections (~== "<pre>") tags
         testsContainer = drop 1 . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>") . last $ pres
         rootTextNodes = extractCurrentLevelTextNodes . mergeTextTags . replaceBr $ testsContainer
         inputsAndOutputs = filter (not . T.null) . map (T.strip . fromTagText) $ rootTextNodes
-        testCases = [TestCase (inputsAndOutputs!!i) (inputsAndOutputs!!(i+1)) |
-                        i <- [0, 2 .. length inputsAndOutputs-2]]
-    when (null pres || null testCases) $
-        throwError "Couldn't find tests"
-    return testCases
+        testCases3 = if null pres then [] else [
+            TestCase (inputsAndOutputs!!i) (inputsAndOutputs!!(i+1)) | i <- [0, 2 .. length inputsAndOutputs-2]]
+
+    case List.find (not . null) [testCases1, testCases2, testCases3] of
+        Just testCases -> return testCases
+        _ -> throwError "Couldn't find tests"
+
 
 fromAesonString :: Aeson.Value -> Maybe Text
 fromAesonString value = case value of
     Aeson.String s -> Just s
     _ -> Nothing
-
-orElse :: Either e a -> Either e a -> Either e a
-orElse (Right a) _ = Right a
-orElse (Left _) b = b
 
 parseFromJson :: Text -> Text -> Either Text (Problem, [TestCase])
 parseFromJson problemCode jsonText = do
@@ -99,8 +159,8 @@ parseFromJson problemCode jsonText = do
         _ -> throwError "Could not find problem body in CodeChef JSON"
 
     testCases <- parseTestCasesFromMarkdown body `orElse`
-                 parseTestCasesFromHtml (parseTags body) `orElse`
-                 pure []
+                 parseTestCasesFromHtml (parseTags body)
+    when (null testCases) $ throwError "Could not parse test cases"
     let probType = Stream StdIn StdOut
     return (Problem probName problemCode probType, testCases)
 
@@ -124,19 +184,15 @@ doParseFromHtml cont = do
     let tags = parseTags cont
         probType = Stream StdIn StdOut
 
-        -- problem ID
-        problemCode = dropWhile (~/= "<span id=problem-code>") tags
-        spanContents = takeWhile (~/= "</span>") problemCode
-        -- TODO title
-        title = T.strip $ innerText spanContents
-        probId = T.append "chef" title
+        problemCode = dropWhile (not . matching (TagOpen "" [("id", "problem-code")])) tags
+        spanContents = takeWhile (not . isTagClose) problemCode
+        probId = T.strip $ innerText spanContents
 
-        -- test cases
-        problemPage = dropWhile (\t ->
-            t ~/= "<div id=problem-page-complete>" && t ~/= "<div id=problem-page>") tags
-        content = takeWhile (~/= "</div>") . dropWhile (~~/== "<div class=content>") $ problemPage
+        titleTag = dropWhile (~/= "<title>") tags
+        titleContents = takeWhile (not . isTagClose) titleTag
+        title = T.strip . T.takeWhile (/= '|') $ innerText titleContents
 
-    testCases <- parseTestCasesFromHtml content
+    testCases <- parseTestCasesFromHtml tags
     return (Problem title probId probType, testCases)
 
 doParse :: URL -> IO (Either Text (Problem, [TestCase]))
