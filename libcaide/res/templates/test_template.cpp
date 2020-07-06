@@ -203,12 +203,12 @@ CAIDE_TC_RETURN_TYPE solve(
     int);
 #undef CAIDE_TC_PARAM
 
-void solve(istream& in, ostream& out) {
-    out << std::setprecision(12);
+void solve(istream& caide_in, ostream& caide_out) {
+    caide_out << std::setprecision(12);
 
     // Declare and read parameters
     char caide_char;
-#define CAIDE_TC_PARAM(type, name) type name; in >> caide_char; tcread(in, name);
+#define CAIDE_TC_PARAM(type, name) type name; caide_in >> caide_char; tcread(caide_in, name);
     CAIDE_TC_PARAM_LIST
 #undef CAIDE_TC_PARAM
 
@@ -220,7 +220,7 @@ void solve(istream& in, ostream& out) {
 #undef CAIDE_TC_PARAM
 
     // Write the result
-    tcwrite(out, caide_result);
+    tcwrite(caide_out, caide_result);
 }
 
 
