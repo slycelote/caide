@@ -49,7 +49,7 @@ struct Serializer<std::string> {
             throw std::invalid_argument("Expected a quote character");
         std::string s;
         for (;;) {
-            in >> c;
+            c = in.get();
             if (c == '"')
                 break;
             if (in.eof())
