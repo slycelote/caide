@@ -14,7 +14,9 @@ for a Visual Studio Extension.
 2. Download tccaide.jar file from
    [releases page](https://github.com/slycelote/caide/releases/).
 
-3. Log into Arena and select Options -> Editor from main menu.
+3. [Log into
+   Arena](http://www.topcoder.com/contest/arena/ContestAppletProd7.2.jnlp) and
+   select Options -> Editor from main menu.
 
 4. Click Add button. Use the following settings:
   * Name - caide
