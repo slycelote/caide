@@ -1,32 +1,29 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
-  <Metadata>
-    <Identity Id="8e97a36f-88cc-49ee-8e47-df660b4c7d83" Version="2.4.1" Language="en-US" Publisher="slycelote" />
-    <DisplayName>VsCaide</DisplayName>
-    <Description>Automates certain common tasks that you do during programming competitions: parsing, running and debugging problem tests, inlining library code.</Description>
-    <MoreInfo>https://github.com/slycelote/caide</MoreInfo>
-    <License>LICENSE.txt</License>
-    <GettingStartedGuide>https://github.com/slycelote/caide/releases/latest</GettingStartedGuide>
-    <ReleaseNotes>https://github.com/slycelote/caide/releases/latest</ReleaseNotes>
-    <Tags>Programming contests, Contests</Tags>
-  </Metadata>
-  <Installation InstalledByMsi="false">
-    <InstallationTarget Version="[12.0,17.0)" Id="Microsoft.VisualStudio.Community" />
-    <InstallationTarget Version="[12.0,17.0)" Id="Microsoft.VisualStudio.IntegratedShell" />
-    <InstallationTarget Version="[12.0,17.0)" Id="Microsoft.VisualStudio.Pro" />
-    <InstallationTarget Version="[12.0,17.0)" Id="Microsoft.VisualStudio.Enterprise" />
-  </Installation>
-  <Dependencies>
-    <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.5,)" />
-    <Dependency Id="Microsoft.VisualStudio.MPF.12.0" DisplayName="Visual Studio MPF 12.0" d:Source="Installed" Version="[12.0]" />
-  </Dependencies>
-  <Assets>
-    <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
-  </Assets>
-  <!-- Prerequisites section is relevant only for VS >= 2017 -->
-  <Prerequisites>
-    <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[12.0,17.0)" DisplayName="Visual Studio core editor" />
-    <Prerequisite Id="Microsoft.VisualStudio.Component.VC.CoreIde" Version="[12.0,17.0)" DisplayName="Visual Studio C++ core features" />
-    <Prerequisite Id="Microsoft.VisualStudio.Component.VC.Tools.x86.x64" Version="[12.0,17.0)" DisplayName="VC++ 2017 v141 toolset (x86,x64)" />
-  </Prerequisites>
+    <Metadata>
+        <Identity Id="8e97a36f-88cc-49ee-8e47-df660b4c7d83" Version="2.4.1" Language="en-US" Publisher="slycelote" />
+        <DisplayName>VsCaide</DisplayName>
+        <Description xml:space="preserve">Automates certain common tasks that you do during programming competitions: parsing, running and debugging problem tests, inlining library code.</Description>
+        <MoreInfo>https://github.com/slycelote/caide</MoreInfo>
+        <License>LICENSE.txt</License>
+        <GettingStartedGuide>https://github.com/slycelote/caide/releases/latest</GettingStartedGuide>
+        <ReleaseNotes>https://github.com/slycelote/caide/releases/latest</ReleaseNotes>
+        <Tags>Programming contests, Contests</Tags>
+    </Metadata>
+    <Installation InstalledByMsi="false">
+        <InstallationTarget Version="[15.0,17.0)" Id="Microsoft.VisualStudio.Community" />
+        <InstallationTarget Version="[15.0,17.0)" Id="Microsoft.VisualStudio.IntegratedShell" />
+        <InstallationTarget Version="[15.0,17.0)" Id="Microsoft.VisualStudio.Pro" />
+        <InstallationTarget Version="[15.0,17.0)" Id="Microsoft.VisualStudio.Enterprise" />
+    </Installation>
+    <Dependencies>
+        <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.5,)" />
+        <Dependency Id="Microsoft.VisualStudio.MPF.15.0" DisplayName="Visual Studio MPF" d:Source="Installed" Version="[14.0,)" />
+    </Dependencies>
+    <Prerequisites>
+        <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[15.0,17.0)" DisplayName="Visual Studio core editor" />
+    </Prerequisites>
+    <Assets>
+        <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
+    </Assets>
 </PackageManifest>

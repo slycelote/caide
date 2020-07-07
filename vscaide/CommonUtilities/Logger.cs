@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace slycelote.VsCaide.Utilities
 {
-    public class Logger
+    public static class Logger
     {
         public static void LogError(string formatString, params object[] args)
         {
@@ -24,7 +24,7 @@ namespace slycelote.VsCaide.Utilities
         {
             var time = DateTime.Now.ToString("s");
             var outputWindow = Services.GeneralOutputWindow;
-            outputWindow.OutputStringThreadSafe("[VsCaide " + time + "] " + string.Format(formatString, args) + "\n");
+            _ = outputWindow.OutputStringThreadSafe("[VsCaide " + time + "] " + string.Format(formatString, args) + "\n");
         }
 
         [Conditional("DEBUG")]

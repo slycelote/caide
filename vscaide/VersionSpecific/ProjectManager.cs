@@ -259,11 +259,15 @@ namespace slycelote.VsCaide.VsSpecific
 
             dte.Solution.SolutionBuild.StartupProjects = project.UniqueName;
 
-            var allItems = project.ProjectItems.OfType<ProjectItem>();
-            var solutionCpp = allItems.Single(i => i.Name == solutionFile);
-            var solutionCppWindow = solutionCpp.Open(EnvDTE.Constants.vsViewKindCode);
-            solutionCppWindow.Visible = true;
-            solutionCppWindow.Activate();
+            // Workaround for an issue when the following causes duplicate tab of solution.cpp.
+            if (SolutionUtilities.HasSolutionLoaded())
+            {
+                var allItems = project.ProjectItems.OfType<ProjectItem>();
+                var solutionCpp = allItems.Single(i => i.Name == solutionFile);
+                var solutionCppWindow = solutionCpp.Open(EnvDTE.Constants.vsViewKindCode);
+                solutionCppWindow.Visible = true;
+                solutionCppWindow.Activate();
+            }
 
             CreateSubmissionCppProject();
 

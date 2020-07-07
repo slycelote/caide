@@ -11,10 +11,11 @@ namespace slycelote.VsCaide
     {
         public static IProjectManager GetProjectManager()
         {
+            Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
             string version = Services.DTE.Version;
             if (string.IsNullOrEmpty(version))
             {
-                version = "2013";
+                version = "2015";
             }
             else
             {
@@ -27,13 +28,9 @@ namespace slycelote.VsCaide
                 {
                     version = "2017";
                 }
-                else if (parts.Length > 0 && parts[0] == "14")
-                {
-                    version = "2015";
-                }
                 else
                 {
-                    version = "2013";
+                    version = "2015";
                 }
             }
 

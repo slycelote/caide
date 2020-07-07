@@ -21,6 +21,7 @@ namespace slycelote.VsCaide.Utilities
     public abstract class CaideExe
     {
         public const int EXIT_CODE_TIMEOUT = -4451;
+        public const int EXIT_CODE_EXCEPTION = -4452;
 
         public static string Run(string[] args, Loudness loud = Loudness.NORMAL, string solutionDir = null)
         {
@@ -39,7 +40,7 @@ namespace slycelote.VsCaide.Utilities
                 }
                 if (loud >= Loudness.LOUD)
                 {
-                    MessageBox.Show(string.Format("caide.exe error. Return code {0}\n{1}\n{2}", ret, stdout, stderr));
+                    MessageBox.Show(string.Format("{0}\n{1}", stdout, stderr));
                 }
                 return null;
             }
@@ -75,23 +76,32 @@ namespace slycelote.VsCaide.Utilities
                 CreateNoWindow = true,
             };
 
-            using (var process = Process.Start(psi))
+            try
             {
-                var stdOutTask = process.StandardOutput.ReadToEndAsync();
-                var stdErrTask = process.StandardError.ReadToEndAsync();
-
-                var waitTime = 30 * 1000;
-                if (process.WaitForExit(waitTime))
+                using (var process = Process.Start(psi))
                 {
-                    stdout = stdOutTask.Result;
-                    stderr = stdErrTask.Result;
-                    return process.ExitCode;
+                    var stdOutTask = process.StandardOutput.ReadToEndAsync();
+                    var stdErrTask = process.StandardError.ReadToEndAsync();
+
+                    var waitTime = 30 * 1000;
+                    if (process.WaitForExit(waitTime))
+                    {
+                        stdout = stdOutTask.Result;
+                        stderr = stdErrTask.Result;
+                        return process.ExitCode;
+                    }
+
+                    stdout = "";
+                    stderr = "";
+
+                    return EXIT_CODE_TIMEOUT;
                 }
-
+            }
+            catch (Exception e)
+            {
                 stdout = "";
-                stderr = "";
-
-                return EXIT_CODE_TIMEOUT;
+                stderr = e.Message;
+                return EXIT_CODE_EXCEPTION;
             }
         }
 

@@ -19,7 +19,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Vs2017</RootNamespace>
     <AssemblyName>Vs2017</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -53,8 +53,12 @@
     <Reference Include="envdte80, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
-    <Reference Include="Microsoft.VisualStudio.VCProjectEngine, Version=15.0.0.0">
+    <Reference Include="Microsoft.VisualStudio.VCProjectEngine, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <EmbedInteropTypes>True</EmbedInteropTypes>
+      <!-- VS 2019 can't automatically find the 2017 version of VCProjectEngine.dll. Set the following path according to your VS 2017 installation.
+          If you don't have VS 2017 installed, remove this reference. The resulting extension won't work in VS 2017.
+      -->
+      <HintPath>c:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\PublicAssemblies\Microsoft.VisualStudio.VCProjectEngine.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -76,7 +80,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\CommonUtilities\CommonUtilities.csproj">
-      <Project>{f2954907-d6c2-48ac-a2ba-651e5bc280d5}</Project>
+      <Project>{e386f4f0-5343-423b-bc7b-a5c0b5953e4e}</Project>
       <Name>CommonUtilities</Name>
     </ProjectReference>
     <ProjectReference Include="..\VsInterface\VsInterface.csproj">

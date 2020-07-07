@@ -19,7 +19,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Vs2019</RootNamespace>
     <AssemblyName>Vs2019</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -76,7 +76,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\CommonUtilities\CommonUtilities.csproj">
-      <Project>{f2954907-d6c2-48ac-a2ba-651e5bc280d5}</Project>
+      <Project>{e386f4f0-5343-423b-bc7b-a5c0b5953e4e}</Project>
       <Name>CommonUtilities</Name>
     </ProjectReference>
     <ProjectReference Include="..\VsInterface\VsInterface.csproj">

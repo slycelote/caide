@@ -1,4 +1,5 @@
-﻿using slycelote.VsCaide.Utilities;
+﻿using Microsoft.VisualStudio.Shell;
+using slycelote.VsCaide.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -6,17 +7,17 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
+using Task = System.Threading.Tasks.Task;
 
 namespace slycelote.VsCaide
 {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
     public class CHelperServer
     {
-        private readonly Process Caide;
-        private readonly CancellationTokenSource CancelTokenSource = new CancellationTokenSource();
+        private readonly Process caideProcess;
+        private readonly CancellationTokenSource cancelTokenSource = new CancellationTokenSource();
 
-        public CHelperServer()
+        public CHelperServer(AsyncPackage package)
         {
             var args = new [] {"httpServer"};
             var psi = new ProcessStartInfo
@@ -30,21 +31,21 @@ namespace slycelote.VsCaide
                 UseShellExecute = false,
                 CreateNoWindow = true,
             };
-            Caide = Process.Start(psi);
-            new ReadStreamToOutputWindow(Caide.StandardOutput, CancelTokenSource.Token).RunAsync();
-            new ReadStreamToOutputWindow(Caide.StandardError,  CancelTokenSource.Token).RunAsync();
+            caideProcess = Process.Start(psi);
+            _ = new ReadStreamToOutputWindow(package, caideProcess.StandardOutput, cancelTokenSource.Token).RunAsync();
+            _ = new ReadStreamToOutputWindow(package, caideProcess.StandardError, cancelTokenSource.Token).RunAsync();
         }
 
         public void Stop()
         {
             try
             {
-                CancelTokenSource.Cancel();
-                Caide.StandardInput.WriteLine();
-                Caide.StandardInput.Close();
-                if (!Caide.WaitForExit(5000))
-                    Caide.Kill();
-                Caide.Close();
+                cancelTokenSource.Cancel();
+                caideProcess.StandardInput.WriteLine();
+                caideProcess.StandardInput.Close();
+                if (!caideProcess.WaitForExit(5000))
+                    caideProcess.Kill();
+                caideProcess.Close();
             }
             catch (Exception e)
             {
@@ -55,36 +56,40 @@ namespace slycelote.VsCaide
 
     internal class ReadStreamToOutputWindow
     {
-        private readonly StreamReader Reader;
-        private readonly CancellationToken CancelToken;
-        
-        internal ReadStreamToOutputWindow(StreamReader reader, CancellationToken cancelToken)
+        private readonly StreamReader reader;
+        private readonly CancellationToken cancelToken;
+        private readonly AsyncPackage package;
+
+        internal ReadStreamToOutputWindow(AsyncPackage package, StreamReader reader, CancellationToken cancelToken)
         {
-            this.Reader = reader;
-            this.CancelToken = cancelToken;
+            this.package = package;
+            this.reader = reader;
+            this.cancelToken = cancelToken;
         }
 
-        internal Task RunAsync()
+        internal async Task RunAsync()
         {
-            return Task.Run(() =>
+            try
             {
-                try
+                char[] buf = new char[2048];
+                var outputWindow = Services.GeneralOutputWindow;
+                for (;;)
                 {
-                    char[] buf = new char[2048];
-                    var outputWindow = Services.GeneralOutputWindow;
-                    for (;;)
+                    if (cancelToken.IsCancellationRequested)
                     {
-                        var readTask = Reader.ReadAsync(buf, 0, buf.Length);
-                        readTask.Wait(CancelToken);
-                        outputWindow.OutputStringThreadSafe(new string(buf, 0, readTask.Result));
+                        return;
                     }
+
+                    int bytesRead = await reader.ReadAsync(buf, 0, buf.Length).ConfigureAwait(false);
+                    await package.JoinableTaskFactory.SwitchToMainThreadAsync(cancelToken);
+                    _ = outputWindow.OutputStringThreadSafe(new string(buf, 0, bytesRead));
                 }
-                catch (OperationCanceledException) { }
-                catch (Exception e)
-                {
-                    Logger.LogException(e);
-                }
-            });
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception e)
+            {
+                Logger.LogException(e);
+            }
         }
     }
 }

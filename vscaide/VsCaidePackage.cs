@@ -1,299 +1,186 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.InteropServices;
 using System.ComponentModel.Design;
-
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft;
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.OLE.Interop;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.Win32;
 using slycelote.VsCaide.Utilities;
 
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Shell;
+using SolutionEvents = Microsoft.VisualStudio.Shell.Events.SolutionEvents;
+using Task = System.Threading.Tasks.Task;
 
-namespace slycelote.VsCaide
+namespace VsCaide
 {
     /// <summary>
     /// This is the class that implements the package exposed by this assembly.
-    ///
+    /// </summary>
+    /// <remarks>
+    /// <para>
     /// The minimum requirement for a class to be considered a valid package for Visual Studio
     /// is to implement the IVsPackage interface and register itself with the shell.
     /// This package uses the helper classes defined inside the Managed Package Framework (MPF)
     /// to do it: it derives from the Package class that provides the implementation of the
     /// IVsPackage interface and uses the registration attributes defined in the framework to
-    /// register itself and its components with the shell.
-    /// </summary>
-
-    // This attribute tells the PkgDef creation utility (CreatePkgDef.exe) that this class is
-    // a package.
-    [PackageRegistration(UseManagedResourcesOnly = true)]
-
-    // This attribute is used to register the information needed to show this package
-    // in the Help/About dialog of Visual Studio.
-    [InstalledProductRegistration("#110", "#112", "2.4.1", IconResourceID = 400)]
-
-    // This attribute is needed to let the shell know that this package exposes some menus.
+    /// register itself and its components with the shell. These attributes tell the pkgdef creation
+    /// utility what data to put into .pkgdef file.
+    /// </para>
+    /// <para>
+    /// To get loaded into VS, the package must be referred by &lt;Asset Type="Microsoft.VisualStudio.VsPackage" ...&gt; in .vsixmanifest file.
+    /// </para>
+    /// </remarks>
+    [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
+    [InstalledProductRegistration("#110", "#112", "2.4.2", IconResourceID = 400)] // Info on this package for Help/About
+    [Guid(VsCaidePackage.PackageGuidString)]
+    [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
+    [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string, PackageAutoLoadFlags.BackgroundLoad)]
+    [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExists_string, PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
-
-    // This attribute registers a tool window exposed by this package.
-    [ProvideToolWindow( typeof(MainToolWindow),
-        Window=Microsoft.VisualStudio.Shell.Interop.ToolWindowGuids.PropertyBrowser,
-        Style=VsDockStyle.Tabbed
-    )]
-
-    [ProvideAutoLoad(Microsoft.VisualStudio.VSConstants.UICONTEXT.NoSolution_string)]
-    [ProvideAutoLoad(Microsoft.VisualStudio.VSConstants.UICONTEXT.SolutionExists_string)]
-    [Guid(GuidList.guidVsCaidePkgString)]
-    public sealed class VsCaidePackage : Package, IVsShellPropertyEvents, IVsSolutionEvents, IVsSolutionLoadEvents, IVsSelectionEvents
+    [ProvideToolWindow(typeof(VsCaideMainWindow), Style = VsDockStyle.Tabbed, Window = ToolWindowGuids.SolutionExplorer)]
+    public sealed class VsCaidePackage : AsyncPackage, IVsSelectionEvents
     {
-        private static VsCaidePackage Instance { get; set; }
+        /// <summary>
+        /// VsCaidePackage GUID string.
+        /// </summary>
+        public const string PackageGuidString = "8e97a36f-88cc-49ee-8e47-df660b4c7d83";
 
         /// <summary>
-        /// Default constructor of the package.
-        /// Inside this method you can place any initialization code that does not require
-        /// any Visual Studio service because at this point the package object is created but
-        /// not sited yet inside Visual Studio environment. The place to do all the other
-        /// initialization is the Initialize method.
+        /// Initializes a new instance of the <see cref="VsCaidePackage"/> class.
         /// </summary>
         public VsCaidePackage()
         {
-            Debug.WriteLine(string.Format(CultureInfo.CurrentCulture, "Entering constructor for: {0}", this.ToString()));
-            Instance = null;
+            // Inside this method you can place any initialization code that does not require
+            // any Visual Studio service because at this point the package object is created but
+            // not sited yet inside Visual Studio environment. The place to do all the other
+            // initialization is the Initialize method.
         }
 
-        /// <summary>
-        /// This function is called when the user clicks the menu item that shows the
-        /// tool window. See the Initialize method to see how the menu item is associated to
-        /// this function using the OleMenuCommandService service and the MenuCommand class.
-        /// </summary>
-        private void ShowToolWindow(object sender, EventArgs e)
-        {
-            ToolWindowPane window = LocateMainToolWindow();
-            if ((null == window) || (null == window.Frame))
-            {
-                throw new NotSupportedException(Resources.CanNotCreateWindow);
-            }
-            IVsWindowFrame windowFrame = (IVsWindowFrame)window.Frame;
-            Microsoft.VisualStudio.ErrorHandler.ThrowOnFailure(windowFrame.Show());
-        }
-
-        private MainToolWindow LocateMainToolWindow()
-        {
-            // Get the instance number 0 of this tool window. This window is single instance so this instance
-            // is actually the only one.
-            // The last flag is set to true so that if the tool window does not exists it will be created.
-            return (MainToolWindow)this.FindToolWindow(typeof(MainToolWindow), 0, true);
-        }
-
-
-        /////////////////////////////////////////////////////////////////////////////
-        // Overridden Package Implementation
         #region Package Members
 
         /// <summary>
         /// Initialization of the package; this method is called right after the package is sited, so this is the place
         /// where you can put all the initialization code that rely on services provided by VisualStudio.
         /// </summary>
-        protected override void Initialize()
+        /// <param name="cancellationToken">A cancellation token to monitor for initialization cancellation, which can occur when VS is shutting down.</param>
+        /// <param name="progress">A provider for progress updates.</param>
+        /// <returns>A task representing the async work of package initialization, or an already completed task if there is none. Do not return null from this method.</returns>
+        protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
-            Debug.WriteLine (string.Format(CultureInfo.CurrentCulture, "Entering Initialize() of: {0}", this.ToString()));
-            base.Initialize();
-
-            if (Instance != null)
-            {
-                Logger.LogError("Package has already been initialized");
-            }
-            Instance = this;
-
-            IVsShell shellService = Services.Shell;
-            if (shellService != null)
-                ErrorHandler.ThrowOnFailure(
-                  shellService.AdviseShellPropertyChanges(this, out shellPropertyChangeCookie));
-
-        }
-        #endregion
-
-        #region IVsShellPropertyEvents members
-
-        private uint shellPropertyChangeCookie;
-
-        public int OnShellPropertyChange(int propid, object var)
-        {
-            if ((int)__VSSPROPID.VSSPROPID_Zombie != propid || (bool)var == true)
-                return VSConstants.S_OK;
-
-            // when zombie state changes to false, finish package initialization
-            IVsShell shellService = Services.Shell;
-
-            if (shellService != null)
-                ErrorHandler.ThrowOnFailure(
-                  shellService.UnadviseShellPropertyChanges(this.shellPropertyChangeCookie));
-            this.shellPropertyChangeCookie = 0;
-
-            // Add our command handlers for menu (commands must exist in the .vsct file)
-            OleMenuCommandService mcs = GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
-            if ( null != mcs )
-            {
-                // Create the command for the tool window
-                CommandID toolwndCommandID = new CommandID(GuidList.guidVsCaideCmdSet, (int)PkgCmdIDList.cmdidMainWindow);
-                MenuCommand menuToolWin = new MenuCommand(ShowToolWindow, toolwndCommandID);
-                mcs.AddCommand( menuToolWin );
-            }
-
-            var solutionService = Services.Solution;
-            ErrorHandler.ThrowOnFailure(
-                solutionService.AdviseSolutionEvents(this, out solutionEventsCookie));
-
+            await JoinableTaskFactory.SwitchToMainThreadAsync();
+            await Services.InitializeAsync(this);
+            SolutionEvents.OnAfterCloseSolution += SolutionEvents_OnAfterCloseSolution;
+            SolutionEvents.OnBeforeOpenSolution += SolutionEvents_OnBeforeOpenSolution;
+            SolutionEvents.OnBeforeBackgroundSolutionLoadBegins += SolutionEvents_OnBeforeBackgroundSolutionLoadBegins;
+            SolutionEvents.OnAfterBackgroundSolutionLoadComplete += SolutionEvents_OnAfterBackgroundSolutionLoadComplete;
+            SolutionEvents.OnBeforeCloseProject += SolutionEvents_OnBeforeCloseProject;
             var monitorSelection = Services.MonitorSelection;
+            _ = ErrorHandler.ThrowOnFailure(
+                monitorSelection.AdviseSelectionEvents(this, out uint monitorSelectionCookie));
+
+            // https://github.com/madskristensen/SolutionLoadSample
+            SolutionEvents.OnAfterOpenSolution += SolutionEvents_OnAfterLoadedSolution;
+            bool isSolutionLoaded = await IsSolutionLoadedAsync();
+            if (isSolutionLoaded)
+            {
+                SolutionEvents_OnAfterLoadedSolution();
+            }
+
+            await VsCaideMainWindowCommand.InitializeAsync(this);
+        }
+
+        #endregion
+
+        private async Task<bool> IsSolutionLoadedAsync()
+        {
+            await JoinableTaskFactory.SwitchToMainThreadAsync();
+            var solService = await GetServiceAsync(typeof(SVsSolution)) as IVsSolution;
+            Assumes.Present(solService);
             ErrorHandler.ThrowOnFailure(
-                monitorSelection.AdviseSelectionEvents(this, out monitorSelectionCookie));
+                solService.GetProperty((int)__VSPROPID.VSPROPID_IsSolutionOpen,
+                out object value));
 
-            return VSConstants.S_OK;
+            return value is bool && (bool)value;
         }
 
-
-        #endregion
-
-        #region IVsSolutionEvents methods
-
-        private uint solutionEventsCookie;
-        public int OnAfterOpenSolution(object pUnkReserved, int fNewSolution)
+        private VsCaideMainWindowControl GetMainWindowControl()
         {
-            LocateMainToolWindow().Control.Solution_Opened();
-            return VSConstants.S_OK;
+            ToolWindowPane window = this.FindToolWindow(typeof(VsCaideMainWindow), 0, true) as VsCaideMainWindow;
+            return window != null ? window.Content as VsCaideMainWindowControl : null;
         }
 
-        public int OnAfterCloseSolution(object pUnkReserved)
+        private void SolutionEvents_OnAfterLoadedSolution(object sender = null, EventArgs e = null)
         {
-            LocateMainToolWindow().Control.Solution_Closed();
-            return VSConstants.S_OK;
+            ThreadHelper.ThrowIfNotOnUIThread();
+            GetMainWindowControl()?.OnAfterLoadedSolution();
         }
 
-        private IVsHierarchy unloadingProjectHier = null;
-        public int OnBeforeUnloadProject(IVsHierarchy pRealHierarchy, IVsHierarchy pStubHierarchy)
+        private void SolutionEvents_OnAfterBackgroundSolutionLoadComplete(object sender = null, EventArgs e = null)
         {
-            unloadingProjectHier = pRealHierarchy;
-            return VSConstants.S_OK;
+            ThreadHelper.ThrowIfNotOnUIThread();
+            GetMainWindowControl()?.OnAfterBackgroundSolutionLoadComplete();
         }
 
-        public int OnBeforeCloseProject(IVsHierarchy pHierarchy, int fRemoved)
+        private void SolutionEvents_OnBeforeBackgroundSolutionLoadBegins(object sender, EventArgs e)
         {
-            try
+            ThreadHelper.ThrowIfNotOnUIThread();
+            GetMainWindowControl()?.OnBeforeBackgroundSolutionLoadBegins();
+        }
+
+        private void SolutionEvents_OnBeforeCloseProject(object sender, Microsoft.VisualStudio.Shell.Events.CloseProjectEventArgs e)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            if (e.IsRemoved && !SolutionUtilities.IgnoreSolutionEvents)
             {
-                if (fRemoved != 0 && pHierarchy != unloadingProjectHier && !SolutionUtilities.IgnoreSolutionEvents)
-                {
-                    LocateMainToolWindow().Control.Project_Removed(pHierarchy);
-                }
+                GetMainWindowControl()?.OnBeforeCloseProject(e.Hierarchy);
             }
-            finally
-            {
-                unloadingProjectHier = null;
-            }
-            return VSConstants.S_OK;
         }
 
-        #region Unrelated events
-        public int OnAfterLoadProject(IVsHierarchy pStubHierarchy, IVsHierarchy pRealHierarchy)
+        private void SolutionEvents_OnBeforeOpenSolution(object sender, Microsoft.VisualStudio.Shell.Events.BeforeOpenSolutionEventArgs e)
         {
-            return VSConstants.S_OK;
+            GetMainWindowControl()?.OnBeforeOpenSolution();
         }
 
-        public int OnAfterOpenProject(IVsHierarchy pHierarchy, int fAdded)
+        private void SolutionEvents_OnAfterCloseSolution(object sender, EventArgs e)
         {
-            return VSConstants.S_OK;
+            ThreadHelper.ThrowIfNotOnUIThread();
+            GetMainWindowControl()?.OnAfterCloseSolution();
         }
 
-        public int OnBeforeCloseSolution(object pUnkReserved)
-        {
-            return VSConstants.S_OK;
-        }
-
-        public int OnQueryCloseProject(IVsHierarchy pHierarchy, int fRemoving, ref int pfCancel)
-        {
-            return VSConstants.S_OK;
-        }
-
-        public int OnQueryCloseSolution(object pUnkReserved, ref int pfCancel)
-        {
-            return VSConstants.S_OK;
-        }
-
-        public int OnQueryUnloadProject(IVsHierarchy pRealHierarchy, ref int pfCancel)
-        {
-            return VSConstants.S_OK;
-        }
-        #endregion
-
-        #endregion
-
-        #region IVsSelectionEvents methods
-        private uint monitorSelectionCookie;
-
+        #region IVsSelectionEvents
         public int OnElementValueChanged(uint elementid, object varValueOld, object varValueNew)
         {
-            if (elementid == (uint)VSConstants.VSSELELEMID.SEID_StartupProject && !SolutionUtilities.IgnoreSolutionEvents)
+            if (elementid != (uint)VSConstants.VSSELELEMID.SEID_StartupProject)
+                return VSConstants.S_OK;
+
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            if (!SolutionUtilities.IgnoreSolutionEvents)
             {
-                var newStartupProjectHierarchy = (IVsHierarchy)varValueNew;
-                LocateMainToolWindow().Control.StartupProject_Changed(newStartupProjectHierarchy);
+                GetMainWindowControl()?.OnStartupProjectChanged(varValueNew as IVsHierarchy);
             }
+
             return VSConstants.S_OK;
         }
 
         #region Unrelated events
-        public int OnCmdUIContextChanged(uint dwCmdUICookie, int fActive)
-        {
-            return VSConstants.S_OK;
-        }
-
         public int OnSelectionChanged(IVsHierarchy pHierOld, uint itemidOld, IVsMultiItemSelect pMISOld, ISelectionContainer pSCOld, IVsHierarchy pHierNew, uint itemidNew, IVsMultiItemSelect pMISNew, ISelectionContainer pSCNew)
         {
             return VSConstants.S_OK;
         }
-        #endregion
 
-        #endregion
-
-        #region IVsSolutionLoadEvents members
-        public int OnAfterBackgroundSolutionLoadComplete()
+        public int OnCmdUIContextChanged(uint dwCmdUICookie, int fActive)
         {
-            try
-            {
-                LocateMainToolWindow().Control.AllProjects_Loaded();
-            }
-            catch (Exception e)
-            {
-                Logger.LogError("{0}", e);
-            }
-            return VSConstants.S_OK;
-        }
-
-        #region Unrelated events
-        public int OnAfterLoadProjectBatch(bool fIsBackgroundIdleBatch)
-        {
-            return VSConstants.S_OK;
-        }
-
-        public int OnBeforeBackgroundSolutionLoadBegins()
-        {
-            return VSConstants.S_OK;
-        }
-
-        public int OnBeforeLoadProjectBatch(bool fIsBackgroundIdleBatch)
-        {
-            return VSConstants.S_OK;
-        }
-
-        public int OnBeforeOpenSolution(string pszSolutionFilename)
-        {
-            return VSConstants.S_OK;
-        }
-
-        public int OnQueryBackgroundLoadProjectBatch(out bool pfShouldDelayLoadToNextIdle)
-        {
-            pfShouldDelayLoadToNextIdle = false;
             return VSConstants.S_OK;
         }
         #endregion
-
         #endregion
     }
 }

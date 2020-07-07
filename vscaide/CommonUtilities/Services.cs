@@ -11,22 +11,39 @@ namespace slycelote.VsCaide.Utilities
 {
     public class Services
     {
-        public static DTE DTE { get { return Get<SDTE, DTE>(); } }
-
-        public static IVsSolution Solution { get { return Get<SVsSolution, IVsSolution>(); } }
-        public static IVsOutputWindowPane GeneralOutputWindow { get { return Get<SVsGeneralOutputWindowPane, IVsOutputWindowPane>(); } }
-        public static IVsMonitorSelection MonitorSelection { get { return Get<SVsShellMonitorSelection, IVsMonitorSelection>(); } }
-
-        public static IVsCommandWindow CommandWindow { get { return Get<SVsCommandWindow, IVsCommandWindow>(); } }
-        public static IVsShell Shell { get { return Get<SVsShell, IVsShell>(); } }
-        public static IVsOutputWindow OutputWindow { get { return Get<SVsOutputWindow, IVsOutputWindow>(); } }
-        public static IVsFileChangeEx FileChangeEx { get { return Get<SVsFileChangeEx, IVsFileChangeEx>(); } }
-        public static IVsActivityLog Log { get { return Get<SVsActivityLog, IVsActivityLog>(); } }
-
-        private static TInterface Get<TService, TInterface>()
-            where TInterface: class
+        public static async System.Threading.Tasks.Task InitializeAsync(AsyncPackage package)
         {
-            return Package.GetGlobalService(typeof(TService)) as TInterface;
+            DTE = await Get<DTE>(package);
+            Solution = await GetAsync<SVsSolution, IVsSolution>(package);
+            GeneralOutputWindow = await GetAsync<SVsGeneralOutputWindowPane, IVsOutputWindowPane>(package);
+            MonitorSelection = await Get<IVsMonitorSelection>(package);
+            CommandWindow = await Get<IVsCommandWindow>(package);
+            Shell = await Get<IVsShell>(package);
+            OutputWindow = await Get<IVsOutputWindow>(package);
+            FileChangeEx = await Get<IVsFileChangeEx>(package);
+            Log = await GetAsync<SVsActivityLog, IVsActivityLog>(package);
+        }
+
+        public static DTE DTE { get; private set; }
+        public static IVsSolution Solution { get; private set; }
+        public static IVsOutputWindowPane GeneralOutputWindow { get; private set; }
+        public static IVsMonitorSelection MonitorSelection { get; private set; }
+        public static IVsCommandWindow CommandWindow { get; private set; }
+        public static IVsShell Shell { get; private set; }
+        public static IVsOutputWindow OutputWindow { get; private set; }
+        public static IVsFileChangeEx FileChangeEx { get; private set; }
+        public static IVsActivityLog Log { get; private set; }
+
+        private static async Task<TInterface> GetAsync<TServiceType, TInterface>(AsyncPackage package)
+            where TInterface : class
+        {
+            return await package.GetServiceAsync(typeof(TServiceType)) as TInterface;
+        }
+
+        private static async Task<TInterface> Get<TInterface>(AsyncPackage package)
+            where TInterface : class
+        {
+            return await GetAsync<TInterface, TInterface>(package);
         }
     }
 }

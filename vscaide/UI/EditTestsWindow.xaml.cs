@@ -1,87 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+using VsCaide;
 
 namespace slycelote.VsCaide.UI
 {
-    /// <summary>
-    /// Interaction logic for EditTestsWindow.xaml
-    /// </summary>
-
-    public class ExtendedCheckBox : CheckBox
+    class TestsModel: NotifyPropertyChangedBase
     {
-        public bool InvertCheckStateOrder
-        {
-            get { return (bool)GetValue(InvertCheckStateOrderProperty); }
-            set { SetValue(InvertCheckStateOrderProperty, value); }
-        }
-
-        // Using a DependencyProperty as the backing store for InvertCheckStateOrder.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty InvertCheckStateOrderProperty =
-            DependencyProperty.Register("InvertCheckStateOrder", typeof(bool), typeof(ExtendedCheckBox), new UIPropertyMetadata(false));
-
-        protected override void OnToggle()
-        {
-            if (this.InvertCheckStateOrder)
-            {
-                if (this.IsChecked == true)
-                {
-                    this.IsChecked = false;
-                }
-                else if (this.IsChecked == false)
-                {
-                    this.IsChecked = this.IsThreeState ? null : (bool?)true;
-                }
-                else
-                {
-                    this.IsChecked = true;
-                }
-            }
-            else
-            {
-                base.OnToggle();
-            }
-        }
-    }
-
-    public partial class EditTestsWindow : Window, INotifyPropertyChanged
-    {
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChangedEventHandler handler = PropertyChanged;
-            if (handler != null)
-                handler(this, new PropertyChangedEventArgs(propertyName));
-        }
-        protected bool SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
-        {
-            if (EqualityComparer<T>.Default.Equals(field, value))
-                return false;
-            field = value;
-            OnPropertyChanged(propertyName);
-            return true;
-        }
-
         private BindingList<TestCase> testCases;
-        public BindingList<TestCase> TestCases { get { return testCases; } set { SetField(ref testCases, value); }  }
+        public BindingList<TestCase> TestCases {
+            get { return testCases; }
+            set { SetField(ref testCases, value); }
+        }
+
         private TestCase selectedCase;
         public TestCase SelectedCase {
             get { return selectedCase; }
             set { SetField(ref selectedCase, value); }
         }
+        
         public bool? AllEnabled {
             get {
                 var checkedCnt = TestCases.Count(tc => tc.IsEnabled);
@@ -98,6 +39,11 @@ namespace slycelote.VsCaide.UI
                     tc.IsEnabled = value.Value;
             }
         }
+    }
+
+    public partial class EditTestsWindow : Window
+    {
+        private TestsModel model = new TestsModel();
 
         private void OnCbClicked (object sender, RoutedEventArgs e)
         {
@@ -116,13 +62,13 @@ namespace slycelote.VsCaide.UI
         public EditTestsWindow(List<TestCase> testCases)
         {
             InitializeComponent();
-            lstTestCases.DataContext = this;
-            TestCases = new BindingList<TestCase>(testCases);
-            TestCases.ListChanged += (o, i) => OnPropertyChanged("AllEnabled");
-            TestCases.ListChanged += (o, i) => UpdateUI ();
+            lstTestCases.DataContext = this.model;
+            model.TestCases = new BindingList<TestCase>(testCases);
+            model.TestCases.ListChanged += (o, i) => model.OnPropertyChanged("AllEnabled");
+            model.TestCases.ListChanged += (o, i) => UpdateUI();
             if (testCases.Any())
             {
-                SelectedCase = testCases[0];
+                model.SelectedCase = testCases[0];
             }
             UpdateUI();
         }
@@ -131,19 +77,20 @@ namespace slycelote.VsCaide.UI
         {
             var inst = new EditTestsWindow(testCases);
             inst.ShowDialog();
-            return new List<TestCase> (inst.TestCases);
+            return new List<TestCase>(inst.model.TestCases);
         }
 
         private void UpdateUI()
         {
+            TestCase selectedCase = model.SelectedCase;
             btnDelete.IsEnabled = txtInput.IsEnabled = txtOutput.IsEnabled = chkOutputKnown.IsEnabled =
-                SelectedCase != null;
-            if (SelectedCase != null)
+                selectedCase != null;
+            if (selectedCase != null)
             {
-                txtInput.Text = SelectedCase.Input;
-                txtOutput.Text = SelectedCase.Output;
-                chkOutputKnown.IsChecked = SelectedCase.OutputIsKnown;
-                txtOutput.IsEnabled = (SelectedCase.OutputIsKnown && SelectedCase.IsEnabled);
+                txtInput.Text = selectedCase.Input;
+                txtOutput.Text = selectedCase.Output;
+                chkOutputKnown.IsChecked = selectedCase.OutputIsKnown;
+                txtOutput.IsEnabled = selectedCase.OutputIsKnown && selectedCase.IsEnabled;
             }
         }
 
@@ -151,31 +98,31 @@ namespace slycelote.VsCaide.UI
 
         private void chkOutputKnown_Click(object sender, RoutedEventArgs e)
         {
-            if (SelectedCase == null || DisableEvents)
+            if (model.SelectedCase == null || DisableEvents)
                 return;
-            SelectedCase.OutputIsKnown = chkOutputKnown.IsChecked.GetValueOrDefault(true);
+            model.SelectedCase.OutputIsKnown = chkOutputKnown.IsChecked.GetValueOrDefault(true);
             UpdateUI();
         }
 
         private void txtInput_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (SelectedCase == null || DisableEvents)
+            if (model.SelectedCase == null || DisableEvents)
                 return;
-            SelectedCase.Input = txtInput.Text;
+            model.SelectedCase.Input = txtInput.Text;
         }
 
         private void txtOutput_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (SelectedCase == null || DisableEvents)
+            if (model.SelectedCase == null || DisableEvents)
                 return;
-            SelectedCase.Output = txtOutput.Text;
+            model.SelectedCase.Output = txtOutput.Text;
         }
 
         private void btnDelete_Click(object sender, RoutedEventArgs e)
         {
             int selIndex = lstTestCases.SelectedIndex;
-            TestCases.RemoveAt(selIndex);
-            selIndex = Math.Min(TestCases.Count - 1, selIndex);
+            model.TestCases.RemoveAt(selIndex);
+            selIndex = Math.Min(model.TestCases.Count - 1, selIndex);
             lstTestCases.SelectedIndex = selIndex;
         }
 
@@ -185,7 +132,7 @@ namespace slycelote.VsCaide.UI
             for (int testId = 1; ; ++testId)
             {
                 newTestName = "case" + testId;
-                if (!TestCases.Any(t => StringComparer.CurrentCultureIgnoreCase.Equals(newTestName, t.Name)))
+                if (!model.TestCases.Any(t => StringComparer.CurrentCultureIgnoreCase.Equals(newTestName, t.Name)))
                 {
                     break;
                 }
@@ -200,7 +147,7 @@ namespace slycelote.VsCaide.UI
                 OutputIsKnown = true,
             };
 
-            TestCases.Add(newTestCase);
+            model.TestCases.Add(newTestCase);
             lstTestCases.SelectedItem = newTestCase;
         }
     }

@@ -13,6 +13,13 @@ namespace slycelote.VsCaide.Utilities
     public abstract class SolutionUtilities
     {
         public static volatile bool IgnoreSolutionEvents = false;
+        public static DateTime SolutionLoadStart = DateTime.MinValue;
+        public static bool HasSolutionLoadCompleted = false;
+
+        public static bool HasSolutionLoaded()
+        {
+            return HasSolutionLoadCompleted || DateTime.Now - SolutionLoadStart > TimeSpan.FromSeconds(20);
+        }
 
         public static Project GetProject(IVsHierarchy hierarchy)
         {
