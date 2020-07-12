@@ -88,14 +88,16 @@ internalCommands =
     ]
 
 
-allSubCommands :: [Mod CommandFields CaideAction]
-allSubCommands = map createSubCommand commands ++
+publicSubCommands :: [Mod CommandFields CaideAction]
+publicSubCommands = map createSubCommand commands ++
     [ createIoSubCommand (
         "httpServer",
         "Run HTTP server for CHelper browser extension",
         pure runHttpServer)
-    ] ++
-    map createSubCommand internalCommands
+    ]
+
+internalSubCommands :: [Mod CommandFields CaideAction]
+internalSubCommands = map createSubCommand internalCommands
 
 
 initOpts :: Parser (CaideIO ())
@@ -145,8 +147,12 @@ probOptionsCmd handler = handler <$>
     txtArgument (metavar "SECTION" <> help "Section name") <*>
     txtArgument (metavar "KEY" <> help "Key name")
 
+fullParser :: Parser CaideAction
+fullParser = subparser (mconcat publicSubCommands) <|>
+    subparser (mconcat internalSubCommands <> commandGroup "Internal commands:" <> internal)
+
 opts :: ParserInfo CaideAction
-opts = info (helper <*> subparser (mconcat allSubCommands)) $
+opts = info (helper <*> fullParser) $
     fullDesc <> header "Caide -- programming competitions tool" <>
     progDesc "Additional help is available with 'caide -h' or 'caide COMMAND -h'" <>
     footer "http://github.com/slycelote/caide"
