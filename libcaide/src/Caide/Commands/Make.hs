@@ -29,9 +29,11 @@ import Caide.TestCases.Types
 
 
 
-withProblem ::  (ProblemID -> FilePath -> CaideM IO a) -> CaideM IO a
-withProblem processProblem = do
-    probId <- getActiveProblem
+withProblem :: Maybe ProblemID -> (ProblemID -> FilePath -> CaideM IO a) -> CaideM IO a
+withProblem mbProbId processProblem = do
+    probId <- case mbProbId of
+        Just probId' -> return probId'
+        Nothing -> getActiveProblem
     root <- caideRoot
     let problemDir = root </> fromText probId
     problemExists <- liftIO $ isDirectory problemDir
@@ -39,27 +41,27 @@ withProblem processProblem = do
     then processProblem probId problemDir
     else throw . T.concat $ ["Problem ", probId, " doesn't exist"]
 
-make :: CaideIO ()
-make = withProblem $ \_ _ -> makeProblem
+make :: Maybe ProblemID -> CaideIO ()
+make p = withProblem p $ \probId _ -> makeProblem probId
 
-updateTests :: CaideIO ()
-updateTests = withProblem $ \_ problemDir -> liftIO $ do
+updateTests :: Maybe ProblemID -> CaideIO ()
+updateTests mbProbId = withProblem mbProbId $ \_ problemDir -> liftIO $ do
     caideExe <- getExecutablePath
     copyTestInputs problemDir
     updateTestList problemDir
     let testDir = problemDir </> ".caideproblem" </> "test"
     writeTextFile (testDir </> "caideExe.txt") $ T.pack caideExe
 
-prepareSubmission :: CaideIO ()
-prepareSubmission = withProblem $ \probId _ -> do
+prepareSubmission :: ProblemID -> CaideIO ()
+prepareSubmission probId = do
     hProblem <- readProblemState probId
     lang <- getProp hProblem "problem" "language"
     case findLanguage lang of
         Nothing            -> throw . T.concat $ ["Unsupported programming language ", lang]
         Just (_, language) -> inlineCode language probId
 
-makeProblem :: CaideIO ()
-makeProblem = updateTests >> prepareSubmission
+makeProblem :: ProblemID -> CaideIO ()
+makeProblem probId = updateTests (Just probId) >> prepareSubmission probId
 
 copyTestInputs :: FilePath -> IO ()
 copyTestInputs problemDir = do

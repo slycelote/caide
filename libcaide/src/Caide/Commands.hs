@@ -69,7 +69,7 @@ commands =
     [ ("init", "Initialize caide directory", initOpts)
     , ("problem", "Parse a problem or create an empty problem", problemOpts)
     , ("contest", "Parse an online contest", contestOpts)
-    , ("make", "Prepare submission file and update test list", pure make)
+    , ("make", "Prepare submission file and update test list", makeOpts)
     , ("test", "Run tests and generate test report", pure runTests)
     , ("checkout", "Switch to a different problem", checkoutOpts)
     , ("lang", "Generate scaffold solution", langOpts)
@@ -82,7 +82,7 @@ internalCommands =
     , ("getstate", "(Internal) print caide state", optionsCmd getState)
     , ("probgetopt", "(Internal) print problem config option", probOptionsCmd getProbOpt)
     , ("probgetstate", "(Internal) print problem state", probOptionsCmd getProbState)
-    , ("update_tests", "(Internal) Update test list and status", pure updateTests)
+    , ("update_tests", "(Internal) Update test list and status", updateTestsOpts)
     , ("eval_tests", "(Internal) Generate test report", pure evalTests)
     , ("printRoot", "(Internal) Show caide root directory", pure printRoot)
     ]
@@ -123,6 +123,10 @@ contestOpts :: Parser (CaideIO ())
 contestOpts = createContest <$>
     txtArgument (metavar "URL" <> help "Contest URL")
 
+makeOpts :: Parser (CaideIO ())
+makeOpts = make <$>
+    optional (txtArgument (metavar "PROBLEM" <> help "Problem ID (matches problem directory)"))
+
 langOpts :: Parser (CaideIO ())
 langOpts = generateScaffoldSolution <$>
     txtArgument (metavar "LANG" <> help "Programming language of the solution (cpp, csharp)")
@@ -146,6 +150,10 @@ probOptionsCmd handler = handler <$>
     txtArgument (metavar "PROBLEM" <> help "Problem name") <*>
     txtArgument (metavar "SECTION" <> help "Section name") <*>
     txtArgument (metavar "KEY" <> help "Key name")
+
+updateTestsOpts :: Parser (CaideIO ())
+updateTestsOpts = updateTests <$>
+    optional (txtArgument (metavar "PROBLEM" <> help "Problem ID (matches problem directory)"))
 
 fullParser :: Parser CaideAction
 fullParser = subparser (mconcat publicSubCommands) <|>

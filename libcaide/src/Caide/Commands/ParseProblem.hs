@@ -69,7 +69,7 @@ initializeProblem problem = withLock $ do
     flushConf hProblemState
 
     lang <- getDefaultLanguage
-    updateTests
+    updateTests (Just probId)
     generateScaffoldSolution lang
 
 isAcceptableCharacter :: Char -> Bool
