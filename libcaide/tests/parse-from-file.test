@@ -1,5 +1,5 @@
 #!/bin/bash
-curl 'http://codeforces.com/contest/452/problem/A' -o file.html
+curl -H 'Cookie: RCPC=4f698e716ffeabe9943d7f1e60e50a0b' 'http://codeforces.com/contest/452/problem/A' -o file.html
 "$CAIDE" problem 'http://codeforces.com/contest/4242/problem/A' --from-file file.html
 
 compare_with parsed cf452A/case{1..3}.{in,out} cf452A/problem.ini

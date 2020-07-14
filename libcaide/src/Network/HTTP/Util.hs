@@ -4,14 +4,17 @@ module Network.HTTP.Util(
 ) where
 
 import Control.Exception (catch)
-import Data.ByteString.Lazy (toStrict)
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as LBS
 import Data.Maybe (isNothing)
 import qualified Data.Text as T
-import Network.HTTP.Client (HttpException(..), HttpExceptionContent(..), httpLbs, newManager, parseUrlThrow,
-                            responseStatus, responseBody, responseTimeout, responseTimeoutMicro, requestHeaders, Request)
+import Network.HTTP.Client (HttpException(..), HttpExceptionContent(..), Request,
+    httpLbs, newManager, parseUrlThrow,
+    host, requestHeaders,
+    responseStatus, responseBody, responseTimeout, responseTimeoutMicro, )
 import Network.Connection (TLSSettings(TLSSettingsSimple))
 import Network.HTTP.Client.TLS (mkManagerSettings)
-import Network.HTTP.Types.Header (hAccept, hAcceptEncoding, hUserAgent)
+import Network.HTTP.Types.Header (RequestHeaders, hAccept, hAcceptEncoding, hCookie, hUserAgent)
 import Network.HTTP.Types.Status (ok200, statusCode, statusMessage)
 import System.IO.Error (catchIOError, ioeGetErrorString)
 
@@ -34,11 +37,17 @@ downloadDocument url
             [ (hAcceptEncoding, "") -- omit this header
             , (hUserAgent, "wget")
             , (hAccept, "*/*")
-            ]
+            ] ++ getAdditionalHeaders (host request)
     }
     mkLiftedError = return . Left
     errorHandler = mkLiftedError . T.pack . ioeGetErrorString
     result = httpDownloader request' `catchIOError` errorHandler `catch` statusExceptionHandler url
+
+getAdditionalHeaders :: BS.ByteString -> RequestHeaders
+getAdditionalHeaders requestHost =
+    if requestHost `elem` ["codeforces.com", "www.codeforces.com"]
+        then [(hCookie, "RCPC=4f698e716ffeabe9943d7f1e60e50a0b")]
+        else []
 
 describeHttpException :: HttpException -> T.Text
 describeHttpException (InvalidUrlException url reason) = T.concat ["URL '", T.pack url, "' is invalid: ", T.pack reason]
@@ -66,6 +75,6 @@ httpDownloader request = do
     response <- httpLbs request manager
     let status = responseStatus response
     return $ if status == ok200
-       then tryDecodeUtf8 . toStrict . responseBody $ response
+       then tryDecodeUtf8 . LBS.toStrict . responseBody $ response
        else Left . safeDecodeUtf8 . statusMessage $ status
 
