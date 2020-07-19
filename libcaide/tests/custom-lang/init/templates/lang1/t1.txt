@@ -1,0 +1,17 @@
+t1.txt
+
+{{#input.file}}
+input: {{& .}}
+{{/input.file}}
+
+{{^input.file}}
+input: stdin
+{{/input.file}}
+
+{{#output.file}}
+output: {{& .}}
+{{/output.file}}
+
+{{^output.file}}
+output: stdout
+{{/output.file}}

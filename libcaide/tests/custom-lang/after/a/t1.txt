@@ -1,0 +1,7 @@
+t1.txt
+
+
+input: stdin
+
+output: output.txt
+

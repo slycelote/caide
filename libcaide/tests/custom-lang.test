@@ -1,0 +1,6 @@
+#!/bin/bash
+
+"$CAIDE" problem a --lang lang1 --type file,stdin,output.txt
+
+compare_with after a/t1.txt
+

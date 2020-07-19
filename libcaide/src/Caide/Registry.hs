@@ -12,6 +12,7 @@ module Caide.Registry(
 #ifndef AMP
 import Control.Applicative ((<$>))
 #endif
+import Control.Applicative ((<|>))
 import Data.Char (toLower)
 import Data.List (find)
 import Data.Text (Text)
@@ -35,6 +36,7 @@ import Caide.Parsers.POJ
 import Caide.Parsers.RCC
 import Caide.Parsers.Timus
 import Caide.Parsers.Yandex
+import qualified Caide.GenericLanguage as GenericLanguage
 
 
 
@@ -75,4 +77,5 @@ languages = [ (["simplec++", "simplecpp"], CPPSimple.language)
 
 findLanguage :: Text -> Maybe ([Text], ProgrammingLanguage)
 findLanguage name = find (\(names, _) -> T.map toLower name `elem` names) languages
+    <|> Just ([name], GenericLanguage.language name)
 

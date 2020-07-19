@@ -75,6 +75,7 @@ executable caide
                    optparse-applicative >= 0.15,
                    parsec,
                    process,
+                   stache,
                    system-fileio >= 0.3.16,
                    system-filepath,
                    tagsoup >= 0.13,
@@ -126,6 +127,7 @@ executable caide
         Caide.Commands.RunTests
         Caide.Configuration
         Caide.Features.Codelite
+        Caide.GenericLanguage
         Caide.Parsers.CodeChef
         Caide.Parsers.CodeChefContest
         Caide.Parsers.Codeforces
@@ -138,6 +140,7 @@ executable caide
         Caide.Parsers.RccContest
         Caide.Parsers.Timus
         Caide.Parsers.Yandex
+        Caide.Problem
         Caide.Registry
         Caide.Templates
         Caide.TestCases.TopcoderComparator
