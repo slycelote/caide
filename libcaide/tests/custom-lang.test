@@ -5,5 +5,12 @@
 compare_with after a/t1.txt
 
 # We must not have files for the default language generated
-ls a/*.cpp && exit 1 || exit 0
+ls a/*.cpp && exit 1
+
+echo "added text" >> a/t1.txt
+
+"$CAIDE" lang cpp
+"$CAIDE" lang lang1
+
+compare_with after2 a/t1.txt
 

@@ -18,6 +18,7 @@ import Filesystem.Util (pathToText)
 
 import Text.Mustache (MustacheException, compileMustacheFile, displayMustacheWarning, renderMustacheW)
 
+import Caide.Logger (logWarn)
 import Caide.Types (CaideIO, ProblemID, ProgrammingLanguage(..), caideRoot, throw)
 import Caide.Problem (jsonEncodeProblem, readProblemInfo)
 
@@ -47,13 +48,17 @@ genericScaffold languageName probId = do
             newFileName = problemDir </> baseFileName
             (warnings, renderedTemplate) = renderMustacheW template (jsonEncodeProblem problem)
             warningTexts = map (T.pack . displayMustacheWarning) warnings
-        unless (null warnings) $ liftIO $ T.putStrLn $ T.unwords $
-            ["Warning(s) for Mustache template", pathToText baseFileName, ":", T.intercalate ";" warningTexts]
-        liftIO $ do
-            writeTextFile newFileName (LazyText.toStrict renderedTemplate)
-            copyPermissions templateFile newFileName
+        fileExists <- liftIO $ isFile newFileName
+        if fileExists
+            then logWarn $ "Not overwriting existing file " <> pathToText newFileName
+            else do
+                unless (null warnings) $ logWarn $ T.unwords $
+                    ["Warning(s) for Mustache template", pathToText baseFileName, ":", T.intercalate "; " warningTexts]
+                liftIO $ do
+                    writeTextFile newFileName (LazyText.toStrict renderedTemplate)
+                    copyPermissions templateFile newFileName
 
 
 genericInlineCode :: Text -> ProblemID -> CaideIO ()
-genericInlineCode languageName _probId = throw $ T.unwords ["Code inlining is not supported for", languageName]
+genericInlineCode languageName _probId = throw $ "Code inlining is not supported for " <> languageName
 
