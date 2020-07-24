@@ -140,6 +140,7 @@ executable caide
         Caide.Parsers.RccContest
         Caide.Parsers.Timus
         Caide.Parsers.Yandex
+        Caide.Paths
         Caide.Problem
         Caide.Registry
         Caide.Templates

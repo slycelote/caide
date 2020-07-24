@@ -75,15 +75,9 @@ copyTestInputs problemDir = do
 
     fileList <- listDirectory problemDir
     -- Copy input files
+    -- TODO: don't
     let testInputs = filter (`hasExtension` "in") fileList
     forM_ testInputs $ \inFile -> copyFileToDir inFile tempTestDir
-
-    -- Copy output files
-    let testEtalons = filter (`hasExtension` "out") fileList
-        outPathToEtalonPath etalonFile = tempTestDir </> replaceExtension (filename etalonFile) "etalon"
-    forM_ testEtalons $ \etalonFile -> copyFile etalonFile $ outPathToEtalonPath etalonFile
-
-
 
 
 -- | Updates testList.txt file:

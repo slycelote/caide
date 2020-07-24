@@ -27,7 +27,7 @@ import Network.Shed.Httpd (initServerBind, Request(reqBody), Response(Response))
 import qualified Data.Text.IO.Util as T
 
 import Caide.Configuration (describeError, orDefault, readCaideConf, setActiveProblem)
-import Caide.Commands.ParseProblem (saveProblem)
+import Caide.Commands.ParseProblem (saveProblemWithScaffold)
 import Caide.Registry (findHtmlParser)
 import Caide.Types
 
@@ -85,7 +85,7 @@ createProblems _ [] = putStrLn "The contest is empty"
 createProblems root parsedProblems = do
     ret <- runInDirectory root $ do
         forM_ parsedProblems $ \(Parsed problem testCases) ->
-            saveProblem problem testCases
+            saveProblemWithScaffold problem testCases
         let Parsed problem _ = head parsedProblems
         setActiveProblem $ problemId problem
 

@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, OverloadedStrings #-}
 module Caide.Commands.ParseProblem(
       createProblem
-    , saveProblem
+    , saveProblemWithScaffold
     , parseProblems
 ) where
 
@@ -44,9 +44,11 @@ createProblem url problemTypeStr maybeLangStr maybeFilePathStr = do
             Nothing    -> throw . T.concat $ ["Incorrect problem type: ", problemTypeStr]
             Just pType -> createNewProblem url pType
 
-    case maybeLangStr of
-        Just langStr -> generateScaffoldSolution langStr
-        Nothing      -> return ()
+    lang <- case maybeLangStr of
+        Just langStr -> return langStr
+        Nothing -> getDefaultLanguage
+
+    generateScaffoldSolution lang
 
 initializeProblem :: Problem -> CaideIO ()
 initializeProblem problem = withLock $ do
@@ -68,9 +70,7 @@ initializeProblem problem = withLock $ do
     flushConf hProblemConf
     flushConf hProblemState
 
-    lang <- getDefaultLanguage
     updateTests (Just probId)
-    generateScaffoldSolution lang
 
 isAcceptableCharacter :: Char -> Bool
 isAcceptableCharacter c = isAscii c && (c == '_' || c == '-' || isAlphaNum c)
@@ -121,6 +121,12 @@ saveProblem problem samples = do
     initializeProblem problem
     liftIO $ T.putStrLn . T.concat $ ["Problem successfully parsed into folder ", probId]
 
+saveProblemWithScaffold :: Problem -> [TestCase] -> CaideIO ()
+saveProblemWithScaffold problem samples = do
+    saveProblem problem samples
+    lang <- getDefaultLanguage
+    generateScaffoldSolution lang
+
 parseExistingProblemFromHtml :: HtmlParser -> F.FilePath -> CaideIO ()
 parseExistingProblemFromHtml htmlParser filePath = do
     parseResult <- parseFromHtml htmlParser <$> readTextFile' filePath
@@ -142,17 +148,17 @@ errorMessage :: ParseResult -> Maybe Text
 errorMessage (_, Right _) = Nothing
 errorMessage (url, Left err) = Just $ T.concat [url, ": ", err]
 
-trySaveProblem :: ParseResult -> CaideIO (Either Text ())
-trySaveProblem pr@(_, (Left _)) = return $ Left $ fromJust $ errorMessage $ pr
-trySaveProblem (url, Right (problem, tests)) =
-    (saveProblem problem tests >> return (Right ())) `catchError` \err ->
+trySaveProblemWithScaffold :: ParseResult -> CaideIO (Either Text ())
+trySaveProblemWithScaffold pr@(_, (Left _)) = return $ Left $ fromJust $ errorMessage $ pr
+trySaveProblemWithScaffold (url, Right (problem, tests)) =
+    (saveProblemWithScaffold problem tests >> return (Right ())) `catchError` \err ->
         return $ Left $ T.concat [url, ": ", T.pack $ describeError err]
 
 
 parseProblems :: Int -> [URL] -> CaideIO ()
 parseProblems numThreads urls = do
     parseResults <- liftIO $ mapWithLimitedThreads numThreads tryParseProblem urls
-    results <- mapM trySaveProblem $ reverse $ zip urls parseResults
+    results <- mapM trySaveProblemWithScaffold $ reverse $ zip urls parseResults
     let errors = lefts results
     unless (null errors) $
         throw $ T.unlines ("Some problems failed to parse.": errors)

@@ -17,7 +17,7 @@ import Text.HTML.TagSoup.Utils
 
 import Caide.Types
 import Caide.Parsers.RCC (parseRccProblem)
-import Caide.Commands.ParseProblem (saveProblem)
+import Caide.Commands.ParseProblem (saveProblemWithScaffold)
 import Caide.Util (downloadDocument)
 
 
@@ -40,7 +40,7 @@ doParse contestUrl = do
         Left err -> throw err
         Right cont -> case parseRccContest cont of
             [] -> throw "Couldn't find RCC problems at this URL"
-            problems -> forM_ (reverse problems) $ uncurry saveProblem
+            problems -> forM_ (reverse problems) $ uncurry saveProblemWithScaffold
 
 
 parseRccContest :: T.Text -> [(Problem, [TestCase])]

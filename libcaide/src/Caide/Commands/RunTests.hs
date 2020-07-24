@@ -9,10 +9,10 @@ module Caide.Commands.RunTests(
 #ifndef AMP
 import Control.Applicative ((<$>), (<*>))
 #endif
-import Control.Monad (unless)
+import Control.Monad (forM, unless)
 import Control.Monad.State (liftIO)
 
-import Data.Either (isRight)
+import Data.Either (fromRight, isRight)
 import Data.List (group, sort)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
@@ -22,13 +22,14 @@ import qualified Data.Text.IO.Util as T
 
 import Prelude hiding (FilePath)
 import Filesystem (isFile, readTextFile, writeTextFile)
-import Filesystem.Path (FilePath, (</>), basename, replaceExtension)
+import Filesystem.Path (FilePath, (</>), basename, filename, hasExtension, replaceExtension)
 import Filesystem.Path.CurrentOS (fromText)
-import Filesystem.Util (pathToText)
+import Filesystem.Util (listDir, pathToText)
 
 import qualified Caide.Builders.None as None
 import qualified Caide.Builders.Custom as Custom
 import Caide.Configuration (getActiveProblem, readProblemConfig, readProblemState, readCaideConf, withDefault)
+import qualified Caide.Paths as Paths
 import Caide.Registry (findLanguage)
 import Caide.Types
 import Caide.TestCases.Types
@@ -85,8 +86,9 @@ evalTests = do
     hProblem <- readProblemConfig probId
     precision <- getProp hProblem "problem" "double_precision"
     probType  <- getProp hProblem "problem" "type"
-    let testsDir = root </> fromText probId </> ".caideproblem" </> "test"
-        reportFile = testsDir </> "report.txt"
+    let problemDir = Paths.problemDir root probId
+        testsDir = problemDir </> Paths.testsDir
+        reportFile = testsDir </> Paths.testReportFile
         cmpOptions = ComparisonOptions
             { doublePrecision = precision
             , topcoderType = case probType of
@@ -95,7 +97,7 @@ evalTests = do
             }
 
     errors <- liftIO $ do
-        report <- generateReport cmpOptions testsDir
+        report <- generateReport cmpOptions problemDir
         writeTextFile reportFile . serializeTestReport $ report
         T.putStrLn "Results summary\n_______________\nOutcome\tCount"
         T.putStrLn $ humanReadableSummary report
@@ -106,30 +108,28 @@ evalTests = do
 
 
 generateReport :: ComparisonOptions -> FilePath -> IO (TestReport Text)
-generateReport cmpOptions testDir = do
-    testList <- readTests $ testDir </> "testList.txt"
-    report   <- readTestReport $ testDir </> "report.txt"
-    let (testNames, inputFiles) = unzip [(testName, inputFile) | (testName, _) <- testList,
-                                          let inputFile = testDir </> fromText (T.append testName ".in")
-                                        ]
-    results <- mapM (testResult cmpOptions report) inputFiles
+generateReport cmpOptions problemDir = do
+    let testDir = problemDir </> Paths.testsDir
+    testList <- (map filename . filter (`hasExtension` "in") . fst) <$> listDir problemDir
+    report   <- readTestReport $ testDir </> Paths.testReportFile
+    let testNames = map (pathToText . basename) testList
+    results <- forM testList $ \testFile -> do
+        let testName = pathToText $ basename testFile
+            inFile = problemDir </> testFile
+            outFile = problemDir </> Paths.testsDir </> replaceExtension testFile "out"
+            etalonFile = problemDir </> replaceExtension testFile "out"
+        case lookup testName report of
+            Nothing -> return $ Error "Test was not run"
+            Just Ran -> do
+                [etalonExists, outFileExists] <- mapM isFile [etalonFile, outFile]
+                if not outFileExists
+                   then return $ Error "Output file is missing"
+                   else if etalonExists
+                       then compareFiles cmpOptions <$> readTextFile etalonFile <*> readTextFile outFile
+                       else return EtalonUnknown
+            Just result -> return result
+
     return $ zip testNames results
-
-
-testResult :: ComparisonOptions -> TestReport Text -> FilePath -> IO (ComparisonResult Text)
-testResult cmpOptions report testFile = case lookup testName report of
-    Nothing -> return $ Error "Test was not run"
-    Just Ran -> do
-        [etalonExists, outFileExists] <- mapM isFile [etalonFile, outFile]
-        if not outFileExists
-           then return $ Error "Output file is missing"
-           else if etalonExists
-               then compareFiles cmpOptions <$> readTextFile etalonFile <*> readTextFile outFile
-               else return EtalonUnknown
-    Just result -> return result
-  where
-    testName = pathToText $ basename testFile
-    [outFile, etalonFile] = map (replaceExtension testFile) ["out", "etalon"]
 
 
 compareFiles :: ComparisonOptions -> Text -> Text -> ComparisonResult Text
@@ -144,7 +144,6 @@ compareFiles cmpOptions etalon out = case () of
     tcComparison = case tcCompare returnValueType (doublePrecision cmpOptions) etalon out of
         Nothing    -> Success
         Just tcErr -> Error tcErr
-
 
     expected = T.lines . T.strip $ etalon
     actual   = T.lines . T.strip $ out

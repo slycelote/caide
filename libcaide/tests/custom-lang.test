@@ -4,3 +4,6 @@
 
 compare_with after a/t1.txt
 
+# We must not have files for the default language generated
+ls a/*.cpp && exit 1 || exit 0
+

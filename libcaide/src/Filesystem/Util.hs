@@ -9,17 +9,21 @@ module Filesystem.Util(
     , listDir
     , copyFileToDir
     , copyTreeToDir
+    , pathToString
     , pathToText
+    , isExecutableFile
 ) where
 
 #ifndef AMP
 import Control.Applicative ((<$>))
 #endif
 import Control.Monad (forM_)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 
 import qualified Data.ByteString as BS
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import System.Directory (getPermissions, executable)
 
 import qualified Filesystem as F
 import qualified Filesystem.Path as F
@@ -51,6 +55,9 @@ pathToText path = case F.toText path of
     Left  s -> s
     Right s -> s
 
+pathToString :: F.FilePath -> String
+pathToString = T.unpack . pathToText
+
 -- | Returns (file list, directory list)
 listDir :: F.FilePath -> IO ([F.FilePath], [F.FilePath])
 listDir dir = do
@@ -73,4 +80,12 @@ copyTreeToDir srcTree dstDir = do
     forM_ files $ \file -> copyFileToDir file targetDir
     forM_ dirs $ \dir -> copyTreeToDir dir targetDir
 
+isExecutableFile :: MonadIO m => F.FilePath -> m Bool
+isExecutableFile path = liftIO $ do
+    isFile <- F.isFile path
+    if not isFile
+        then return False
+        else do
+            permissions <- getPermissions (F.encodeString path)
+            return $ executable permissions
 
