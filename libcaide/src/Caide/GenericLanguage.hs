@@ -3,6 +3,7 @@ module Caide.GenericLanguage(
       language
 ) where
 
+import Control.Exception (Exception(displayException))
 import Control.Exception.Base (try)
 import Control.Monad (filterM, forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
@@ -39,7 +40,7 @@ genericScaffold languageName probId = do
         templateOrException <- liftIO $ try $ compileMustacheFile (encodeString templateFile)
         template <- case templateOrException of
             Left e -> throw $ T.unwords
-                ["Couldn't parse Mustache template in", pathToText templateFile, ":", T.pack (show (e :: MustacheException))]
+                ["Couldn't parse Mustache template in", pathToText templateFile, ":", T.pack $ displayException (e :: MustacheException)]
             Right t -> return t
         problem <- readProblemInfo probId
         let baseFileName = filename templateFile
