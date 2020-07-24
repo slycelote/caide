@@ -7,11 +7,9 @@ import Control.Exception (Exception(displayException))
 import Control.Exception.Base (try)
 import Control.Monad (filterM, forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
-import qualified Data.List as List
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LazyText
-import qualified Data.Text.IO as T
 import Filesystem (copyPermissions, isFile, listDirectory, writeTextFile)
 import Filesystem.Path.CurrentOS ((</>), filename, fromText, encodeString)
 import Filesystem.Util (pathToText)

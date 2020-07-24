@@ -15,9 +15,9 @@ import Data.Ord (comparing)
 import qualified Data.Text as T
 
 import Prelude hiding (FilePath)
-import Filesystem (isDirectory, listDirectory, createTree, removeFile, copyFile, writeTextFile)
+import Filesystem (isDirectory, listDirectory, createTree, removeFile, writeTextFile)
 import Filesystem.Path.CurrentOS (FilePath, fromText, encodeString,
-    hasExtension, replaceExtension, basename, filename, (</>))
+    hasExtension, basename, filename, (</>))
 import Filesystem.Util (copyFileToDir, pathToText)
 
 import System.Environment (getExecutablePath)
