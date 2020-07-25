@@ -85,7 +85,7 @@ readProblemState probId = do
     problemExists <- liftIO $ isDirectory $ root </> fromText probId </> ".caideproblem"
     if problemExists
     then getProblemStateFile probId >>= readConf
-    else throw "No such problem"
+    else throw $ "No such problem: " <> probId
 
 getProblemConfigFile :: Monad m => ProblemID -> CaideM m FilePath
 getProblemConfigFile probId = do
@@ -98,7 +98,7 @@ readProblemConfig probId = do
     problemExists <- liftIO $ isDirectory $ root </> fromText probId </> ".caideproblem"
     if problemExists
     then getProblemConfigFile probId >>= readConf
-    else throw "No such problem"
+    else throw $ "No such problem: " <> probId
 
 
 {--------------------------- Global options and state ----------------------------}
