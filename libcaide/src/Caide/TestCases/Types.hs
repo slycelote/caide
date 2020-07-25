@@ -63,8 +63,8 @@ readComparisonResult ["OK"] = Success
 readComparisonResult ["ran"] = Ran
 readComparisonResult ["skipped"] = Skipped
 readComparisonResult ["unknown"] = EtalonUnknown
-readComparisonResult ("failed":err) = Failed $ T.concat err
-readComparisonResult ("error":err) = Error $ T.concat err
+readComparisonResult ("failed":err) = Failed $ T.unwords err
+readComparisonResult ("error":err) = Error $ T.unwords err
 readComparisonResult _ = Error "Corrupted report file"
 
 deserializeTestReport :: Text -> TestReport Text
@@ -73,6 +73,7 @@ deserializeTestReport text = map (parseTest . T.words) reportLines
     reportLines = filter (not . T.null) . map T.strip $ T.lines text
 
     parseTest :: [Text] -> (Text, ComparisonResult Text)
+    -- TODO: More robust handling to preserve whitespace in error message
     parseTest (testName:testStatus:err) = (testName, readComparisonResult (testStatus:err))
     parseTest [testName] = (testName, Error "Corrupted report file")
     parseTest [] = error "Impossible happened in deserializeTestReport"
