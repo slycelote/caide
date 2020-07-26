@@ -2,6 +2,7 @@
 
 module Caide.TestCases.Types (
       ComparisonResult (..)
+    , isSuccessful
     , humanReadable
     , machineReadable
 
@@ -37,6 +38,12 @@ data ComparisonResult a = Success        -- ^ Test passed
                         | Failed a       -- ^ Test failed
                         | Error a        -- ^ Error (e.g. exception in checker)
                         deriving (Show, Eq)
+
+isSuccessful :: ComparisonResult a -> Maybe Bool
+isSuccessful (Failed _) = Just False
+isSuccessful (Error _) = Just False
+isSuccessful Success = Just True
+isSuccessful _ = Nothing
 
 humanReadable :: ComparisonResult Text -> Text
 humanReadable Success = "OK"

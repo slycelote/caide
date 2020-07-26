@@ -101,7 +101,7 @@ evalTests = do
         writeTextFile reportFile . serializeTestReport $ report
         T.putStrLn "Results summary\n_______________\nOutcome\tCount"
         T.putStrLn $ humanReadableSummary report
-        return [r | r@(_, Error _) <- report]
+        return [r | r@(_, res) <- report, isSuccessful res == Just False]
 
     unless (null errors) $
         throw $ humanReadableReport errors
