@@ -1,0 +1,2 @@
+case1 failed Test runner exited with error code 2
+case2 failed Test runner exited with error code 2

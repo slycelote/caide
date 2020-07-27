@@ -12,7 +12,7 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Monad (forM, unless)
 import Control.Monad.State (liftIO)
 
-import Data.Either (fromRight, isRight)
+import Data.Either (isRight)
 import Data.List (group, sort)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
@@ -23,13 +23,15 @@ import qualified Data.Text.IO.Util as T
 import Prelude hiding (FilePath)
 import Filesystem (isFile, readTextFile, writeTextFile)
 import Filesystem.Path (FilePath, (</>), basename, filename, hasExtension, replaceExtension)
-import Filesystem.Path.CurrentOS (fromText)
 import Filesystem.Util (listDir, pathToText)
 
 import qualified Caide.Builders.None as None
 import qualified Caide.Builders.Custom as Custom
-import Caide.Configuration (getActiveProblem, readProblemConfig, readProblemState, readCaideConf, withDefault)
+import Caide.CustomBuilder (createBuilderFromDirectory)
+import Caide.Configuration (getActiveProblem, readProblemConfig, readCaideConf, withDefault)
+import Caide.Logger (logError)
 import qualified Caide.Paths as Paths
+import Caide.Problem (currentLanguage, readProblemState)
 import Caide.Registry (findLanguage)
 import Caide.Types
 import Caide.TestCases.Types
@@ -48,25 +50,33 @@ humanReadableSummary = T.unlines . map toText . group . sort . map (fromComparis
           fromComparisonResult (Failed _) = "Failed"
           fromComparisonResult r = tshow r
 
-getBuilder :: Text -> CaideIO Builder
-getBuilder language = do
+createBuilderFromProblemDirectory :: ProblemID -> CaideIO (Either Text Builder)
+createBuilderFromProblemDirectory probId = do
+    root <- caideRoot
+    createBuilderFromDirectory (Paths.problemDir root probId) []
+
+getBuilder :: Text -> ProblemID -> CaideIO Builder
+getBuilder language probId = do
     h <- readCaideConf
     let builderExists langName = withDefault False $
             (getProp h langName "build_and_run_tests" :: CaideIO Text) >> return True
         languageNames = fromMaybe [] $ fst <$> findLanguage language
     buildersExist <- mapM (builderExists . T.unpack) languageNames
     let existingBuilderNames = [name | (name, True) <- zip languageNames buildersExist]
-    return $ case existingBuilderNames of
-        [] -> None.builder
-        (name:_) -> Custom.builder name
+    case existingBuilderNames of
+        (name:_) -> return $ Custom.builder name
+        [] -> do
+            errOrBuilder <- createBuilderFromProblemDirectory probId
+            case errOrBuilder of
+                Left e -> logError e >> return None.builder
+                Right b -> return b
 
-
+-- TODO: pass optional problem ID
 runTests :: CaideIO ()
 runTests = do
     probId <- getActiveProblem
-    h <- readProblemState probId
-    lang <- getProp h "problem" "language"
-    builder <- getBuilder lang
+    probState <- readProblemState probId
+    builder <- getBuilder (currentLanguage probState) probId
     buildResult <- builder probId
     case buildResult of
         BuildFailed -> throw "Build failed"
@@ -115,7 +125,6 @@ generateReport cmpOptions problemDir = do
     let testNames = map (pathToText . basename) testList
     results <- forM testList $ \testFile -> do
         let testName = pathToText $ basename testFile
-            inFile = problemDir </> testFile
             outFile = problemDir </> Paths.testsDir </> replaceExtension testFile "out"
             etalonFile = problemDir </> replaceExtension testFile "out"
         case lookup testName report of

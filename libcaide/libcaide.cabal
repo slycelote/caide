@@ -85,7 +85,7 @@ executable caide
                    zip-archive
   other-extensions: CPP
   hs-source-dirs:  src
-  ghc-options:     -Wall -rtsopts=all -static -pgml g++
+  ghc-options:     -Wall -rtsopts=all -threaded -static -pgml g++
   if os(windows) {
     ghc-options:   -optl-static
   } else {
@@ -126,6 +126,7 @@ executable caide
         Caide.Commands.ParseProblem
         Caide.Commands.RunTests
         Caide.Configuration
+        Caide.CustomBuilder
         Caide.Features.Codelite
         Caide.GenericLanguage
         Caide.Logger

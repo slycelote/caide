@@ -1,0 +1,2 @@
+case1 OK
+case2 failed Line 1: Token 2: Expected 20, found 2

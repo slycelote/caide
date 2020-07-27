@@ -1,23 +1,25 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
 module Caide.Problem(
       Problem(..)
+    , ProblemState(..)
     , jsonEncodeProblem
     , readProblemInfo
+    , readProblemState
 ) where
 
 import qualified Data.Aeson as Aeson
 import Data.Aeson ((.=))
+import Data.Text (Text)
 
 import Filesystem.Util (pathToText)
 
-import Caide.Configuration (readProblemConfig)
+import qualified Caide.Configuration as Conf
 import Caide.Types (Problem(..), ProblemType(..), TopcoderProblemDescriptor(..), ProblemID,
     InputSource(..), OutputTarget(..), CaideIO, getProp)
 
 readProblemInfo :: ProblemID -> CaideIO Problem
 readProblemInfo probId = do
-    hProblemInfo <- readProblemConfig probId
+    hProblemInfo <- Conf.readProblemConfig probId
     pname <- getProp hProblemInfo "problem" "name"
     ptype <- getProp hProblemInfo "problem" "type"
     return $ Problem
@@ -25,6 +27,16 @@ readProblemInfo probId = do
         , problemId = probId
         , problemType = ptype
         }
+
+data ProblemState = ProblemState
+                  { currentLanguage :: Text
+                  }
+
+readProblemState :: ProblemID -> CaideIO ProblemState
+readProblemState probId = do
+    hProblemState <- Conf.readProblemState probId
+    currentLanguage <- getProp hProblemState "problem" "language"
+    return $ ProblemState{..}
 
 jsonEncodeProblem :: Problem -> Aeson.Value
 jsonEncodeProblem Problem{..} = Aeson.object $

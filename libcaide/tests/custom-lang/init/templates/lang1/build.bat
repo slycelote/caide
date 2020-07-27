@@ -1,0 +1,2 @@
+@ping 192.0.2.1 -n %CAIDE_TEST_BUILD_TIME% >nul
+@exit /b %CAIDE_TEST_BUILD_EXIT_CODE%
