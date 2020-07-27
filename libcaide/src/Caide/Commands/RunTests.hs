@@ -135,40 +135,40 @@ generateReport cmpOptions problemDir = do
 compareFiles :: ComparisonOptions -> Text -> Text -> ComparisonResult Text
 compareFiles cmpOptions etalon out = case () of
     _ | isTopcoder -> tcComparison
-      | not (null errors) -> Error $ T.concat ["Line ", tshow line, ": ", err]
+      | not (null errors) -> Failed $ T.concat ["Line ", tshow line, ": ", err]
       | length actual == length expected -> Success
-      | otherwise -> Error $ T.concat ["Expected ", tshow (length expected), " line(s)"]
+      | otherwise -> Failed $ T.concat ["Expected ", tshow (length expected), " line(s)"]
   where
     Just returnValueType = topcoderType cmpOptions
     isTopcoder = isJust $ topcoderType cmpOptions
     tcComparison = case tcCompare returnValueType (doublePrecision cmpOptions) etalon out of
         Nothing    -> Success
-        Just tcErr -> Error tcErr
+        Just tcErr -> Failed tcErr
 
     expected = T.lines . T.strip $ etalon
     actual   = T.lines . T.strip $ out
     lineComparison = zipWith (compareLines cmpOptions) expected actual
-    errors = [e | e@(_, Error _) <- zip [1::Int ..] lineComparison]
-    (line, Error err) = head errors
+    errors = [e | e@(_, Failed _) <- zip [1::Int ..] lineComparison]
+    (line, Failed err) = head errors
 
 
 compareLines :: ComparisonOptions -> Text -> Text -> ComparisonResult Text
 compareLines cmpOptions expectedLine actualLine = case () of
-    _ | not (null errors) -> Error $ T.concat ["Token ", tshow numToken, ": ", err]
+    _ | not (null errors) -> Failed $ T.concat ["Token ", tshow numToken, ": ", err]
       | length actual == length expected -> Success
-      | otherwise   ->  Error $ T.concat ["Expected ", tshow (length expected), " token(s)"]
+      | otherwise   ->  Failed $ T.concat ["Expected ", tshow (length expected), " token(s)"]
   where
     expected = T.words expectedLine
     actual = T.words actualLine
     tokenComparison = zipWith (compareTokens cmpOptions) expected actual
-    errors = [e | e@(_, Error _) <- zip [1::Int ..] tokenComparison]
-    (numToken, Error err) = head errors
+    errors = [e | e@(_, Failed _) <- zip [1::Int ..] tokenComparison]
+    (numToken, Failed err) = head errors
 
 compareTokens :: ComparisonOptions -> Text -> Text -> ComparisonResult Text
 compareTokens cmpOptions expected actual = case () of
     _ | expected == actual -> Success
       | areEqualDoubles (doublePrecision cmpOptions) expected actual -> Success
-      | otherwise -> Error $ T.concat ["Expected ", expected, ", found ", actual]
+      | otherwise -> Failed $ T.concat ["Expected ", expected, ", found ", actual]
 
 areEqualDoubles :: Double -> Text -> Text -> Bool
 areEqualDoubles precision expected actual = isRight expectedParsed && isRight actualParsed &&
