@@ -37,8 +37,6 @@ export CXXFLAGS
 export MONO=${MONO:-}
 export PHANTOMJS=${PHANTOMJS:-phantomjs}
 
-functions_file=$cur_dir/test-functions.sh
-
 mkdir -p $tmp_dir
 
 failed=0

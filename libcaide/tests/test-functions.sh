@@ -1,6 +1,8 @@
+#!/usr/bin/env bash
 function compare_with {
     local etalon_dir=$etalon_dir/$1
     shift 1
+    local file
     for file in "$@"
     do
         diff -bB --strip-trailing-cr $etalon_dir/$file ./$file || return 1
@@ -30,4 +32,13 @@ function parse_with_js {
     render_js "$1"
     "$CAIDE" problem --from-file .page.html "$1"
 }
+
+# MSYS shell doesn't necessarily kill background jobs on exit
+function cleanup_on_exit {
+    local ec=$?
+    kill -9 %1 %2 %3 %4 %5 2>/dev/null || true
+    exit $ec
+}
+
+trap cleanup_on_exit EXIT
 
