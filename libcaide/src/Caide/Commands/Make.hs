@@ -25,7 +25,8 @@ import System.Environment (getExecutablePath)
 import Caide.Configuration (getActiveProblem, readProblemState)
 import Caide.Registry (findLanguage)
 import Caide.Types
-import Caide.TestCases.Types
+import Caide.TestCases.Types (ComparisonResult(..), TestState(..),
+    readTestReport, writeTests)
 
 
 

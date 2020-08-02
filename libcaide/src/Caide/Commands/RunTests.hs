@@ -34,7 +34,8 @@ import qualified Caide.Paths as Paths
 import Caide.Problem (currentLanguage, readProblemState)
 import Caide.Registry (findLanguage)
 import Caide.Types
-import Caide.TestCases.Types
+import Caide.TestCases.Types (ComparisonResult(..), TestReport,
+    isSuccessful, humanReadable, readTestReport, serializeTestReport)
 import Caide.TestCases.TopcoderComparator
 import Caide.Util (tshow)
 
