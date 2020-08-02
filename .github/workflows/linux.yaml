@@ -1,0 +1,93 @@
+name: Linux CI
+
+on:
+  push:
+    branches: [ master, release, gh-actions ]
+  pull_request:
+    branches: [ master, release ]
+
+jobs:
+  Build_and_Test:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cabal: ["3.2"]
+        ghc: ["8.10.1"]
+
+    env:
+      CAIDE_EXE_RELATIVE_PATH: dist-newstyle/build/x86_64-linux/ghc-${{ matrix.ghc }}/libcaide-2.5.0/build/caide/caide
+      CAIDE_CMAKE_CONFIGURE_ARGS: "-GNinja,-DCMAKE_CXX_COMPILER_LAUNCHER=ccache,-DCMAKE_C_COMPILER_LAUNCHER=ccache"
+
+    steps:
+    - name: Install prerequisites
+      run: |
+        brew install ccache ninja
+        which ccache
+        which ninja
+
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
+
+    - uses: actions/setup-haskell@v1
+      id: setup-haskell-cabal
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        cabal-version: ${{ matrix.cabal }}
+
+    - name: Haskell dependencies cache
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-cabal
+      with:
+        path: |
+          ~/.cabal/packages
+          ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
+          libcaide/dist-newstyle
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ matrix.ghc }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project.freeze') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-${{ matrix.ghc }}-
+
+    - name: Create key for ccache
+      run: |
+        git -C libcaide/cbits/cpp-inliner submodule status >llvm-submodule.txt
+        git submodule status >submodules.txt
+
+    - name: ccache cache
+      uses: actions/cache@v2
+      env:
+        cache-name: ccache
+        cache-version: 1
+      with:
+        path: ~/.ccache
+        key: ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-${{ hashFiles('llvm-submodule.txt') }}-${{ hashFiles('submodules.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-${{ hashFiles('llvm-submodule.txt') }}-
+          ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-
+          ${{ runner.os }}-
+
+    - name: Install dependencies
+      run: |
+        cd libcaide
+        cabal update
+        cabal build --only-dependencies --enable-tests --enable-benchmarks
+
+    - name: Build
+      run: |
+        cd libcaide
+        cabal build --enable-tests --enable-benchmarks all
+        strip ${{ env.CAIDE_EXE_RELATIVE_PATH }}
+
+    - name: Publish the executable
+      uses: actions/upload-artifact@v1
+      with:
+        name: caide
+        path: libcaide/${{ env.CAIDE_EXE_RELATIVE_PATH }}
+
+    - name: Run tests
+      run: |
+        cd libcaide
+        export CAIDE=$(pwd)/${{ env.CAIDE_EXE_RELATIVE_PATH }}
+        MONO=mono CSC=csc tests/run-tests.sh
+
