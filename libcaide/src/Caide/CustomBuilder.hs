@@ -4,6 +4,8 @@ module Caide.CustomBuilder(
 ) where
 
 import Prelude hiding (FilePath)
+import Control.Concurrent (forkIO)
+import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 -- TODO: use a safe exceptions library for correct handling of async exceptions
 import qualified Control.Exception as Exc
 import Control.Monad (filterM, when)
@@ -11,8 +13,8 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import System.IO (IOMode(ReadMode, WriteMode), withFile)
-import System.Process (CreateProcess(create_group, cwd, std_in, std_out, use_process_jobs),
+import System.IO (Handle, IOMode(ReadMode, WriteMode), withFile)
+import System.Process (CreateProcess(create_group, cwd, std_in, std_out), ProcessHandle,
     StdStream(UseHandle), interruptProcessGroupOf, proc, waitForProcess, withCreateProcess)
 import System.Exit (ExitCode(..))
 import System.Timeout (timeout)
@@ -29,6 +31,16 @@ import Caide.TestCases.Types (ComparisonResult(Error, Failed, Ran), serializeTes
 import qualified Caide.Paths as Paths
 import Caide.Util (tshow)
 
+
+interruptibleWaitForProcess :: ProcessHandle -> IO ExitCode
+interruptibleWaitForProcess ph = do
+    ec <- newEmptyMVar
+    _threadId <- forkIO $ waitForProcess ph >>= putMVar ec
+    takeMVar ec
+
+withCreateProcess' :: CreateProcess -> (Maybe Handle -> Maybe Handle -> Maybe Handle -> ProcessHandle -> IO a) -> IO a
+withCreateProcess' cp action = withCreateProcess cp{create_group=True} $ \stdin stdout stderr ph ->
+    action stdin stdout stderr ph `Exc.finally` interruptProcessGroupOf ph
 
 findExecutable :: MonadIO m => FilePath -> FilePath -> m (Maybe FilePath)
 findExecutable dirPath name = do
@@ -83,11 +95,9 @@ executeTest dirPath runExe inFile = liftIO $
                      cwd = Just $ FS.pathToString dirPath
                    , std_in = UseHandle hin
                    , std_out = UseHandle hout
-                   , create_group = True
-                   , use_process_jobs = True
                    }
-        exitCode <- withCreateProcess cp $ \ _stdin _stdout _stderr hProcess ->
-            waitForProcess hProcess `Exc.finally` interruptProcessGroupOf hProcess
+        exitCode <- withCreateProcess' cp $ \ _stdin _stdout _stderr hProcess ->
+            interruptibleWaitForProcess hProcess
         return $ case exitCode of
             ExitSuccess -> Ran
             ExitFailure intCode -> Failed $ "Test runner exited with error code " <> tshow intCode
@@ -118,11 +128,9 @@ createBuilderFromBuildExe dirPath buildExe options probId = liftIO $ do
     logInfo $ "Building with " <> FS.pathToText buildExe <> "..."
     let cp = (proc (FS.pathToString $ dirPath </> buildExe) []) {
                  cwd = Just $ FS.pathToString dirPath
-               , create_group = True
-               , use_process_jobs = True
                }
-    exitCode <- Exc.try $ timeout (buildTimeout options) $ withCreateProcess cp $ \ _stdin _stdout _stderr hProcess ->
-        waitForProcess hProcess `Exc.finally` interruptProcessGroupOf hProcess
+    exitCode <- Exc.try $ timeout (buildTimeout options) $ withCreateProcess' cp $ \ _stdin _stdout _stderr hProcess ->
+        interruptibleWaitForProcess hProcess
     case exitCode of
         Left e -> do
             logError $ "Error while building: " <> (T.pack $ Exc.displayException (e :: Exc.SomeException))
