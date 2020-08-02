@@ -13,8 +13,9 @@ import Control.Monad (forM, unless)
 import Control.Monad.State (liftIO)
 
 import Data.Either (isRight)
-import Data.List (group, sort)
+import Data.List (group, sort, sortBy)
 import Data.Maybe (fromMaybe, isJust)
+import Data.Ord (comparing)
 import Data.Text (Text)
 import Data.Text.Read as TextRead
 import qualified Data.Text as T
@@ -139,7 +140,7 @@ generateReport cmpOptions problemDir = do
                        else return EtalonUnknown
             Just result -> return result
 
-    return $ zip testNames results
+    return $ sortBy (comparing fst) $ zip testNames results
 
 
 compareFiles :: ComparisonOptions -> Text -> Text -> ComparisonResult Text
