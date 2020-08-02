@@ -19,15 +19,16 @@ import System.Process (CreateProcess(create_group, cwd, std_in, std_out), Proces
 import System.Exit (ExitCode(..))
 import System.Timeout (timeout)
 
-import Filesystem.Path.CurrentOS (FilePath, (</>), addExtension, hasExtension, replaceExtension)
+import Filesystem.Path.CurrentOS (FilePath, (</>), (<.>), addExtension, replaceExtension)
 import qualified Filesystem.Path.CurrentOS as FS
 import Filesystem (writeTextFile)
 import Filesystem.Util (isExecutableFile)
 import qualified Filesystem.Util as FS
 
 import Caide.Logger (logInfo, logWarn, logError)
-import Caide.Types (BuilderResult(BuildFailed, NoEvalTests), Builder, ProblemID, CaideIO)
+import Caide.Types (BuilderResult(BuildFailed, NoEvalTests), Builder, ProblemID)
 import Caide.TestCases.Types (ComparisonResult(Error, Failed, Ran), serializeTestReport)
+import qualified Caide.TestCases as TestCases
 import qualified Caide.Paths as Paths
 import Caide.Util (tshow)
 
@@ -115,10 +116,11 @@ safeExecuteTestWithTimeout timeLimitMicroSecs dirPath runExe inFile = liftIO $ d
 
 createBuilderFromRunExe :: MonadIO m => FilePath -> FilePath -> CreateBuilderOptions -> ProblemID -> m BuilderResult
 createBuilderFromRunExe dirPath runExe options _probId = liftIO $ do
-    inFiles <- (map FS.filename . filter (`hasExtension` "in") . fst) <$> FS.listDir dirPath
+    testList <- TestCases.updateTestList dirPath
+    let testNames = map fst testList
+        inFiles = [FS.decodeString (T.unpack testName) <.> "in" | testName <- testNames]
     results <- mapM (safeExecuteTestWithTimeout (runTimeout options) dirPath runExe) inFiles
-    let testNames = map (FS.pathToText . FS.basename) inFiles
-        testReport = zip testNames results
+    let testReport = zip testNames results
         serializedReport = serializeTestReport testReport
     writeTextFile (dirPath </> Paths.testsDir </> Paths.testReportFile) serializedReport
     return NoEvalTests
