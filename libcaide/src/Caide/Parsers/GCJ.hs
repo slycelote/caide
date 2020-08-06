@@ -61,5 +61,5 @@ doParse cont =
 
     -- TODO: a special problem type for GCJ-like judges
     probType = Stream StdIn StdOut
-    problem = (Problem title probId probType, testCases)
+    problem = (makeProblem title probId probType, testCases)
 

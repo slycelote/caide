@@ -29,10 +29,10 @@ import Filesystem.Util (listDir, pathToText)
 import qualified Caide.Builders.None as None
 import qualified Caide.Builders.Custom as Custom
 import Caide.CustomBuilder (createBuilderFromDirectory)
-import Caide.Configuration (getActiveProblem, readProblemConfig, readCaideConf, withDefault)
+import Caide.Configuration (getActiveProblem, readCaideConf, withDefault)
 import Caide.Logger (logError)
 import qualified Caide.Paths as Paths
-import Caide.Problem (currentLanguage, readProblemState)
+import Caide.Problem (currentLanguage, readProblemInfo, readProblemState)
 import Caide.Registry (findLanguage)
 import Caide.Types
 import Caide.TestCases.Types (ComparisonResult(..), TestReport,
@@ -95,15 +95,13 @@ evalTests :: CaideIO ()
 evalTests = do
     probId <- getActiveProblem
     root <- caideRoot
-    hProblem <- readProblemConfig probId
-    precision <- getProp hProblem "problem" "double_precision"
-    probType  <- getProp hProblem "problem" "type"
+    problem <- readProblemInfo probId
     let problemDir = Paths.problemDir root probId
         testsDir = problemDir </> Paths.testsDir
         reportFile = testsDir </> Paths.testReportFile
         cmpOptions = ComparisonOptions
-            { doublePrecision = precision
-            , topcoderType = case probType of
+            { doublePrecision = problemFloatTolerance problem
+            , topcoderType = case problemType problem of
                 Topcoder descr -> Just . tcMethod $ descr
                 _              -> Nothing
             }

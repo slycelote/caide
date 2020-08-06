@@ -7,7 +7,7 @@ module Caide.Logger(
 import Control.Monad.IO.Class (MonadIO, liftIO)
 
 import Data.Text (Text)
-import qualified Data.Text.IO as T
+import qualified Data.Text.IO.Util as T
 
 logInfo :: MonadIO m => Text -> m ()
 logInfo message = liftIO $ T.putStrLn message

@@ -9,6 +9,7 @@ module Caide.Types(
     , TopcoderType (..)
     , TopcoderValue (..)
     , TopcoderProblemDescriptor (..)
+    , makeProblem
 
     , CaideIO
     , CaideM
@@ -76,6 +77,7 @@ type ProblemID = Text
 data Problem = Problem
     { problemName :: !Text      -- ^ Human readable identifier, used for displaying in GUI
     , problemId   :: !ProblemID -- ^ ID used for folder names, code generation etc.
+    , problemFloatTolerance :: Double -- ^ Comparing floating-point values up to this tolerance
     , problemType :: !ProblemType
     } deriving (Show)
 
@@ -100,6 +102,15 @@ data TopcoderValue = TopcoderValue
 
 data TopcoderType = TCInt | TCLong | TCDouble | TCString
     deriving (Show)
+
+makeProblem :: Text -> ProblemID -> ProblemType -> Problem
+makeProblem name probId probType = Problem
+    { problemName = name
+    , problemId = probId
+    , problemType = probType
+    , problemFloatTolerance = 0.000001
+    }
+
 
 type URL = Text
 

@@ -1,5 +1,4 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Caide.Commands.CHelperHttpServer(
@@ -24,10 +23,9 @@ import Data.Aeson (FromJSON(parseJSON), Object, eitherDecode', withObject, (.:))
 import Data.Aeson.Types (Parser)
 import Network.Shed.Httpd (initServerBind, Request(reqBody), Response(Response))
 
-import qualified Data.Text.IO.Util as T
-
 import Caide.Configuration (describeError, orDefault, readCaideConf, setActiveProblem)
 import Caide.Commands.ParseProblem (saveProblemWithScaffold)
+import Caide.Logger (logInfo, logError)
 import Caide.Registry (findHtmlParser)
 import Caide.Types
 
@@ -36,7 +34,7 @@ runHttpServer :: F.FilePath -> IO ()
 runHttpServer root = do
     mbPorts <- runInDirectory root getPorts
     case mbPorts of
-        Left err -> putStrLn $ describeError err
+        Left err -> logError $ T.pack $ describeError err
         Right (companionPort, chelperPort) -> runServers root companionPort chelperPort
 
 
@@ -59,9 +57,9 @@ runServers root companionPort chelperPort = withSocketsDo $ do
             (Nothing, Nothing) -> ""
 
     if T.null servers
-    then T.putStrLn "Both CHelper and Competitive Companion servers are disabled. Exiting now."
+    then logError "Both CHelper and Competitive Companion servers are disabled. Exiting now."
     else do
-        T.putStrLn $ T.concat ["Running HTTP server for ", servers, ". Press Return to terminate."]
+        logInfo $ "Running HTTP server for " <> servers <> ". Press Return to terminate."
         _ <- getLine
         case mbChelper of
             Just chelperThreadId -> killThread chelperThreadId
@@ -81,7 +79,7 @@ getPorts = do
 data ParsedProblem = Parsed Problem [TestCase]
 
 createProblems :: F.FilePath -> [ParsedProblem] -> IO ()
-createProblems _ [] = putStrLn "The contest is empty"
+createProblems _ [] = logError "The contest is empty"
 createProblems root parsedProblems = do
     ret <- runInDirectory root $ do
         forM_ parsedProblems $ \(Parsed problem testCases) ->
@@ -90,7 +88,7 @@ createProblems root parsedProblems = do
         setActiveProblem $ problemId problem
 
     case ret of
-        Left err -> putStrLn $ describeError err
+        Left err -> logError $ T.pack $ describeError err
         _        -> return ()
 
 
@@ -123,10 +121,12 @@ parseProblemFromObject o = do
     output <- o .: "output"
     probName <- o .: "name"
     tests <- o .: "tests"
+
     languages <- o .: "languages"
     java <- languages .: "java"
     probId <- java .: "taskClass"
-    return $ Parsed (Problem probName probId (Stream input output)) tests
+
+    return $ Parsed (makeProblem probName probId (Stream input output)) tests
 
 instance FromJSON ParsedProblem where
   parseJSON = withObject "problem description" parseProblemFromObject
@@ -147,7 +147,7 @@ processCompanionRequest root request = do
         mbParsed = eitherDecode' body :: Either String Contest
     case mbParsed of
         Left err -> do
-            putStrLn $ "Could not parse input JSON: " ++ err
+            logError $ "Could not parse input JSON: " <> T.pack err
             return $ makeResponse badRequest err
         Right (Contest problems) -> do
             createProblems root problems
@@ -163,7 +163,7 @@ processCHelperRequest root request = do
 
     case () of
       _ | null bodyLines -> do
-            T.putStrLn "Invalid request!"
+            logError "Invalid request!"
             return $ makeResponse badRequest "Invalid request!"
         | chid == "json"   -> return $ makeResponse ok "" -- Processed by Companion server instead
         | otherwise        -> do
@@ -171,7 +171,7 @@ processCHelperRequest root request = do
             case err of
                 Nothing -> return $ makeResponse ok "OK"
                 Just e  -> do
-                    T.putStrLn e
+                    logError e
                     return $ makeResponse internalServerError $ T.unpack e
 
 

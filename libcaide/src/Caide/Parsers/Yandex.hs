@@ -51,7 +51,7 @@ doParse cont =
                 tags
 
     probType = Stream StdIn StdOut
-    problem = (Problem title probId probType, testCases)
+    problem = (makeProblem title probId probType, testCases)
 
 extractTestCase :: [Tag T.Text] -> [TestCase]
 extractTestCase tags = testCases

@@ -32,7 +32,9 @@ withProblem mbProbId processProblem = do
     else throw . T.concat $ ["Problem ", probId, " doesn't exist"]
 
 make :: Maybe ProblemID -> CaideIO ()
-make p = withProblem p $ \probId _ -> makeProblem probId
+make p = withProblem p $ \probId _ -> do
+    updateTests $ Just probId
+    prepareSubmission probId
 
 updateTests :: Maybe ProblemID -> CaideIO ()
 updateTests mbProbId = withProblem mbProbId $ \_ problemDir -> TestCases.updateTests problemDir
@@ -44,7 +46,4 @@ prepareSubmission probId = do
     case findLanguage lang of
         Nothing            -> throw . T.concat $ ["Unsupported programming language ", lang]
         Just (_, language) -> inlineCode language probId
-
-makeProblem :: ProblemID -> CaideIO ()
-makeProblem probId = updateTests (Just probId) >> prepareSubmission probId
 

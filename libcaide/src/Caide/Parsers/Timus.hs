@@ -52,5 +52,5 @@ doParse cont =
     testCases = [TestCase (texts!!i) (texts!!(i+1)) | i <- [0, 2 .. length texts-2]]
 
     probType = Stream StdIn StdOut
-    problem = (Problem title probId probType, testCases)
+    problem = (makeProblem title probId probType, testCases)
 

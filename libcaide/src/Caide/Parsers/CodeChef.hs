@@ -162,7 +162,7 @@ parseFromJson problemCode jsonText = do
                  parseTestCasesFromHtml (parseTags body)
     when (null testCases) $ throwError "Could not parse test cases"
     let probType = Stream StdIn StdOut
-    return (Problem probName problemCode probType, testCases)
+    return (makeProblem probName problemCode probType, testCases)
 
 
 problemUrlParser :: Parser (T.Text, T.Text)
@@ -193,7 +193,7 @@ doParseFromHtml cont = do
         title = T.strip . T.takeWhile (/= '|') $ innerText titleContents
 
     testCases <- parseTestCasesFromHtml tags
-    return (Problem title probId probType, testCases)
+    return (makeProblem title probId probType, testCases)
 
 doParse :: URL -> IO (Either Text (Problem, [TestCase]))
 doParse url = case urlPath of

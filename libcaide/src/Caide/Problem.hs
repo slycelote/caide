@@ -22,9 +22,11 @@ readProblemInfo probId = do
     hProblemInfo <- Conf.readProblemConfig probId
     pname <- getProp hProblemInfo "problem" "name"
     ptype <- getProp hProblemInfo "problem" "type"
+    fpTolerance <- getProp hProblemInfo "problem" "double_precision"
     return $ Problem
         { problemName = pname
         , problemId = probId
+        , problemFloatTolerance = fpTolerance
         , problemType = ptype
         }
 

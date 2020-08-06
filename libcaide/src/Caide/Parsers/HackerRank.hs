@@ -75,7 +75,7 @@ doParse cont =
     testCases = [TestCase (t!!i) (t!!(i+1)) | i <- [0, 2 .. length t-2]]
 
     probType = Stream StdIn StdOut
-    problem = (Problem name probId probType, testCases)
+    problem = (makeProblem name probId probType, testCases)
 
 extractText :: [Tag T.Text] -> T.Text
 extractText tags = T.unlines [t | TagText t <- tags, not (T.all isSpace t)]

@@ -83,11 +83,7 @@ createNewProblem probId probType = do
 
     root <- caideRoot
     let problemDir = root </> fromText probId
-        problem = Problem
-            { problemId = probId
-            , problemName = probId
-            , problemType = probType
-            }
+        problem = makeProblem probId probId probType
 
     -- Prepare problem directory
     liftIO $ createDirectory False problemDir

@@ -36,7 +36,7 @@ doParse :: [Tag T.Text] -> Either T.Text (Problem, [TestCase])
 doParse tags =
     if null beforeTitleDiv
     then Left "Couldn't parse problem statement"
-    else Right (Problem title probId probType, testCases)
+    else Right (makeProblem title probId probType, testCases)
   where
     statement = dropWhile (~~/== "<div class=problem-statement>") tags
     beforeTitleDiv = drop 1 . dropWhile (~~/== "<div class=title>") $ statement
