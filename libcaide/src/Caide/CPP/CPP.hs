@@ -19,8 +19,9 @@ import Filesystem.Util (listDir)
 
 import qualified Caide.CPP.CPPSimple as CPPSimple
 
-import Caide.Configuration (readCaideConf, readProblemConfig, withDefault)
+import Caide.Configuration (readCaideConf, withDefault)
 import Caide.CPP.CBinding (inlineLibraryCode)
+import qualified Caide.Problem as Problem
 import Caide.Types
 import Caide.Util (tshow)
 
@@ -43,15 +44,14 @@ inlineCPPCode probID = do
     macrosToKeep <- withDefault ["ONLINE_JUDGE"] $ getProp hConf "cpp" "keep_macros"
     maxConsequentEmptyLines <- withDefault 2 $ getProp hConf "cpp" "max_consequent_empty_lines"
 
-    hProbConf <- readProblemConfig probID
-    probType <- getProp hProbConf "problem" "type"
+    problem <- Problem.readProblemInfo probID
 
     libExists <- liftIO $ isDirectory libraryDirectory
     libraryCPPFiles <- if libExists
                        then filter (`hasExtension` "cpp") <$> liftIO (listDirectoryRecursively libraryDirectory)
                        else return []
 
-    let allCppFiles = case probType of
+    let allCppFiles = case problemType problem of
             Stream _ _ -> solutionPath:mainFilePath:libraryCPPFiles
             Topcoder _ -> solutionPath:libraryCPPFiles
         outputPath = problemDir </> "submission.cpp"

@@ -29,10 +29,11 @@ import System.Environment (getExecutablePath)
 import Text.XML.Light (parseXML, Content(..))
 import Text.XML.Light.Cursor
 
+import qualified Caide.Problem as Problem
 import Caide.Templates (getTemplate)
 import Caide.Types
 import Caide.Xml
-import Caide.Configuration (readProblemState, getActiveProblem)
+import Caide.Configuration (getActiveProblem)
 
 feature :: Feature
 feature =  noOpFeature
@@ -43,8 +44,8 @@ feature =  noOpFeature
 
 generateProject :: ProblemID -> CaideIO ()
 generateProject probId = do
-    hProblem <- readProblemState probId
-    lang <- getProp hProblem "problem" "language"
+    problem <- Problem.readProblemState probId
+    let lang = Problem.currentLanguage problem
     when (lang `elem` ["simplecpp", "cpp", "c++" :: T.Text]) $ do
         croot <- caideRoot
 

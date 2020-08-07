@@ -15,7 +15,7 @@ import Filesystem.Path ((</>))
 import Filesystem.Path.CurrentOS (fromText)
 import qualified Filesystem.Path as F
 
-import Caide.Configuration (readProblemConfig)
+import Caide.Problem (readProblemInfo)
 import Caide.Templates (copyTemplateUnlessExists, getTemplate)
 import Caide.Types
 import Caide.Util (readTextFile')
@@ -161,7 +161,5 @@ inlineCPPCode probID = do
     liftIO $ copyFile inlinedCodePath $ root </> "submission.cpp"
 
 getProbType :: ProblemID -> CaideIO ProblemType
-getProbType probID = do
-    hConf <- readProblemConfig probID
-    getProp hConf "problem" "type"
+getProbType probID = problemType <$> readProblemInfo probID
 

@@ -15,7 +15,7 @@ import qualified Filesystem.Path as F
 import Filesystem.Path ((</>))
 import Filesystem.Path.CurrentOS (fromText)
 
-import Caide.Configuration (readProblemConfig)
+import Caide.Problem (readProblemInfo)
 import Caide.Templates (copyTemplateUnlessExists, getTemplate)
 import Caide.Types
 import Caide.Util (readTextFile')
@@ -30,8 +30,7 @@ language = ProgrammingLanguage
 generateCSharpScaffold :: ProblemID -> CaideIO ()
 generateCSharpScaffold probID = do
     root <- caideRoot
-    hConf <- readProblemConfig probID
-    probType <- getProp hConf "problem" "type"
+    probType <- problemType <$> readProblemInfo probID
 
     generateSolutionFiles probType root probID
 
@@ -97,8 +96,7 @@ generateSolutionFiles (Topcoder tcDesc) root probID = do
 inlineCSharpCode :: ProblemID -> CaideIO ()
 inlineCSharpCode probID = do
     root <- caideRoot
-    h <- readProblemConfig probID
-    probType <- getProp h "problem" "type"
+    probType <- problemType <$> readProblemInfo probID
     let problemDir = root </> fromText probID
         solutionPath = problemDir </> fromText (T.append probID ".cs")
         mainProgramPath = problemDir </> "main.cs"

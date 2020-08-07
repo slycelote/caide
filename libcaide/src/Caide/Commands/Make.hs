@@ -12,7 +12,8 @@ import Prelude hiding (FilePath)
 import Filesystem (isDirectory, )
 import Filesystem.Path.CurrentOS (FilePath, fromText, (</>))
 
-import Caide.Configuration (getActiveProblem, readProblemState)
+import Caide.Configuration (getActiveProblem)
+import qualified Caide.Problem as Problem
 import Caide.Registry (findLanguage)
 import Caide.Types
 import qualified Caide.TestCases as TestCases
@@ -41,8 +42,8 @@ updateTests mbProbId = withProblem mbProbId $ \_ problemDir -> TestCases.updateT
 
 prepareSubmission :: ProblemID -> CaideIO ()
 prepareSubmission probId = do
-    hProblem <- readProblemState probId
-    lang <- getProp hProblem "problem" "language"
+    problem <- Problem.readProblemState probId
+    let lang = (Problem.currentLanguage problem)
     case findLanguage lang of
         Nothing            -> throw . T.concat $ ["Unsupported programming language ", lang]
         Just (_, language) -> inlineCode language probId
