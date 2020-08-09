@@ -130,6 +130,7 @@ executable caide
         Caide.Features.Codelite
         Caide.GenericLanguage
         Caide.Logger
+        Caide.MustacheUtil
         Caide.Parsers.CodeChef
         Caide.Parsers.CodeChefContest
         Caide.Parsers.Codeforces
