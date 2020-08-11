@@ -81,6 +81,7 @@ executable caide
                    tagsoup >= 0.13,
                    text >= 1.1.0,
                    unordered-containers,
+                   vector,
                    xml,
                    zip-archive
   other-extensions: CPP
@@ -129,6 +130,7 @@ executable caide
         Caide.CustomBuilder
         Caide.Features.Codelite
         Caide.GenericLanguage
+        Caide.GlobalTemplate
         Caide.Logger
         Caide.MustacheUtil
         Caide.Parsers.CodeChef

@@ -40,10 +40,11 @@ readProblemState probId = do
     currentLanguage <- getProp hProblemState "problem" "language"
     return $ ProblemState{..}
 
-jsonEncodeProblem :: Problem -> Aeson.Value
-jsonEncodeProblem Problem{..} = Aeson.object $
+jsonEncodeProblem :: Problem -> ProblemState -> Aeson.Value
+jsonEncodeProblem Problem{..} ProblemState{..} = Aeson.object $
     [ "id" .= problemId
     , "name" .= problemName
+    , "language" .= Aeson.object ["name" .= currentLanguage, currentLanguage .= Aeson.Bool True]
     ] ++ typeEntries problemType
   where
     typeEntries (Topcoder topcoderDesc) = ["topcoder" .= encodeTopcoderDesc topcoderDesc]

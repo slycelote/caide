@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+$CAIDE problem a --lang csharp
+$CAIDE problem b --lang cpp --type file,stdin,output.txt
+compare_with 1 root.txt {a,b}/problem.txt
+
+"$CAIDE" lang csharp
+compare_with 2 root.txt {a,b}/problem.txt
+

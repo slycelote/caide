@@ -19,6 +19,7 @@ import Filesystem.Path.CurrentOS (fromText, (</>))
 
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Configuration (getActiveProblem, setActiveProblem, getFeatures)
+import qualified Caide.GlobalTemplate as GlobalTemplate
 import Caide.Registry (findFeature)
 import Caide.Types
 import Caide.Util (withLock)
@@ -40,7 +41,7 @@ checkoutProblem probId' maybeLangStr = unless (T.null probId') $ do
             setActiveProblem probId
             liftIO $ T.putStrLn . T.concat $ ["Checked out problem ", probId]
             features <- mapMaybe findFeature <$> getFeatures
-            forM_ features (`onProblemCheckedOut` probId)
+            forM_ (GlobalTemplate.hook : features) (`onProblemCheckedOut` probId)
 
     case maybeLangStr of
         Just langStr -> generateScaffoldSolution langStr

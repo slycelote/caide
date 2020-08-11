@@ -28,6 +28,7 @@ import System.IO.Error (catchIOError, ioeGetErrorString, isPermissionError)
 
 import Caide.Commands.Checkout (checkoutProblem)
 import Caide.Configuration (getActiveProblem, getFeatures, setActiveProblem)
+import qualified Caide.GlobalTemplate as GlobalTemplate
 import Caide.Registry (findFeature)
 import Caide.Types
 import Caide.Util (tshow, withLock)
@@ -71,7 +72,7 @@ archiveProblem probId' = withLock $ do
 
     featureNames <- getFeatures
     let features = mapMaybe findFeature featureNames
-    forM_ features (`onProblemRemoved` probId)
+    forM_ (GlobalTemplate.hook : features) (`onProblemRemoved` probId)
 
 
 caideProblems :: FilePath -> IO [ProblemID]
