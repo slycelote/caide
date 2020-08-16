@@ -39,17 +39,18 @@ generateSolutionFiles (Stream input output) root probID = do
     unless mainFileExists $ do
         mainTemplate <- getTemplate "main_template.cpp"
         liftIO $ writeTextFile mainProgramPath $
-                T.unlines $ inputPreamble ++ outputPreamble ++ [mainTemplate]
+                T.unlines $ [inputPreamble, outputPreamble, mainTemplate]
     copyTemplateUnlessExists "solution_template.cpp" scaffoldPath
     copyTemplateUnlessExists "test_template.cpp" testProgramPath
   where
     inputPreamble = case input of
-        StdIn -> ["#define CAIDE_STDIN 1"]
-        FileInput fileName -> [T.concat ["const char* CAIDE_IN_FILE = \"", pathToText fileName, "\";"]]
+        StdIn -> "#define CAIDE_STDIN 1"
+        InputFilePattern p -> "#define CAIDE_IN_PATTERN \"" <> p <> "\""
+        FileInput fileName -> "const char* CAIDE_IN_FILE = \"" <> pathToText fileName <> "\";"
 
     outputPreamble = case output of
-        StdOut -> ["#define CAIDE_STDOUT 1"]
-        FileOutput fileName -> [T.concat ["const char* CAIDE_OUT_FILE = \"", pathToText fileName, "\";"]]
+        StdOut -> "#define CAIDE_STDOUT 1"
+        FileOutput fileName -> "const char* CAIDE_OUT_FILE = \"" <> pathToText fileName <> "\";"
 
     problemDir = root </> fromText probID
     scaffoldPath    = problemDir </> fromText (T.append probID ".cpp")

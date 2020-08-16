@@ -55,6 +55,7 @@ cat <<EOF >prob.cs
 using System;
 using System.Linq;
 using System.IO;
+using System.Text.RegularExpressions;
 class Solution {
     public void solve(TextReader input, TextWriter output) {
         string s;

@@ -56,14 +56,20 @@ generateSolutionFiles (Stream input output) root probID = do
     scaffoldPath = problemDir </> fromText (T.append probID ".cs")
     mainProgramPath = problemDir </> "main.cs"
     inputPreamble = case input of
-        StdIn -> "    public const string InputFile = null;"
-        FileInput fileName -> T.concat ["    public const string InputFile = \"", pathToText fileName, "\";"]
+        StdIn -> [ "    public const string InputFile = null;"
+                 , "    public const string InputFilePattern = null;"
+                 ]
+        FileInput fileName -> [ "    public const string InputFile = \"" <> pathToText fileName <> "\";"
+                              , "    public const string InputFilePattern = null;"
+                              ]
+        InputFilePattern p -> [ "    public const string InputFile = null;"
+                              , "    public const string InputFilePattern = \"" <> p <> "\";"
+                              ]
+
     outputPreamble = case output of
         StdOut -> "    public const string OutputFile = null;"
         FileOutput fileName -> T.concat ["    public const string OutputFile = \"", pathToText fileName, "\";"]
-    caideConstants = if T.null inputPreamble && T.null outputPreamble
-        then ""
-        else T.unlines ["class CaideConstants {", inputPreamble, outputPreamble, "}"]
+    caideConstants = T.unlines $ ["class CaideConstants {"] ++ inputPreamble ++ [outputPreamble, "}"]
 
 
 generateSolutionFiles (Topcoder tcDesc) root probID = do

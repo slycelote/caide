@@ -83,7 +83,7 @@ data Problem = Problem
 
 data ProblemType = Topcoder !TopcoderProblemDescriptor | Stream !InputSource !OutputTarget
     deriving (Show)
-data InputSource = StdIn | FileInput !F.FilePath
+data InputSource = StdIn | FileInput !F.FilePath | InputFilePattern !Text
     deriving (Show)
 data OutputTarget = StdOut | FileOutput !F.FilePath
     deriving (Show)
@@ -344,8 +344,8 @@ instance Option TopcoderValue where
             maybeBaseType = optionFromText . T.dropWhile (=='v') $ paramType
         _ -> Nothing
 
--- topcoder,class,method:retType,param1:type1,param2:type2
 instance Option ProblemType where
+    -- topcoder,class,method:retType,param1:type1,param2:type2
     optionToString (Topcoder desc) =
         optionToString ("topcoder" : tcClassName desc :
                         map optionToText (tcMethod desc : tcMethodParameters desc))
@@ -413,6 +413,7 @@ toText path = case F.toText path of
 inputSourceToString :: InputSource -> String
 inputSourceToString StdIn = "stdin"
 inputSourceToString (FileInput f) = F.encodeString f
+inputSourceToString (InputFilePattern p) = T.unpack $ "/" <> p <> "/"
 
 outputTargetToString :: OutputTarget -> String
 outputTargetToString StdOut = "stdout"
@@ -420,7 +421,11 @@ outputTargetToString (FileOutput f) = F.encodeString f
 
 parseInput :: Text -> InputSource
 parseInput "stdin" = StdIn
-parseInput f = FileInput . F.fromText $ f
+parseInput f
+    | T.length f >= 2 && T.head f == '/' && T.last f == '/'
+        = InputFilePattern . T.init . T.tail $ f
+    | otherwise
+        = FileInput . F.fromText $ f
 
 parseOutput :: Text -> OutputTarget
 parseOutput "stdout" = StdOut
