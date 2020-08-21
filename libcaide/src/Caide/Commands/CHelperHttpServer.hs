@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings, ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Caide.Commands.CHelperHttpServer(
@@ -19,8 +19,7 @@ import qualified Filesystem.Path.CurrentOS as F
 import Network.Socket (tupleToHostAddress, withSocketsDo)
 import System.IO (hSetBuffering, stdout, stderr, BufferMode(NoBuffering))
 
-import Data.Aeson (FromJSON(parseJSON), Object, eitherDecode', withObject, (.:))
-import Data.Aeson.Types (Parser)
+import Data.Aeson (FromJSON(parseJSON), eitherDecode', withObject, (.:))
 import Network.Shed.Httpd (initServerBind, Request(reqBody), Response(Response))
 
 import Caide.Configuration (describeError, orDefault, readCaideConf, setActiveProblem)
@@ -103,8 +102,11 @@ makeResponse code message = Response code [] message
 
 instance FromJSON InputSource where
   parseJSON = withObject "input description" $ \o -> do
-    inputType <- o .: "type"
-    if inputType == ("file" :: String) then FileInput . F.fromText <$> o .: "fileName" else pure StdIn
+    inputType :: String <- o .: "type"
+    case inputType of
+        "file"  -> FileInput . F.fromText <$> o .: "fileName"
+        "regex" -> InputFilePattern <$> o .: "pattern"
+        _ -> pure StdIn
 
 instance FromJSON OutputTarget where
   parseJSON = withObject "output description" $ \o -> do
@@ -115,8 +117,8 @@ instance FromJSON TestCase where
   parseJSON = withObject "test case" $ \o ->
     TestCase <$> o .: "input" <*> o .: "output"
 
-parseProblemFromObject :: Object -> Parser ParsedProblem
-parseProblemFromObject o = do
+instance FromJSON ParsedProblem where
+  parseJSON = withObject "problem description" $ \o -> do
     input <- o .: "input"
     output <- o .: "output"
     probName <- o .: "name"
@@ -126,31 +128,18 @@ parseProblemFromObject o = do
     java <- languages .: "java"
     probId <- java .: "taskClass"
 
-    return $ Parsed (makeProblem probName probId (Stream input output)) tests
-
-instance FromJSON ParsedProblem where
-  parseJSON = withObject "problem description" parseProblemFromObject
-
-newtype Contest = Contest [ParsedProblem]
-instance FromJSON Contest where
-  parseJSON = withObject "a problem or a contest" $ \o -> oneProblem o <|> contest o
-    where
-      oneProblem o = do problem <- parseProblemFromObject o
-                        return $ Contest [problem]
-      contest o = do result <- o .: "result"
-                     Contest <$> parseJSON result
-
+    pure $ Parsed (makeProblem probName probId (Stream input output)) tests
 
 processCompanionRequest :: F.FilePath -> Request -> IO Response
 processCompanionRequest root request = do
     let body = LBS.fromStrict . encodeUtf8 . T.pack $ reqBody request
-        mbParsed = eitherDecode' body :: Either String Contest
+        mbParsed = eitherDecode' body :: Either String ParsedProblem
     case mbParsed of
         Left err -> do
             logError $ "Could not parse input JSON: " <> T.pack err
             return $ makeResponse badRequest err
-        Right (Contest problems) -> do
-            createProblems root problems
+        Right p -> do
+            createProblems root [p]
             return $ makeResponse ok "OK"
 
 

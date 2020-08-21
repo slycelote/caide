@@ -86,7 +86,7 @@ executable caide
                    zip-archive
   other-extensions: CPP
   hs-source-dirs:  src
-  ghc-options:     -Wall -rtsopts=all -threaded -static -pgml g++
+  ghc-options:     -Wall -static -pgml g++ -threaded -rtsopts=all -with-rtsopts=-N
   if os(windows) {
     ghc-options:   -optl-static
   } else {
