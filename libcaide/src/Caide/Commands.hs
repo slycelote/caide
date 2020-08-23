@@ -12,6 +12,7 @@ import Data.Monoid (mconcat)
 import Data.Monoid ((<>))
 #endif
 import qualified Data.Text as T
+import Data.Version (showVersion)
 import System.Exit (exitWith, ExitCode(ExitFailure))
 import System.Environment (getExecutablePath)
 
@@ -35,6 +36,7 @@ import Caide.Commands.Make
 import Caide.Commands.ParseProblem (createProblem)
 import Caide.Commands.ParseContest
 import Caide.Commands.RunTests
+import Paths_libcaide (version)
 
 
 type CaideAction = F.FilePath -> IO ()
@@ -161,7 +163,7 @@ fullParser = subparser (mconcat publicSubCommands) <|>
 
 opts :: ParserInfo CaideAction
 opts = info (helper <*> fullParser) $
-    fullDesc <> header "Caide -- programming competitions tool" <>
+    fullDesc <> header ("Caide " <> showVersion version <> " -- programming competitions tool") <>
     progDesc "Additional help is available with 'caide -h' or 'caide COMMAND -h'" <>
     footer "http://github.com/slycelote/caide"
 
