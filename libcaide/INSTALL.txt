@@ -67,22 +67,13 @@ Next, install make, cmake and Python. It can be done in two ways:
   setup-env.bat accordingly.)
   2. Install the utilities only inside MSYS environment bundled with Stack:
 
-    > stack exec pacman -- -S make cmake python2
+    > stack exec pacman -- -S make cmake python
 
 Once all dependencies are installed, you are ready to build with:
 
     > stack build
 
-To run tests, launch MSYS shell:
+To run tests:
 
-    > stack exec bash
-
-and setup test environment (you will need to modify paths to PhantomJS and C#
-compiler in setup-test-env.sh file if necessary):
-
-    > . setup-test-env.sh
-
-Now you can run tests with:
-
-    > tests/run-tests.sh
+    > run-tests.bat
 
