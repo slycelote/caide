@@ -75,7 +75,10 @@ executable caide
                    optparse-applicative >= 0.15,
                    parsec,
                    process,
-                   stache,
+                   -- cabal freeze file contains dependencies of stache *executable*. (https://github.com/haskell/cabal/issues/5136)
+                   -- This doesn't affect the build, but is annoying. As a workaround,
+                   -- pick stache version that doesn't contain the executable.
+                   stache < 2.2.0,
                    system-fileio >= 0.3.16,
                    system-filepath,
                    tagsoup >= 0.13,
