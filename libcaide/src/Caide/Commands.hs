@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings, RecordWildCards #-}
 module Caide.Commands(
       runMain
 ) where
@@ -24,7 +24,7 @@ import Options.Applicative.Types (Backtracking(..))
 
 import System.IO.Util (writeFileAtomic)
 
-import Caide.Types (CaideIO, runInDirectory)
+import Caide.Types (CaideIO, Verbosity(..), runInDirectory)
 import qualified Caide.Commands.Init as Init
 import Caide.Configuration (describeError)
 import Caide.Commands.Archive
@@ -39,11 +39,24 @@ import Caide.Commands.RunTests
 import Paths_libcaide (version)
 
 
-type CaideAction = F.FilePath -> IO ()
+data GlobalOptions = GlobalOptions
+                 { verbosity :: Verbosity
+                 }
+
+toVerbosity :: Int -> Verbosity
+toVerbosity level = case level of
+    0 -> Info
+    _ -> Debug
+
+globalOptionsParser :: Parser GlobalOptions
+globalOptionsParser = GlobalOptions <$>
+    toVerbosity . length <$> many (flag' () (short 'v' <> help "Verbose output"))
+
+type CaideAction = GlobalOptions -> F.FilePath -> IO ()
 
 caideIoToIo :: CaideIO () -> CaideAction
-caideIoToIo cmd root = do
-    ret <- runInDirectory root cmd
+caideIoToIo cmd globalOptions root = do
+    ret <- runInDirectory (verbosity globalOptions) root cmd
 
     -- Save path to caide executable
     let fileNameStr = F.encodeString (root </> ".caide" </> "caideExe.txt")
@@ -95,7 +108,7 @@ publicSubCommands = map createSubCommand commands ++
     [ createIoSubCommand (
         "httpServer",
         "Run HTTP server for CHelper browser extension",
-        pure runHttpServer)
+        pure $ \globalOpts -> runHttpServer (verbosity globalOpts))
     ]
 
 internalSubCommands :: [Mod CommandFields CaideAction]
@@ -157,20 +170,30 @@ updateTestsOpts :: Parser (CaideIO ())
 updateTestsOpts = updateTests <$>
     optional (txtArgument (metavar "PROBLEM" <> help "Problem ID (matches problem directory)"))
 
-fullParser :: Parser CaideAction
-fullParser = subparser (mconcat publicSubCommands) <|>
+data Options = Options
+             { globalOptions :: GlobalOptions
+             , caideAction :: CaideAction
+             }
+
+allCommands :: Parser CaideAction
+allCommands = subparser (mconcat publicSubCommands) <|>
     subparser (mconcat internalSubCommands <> commandGroup "Internal commands:" <> internal)
 
-opts :: ParserInfo CaideAction
-opts = info (helper <*> fullParser) $
+optionsParser :: Parser Options
+optionsParser = Options <$> globalOptionsParser <*> allCommands
+
+opts :: ParserInfo Options
+opts = info (helper <*> optionsParser) $
     fullDesc <> header ("Caide " <> showVersion version <> " -- programming competitions tool") <>
     progDesc "Additional help is available with 'caide -h' or 'caide COMMAND -h'" <>
     footer "http://github.com/slycelote/caide"
 
 runMain :: [String] -> Either (IO ()) (F.FilePath -> IO ())
 runMain args = case parseResult of
-    Success cmd -> Right cmd
-    _           -> Left . void $ handleParseResult parseResult
+    -- Run the parsed action
+    Success (Options{..}) -> Right $ \root -> caideAction globalOptions root
+    -- Handle shell completion or error and then exit the process
+    _ -> Left . void $ handleParseResult parseResult
   where
     parseResult = execParserPure parsePrefs opts args
     parsePrefs = defaultPrefs

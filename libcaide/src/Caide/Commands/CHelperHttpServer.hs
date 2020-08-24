@@ -10,8 +10,9 @@ import Control.Applicative ((<$>), (<*>))
 #endif
 import Control.Applicative ((<|>))
 import Control.Concurrent (forkIO, killThread)
-import Control.Monad (forM_)
+import Control.Monad (forM_, when)
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.ByteString.Lazy.Char8 as AsciiLBS
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import qualified Filesystem.Path as F
@@ -29,25 +30,25 @@ import Caide.Registry (findHtmlParser)
 import Caide.Types
 
 
-runHttpServer :: F.FilePath -> IO ()
-runHttpServer root = do
-    mbPorts <- runInDirectory root getPorts
+runHttpServer :: Verbosity -> F.FilePath -> IO ()
+runHttpServer v root = do
+    mbPorts <- runInDirectory v root getPorts
     case mbPorts of
         Left err -> logError $ T.pack $ describeError err
-        Right (companionPort, chelperPort) -> runServers root companionPort chelperPort
+        Right (companionPort, chelperPort) -> runServers v root companionPort chelperPort
 
 
-runServers :: F.FilePath -> Int -> Int -> IO ()
-runServers root companionPort chelperPort = withSocketsDo $ do
+runServers :: Verbosity -> F.FilePath -> Int -> Int -> IO ()
+runServers v root companionPort chelperPort = withSocketsDo $ do
     hSetBuffering stdout NoBuffering
     hSetBuffering stderr NoBuffering
 
     mbCompanion <- if companionPort <= 0
         then return Nothing
-        else Just <$> (forkIO $ initServerBind companionPort (tupleToHostAddress (127,0,0,1)) (processCompanionRequest root))
+        else Just <$> (forkIO $ initServerBind companionPort (tupleToHostAddress (127,0,0,1)) (processCompanionRequest v root))
     mbChelper <- if chelperPort <= 0
         then return Nothing
-        else Just <$> (forkIO $ initServerBind chelperPort (tupleToHostAddress (127,0,0,1)) (processCHelperRequest root))
+        else Just <$> (forkIO $ initServerBind chelperPort (tupleToHostAddress (127,0,0,1)) (processCHelperRequest v root))
 
     let servers = case (mbCompanion, mbChelper) of
             (Just _, Just _)   -> "CHelper and Competitive Companion extensions"
@@ -77,10 +78,10 @@ getPorts = do
 
 data ParsedProblem = Parsed Problem [TestCase]
 
-createProblems :: F.FilePath -> [ParsedProblem] -> IO ()
-createProblems _ [] = logError "The contest is empty"
-createProblems root parsedProblems = do
-    ret <- runInDirectory root $ do
+createProblems :: Verbosity -> F.FilePath -> [ParsedProblem] -> IO ()
+createProblems _ _ [] = logError "The contest is empty"
+createProblems v root parsedProblems = do
+    ret <- runInDirectory v root $ do
         forM_ parsedProblems $ \(Parsed problem testCases) ->
             saveProblemWithScaffold problem testCases
         let Parsed problem _ = head parsedProblems
@@ -130,21 +131,22 @@ instance FromJSON ParsedProblem where
 
     pure $ Parsed (makeProblem probName probId (Stream input output)) tests
 
-processCompanionRequest :: F.FilePath -> Request -> IO Response
-processCompanionRequest root request = do
+processCompanionRequest :: Verbosity -> F.FilePath -> Request -> IO Response
+processCompanionRequest v root request = do
     let body = LBS.fromStrict . encodeUtf8 . T.pack $ reqBody request
         mbParsed = eitherDecode' body :: Either String ParsedProblem
+    when (v >= Debug) $ AsciiLBS.putStrLn body
     case mbParsed of
         Left err -> do
             logError $ "Could not parse input JSON: " <> T.pack err
             return $ makeResponse badRequest err
         Right p -> do
-            createProblems root [p]
+            createProblems v root [p]
             return $ makeResponse ok "OK"
 
 
-processCHelperRequest :: F.FilePath -> Request -> IO Response
-processCHelperRequest root request = do
+processCHelperRequest :: Verbosity -> F.FilePath -> Request -> IO Response
+processCHelperRequest v root request = do
     let body = T.pack $ reqBody request
         bodyLines = T.lines body
         chid = T.strip $ head bodyLines
@@ -156,7 +158,7 @@ processCHelperRequest root request = do
             return $ makeResponse badRequest "Invalid request!"
         | chid == "json"   -> return $ makeResponse ok "" -- Processed by Companion server instead
         | otherwise        -> do
-            err <- process chid page root
+            err <- process chid page v root
             case err of
                 Nothing -> return $ makeResponse ok "OK"
                 Just e  -> do
@@ -164,9 +166,9 @@ processCHelperRequest root request = do
                     return $ makeResponse internalServerError $ T.unpack e
 
 
-process :: T.Text -> T.Text -> F.FilePath -> IO (Maybe T.Text)
-process chid page root = case parseFromHtml <$> findHtmlParser chid <*> Just page of
+process :: T.Text -> T.Text -> Verbosity -> F.FilePath -> IO (Maybe T.Text)
+process chid page v root = case parseFromHtml <$> findHtmlParser chid <*> Just page of
     Nothing -> return . Just $ T.concat $ ["'", chid, "' not supported"]
     Just (Left err) -> return . Just $ T.concat $ ["Error while parsing the problem: ", err]
-    Just (Right (problem, testCases)) -> createProblems root [Parsed problem testCases] >> return Nothing
+    Just (Right (problem, testCases)) -> createProblems v root [Parsed problem testCases] >> return Nothing
 

@@ -11,6 +11,7 @@ module Caide.Types(
     , TopcoderProblemDescriptor (..)
     , makeProblem
 
+    , Verbosity (..)
     , CaideIO
     , CaideM
     , runCaideM
@@ -30,6 +31,7 @@ module Caide.Types(
     , getProp
     , setProp
     , caideRoot
+    , caideVerbosity
 
     , HtmlParser (..)
     , ProblemParser (..)
@@ -131,6 +133,8 @@ data ContestParser = ContestParser
     , parseContest      :: URL -> CaideIO ()
     }
 
+data Verbosity = Info | Debug
+    deriving (Show, Enum, Ord, Eq, Bounded)
 
 -- | The type encapsulating functions required to support particular target
 --   programming language.
@@ -195,9 +199,9 @@ newtype ConfigFileHandle configType = FileHandle F.FilePath
 runCaideM :: Monad m => CaideM m a -> CaideState -> m (Either C.CPError (a, CaideState))
 runCaideM caideAction p = runExceptT $ runStateT (unCaideM caideAction) p
 
-runInDirectory :: F.FilePath -> CaideIO a -> IO (Either C.CPError a)
-runInDirectory dir caideAction = do
-    let initialState = CaideState { root = dir, files = M.empty }
+runInDirectory :: Verbosity -> F.FilePath -> CaideIO a -> IO (Either C.CPError a)
+runInDirectory v dir caideAction = do
+    let initialState = CaideState { root = dir, verbosity = v, files = M.empty }
     ret <- runCaideM caideAction initialState
     case ret of
         Left e -> return $ Left e
@@ -216,6 +220,9 @@ assert condition message = unless condition $ throw message
 -- | Return root caide directory
 caideRoot :: Monad m => CaideM m F.FilePath
 caideRoot = gets root
+
+caideVerbosity :: Monad m => CaideM m Verbosity
+caideVerbosity = gets verbosity
 
 -- | Creates a new config file. Throws if it already exists.
 createConf :: Monad m => F.FilePath -> C.ConfigParser -> CaideM m (ConfigFileHandle Persistent)
@@ -379,6 +386,7 @@ data ConfigInMemory = ConfigInMemory
 
 data CaideState = CaideState
     { root  :: F.FilePath
+    , verbosity :: Verbosity
     , files :: Map F.FilePath ConfigInMemory
     }
 
