@@ -8,11 +8,9 @@ module Caide.Commands.CHelperHttpServer(
 #ifndef AMP
 import Control.Applicative ((<$>), (<*>))
 #endif
-import Control.Applicative ((<|>))
 import Control.Concurrent (forkIO, killThread)
 import Control.Monad (forM_, when)
 import qualified Data.ByteString.Lazy as LBS
-import qualified Data.ByteString.Lazy.Char8 as AsciiLBS
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import qualified Filesystem.Path as F
@@ -135,7 +133,8 @@ processCompanionRequest :: Verbosity -> F.FilePath -> Request -> IO Response
 processCompanionRequest v root request = do
     let body = LBS.fromStrict . encodeUtf8 . T.pack $ reqBody request
         mbParsed = eitherDecode' body :: Either String ParsedProblem
-    when (v >= Debug) $ AsciiLBS.putStrLn body
+    when (v >= Debug) $
+        putStrLn $ reqBody request
     case mbParsed of
         Left err -> do
             logError $ "Could not parse input JSON: " <> T.pack err
