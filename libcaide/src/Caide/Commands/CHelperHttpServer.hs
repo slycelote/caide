@@ -8,8 +8,9 @@ module Caide.Commands.CHelperHttpServer(
 #ifndef AMP
 import Control.Applicative ((<$>), (<*>))
 #endif
-import Control.Concurrent (forkIO, killThread)
-import Control.Monad (forM_, when)
+import Control.Concurrent.Async (withAsync)
+import qualified Control.Concurrent.Async as Async
+import Control.Monad (forM_, void, when)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -21,6 +22,7 @@ import System.IO (hSetBuffering, stdout, stderr, BufferMode(NoBuffering))
 import Data.Aeson (FromJSON(parseJSON), eitherDecode', withObject, (.:))
 import Network.Shed.Httpd (initServerBind, Request(reqBody), Response(Response))
 
+import Caide.CheckUpdates (checkUpdates)
 import Caide.Configuration (describeError, orDefault, readCaideConf, setActiveProblem)
 import Caide.Commands.ParseProblem (saveProblemWithScaffold)
 import Caide.Logger (logInfo, logError)
@@ -41,30 +43,21 @@ runServers v root companionPort chelperPort = withSocketsDo $ do
     hSetBuffering stdout NoBuffering
     hSetBuffering stderr NoBuffering
 
-    mbCompanion <- if companionPort <= 0
-        then return Nothing
-        else Just <$> (forkIO $ initServerBind companionPort (tupleToHostAddress (127,0,0,1)) (processCompanionRequest v root))
-    mbChelper <- if chelperPort <= 0
-        then return Nothing
-        else Just <$> (forkIO $ initServerBind chelperPort (tupleToHostAddress (127,0,0,1)) (processCHelperRequest v root))
-
-    let servers = case (mbCompanion, mbChelper) of
-            (Just _, Just _)   -> "CHelper and Competitive Companion extensions"
-            (Nothing, Just _)  -> "CHelper extension"
-            (Just _, Nothing)  -> "Competitive Companion extension"
-            (Nothing, Nothing) -> ""
-
+    let servers = case (companionPort > 0, chelperPort > 0) of
+            (True, True)   -> "CHelper and Competitive Companion extensions"
+            (False, True)  -> "CHelper extension"
+            (True, False)  -> "Competitive Companion extension"
+            (False, False) -> ""
+        runServer port handler = when (port > 0) $
+            initServerBind port (tupleToHostAddress (127,0,0,1)) (handler v root)
     if T.null servers
     then logError "Both CHelper and Competitive Companion servers are disabled. Exiting now."
-    else do
-        logInfo $ "Running HTTP server for " <> servers <> ". Press Return to terminate."
-        _ <- getLine
-        case mbChelper of
-            Just chelperThreadId -> killThread chelperThreadId
-            Nothing              -> return ()
-        case mbCompanion of
-            Just companionThreadId -> killThread companionThreadId
-            Nothing                -> return ()
+    else withAsync (void $ runInDirectory v root checkUpdates) $ \a1 ->
+         withAsync (void $ runServer companionPort processCompanionRequest) $ \a2 ->
+         withAsync (void $ runServer chelperPort processCHelperRequest) $ \a3 -> do
+             logInfo $ "Running HTTP server for " <> servers <> ". Press Return to terminate."
+             _ <- getLine
+             forM_ [a1, a2, a3] Async.cancel
 
 
 getPorts :: CaideIO (Int, Int)

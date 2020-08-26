@@ -1,6 +1,6 @@
 #!/bin/bash
-(sleep 10; echo .) | "$CAIDE" httpServer &
-sleep 1
+(sleep 15; echo .) | "$CAIDE" httpServer &
+sleep 2
 
 curl --max-time 10 --data-binary @request-codeforces.txt -H "Content-Type: text/html" http://localhost:4243
 

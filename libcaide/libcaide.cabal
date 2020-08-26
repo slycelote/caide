@@ -114,6 +114,7 @@ executable caide
   other-modules:
         Caide.Builders.Custom
         Caide.Builders.None
+        Caide.CheckUpdates
         Caide.CPP.CBinding
         Caide.CPP.CPP
         Caide.CPP.CPPSimple
@@ -133,6 +134,7 @@ executable caide
         Caide.CustomBuilder
         Caide.Features.Codelite
         Caide.GenericLanguage
+        Caide.GlobalState
         Caide.GlobalTemplate
         Caide.Logger
         Caide.MustacheUtil

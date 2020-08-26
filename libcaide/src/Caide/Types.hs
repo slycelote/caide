@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, GeneralizedNewtypeDeriving, OverloadedStrings #-}
+{-# LANGUAGE CPP, GeneralizedNewtypeDeriving, OverloadedStrings, ScopedTypeVariables #-}
 
 module Caide.Types(
       Problem (..)
@@ -48,6 +48,7 @@ module Caide.Types(
 #ifndef AMP
 import Control.Applicative (Applicative)
 #endif
+import Control.Exception.Base (displayException)
 import Control.Monad (forM_, unless, when)
 import Control.Monad.Except (ExceptT, MonadError, runExceptT, throwError)
 import Control.Monad.State (StateT, MonadState, runStateT, gets, modify')
@@ -60,6 +61,7 @@ import Data.Maybe (catMaybes, isNothing)
 import Data.Text (Text, pack, unpack)
 import qualified Data.Text as T
 import qualified Data.ConfigFile as C
+import System.IO.Error (tryIOError)
 
 import qualified Filesystem as F
 import qualified Filesystem.Path as F
@@ -202,10 +204,14 @@ runCaideM caideAction p = runExceptT $ runStateT (unCaideM caideAction) p
 runInDirectory :: Verbosity -> F.FilePath -> CaideIO a -> IO (Either C.CPError a)
 runInDirectory v dir caideAction = do
     let initialState = CaideState { root = dir, verbosity = v, files = M.empty }
-    ret <- runCaideM caideAction initialState
+        logEx e = do
+            when (v >= Debug) $ putStrLn (show e)
+            return (Left e)
+    ret <- tryIOError $ runCaideM caideAction initialState
     case ret of
-        Left e -> return $ Left e
-        Right (a, finalState) -> do
+        Left e -> logEx (C.OtherProblem $ displayException e, "")
+        Right (Left e) -> logEx e
+        Right (Right (a, finalState)) -> do
             forM_ [f | f@(filePath, fileHandle) <- M.assocs (files finalState),
                         modified fileHandle && not (F.null filePath)] $
                 uncurry writeConfigParser

@@ -1,5 +1,6 @@
 #!/bin/bash
 (sleep 10; echo .) | "$CAIDE" httpServer &
+sleep 1
 curl --max-time 10 -d @request.json -H "Content-Type: application/json" http://localhost:10043
 curl --max-time 10 -d @request3.json -H "Content-Type: application/json" http://localhost:10043
 
