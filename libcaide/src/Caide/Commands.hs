@@ -5,6 +5,7 @@ module Caide.Commands(
 
 import Control.Exception.Base (catch, SomeException)
 import Control.Monad (void)
+import Data.List (foldl')
 #if !MIN_VERSION_base(4, 8, 0)
 import Data.Monoid (mconcat)
 #endif
@@ -24,6 +25,7 @@ import Options.Applicative.Types (Backtracking(..))
 
 import System.IO.Util (writeFileAtomic)
 
+import Caide.CheckUpdates (logIfUpdateAvailable)
 import Caide.Types (CaideIO, Verbosity(..), runInDirectory)
 import qualified Caide.Commands.Init as Init
 import Caide.Configuration (describeError)
@@ -54,9 +56,18 @@ globalOptionsParser = GlobalOptions <$>
 
 type CaideAction = GlobalOptions -> F.FilePath -> IO ()
 
-caideIoToIo :: CaideIO () -> CaideAction
-caideIoToIo cmd globalOptions root = do
-    ret <- runInDirectory (verbosity globalOptions) root cmd
+createIoSubCommand :: (String, String, Parser CaideAction) -> Mod CommandFields CaideAction
+createIoSubCommand (name, desc, cmd) = command name $
+    info (helper <*> cmd) $ progDesc desc <> fullDesc
+
+data CommandExtension = ReportNewVersion
+
+extendCommand :: CaideIO () -> CommandExtension -> CaideIO ()
+extendCommand cmd ReportNewVersion = cmd >> logIfUpdateAvailable
+
+caideIoToIo :: [CommandExtension] -> CaideIO () -> CaideAction
+caideIoToIo extensions cmd globalOptions root = do
+    ret <- runInDirectory (verbosity globalOptions) root $ foldl' extendCommand cmd extensions
 
     -- Save path to caide executable
     let fileNameStr = F.encodeString (root </> ".caide" </> "caideExe.txt")
@@ -71,24 +82,23 @@ caideIoToIo cmd globalOptions root = do
         _        -> return ()
 
 
-createIoSubCommand :: (String, String, Parser CaideAction) -> Mod CommandFields CaideAction
-createIoSubCommand (name, desc, cmd) = command name $
-    info (helper <*> cmd) $ progDesc desc <> fullDesc
+createSubCommand :: (String, String, [CommandExtension], Parser (CaideIO ())) -> Mod CommandFields CaideAction
+createSubCommand (name, desc, extensions, cmd) = createIoSubCommand (name, desc, caideIoToIo extensions <$> cmd)
 
-createSubCommand :: (String, String, Parser (CaideIO ())) -> Mod CommandFields CaideAction
-createSubCommand (name, desc, cmd) = createIoSubCommand (name, desc, caideIoToIo <$> cmd)
+createSubCommand' :: (String, String, Parser (CaideIO ())) -> Mod CommandFields CaideAction
+createSubCommand' (name, desc, cmd) = createSubCommand (name, desc, [], cmd)
 
 
-commands :: [(String, String, Parser (CaideIO ()))]
+commands :: [(String, String, [CommandExtension], Parser (CaideIO ()))]
 commands =
-    [ ("init", "Initialize caide directory", initOpts)
-    , ("problem", "Parse a problem or create an empty problem", problemOpts)
-    , ("contest", "Parse an online contest", contestOpts)
-    , ("make", "Prepare submission file and update test list", makeOpts)
-    , ("test", "Run tests and generate test report", pure runTests)
-    , ("checkout", "Switch to a different problem", checkoutOpts)
-    , ("lang", "Generate scaffold solution", langOpts)
-    , ("archive", "Move problem to the archive", archiveOpts)
+    [ ("init", "Initialize caide directory", [], initOpts)
+    , ("problem", "Parse a problem or create an empty problem", [ReportNewVersion], problemOpts)
+    , ("contest", "Parse an online contest", [ReportNewVersion], contestOpts)
+    , ("make", "Prepare submission file and update test list", [ReportNewVersion], makeOpts)
+    , ("test", "Run tests and generate test report", [ReportNewVersion], pure runTests)
+    , ("checkout", "Switch to a different problem", [ReportNewVersion], checkoutOpts)
+    , ("lang", "Generate scaffold solution", [ReportNewVersion], langOpts)
+    , ("archive", "Move problem to the archive", [ReportNewVersion], archiveOpts)
     ]
 
 internalCommands :: [(String, String, Parser (CaideIO ()))]
@@ -112,7 +122,7 @@ publicSubCommands = map createSubCommand commands ++
     ]
 
 internalSubCommands :: [Mod CommandFields CaideAction]
-internalSubCommands = map createSubCommand internalCommands
+internalSubCommands = map createSubCommand' internalCommands
 
 
 initOpts :: Parser (CaideIO ())

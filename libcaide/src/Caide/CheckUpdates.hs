@@ -2,6 +2,7 @@
 module Caide.CheckUpdates(
       parseLatestVersion
     , checkUpdates
+    , logIfUpdateAvailable
 ) where
 
 import Control.Monad (when)
@@ -15,7 +16,9 @@ import Text.ParserCombinators.ReadP (readP_to_S)
 
 import qualified Data.Aeson as Aeson
 
-import Caide.GlobalState (GlobalState(latestVersion), modifyGlobalState, flushGlobalState)
+import Paths_libcaide (version)
+import Caide.GlobalState (GlobalState(latestVersion), readGlobalState, modifyGlobalState, flushGlobalState)
+import Caide.Logger (logWarn)
 import Caide.Types (CaideIO)
 import Caide.Util (withLock)
 import Network.HTTP.Util (downloadDocument)
@@ -34,9 +37,9 @@ parseLatestVersion s = do
     releases :: [Release] <- Aeson.decode s
     let nonBetaReleases = [r | r <- releases, not (draft r || prerelease r)]
     latestRelease <- listToMaybe nonBetaReleases
-    let version = tag_name latestRelease
-    when (head version /= 'v') Nothing
-    let parseResults = readP_to_S parseVersion $ tail version
+    let tagName = tag_name latestRelease
+    when (head tagName /= 'v') Nothing
+    let parseResults = readP_to_S parseVersion $ tail tagName
         fullParseResults = [v | (v, "") <- parseResults]
     case fullParseResults of
         [v] -> Just v
@@ -54,4 +57,12 @@ checkUpdates = do
                 ver -> withLock $ do
                     modifyGlobalState $ \s -> s {latestVersion = ver}
                     flushGlobalState
+
+logIfUpdateAvailable :: CaideIO ()
+logIfUpdateAvailable = do
+    s <- readGlobalState
+    case latestVersion s of
+        Just v | v > version ->
+            logWarn "New version is available on GitHub: https://github.com/slycelote/caide/releases"
+        _ -> pure ()
 
