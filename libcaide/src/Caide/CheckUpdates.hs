@@ -17,9 +17,10 @@ import Text.ParserCombinators.ReadP (readP_to_S)
 import qualified Data.Aeson as Aeson
 
 import Paths_libcaide (version)
+import Caide.Configuration (readCaideConf, orDefault)
 import Caide.GlobalState (GlobalState(latestVersion), readGlobalState, modifyGlobalState, flushGlobalState)
 import Caide.Logger (logWarn)
-import Caide.Types (CaideIO)
+import Caide.Types (CaideIO, getProp)
 import Caide.Util (withLock)
 import Network.HTTP.Util (downloadDocument)
 
@@ -47,16 +48,19 @@ parseLatestVersion s = do
 
 checkUpdates :: CaideIO ()
 checkUpdates = do
-    releases <- liftIO $ downloadDocument "https://api.github.com/repos/slycelote/caide/releases"
-    case releases of
-        Left _ -> pure ()
-        Right contents -> do
-            let bsContents = LBS.fromStrict . encodeUtf8 $ contents
-            case parseLatestVersion bsContents of
-                Nothing  -> pure ()
-                ver -> withLock $ do
-                    modifyGlobalState $ \s -> s {latestVersion = ver}
-                    flushGlobalState
+    h <- readCaideConf
+    checkEnabled <- getProp h "core" "check_updates" `orDefault` True
+    when checkEnabled $ do
+        releases <- liftIO $ downloadDocument "https://api.github.com/repos/slycelote/caide/releases"
+        case releases of
+            Left _ -> pure ()
+            Right contents -> do
+                let bsContents = LBS.fromStrict . encodeUtf8 $ contents
+                case parseLatestVersion bsContents of
+                    Nothing  -> pure ()
+                    ver -> withLock $ do
+                        modifyGlobalState $ \s -> s {latestVersion = ver}
+                        flushGlobalState
 
 logIfUpdateAvailable :: CaideIO ()
 logIfUpdateAvailable = do
