@@ -25,7 +25,7 @@ import Options.Applicative.Types (Backtracking(..))
 
 import System.IO.Util (writeFileAtomic)
 
-import Caide.CheckUpdates (checkUpdatesCommand, logIfUpdateAvailable)
+import Caide.CheckUpdates (checkUpdates, checkUpdatesCommand, logIfUpdateAvailable)
 import Caide.Types (CaideIO, Verbosity(..), runInDirectory)
 import qualified Caide.Commands.Init as Init
 import Caide.Configuration (describeError)
@@ -60,9 +60,10 @@ createIoSubCommand :: (String, String, Parser CaideAction) -> Mod CommandFields 
 createIoSubCommand (name, desc, cmd) = command name $
     info (helper <*> cmd) $ progDesc desc <> fullDesc
 
-data CommandExtension = ReportNewVersion
+data CommandExtension = AutoCheckUpdates | ReportNewVersion
 
 extendCommand :: CaideIO () -> CommandExtension -> CaideIO ()
+extendCommand cmd AutoCheckUpdates = cmd >> checkUpdates
 extendCommand cmd ReportNewVersion = cmd >> logIfUpdateAvailable
 
 caideIoToIo :: [CommandExtension] -> CaideIO () -> CaideAction
@@ -88,12 +89,13 @@ createSubCommand (name, desc, extensions, cmd) = createIoSubCommand (name, desc,
 createSubCommand' :: (String, String, Parser (CaideIO ())) -> Mod CommandFields CaideAction
 createSubCommand' (name, desc, cmd) = createSubCommand (name, desc, [], cmd)
 
-
+-- NOTE: Not using AutoCheckUpdates everywhere because it could cause slowdown
+-- when we're offline / GitHub inaccessible / etc.
 commands :: [(String, String, [CommandExtension], Parser (CaideIO ()))]
 commands =
     [ ("init", "Initialize caide directory", [], initOpts)
-    , ("problem", "Parse a problem or create an empty problem", [ReportNewVersion], problemOpts)
-    , ("contest", "Parse an online contest", [ReportNewVersion], contestOpts)
+    , ("problem", "Parse a problem or create an empty problem", [AutoCheckUpdates, ReportNewVersion], problemOpts)
+    , ("contest", "Parse an online contest", [AutoCheckUpdates, ReportNewVersion], contestOpts)
     , ("make", "Prepare submission file and update test list", [ReportNewVersion], makeOpts)
     , ("test", "Run tests and generate test report", [ReportNewVersion], pure runTests)
     , ("checkout", "Switch to a different problem", [ReportNewVersion], checkoutOpts)
