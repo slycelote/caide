@@ -7,9 +7,12 @@ module Caide.GlobalState (
     , flushGlobalState
 ) where
 
+import Control.Monad.Except (catchError)
+import qualified Data.ByteString.Lazy.Char8 as AsciiLBS
 import Data.Version (Version, makeVersion, versionBranch)
 import GHC.Generics (Generic)
 import qualified Data.Text as T
+import Data.Time.Clock (UTCTime)
 
 import qualified Data.Aeson as Aeson
 
@@ -19,6 +22,7 @@ import Caide.Types (CaideIO, ProblemID, getProp, setProp, flushConf)
 data GlobalState = GlobalState
                  { activeProblem :: Maybe ProblemID
                  , latestVersion :: Maybe Version
+                 , lastUpdateCheck :: Maybe UTCTime
                  } deriving (Generic, Show)
 
 instance Aeson.FromJSON GlobalState
@@ -29,6 +33,7 @@ readGlobalState = do
     h <- readCaideState
     mbActiveProblem <- getProp h "core" "problem" `orDefault` ""
     mbLatestVersion <- getProp h "core" "latest_version" `orDefault` []
+    lastUpdateCheck <- ((Aeson.decode . AsciiLBS.pack . T.unpack) <$> getProp h "core" "last_update") `catchError` (const $ pure Nothing)
     let activeProblem = if T.null mbActiveProblem then Nothing else Just mbActiveProblem
         latestVersion = case mbLatestVersion of
             [] -> Nothing
@@ -43,6 +48,9 @@ writeGlobalState GlobalState{..} = do
         _ -> pure ()
     case latestVersion of
         Just v -> setProp h "core" "latest_version" (versionBranch v)
+        _ -> pure ()
+    case lastUpdateCheck of
+        Just t -> setProp h "core" "last_update" $ T.pack . AsciiLBS.unpack . Aeson.encode $ t
         _ -> pure ()
 
 modifyGlobalState :: (GlobalState -> GlobalState) -> CaideIO ()

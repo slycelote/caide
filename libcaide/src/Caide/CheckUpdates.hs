@@ -11,6 +11,7 @@ import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Maybe (listToMaybe)
 import Data.Text.Encoding (encodeUtf8)
+import Data.Time.Clock (diffUTCTime, getCurrentTime, nominalDay)
 import Data.Version (Version, parseVersion)
 import GHC.Generics (Generic)
 import Text.ParserCombinators.ReadP (readP_to_S)
@@ -19,7 +20,7 @@ import qualified Data.Aeson as Aeson
 
 import Paths_libcaide (version)
 import Caide.Configuration (readCaideConf, orDefault)
-import Caide.GlobalState (GlobalState(latestVersion), readGlobalState, modifyGlobalState, flushGlobalState)
+import Caide.GlobalState (GlobalState(latestVersion, lastUpdateCheck), readGlobalState, modifyGlobalState, flushGlobalState)
 import Caide.Logger (logInfo, logWarn)
 import Caide.Types (CaideIO, getProp)
 import Caide.Util (withLock)
@@ -55,16 +56,23 @@ checkUpdatesImpl = do
         Right contents -> do
             let bsContents = LBS.fromStrict . encodeUtf8 $ contents
             case parseLatestVersion bsContents of
-                Nothing  -> pure ()
-                ver -> withLock $ do
-                    modifyGlobalState $ \s -> s {latestVersion = ver}
-                    flushGlobalState
+                Nothing -> pure ()
+                ver -> do
+                    t <- liftIO getCurrentTime
+                    withLock $ do
+                        modifyGlobalState $ \s -> s {latestVersion = ver, lastUpdateCheck = Just t}
+                        flushGlobalState
 
 checkUpdates :: CaideIO ()
 checkUpdates = do
     h <- readCaideConf
     checkEnabled <- getProp h "core" "check_updates" `orDefault` True
-    when checkEnabled checkUpdatesImpl
+    s <- readGlobalState
+    t <- liftIO getCurrentTime
+    let checkedRecently = case lastUpdateCheck s of
+            Nothing -> False
+            Just t1 -> diffUTCTime t t1 < 7 * nominalDay
+    when (checkEnabled && not checkedRecently) checkUpdatesImpl
 
 checkUpdatesCommand :: CaideIO ()
 checkUpdatesCommand = do
