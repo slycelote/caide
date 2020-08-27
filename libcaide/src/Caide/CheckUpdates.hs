@@ -22,7 +22,7 @@ import Paths_libcaide (version)
 import Caide.Configuration (readCaideConf, orDefault)
 import Caide.GlobalState (GlobalState(latestVersion, lastUpdateCheck), readGlobalState, modifyGlobalState, flushGlobalState)
 import Caide.Logger (logInfo, logWarn)
-import Caide.Types (CaideIO, getProp)
+import Caide.Types (CaideIO, getProp, throw)
 import Caide.Util (withLock)
 import Network.HTTP.Util (downloadDocument)
 
@@ -52,11 +52,11 @@ checkUpdatesImpl :: CaideIO ()
 checkUpdatesImpl = do
     releases <- liftIO $ downloadDocument "https://api.github.com/repos/slycelote/caide/releases"
     case releases of
-        Left _ -> pure ()
+        Left e -> throw e
         Right contents -> do
             let bsContents = LBS.fromStrict . encodeUtf8 $ contents
             case parseLatestVersion bsContents of
-                Nothing -> pure ()
+                Nothing -> throw "Couldn't parse latest version"
                 ver -> do
                     t <- liftIO getCurrentTime
                     withLock $ do

@@ -5,6 +5,7 @@ module Caide.Commands(
 
 import Control.Exception.Base (catch, SomeException)
 import Control.Monad (void)
+import Control.Monad.Except (catchError)
 import Data.List (foldl')
 #if !MIN_VERSION_base(4, 8, 0)
 import Data.Monoid (mconcat)
@@ -63,8 +64,8 @@ createIoSubCommand (name, desc, cmd) = command name $
 data CommandExtension = AutoCheckUpdates | ReportNewVersion
 
 extendCommand :: CaideIO () -> CommandExtension -> CaideIO ()
-extendCommand cmd AutoCheckUpdates = cmd >> checkUpdates
-extendCommand cmd ReportNewVersion = cmd >> logIfUpdateAvailable
+extendCommand cmd AutoCheckUpdates = cmd >> (checkUpdates `catchError` const (pure ()))
+extendCommand cmd ReportNewVersion = cmd >> (logIfUpdateAvailable `catchError` const (pure ()))
 
 caideIoToIo :: [CommandExtension] -> CaideIO () -> CaideAction
 caideIoToIo extensions cmd globalOptions root = do

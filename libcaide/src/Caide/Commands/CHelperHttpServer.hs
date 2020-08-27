@@ -11,6 +11,7 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent.Async (withAsync)
 import qualified Control.Concurrent.Async as Async
 import Control.Monad (forM_, void, when)
+import Control.Monad.Except (catchError)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -52,7 +53,7 @@ runServers v root companionPort chelperPort = withSocketsDo $ do
             initServerBind port (tupleToHostAddress (127,0,0,1)) (handler v root)
     if T.null servers
     then logError "Both CHelper and Competitive Companion servers are disabled. Exiting now."
-    else withAsync (void $ runInDirectory v root checkUpdates) $ \a1 ->
+    else withAsync (void $ runInDirectory v root $ checkUpdates `catchError` const (pure ())) $ \a1 ->
          withAsync (void $ runServer companionPort processCompanionRequest) $ \a2 ->
          withAsync (void $ runServer chelperPort processCHelperRequest) $ \a3 -> do
              logInfo $ "Running HTTP server for " <> servers <> ". Press Return to terminate."
