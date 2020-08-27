@@ -25,7 +25,7 @@ import Options.Applicative.Types (Backtracking(..))
 
 import System.IO.Util (writeFileAtomic)
 
-import Caide.CheckUpdates (logIfUpdateAvailable)
+import Caide.CheckUpdates (checkUpdatesCommand, logIfUpdateAvailable)
 import Caide.Types (CaideIO, Verbosity(..), runInDirectory)
 import qualified Caide.Commands.Init as Init
 import Caide.Configuration (describeError)
@@ -99,6 +99,7 @@ commands =
     , ("checkout", "Switch to a different problem", [ReportNewVersion], checkoutOpts)
     , ("lang", "Generate scaffold solution", [ReportNewVersion], langOpts)
     , ("archive", "Move problem to the archive", [ReportNewVersion], archiveOpts)
+    , ("checkUpdates", "Check for updates", [], pure checkUpdatesCommand)
     ]
 
 internalCommands :: [(String, String, Parser (CaideIO ()))]

@@ -3,6 +3,7 @@ module Caide.CheckUpdates(
       parseLatestVersion
     , checkUpdates
     , logIfUpdateAvailable
+    , checkUpdatesCommand
 ) where
 
 import Control.Monad (when)
@@ -19,7 +20,7 @@ import qualified Data.Aeson as Aeson
 import Paths_libcaide (version)
 import Caide.Configuration (readCaideConf, orDefault)
 import Caide.GlobalState (GlobalState(latestVersion), readGlobalState, modifyGlobalState, flushGlobalState)
-import Caide.Logger (logWarn)
+import Caide.Logger (logInfo, logWarn)
 import Caide.Types (CaideIO, getProp)
 import Caide.Util (withLock)
 import Network.HTTP.Util (downloadDocument)
@@ -46,27 +47,42 @@ parseLatestVersion s = do
         [v] -> Just v
         _   -> Nothing
 
+checkUpdatesImpl :: CaideIO ()
+checkUpdatesImpl = do
+    releases <- liftIO $ downloadDocument "https://api.github.com/repos/slycelote/caide/releases"
+    case releases of
+        Left _ -> pure ()
+        Right contents -> do
+            let bsContents = LBS.fromStrict . encodeUtf8 $ contents
+            case parseLatestVersion bsContents of
+                Nothing  -> pure ()
+                ver -> withLock $ do
+                    modifyGlobalState $ \s -> s {latestVersion = ver}
+                    flushGlobalState
+
 checkUpdates :: CaideIO ()
 checkUpdates = do
     h <- readCaideConf
     checkEnabled <- getProp h "core" "check_updates" `orDefault` True
-    when checkEnabled $ do
-        releases <- liftIO $ downloadDocument "https://api.github.com/repos/slycelote/caide/releases"
-        case releases of
-            Left _ -> pure ()
-            Right contents -> do
-                let bsContents = LBS.fromStrict . encodeUtf8 $ contents
-                case parseLatestVersion bsContents of
-                    Nothing  -> pure ()
-                    ver -> withLock $ do
-                        modifyGlobalState $ \s -> s {latestVersion = ver}
-                        flushGlobalState
+    when checkEnabled checkUpdatesImpl
+
+checkUpdatesCommand :: CaideIO ()
+checkUpdatesCommand = do
+    checkUpdatesImpl
+    haveUpdates <- isUpdateAvailable
+    logInfo $ if haveUpdates
+              then "New version is available on GitHub: https://github.com/slycelote/caide/releases."
+              else "Caide is up to date."
+
+isUpdateAvailable :: CaideIO Bool
+isUpdateAvailable = do
+    s <- readGlobalState
+    pure $ case latestVersion s of
+        Just v | v > version -> True
+        _ -> False
 
 logIfUpdateAvailable :: CaideIO ()
 logIfUpdateAvailable = do
-    s <- readGlobalState
-    case latestVersion s of
-        Just v | v > version ->
-            logWarn "New version is available on GitHub: https://github.com/slycelote/caide/releases"
-        _ -> pure ()
+    haveUpdates <- isUpdateAvailable
+    when haveUpdates $ logWarn "New version is available on GitHub: https://github.com/slycelote/caide/releases"
 
