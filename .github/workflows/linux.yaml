@@ -8,12 +8,13 @@ on:
 
 jobs:
   Build_and_Test:
-
-    runs-on: ubuntu-latest
+    name: ${{ matrix.os }} build
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         cabal: ["3.2"]
         ghc: ["8.10.2"]
+        os: [ubuntu-latest]
 
     env:
       CAIDE_EXE_RELATIVE_PATH: dist-newstyle/build/x86_64-linux/ghc-${{ matrix.ghc }}/libcaide-2.5.0/build/caide/caide
@@ -22,10 +23,18 @@ jobs:
 
     steps:
     - name: Install prerequisites
+      if: runner.os != 'Windows'
       run: |
         brew install ccache ninja
         which ccache
         which ninja
+
+    - name: Install prerequisites with Chocolatey
+      if: runner.os == 'Windows'
+      run: |
+        choco install ccache ninja
+        where ccache
+        where ninja
 
     - uses: actions/checkout@v2
       with:
@@ -56,6 +65,7 @@ jobs:
           ${{ runner.os }}-
 
     - name: Update cabal index, resolve dependencies and create freeze file
+      shell: bash
       run: |
         cd libcaide
         cabal update $CONFIG
@@ -70,16 +80,18 @@ jobs:
         path: |
           ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
           libcaide/dist-newstyle
-        key: ${{ runner.os }}-${{ env.cache-name }}${{ env.cache-version }}-${{ matrix.ghc }}-${{ hashFiles('**/cabal.project.freeze') }}
+        key: ${{ runner.os }}-${{ env.cache-name }}${{ env.cache-version }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
         restore-keys: |
           ${{ runner.os }}-${{ env.cache-name }}${{ env.cache-version }}-${{ matrix.ghc }}-
 
     - name: Install dependencies
+      shell: bash
       run: |
         cd libcaide
         cabal build --only-dependencies $CONFIG
 
     - name: Build
+      shell: bash
       run: |
         cd libcaide
         cabal configure $CONFIG
@@ -93,6 +105,7 @@ jobs:
         path: libcaide/${{ env.CAIDE_EXE_RELATIVE_PATH }}
 
     - name: Run tests
+      shell: bash
       run: |
         cd libcaide
         export CAIDE=$(pwd)/$CAIDE_EXE_RELATIVE_PATH
