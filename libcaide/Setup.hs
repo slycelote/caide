@@ -24,7 +24,7 @@ import Distribution.Verbosity (Verbosity)
 import Codec.Archive.Zip (Archive, Entry, ZipOption(OptRecursive), eRelativePath, eUncompressedSize,
     addEntryToArchive, fromArchive, emptyArchive, readEntry)
 
-import Control.Monad (when)
+import Control.Monad (unless, when)
 import qualified Data.ByteString.Lazy as B
 import qualified Data.List as List
 import Data.Maybe (fromMaybe)
@@ -112,12 +112,13 @@ inlinerConfHook (pkg, pbi) flags = do
                 cmakeBuildArgs = getOptions "CAIDE_CMAKE_BUILD_ARGS" defaultBuildOptions
 
             createDirectoryIfMissingVerbose verbosity True inlinerBuildDir
-            notice verbosity $ "Configuring C++ inliner in " ++ inlinerBuildDir ++ "..."
             inlinerBuildAbsDir <- makeAbsolute inlinerBuildDir
-            inlinerSrcAbsDir <- makeAbsolute inlinerSrcDir
-            withCurrentDirectory inlinerBuildAbsDir $ rawSystemExit verbosity "cmake" $ [
-                            "-DCMAKE_BUILD_TYPE=" ++ cmakeBuildType,
-                            "-DCAIDE_USE_SYSTEM_CLANG=OFF"] ++ cmakeConfigureArgs ++ [inlinerSrcAbsDir]
+            unlessM (doesFileExist $ inlinerBuildAbsDir </> "CMakeCache.txt") $ do
+                notice verbosity $ "Configuring C++ inliner in " ++ inlinerBuildDir ++ "..."
+                inlinerSrcAbsDir <- makeAbsolute inlinerSrcDir
+                withCurrentDirectory inlinerBuildAbsDir $ rawSystemExit verbosity "cmake" $ [
+                                "-DCMAKE_BUILD_TYPE=" ++ cmakeBuildType,
+                                "-DCAIDE_USE_SYSTEM_CLANG=OFF"] ++ cmakeConfigureArgs ++ [inlinerSrcAbsDir]
 
             -- We build the C++ inliner library and create the zip file with resources in configure hook.
             -- Doing this in the build hook is also possible, but would require overriding LocalBuildInfo
@@ -194,6 +195,11 @@ whenM :: Monad m => m Bool -> m () -> m ()
 whenM mcondition maction = do
     condition <- mcondition
     when condition maction
+
+unlessM :: Monad m => m Bool -> m () -> m ()
+unlessM mcondition maction = do
+    condition <- mcondition
+    unless condition maction
 
 split :: Eq a => a -> [a] -> [[a]]
 split _sep [] = []
