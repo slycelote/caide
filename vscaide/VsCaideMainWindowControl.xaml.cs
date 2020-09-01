@@ -108,7 +108,7 @@ namespace VsCaide
 
             btnReload.SetBinding(UIElement.VisibilityProperty, visibleIfCaideSolution);
             btnCreateSolution.SetBinding(UIElement.VisibilityProperty, visibleIfNotCaideSolution);
-            foreach (var control in new List<FrameworkElement>{ btnAddProblem, btnParseContest, btnEditTests, btnRunTests, btnDebugTests, btnArchiveProblem, cbProblems, cbProgrammingLanguage, menuEditConfig, menuArchiveProblems }) 
+            foreach (var control in new List<FrameworkElement>{ btnAddProblem, btnParseContest, btnEditTests, btnRunTests, btnDebugTests, btnArchiveProblem, cbProblems, cbProgrammingLanguage, menuEditConfig, menuArchiveProblems })
             {
                 control.SetBinding(UIElement.IsEnabledProperty, isCaideSolution);
             }
@@ -359,6 +359,24 @@ namespace VsCaide
             if (!model.IsCaideSolution)
                 return;
 
+            string checkUpdates =
+                CaideExe.Run(new[] { "getopt", "core", "check_updates" }, loud: Loudness.QUIET);
+            if (checkUpdates == null)
+            {
+                var configFilePath = Path.Combine(SolutionUtilities.GetSolutionDir(), "caide.ini");
+                var lines = File.ReadAllLines(configFilePath);
+                var newLines = new List<string>();
+                foreach (var line in lines)
+                {
+                    newLines.Add(line);
+                    if (line.Trim() == "[core]")
+                    {
+                        newLines.Add("check_updates: false");
+                    }
+                }
+                File.WriteAllLines(configFilePath, newLines.ToArray());
+            }
+
             var windowFrame = (IVsWindowFrame)mainWindow.Frame;
             windowFrame.Show();
 
@@ -372,7 +390,7 @@ namespace VsCaide
 
             string enableChelperServerStr =
                 CaideExe.Run(new[] { "getopt", "vscaide", "enable_http_server" }, loud: Loudness.QUIET) ?? "1";
-            if (new[] { "yes", "1", "true" }.Contains(enableChelperServerStr.ToLowerInvariant().Trim()))
+            if (IsTrue(enableChelperServerStr))
             {
                 CHelperServer = new CHelperServer(Package);
             }
@@ -579,6 +597,11 @@ namespace VsCaide
         {
             return model.Problems.Any(problem =>
                 problem.Name.Equals(projectName, StringComparison.CurrentCultureIgnoreCase));
+        }
+
+        private bool IsTrue(string configValue)
+        {
+            return new[] { "yes", "1", "true" }.Contains(configValue.ToLowerInvariant().Trim());
         }
     }
 }
