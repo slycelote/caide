@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         cabal: ["3.2"]
-        ghc: ["8.10.2"]
+        ghc: ["8.10.1"]
 
     env:
       CAIDE_EXE_RELATIVE_PATH: dist-newstyle/build/x86_64-linux/ghc-${{ matrix.ghc }}/libcaide-2.5.0/build/caide/caide
