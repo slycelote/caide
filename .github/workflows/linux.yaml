@@ -5,6 +5,8 @@ on:
     branches: [ master, release, gh-actions ]
   pull_request:
     branches: [ master, release ]
+  schedule:
+    - cron: '13 9 * * 3'
 
 jobs:
   Build_and_Test:
@@ -22,14 +24,14 @@ jobs:
       CONFIG: "--enable-tests --enable-benchmarks"
 
     steps:
-    - name: Install prerequisites
+    - name: Install prerequisites with Homebrew (non-Windows)
       if: runner.os != 'Windows'
       run: |
         brew install ccache ninja
         which ccache
         which ninja
 
-    - name: Install prerequisites with Chocolatey
+    - name: Install prerequisites with Chocolatey (Windows)
       if: runner.os == 'Windows'
       run: |
         choco install ccache ninja
@@ -94,7 +96,7 @@ jobs:
       shell: bash
       run: |
         cd libcaide
-        cabal configure $CONFIG
+        echo >> libcaide.cabal
         cabal build $CONFIG all
         strip $CAIDE_EXE_RELATIVE_PATH
 
