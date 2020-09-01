@@ -18,6 +18,7 @@ jobs:
     env:
       CAIDE_EXE_RELATIVE_PATH: dist-newstyle/build/x86_64-linux/ghc-${{ matrix.ghc }}/libcaide-2.5.0/build/caide/caide
       CAIDE_CMAKE_CONFIGURE_ARGS: "-GNinja,-DCMAKE_CXX_COMPILER_LAUNCHER=ccache,-DCMAKE_C_COMPILER_LAUNCHER=ccache"
+      CABAL_CONFIG: "--enable-tests --enable-benchmarks"
 
     steps:
     - name: Install prerequisites
@@ -71,13 +72,14 @@ jobs:
       run: |
         cd libcaide
         cabal update
-        cabal build --only-dependencies --enable-tests --enable-benchmarks
+        cabal build --only-dependencies $CABAL_CONFIG
 
     - name: Build
       run: |
         cd libcaide
-        cabal build --enable-tests --enable-benchmarks all
-        strip ${{ env.CAIDE_EXE_RELATIVE_PATH }}
+        cabal configure $CABAL_CONFIG
+        cabal build $CABAL_CONFIG all
+        strip $CAIDE_EXE_RELATIVE_PATH
 
     - name: Publish the executable
       uses: actions/upload-artifact@v1
@@ -88,6 +90,6 @@ jobs:
     - name: Run tests
       run: |
         cd libcaide
-        export CAIDE=$(pwd)/${{ env.CAIDE_EXE_RELATIVE_PATH }}
+        export CAIDE=$(pwd)/$CAIDE_EXE_RELATIVE_PATH
         MONO=mono CSC=csc tests/run-tests.sh
 
