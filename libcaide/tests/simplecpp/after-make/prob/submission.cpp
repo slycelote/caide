@@ -31,6 +31,11 @@ void solve(std::istream& in, std::ostream& out)
 #include <iostream>
 
 #ifdef CAIDE_IN_PATTERN
+#if __cplusplus < 201703L
+#define CAIDE_STDIN
+#undef CAIDE_IN_PATTERN
+#else
+
 #include <filesystem>
 #include <regex>
 #include <stdexcept>
@@ -60,6 +65,7 @@ std::string getLatest() {
         throw std::runtime_error("Input file not found");
     return f;
 }
+#endif
 #endif
 
 void solve(std::istream& in, std::ostream& out);
