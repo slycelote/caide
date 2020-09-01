@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         cabal: ["3.2"]
-        ghc: ["8.10.1"]
+        ghc: ["8.10.2"]
 
     env:
       CAIDE_EXE_RELATIVE_PATH: dist-newstyle/build/x86_64-linux/ghc-${{ matrix.ghc }}/libcaide-2.5.0/build/caide/caide
@@ -41,14 +41,15 @@ jobs:
       uses: actions/cache@v2
       env:
         cache-name: cache-cabal
+        cache-version: 1
       with:
         path: |
           ~/.cabal/packages
           ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
           libcaide/dist-newstyle
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ matrix.ghc }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project.freeze') }}
+        key: ${{ runner.os }}-${{ env.cache-name }}${{ env.cache-version }}-${{ matrix.ghc }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project.freeze') }}
         restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-${{ matrix.ghc }}-
+          ${{ runner.os }}-${{ env.cache-name }}${{ env.cache-version }}-${{ matrix.ghc }}-
 
     - name: Create key for ccache
       run: |
