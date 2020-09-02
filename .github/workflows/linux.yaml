@@ -94,6 +94,7 @@ jobs:
 
     - name: Build
       shell: bash
+      # Force recompilation due to https://github.com/haskell/cabal/issues/4746
       run: |
         cd libcaide
         echo >> libcaide.cabal
