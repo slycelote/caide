@@ -5,6 +5,8 @@ on:
     branches: [ master, release, gh-actions ]
   pull_request:
     branches: [ master, release ]
+  schedule:
+    - cron: '13 9 * * *'
 
 jobs:
   Build_and_Test:
@@ -73,9 +75,11 @@ jobs:
         cabal update
         cabal build --only-dependencies --enable-tests --enable-benchmarks
 
+    # Force recompilation due to https://github.com/haskell/cabal/issues/4746
     - name: Build
       run: |
         cd libcaide
+        echo >> libcaide.cabal
         cabal build --enable-tests --enable-benchmarks all
         strip ${{ env.CAIDE_EXE_RELATIVE_PATH }}
 
