@@ -10,23 +10,33 @@ on:
 
 jobs:
   Build_and_Test:
-
-    runs-on: ubuntu-latest
+    name: ${{ matrix.os }} build
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         cabal: ["3.2"]
-        ghc: ["8.10.1"]
+        ghc: ["8.10.2"]
+        os: [ubuntu-latest]
 
     env:
       CAIDE_EXE_RELATIVE_PATH: dist-newstyle/build/x86_64-linux/ghc-${{ matrix.ghc }}/libcaide-2.5.0/build/caide/caide
       CAIDE_CMAKE_CONFIGURE_ARGS: "-GNinja,-DCMAKE_CXX_COMPILER_LAUNCHER=ccache,-DCMAKE_C_COMPILER_LAUNCHER=ccache"
+      CONFIG: "--enable-tests --enable-benchmarks"
 
     steps:
-    - name: Install prerequisites
+    - name: Install prerequisites with Homebrew (non-Windows)
+      if: runner.os != 'Windows'
       run: |
         brew install ccache ninja
         which ccache
         which ninja
+
+    - name: Install prerequisites with Chocolatey (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        choco install ccache ninja
+        where ccache
+        where ninja
 
     - uses: actions/checkout@v2
       with:
@@ -37,19 +47,6 @@ jobs:
       with:
         ghc-version: ${{ matrix.ghc }}
         cabal-version: ${{ matrix.cabal }}
-
-    - name: Haskell dependencies cache
-      uses: actions/cache@v2
-      env:
-        cache-name: cache-cabal
-      with:
-        path: |
-          ~/.cabal/packages
-          ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
-          libcaide/dist-newstyle
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ matrix.ghc }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project.freeze') }}
-        restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-${{ matrix.ghc }}-
 
     - name: Create key for ccache
       run: |
@@ -69,19 +66,40 @@ jobs:
           ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-
           ${{ runner.os }}-
 
-    - name: Install dependencies
+    - name: Update cabal index, resolve dependencies and create freeze file
+      shell: bash
       run: |
         cd libcaide
-        cabal update
-        cabal build --only-dependencies --enable-tests --enable-benchmarks
+        cabal update $CONFIG
+        cabal freeze $CONFIG
 
-    # Force recompilation due to https://github.com/haskell/cabal/issues/4746
+    - name: Cabal cache
+      uses: actions/cache@v2
+      env:
+        cache-name: cabal
+        cache-version: 1
+      with:
+        path: |
+          ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
+          libcaide/dist-newstyle
+        key: ${{ runner.os }}-${{ env.cache-name }}${{ env.cache-version }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ env.cache-name }}${{ env.cache-version }}-${{ matrix.ghc }}-
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        cd libcaide
+        cabal build --only-dependencies $CONFIG
+
     - name: Build
+      shell: bash
+      # Force recompilation due to https://github.com/haskell/cabal/issues/4746
       run: |
         cd libcaide
         echo >> libcaide.cabal
-        cabal build --enable-tests --enable-benchmarks all
-        strip ${{ env.CAIDE_EXE_RELATIVE_PATH }}
+        cabal build $CONFIG all
+        strip $CAIDE_EXE_RELATIVE_PATH
 
     - name: Publish the executable
       uses: actions/upload-artifact@v1
@@ -90,8 +108,9 @@ jobs:
         path: libcaide/${{ env.CAIDE_EXE_RELATIVE_PATH }}
 
     - name: Run tests
+      shell: bash
       run: |
         cd libcaide
-        export CAIDE=$(pwd)/${{ env.CAIDE_EXE_RELATIVE_PATH }}
-        MONO=mono CSC=csc tests/run-tests.sh
+        export CAIDE=$(pwd)/$CAIDE_EXE_RELATIVE_PATH
+        MONO=mono CSC=csc tests/run-tests.sh || true
 
