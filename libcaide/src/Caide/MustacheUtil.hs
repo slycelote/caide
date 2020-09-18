@@ -27,7 +27,7 @@ import qualified Filesystem.Util as FS
 
 import qualified Data.Aeson as Aeson
 
-import Text.Mustache (MustacheException, Template, compileMustacheFile, displayMustacheWarning, renderMustacheW)
+import Text.Microstache (MustacheException, Template, compileMustacheFile, displayMustacheWarning, renderMustacheW)
 
 import Caide.Logger (logWarn)
 import Caide.Types
