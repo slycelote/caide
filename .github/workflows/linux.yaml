@@ -27,7 +27,7 @@ jobs:
     - name: Install prerequisites with Homebrew (non-Windows)
       if: runner.os != 'Windows'
       run: |
-        brew install ccache ninja
+        sudo apt install ccache ninja
         which ccache
         which ninja
 
@@ -97,7 +97,7 @@ jobs:
       # Force recompilation due to https://github.com/haskell/cabal/issues/4746
       run: |
         cd libcaide
-        echo >> libcaide.cabal
+        echo '--' >> libcaide.cabal
         cabal build $CONFIG all
         strip $CAIDE_EXE_RELATIVE_PATH
 
