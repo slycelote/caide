@@ -27,7 +27,7 @@ jobs:
     - name: Install prerequisites with Homebrew (non-Windows)
       if: runner.os != 'Windows'
       run: |
-        sudo apt install ccache ninja
+        sudo apt-get install ccache ninja-build
         which ccache
         which ninja
 
