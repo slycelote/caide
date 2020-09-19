@@ -25,7 +25,8 @@ jobs:
 
     steps:
     - name: Install prerequisites
-      env: { runner_os: ${{ runner.os }} }
+      env:
+        runner_os: ${{ runner.os }}
       shell: python
       run: |
         import os, subprocess
