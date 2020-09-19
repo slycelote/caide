@@ -40,27 +40,6 @@ jobs:
         for cmd in commands:
           subprocess.check_call(cmd)
 
-    # - name: Install prerequisites (Linux)
-    #   if: runner.os == 'Linux'
-    #   run: |
-    #     sudo apt-get install ccache ninja-build
-    #     which ccache
-    #     which ninja
-
-    # - name: Install prerequisites (macOS)
-    #   if: runner.os == 'macOS'
-    #   run: |
-    #     brew install ccache ninja
-    #     which ccache
-    #     which ninja
-
-    # - name: Install prerequisites (Windows)
-    #   if: runner.os == 'Windows'
-    #   run: |
-    #     choco install ccache ninja
-    #     where ccache
-    #     where ninja
-
     - uses: actions/checkout@v2
       with:
         submodules: 'recursive'
