@@ -32,11 +32,11 @@ jobs:
         import os, subprocess
         runner_os = os.environ['runner_os']
         if runner_os == 'Linux':
-          commands = [['sudo', 'apt-get', 'install', 'ccache', 'ninja-build'], ['which', 'cache'], ['which', 'ninja']]
+          commands = [['sudo', 'apt-get', 'install', 'ccache', 'ninja-build'], ['which', 'ccache'], ['which', 'ninja']]
         elif runner_os == 'macOS':
-          commands = [['brew', 'install', 'ccache', 'ninja'], ['which', 'cache'], ['which', 'ninja']]
+          commands = [['brew', 'install', 'ccache', 'ninja'], ['which', 'ccache'], ['which', 'ninja']]
         else:
-          commands = [['choco', 'install', 'ccache', 'ninja'], ['where', 'cache'], ['where', 'ninja']]
+          commands = [['choco', 'install', 'ccache', 'ninja'], ['where', 'ccache'], ['where', 'ninja']]
         for cmd in commands:
           subprocess.check_call(cmd)
 
