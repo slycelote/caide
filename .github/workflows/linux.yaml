@@ -38,7 +38,7 @@ jobs:
         else:
           commands = [['choco', 'install', 'ccache', 'ninja'], ['where', 'cache'], ['where', 'ninja']]
         for cmd in commands:
-          subprocess.run(cmd, check=True)
+          subprocess.check_call(cmd)
 
     # - name: Install prerequisites (Linux)
     #   if: runner.os == 'Linux'
