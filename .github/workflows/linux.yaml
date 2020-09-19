@@ -24,19 +24,41 @@ jobs:
       CONFIG: "--enable-tests --enable-benchmarks"
 
     steps:
-    - name: Install prerequisites with Homebrew (non-Windows)
-      if: runner.os != 'Windows'
+    - name: Install prerequisites
+      env: [runner_os: ${{ runner.os }}]
+      shell: python
       run: |
-        sudo apt-get install ccache ninja-build
-        which ccache
-        which ninja
+        import os, subprocess
+        runner_os = os.environ['runner_os']
+        if runner_os == 'Linux':
+          commands = [['sudo', 'apt-get', 'install', 'ccache', 'ninja-build'], ['which', 'cache'], ['which', 'ninja']]
+        elif runner_os == 'macOS':
+          commands = [['brew', 'install', 'ccache', 'ninja'], ['which', 'cache'], ['which', 'ninja']]
+        else:
+          commands = [['choco', 'install', 'ccache', 'ninja'], ['where', 'cache'], ['where', 'ninja']]
+        for cmd in commands:
+          subprocess.run(cmd, check=True)
 
-    - name: Install prerequisites with Chocolatey (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        choco install ccache ninja
-        where ccache
-        where ninja
+    # - name: Install prerequisites (Linux)
+    #   if: runner.os == 'Linux'
+    #   run: |
+    #     sudo apt-get install ccache ninja-build
+    #     which ccache
+    #     which ninja
+
+    # - name: Install prerequisites (macOS)
+    #   if: runner.os == 'macOS'
+    #   run: |
+    #     brew install ccache ninja
+    #     which ccache
+    #     which ninja
+
+    # - name: Install prerequisites (Windows)
+    #   if: runner.os == 'Windows'
+    #   run: |
+    #     choco install ccache ninja
+    #     where ccache
+    #     where ninja
 
     - uses: actions/checkout@v2
       with:
@@ -57,7 +79,7 @@ jobs:
       uses: actions/cache@v2
       env:
         cache-name: ccache
-        cache-version: 1
+        cache-version: 2
       with:
         path: ~/.ccache
         key: ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-${{ hashFiles('llvm-submodule.txt') }}-${{ hashFiles('submodules.txt') }}
