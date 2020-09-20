@@ -32,13 +32,13 @@ jobs:
         import os, subprocess
         runner_os = os.environ['runner_os']
         if runner_os == 'Linux':
-          commands = [['sudo', 'apt-get', 'install', 'ccache', 'ninja-build'], ['which', 'ccache'], ['which', 'ninja']]
+          commands = ['sudo apt-get install ccache ninja-build', 'which ccache', 'which ninja']
         elif runner_os == 'macOS':
-          commands = [['brew', 'install', 'ccache', 'ninja'], ['which', 'ccache'], ['which', 'ninja']]
+          commands = ['brew install ccache ninja', 'which ccache', 'which ninja']
         else:
-          commands = [['choco', 'install', 'ccache', 'ninja'], ['where', 'ccache'], ['where', 'ninja']]
+          commands = ['choco install ccache ninja', 'where ccache', 'where ninja']
         for cmd in commands:
-          subprocess.check_call(cmd)
+          subprocess.check_call(cmd.split())
 
     - uses: actions/checkout@v2
       with:
@@ -66,7 +66,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-${{ hashFiles('llvm-submodule.txt') }}-
           ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-
-          ${{ runner.os }}-
 
     - name: Update cabal index, resolve dependencies and create freeze file
       shell: bash
