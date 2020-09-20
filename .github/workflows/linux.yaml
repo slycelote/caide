@@ -66,7 +66,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-${{ hashFiles('llvm-submodule.txt') }}-
           ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-
-          ${{ runner.os }}-
 
     - name: Update cabal index, resolve dependencies and create freeze file
       shell: bash
@@ -114,5 +113,5 @@ jobs:
       run: |
         cd libcaide
         export CAIDE=$(pwd)/$CAIDE_EXE_RELATIVE_PATH
-        MONO=mono CSC=csc tests/run-tests.sh || true
+        MONO=mono CSC=csc tests/run-tests.sh
 
