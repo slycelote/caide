@@ -98,10 +98,10 @@ jobs:
 
     - name: Build
       shell: bash
-      # Force recompilation due to https://github.com/haskell/cabal/issues/4746
       run: |
         cd libcaide
-        echo '--' >> libcaide.cabal
+        # Force recompilation due to https://github.com/haskell/cabal/issues/4746
+        echo "--$RANDOM" >> libcaide.cabal
         cabal build $CONFIG all
         strip $CAIDE_EXE_RELATIVE_PATH
 
