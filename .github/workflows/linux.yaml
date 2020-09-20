@@ -83,7 +83,7 @@ jobs:
         path: |
           ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
           libcaide/dist-newstyle
-        key: ${{ runner.os }}-${{ env.cache-name }}${{ env.cache-version }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+        key: ${{ runner.os }}-${{ env.cache-name }}${{ env.cache-version }}-${{ matrix.ghc }}-${{ hashFiles('libcaide/cabal.project.freeze') }}
         restore-keys: |
           ${{ runner.os }}-${{ env.cache-name }}${{ env.cache-version }}-${{ matrix.ghc }}-
 
