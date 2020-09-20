@@ -51,9 +51,11 @@ jobs:
         cabal-version: ${{ matrix.cabal }}
 
     - name: Create key for ccache
+      shell: bash
       run: |
         git -C libcaide/cbits/cpp-inliner submodule status >llvm-submodule.txt
         git submodule status >submodules.txt
+        cat llvm-submodule.txt submodules.txt
 
     - name: ccache cache
       uses: actions/cache@v2
@@ -73,6 +75,7 @@ jobs:
         cd libcaide
         cabal update $CONFIG
         cabal freeze $CONFIG
+        cat cabal.project.freeze
 
     - name: Cabal cache
       uses: actions/cache@v2
