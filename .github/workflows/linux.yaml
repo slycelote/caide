@@ -51,9 +51,11 @@ jobs:
         cabal-version: ${{ matrix.cabal }}
 
     - name: Create key for ccache
+      shell: bash
       run: |
         git -C libcaide/cbits/cpp-inliner submodule status >llvm-submodule.txt
         git submodule status >submodules.txt
+        cat llvm-submodule.txt submodules.txt
 
     - name: ccache cache
       uses: actions/cache@v2
@@ -73,6 +75,7 @@ jobs:
         cd libcaide
         cabal update $CONFIG
         cabal freeze $CONFIG
+        cat cabal.project.freeze
 
     - name: Cabal cache
       uses: actions/cache@v2
@@ -83,7 +86,7 @@ jobs:
         path: |
           ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
           libcaide/dist-newstyle
-        key: ${{ runner.os }}-${{ env.cache-name }}${{ env.cache-version }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+        key: ${{ runner.os }}-${{ env.cache-name }}${{ env.cache-version }}-${{ matrix.ghc }}-${{ hashFiles('libcaide/cabal.project.freeze') }}
         restore-keys: |
           ${{ runner.os }}-${{ env.cache-name }}${{ env.cache-version }}-${{ matrix.ghc }}-
 
@@ -95,10 +98,10 @@ jobs:
 
     - name: Build
       shell: bash
-      # Force recompilation due to https://github.com/haskell/cabal/issues/4746
       run: |
         cd libcaide
-        echo '--' >> libcaide.cabal
+        # Force recompilation due to https://github.com/haskell/cabal/issues/4746
+        echo "--$RANDOM" >> libcaide.cabal
         cabal build $CONFIG all
         strip $CAIDE_EXE_RELATIVE_PATH
 
