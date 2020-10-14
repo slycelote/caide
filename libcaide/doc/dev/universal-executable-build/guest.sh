@@ -34,9 +34,9 @@ sudo make install
 cd ..
 rm -rf gcc-*
 
-# Remove old gcc, install the rest of the dependencies
+# Remove the old gcc, install the remaining dependencies
 sudo yum remove gcc-c++ tar gcc
 sudo yum install -y epel-release
-sudo yum install -y cmake3 zlib-static zlib-static.i686 gmp-static gmp-static.i686 mono-core
+sudo yum install -y cmake3 ninja-build zlib-static zlib-static.i686 gmp-static gmp-static.i686 mono-core
 ln -s /usr/bin/cmake3 bin/cmake
 
