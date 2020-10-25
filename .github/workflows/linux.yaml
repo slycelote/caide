@@ -111,6 +111,12 @@ jobs:
         name: caide
         path: libcaide/${{ env.CAIDE_EXE_RELATIVE_PATH }}
 
+    - name: HLint
+      shell: bash
+      run: |
+        cd libcaide
+        curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s . || true
+
     - name: Run tests
       shell: bash
       run: |
