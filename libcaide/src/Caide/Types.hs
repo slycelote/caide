@@ -205,7 +205,7 @@ runInDirectory :: Verbosity -> F.FilePath -> CaideIO a -> IO (Either C.CPError a
 runInDirectory v dir caideAction = do
     let initialState = CaideState { root = dir, verbosity = v, files = M.empty }
         logEx e = do
-            when (v >= Debug) $ putStrLn (show e)
+            when (v >= Debug) $ print e
             return (Left e)
     ret <- tryIOError $ runCaideM caideAction initialState
     case ret of

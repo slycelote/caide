@@ -14,7 +14,7 @@ import Control.Monad.State (liftIO)
 
 import Data.Either (isRight)
 import Data.List (group, sort, sortBy)
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (isJust)
 import Data.Ord (comparing)
 import Data.Text (Text)
 import Data.Text.Read as TextRead
@@ -62,7 +62,7 @@ getBuilder language probId = do
     h <- readCaideConf
     let builderExists langName = withDefault False $
             (getProp h langName "build_and_run_tests" :: CaideIO Text) >> return True
-        languageNames = fromMaybe [] $ fst <$> findLanguage language
+        languageNames = maybe [] fst $ findLanguage language
     buildersExist <- mapM (builderExists . T.unpack) languageNames
     let existingBuilderNames = [name | (name, True) <- zip languageNames buildersExist]
     case existingBuilderNames of
@@ -150,9 +150,8 @@ compareFiles cmpOptions etalon out = case () of
   where
     Just returnValueType = topcoderType cmpOptions
     isTopcoder = isJust $ topcoderType cmpOptions
-    tcComparison = case tcCompare returnValueType (doublePrecision cmpOptions) etalon out of
-        Nothing    -> Success
-        Just tcErr -> Failed tcErr
+    tcComparison = maybe Success Failed $
+        tcCompare returnValueType (doublePrecision cmpOptions) etalon out
 
     expected = T.lines . T.strip $ etalon
     actual   = T.lines . T.strip $ out

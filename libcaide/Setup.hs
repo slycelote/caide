@@ -158,7 +158,7 @@ addFilesToArchive' opts archive files relPath = do
         else return files
     entries <- mapM (readEntry' opts) filesAndChildren
     let changeEntryPath e = e { eRelativePath = relPath ++ "/" ++ eRelativePath e }
-    return $ foldr addEntryToArchive archive $ map changeEntryPath entries
+    return $ foldr (addEntryToArchive . changeEntryPath) archive entries
 
 
 -- Zip resources. The archive will be embedded into the executable.

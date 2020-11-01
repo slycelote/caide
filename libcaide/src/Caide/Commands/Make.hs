@@ -43,8 +43,8 @@ updateTests mbProbId = withProblem mbProbId $ \_ problemDir -> TestCases.updateT
 prepareSubmission :: ProblemID -> CaideIO ()
 prepareSubmission probId = do
     problem <- Problem.readProblemState probId
-    let lang = (Problem.currentLanguage problem)
+    let lang = Problem.currentLanguage problem
     case findLanguage lang of
-        Nothing            -> throw . T.concat $ ["Unsupported programming language ", lang]
+        Nothing            -> throw $ "Unsupported programming language " <> lang
         Just (_, language) -> inlineCode language probId
 

@@ -111,7 +111,7 @@ safeExecuteTestWithTimeout timeLimitMicroSecs dirPath runExe inFile = liftIO $ d
     res <- Exc.try $ timeout timeLimitMicroSecs $ executeTest dirPath runExe inFile
     return $ case res of
         Right Nothing  -> Failed "Time limit exceeded"
-        Left e         -> Error $ "Error while executing the test: " <> (T.pack $ Exc.displayException (e :: Exc.SomeException))
+        Left e         -> Error $ "Error while executing the test: " <> T.pack (Exc.displayException (e :: Exc.SomeException))
         Right (Just r) -> r
 
 createBuilderFromRunExe :: MonadIO m => FilePath -> FilePath -> CreateBuilderOptions -> ProblemID -> m BuilderResult
@@ -135,7 +135,7 @@ createBuilderFromBuildExe dirPath buildExe options probId = liftIO $ do
         interruptibleWaitForProcess hProcess
     case exitCode of
         Left e -> do
-            logError $ "Error while building: " <> (T.pack $ Exc.displayException (e :: Exc.SomeException))
+            logError $ "Error while building: " <> T.pack (Exc.displayException (e :: Exc.SomeException))
             return BuildFailed
         Right Nothing -> do
             logError "Build timed out"

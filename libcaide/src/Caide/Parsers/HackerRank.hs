@@ -9,7 +9,7 @@ import Control.Applicative ((<$>))
 import Control.Applicative ((<|>))
 import Data.Char (isAlphaNum, isSpace)
 import Data.List (find)
-import Data.Maybe (catMaybes, fromMaybe, listToMaybe)
+import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import qualified Data.Text as T
 import Network.URI (parseURI, uriAuthority, uriRegName)
 
@@ -54,8 +54,8 @@ doParse cont =
 
     h1Title = let
         pageLabels = sections (~~== "<h1 class=page-label") tags
-        possibleTitles = catMaybes $ map (listToMaybe . drop 1) pageLabels
-        titles = catMaybes $ map maybeTagText possibleTitles
+        possibleTitles = mapMaybe (listToMaybe . drop 1) pageLabels
+        titles = mapMaybe maybeTagText possibleTitles
         nonEmptyTitles = filter (not . T.null) $ map T.strip titles
       in
         listToMaybe nonEmptyTitles
@@ -63,7 +63,7 @@ doParse cont =
     rawTitle = h1Title <|> pageTitle <|> metaTitle <|> h2Title
     title = T.strip . T.takeWhile (/= '|') <$> rawTitle
 
-    probId = fromMaybe "hrUnknown" $ T.filter isAlphaNum <$> title
+    probId = maybe "hrUnknown" (T.filter isAlphaNum) title
 
     name = fromMaybe "Unknown" title
 

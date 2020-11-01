@@ -52,8 +52,8 @@ toVerbosity level = case level of
     _ -> Debug
 
 globalOptionsParser :: Parser GlobalOptions
-globalOptionsParser = GlobalOptions <$>
-    toVerbosity . length <$> many (flag' () (short 'v' <> help "Verbose output"))
+globalOptionsParser = GlobalOptions . toVerbosity . length
+    <$> many (flag' () (short 'v' <> help "Verbose output"))
 
 type CaideAction = GlobalOptions -> F.FilePath -> IO ()
 

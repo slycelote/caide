@@ -94,7 +94,7 @@ renderTemplate templateFile template targetDir enrichedContext (Options{allowOve
     if keepExisting
         then logWarn $ "Keeping existing file " <> FS.pathToText newFileName
         else do
-            unless (null warnings) $ logWarn $ T.unwords $
+            unless (null warnings) $ logWarn $ T.unwords
                 ["Warning(s) for Mustache template", FS.pathToText templateFile, ":", T.intercalate "; " warningTexts]
             let strictText = LazyText.toStrict renderedTemplate
             liftIO $ if T.null $ T.strip strictText

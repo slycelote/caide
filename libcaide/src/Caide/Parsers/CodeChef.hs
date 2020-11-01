@@ -168,8 +168,8 @@ parseFromJson problemCode jsonText = do
 problemUrlParser :: Parser (T.Text, T.Text)
 problemUrlParser = do
     _ <- char '/'
-    mbContest <- (pure Nothing                <* string "problems/") <|>
-                 ((Just <$> (many1 alphaNum)) <* string "/problems/")
+    mbContest <- (pure Nothing              <* string "problems/") <|>
+                 ((Just <$> many1 alphaNum) <* string "/problems/")
     probId <- many1 alphaNum
     Parsec.eof
     return (T.pack $ fromMaybe "PRACTICE" mbContest, T.pack probId)

@@ -39,7 +39,7 @@ generateSolutionFiles (Stream input output) root probID = do
     unless mainFileExists $ do
         mainTemplate <- getTemplate "main_template.cpp"
         liftIO $ writeTextFile mainProgramPath $
-                T.unlines $ [inputPreamble, outputPreamble, mainTemplate]
+                T.unlines [inputPreamble, outputPreamble, mainTemplate]
     copyTemplateUnlessExists "solution_template.cpp" scaffoldPath
     copyTemplateUnlessExists "test_template.cpp" testProgramPath
   where

@@ -13,7 +13,7 @@ bug-reports:    https://github.com/slycelote/caide/issues
 description:
     Automates certain common tasks that you do during programming competitions:
     parsing, running and debugging problem tests, inlining library code.
-tested-with:    GHC == 8.8.2
+tested-with:    GHC == 8.10.1
 
 source-repository head
   type:         git

@@ -7,8 +7,7 @@ module Caide.TestCases(
 import Prelude hiding (FilePath)
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.List (sort, sortBy)
-import Data.Ord (comparing)
+import Data.List (sort, sortOn)
 import qualified Data.Text as T
 import System.Environment (getExecutablePath)
 
@@ -66,7 +65,7 @@ updateTestList problemDir = do
             Just (Failed _) -> (False, testName)
             Just (Error _)  -> (False, testName)
             _               -> (True,  testName)
-        sortedTests = sortBy (comparing succeededAndName) testList
+        sortedTests = sortOn succeededAndName testList
     writeTests sortedTests $ testDir </> Paths.testListFile
     return sortedTests
 
