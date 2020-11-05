@@ -57,13 +57,17 @@ Most settings are stored in `caide.ini` file in the project root.
 * `language` is default programming language for newly created/parsed
   problems. Possible values: `cpp`, `csharp`. Settings for each language are
   kept in the corresponding section of the file.
+* `chelper_port` (default 4243) and `companion_port` (default 10043) control
+  ports that [`caide httpServer` command](#http-server) uses for communicating
+  with browser extensions. Set a port to -1 to disable the corresponding server.
+* `check_updates` - can be set to `false` to disable automatic check for new
+  versions. You can still use `caide checkUpdates` command manually. (Visual
+  Studio extension sets this to `false` because it's updated from the
+  marketplace.)
 * `features` is a comma separated list of 'features' (optional pieces of
   functionality). Settings for each feature are kept in the corresponding
   section of the file. Currently the only implemented feature is 'codelite'
   which enables a limited [support for Codelite IDE](#codelite).
-* `chelper_port` (default 4243) and `companion_port` (default 10043) control
-  ports that [`caide httpServer` command](#http-server) uses for communicating
-  with browser extensions. Set a port to -1 to disable the corresponding server.
 
 
 <a name="cpp"></a>

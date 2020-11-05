@@ -4,14 +4,10 @@ Visual Studio GUI.
 
 # Installation
 
-[Visual Studio 2013 Community
+[Visual Studio 2017 Community
 Edition](http://www.visualstudio.com/en-us/news/vs2013-community-vs.aspx)
 (free) or higher is required. To install, locate VsCaide in extensions
 manager. Alternatively, double click downloaded \*.vsix file.
-
-For Visual Studio 2017, you'll also need Windows Universal CRT SDK (can be
-found in Visual Studio installer under Individual Components tab, section
-"Compilers, build tools and runtimes").
 
 
 # Quick start
@@ -38,7 +34,7 @@ plugin](https://github.com/slycelote/caide/tree/release/tccaide/README.md).
 
 # YouTube Tutorial
 
-Video tutorial on how install and use VsCaide: https://youtu.be/qNKBdqifxpU 
+Video tutorial on how install and use VsCaide: https://youtu.be/qNKBdqifxpU.
 
 # Supported online judges
 
@@ -48,14 +44,20 @@ problem' or 'Parse contest' dialogs.
 
 ## CHelper Chrome extension
 
-Caide is compatible with [chelper chrome
-extension](https://chrome.google.com/webstore/detail/chelper-extension/eicjndbmlajfjdhephbcjdeegmmoadip).
+VsCaide is compatible with [chelper chrome
+extension](https://chrome.google.com/webstore/detail/chelper-extension/eicjndbmlajfjdhephbcjdeegmmoadip)
+and [Competitive Companion browser extension](https://github.com/jmerle/competitive-companion/).
 (To parse a problem, click the plus sign that appears in tab bar for supported
-sites.) Because of how the extension works, VsCaide has to run a local HTTP
+sites.) Because of how the extensions work, VsCaide has to run a local HTTP
 server that will accept requests from Chrome. (You may need to click Allow in
 Windows firewall prompt.) You can disable this feature by adding a setting
 `enable_http_server` equal to `false` to `[vscaide]` section in caide.ini
 file.
+
+Default port for Competitive Companion is 10043. (It can be changed in
+[config](https://github.com/slycelote/caide/tree/release/libcaide/README.md#configuration)).
+If you change it, you need to add it as an additional port in the settings of
+the browser extension.
 
 # Configuration
 
