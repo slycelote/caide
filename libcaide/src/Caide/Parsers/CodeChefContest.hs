@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE CPP, DeriveGeneric, OverloadedStrings #-}
 module Caide.Parsers.CodeChefContest(
       codeChefContestParser
 ) where
@@ -6,13 +6,17 @@ module Caide.Parsers.CodeChefContest(
 #ifndef AMP
 import Control.Applicative ((<$>))
 #endif
-import Control.Monad.Except (liftIO)
+import Control.Monad.Except (throwError)
+import Control.Monad.IO.Class (liftIO)
+import qualified Data.ByteString.Lazy as LBS
+import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
-import Data.Maybe (mapMaybe)
-import Network.URI (parseURI, uriAuthority, uriRegName)
+import Data.Text.Encoding (encodeUtf8)
+import Data.Text (Text)
+import GHC.Generics (Generic)
+import Network.URI (parseURI, uriAuthority, uriPath, uriRegName)
 
-import Text.HTML.TagSoup (Tag, fromAttrib, sections, parseTags)
-import Text.HTML.TagSoup.Utils ((~~==), (~~/==))
+import qualified Data.Aeson as Aeson
 
 import Caide.Commands.ParseProblem (parseProblems)
 import Caide.Types
@@ -29,29 +33,31 @@ isCodeChefUrl url = case parseURI (T.unpack url) >>= uriAuthority of
     Nothing   -> False
     Just auth -> uriRegName auth `elem` ["codechef.com", "www.codechef.com"]
 
+data JsonProblem = JsonProblem
+                 { code :: Text
+                 -- , name :: Text
+                 } deriving (Generic, Show)
+
+data JsonContest = JsonContest
+                 { problems :: Map.Map ProblemID JsonProblem
+                 } deriving (Generic, Show)
+
+instance Aeson.FromJSON JsonProblem
+instance Aeson.FromJSON JsonContest
+
+parseFromJson :: Text -> Either Text [ProblemID]
+parseFromJson jsonText = case Aeson.eitherDecode' . LBS.fromStrict . encodeUtf8 $ jsonText of
+    Left err -> throwError $ T.pack err
+    Right contest -> return $ Map.keys $ problems $ contest
+
 doParseContest :: URL -> CaideIO ()
-doParseContest url = do
-    maybeUrls <- liftIO $ parseChefContest <$> downloadDocument url
-    case maybeUrls of
-        Left err   -> throw err
-        Right urls -> parseProblems 1  urls
-
-
-parseChefContest :: Either T.Text URL -> Either T.Text [T.Text]
-parseChefContest (Left err)   = Left err
-parseChefContest (Right cont) = if null problems
-                                    then Left "Couldn't parse contest"
-                                    else Right problems
-  where
-    tags = parseTags cont
-    problemCells = sections (~~== "<div class=problemname>") tags
-    problems = mapMaybe extractUrl problemCells
-
-
-extractUrl :: [Tag T.Text] -> Maybe T.Text
-extractUrl cell = T.append "http://codechef.com" <$> if null anchors then Nothing else Just url
-  where
-    anchors = dropWhile (~~/== "<a>") cell
-    anchor = head anchors
-    url = fromAttrib (T.pack "href") anchor
+doParseContest url = case uriPath <$> parseURI (T.unpack url) of
+    Just (_:contestId) -> do
+        let apiUrl = "https://www.codechef.com/api/contests/" <> T.pack contestId
+            probUrlPrefix = "https://www.codechef.com/" <> T.pack contestId <> "/problems/"
+        mbDoc <- liftIO $ downloadDocument apiUrl
+        case mbDoc >>= parseFromJson of
+            Left err      -> throw err
+            Right probIds -> parseProblems 1 $ map (probUrlPrefix <> ) probIds
+    _ -> throw "Invalid contest url"
 
