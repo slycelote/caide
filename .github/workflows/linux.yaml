@@ -53,21 +53,29 @@ jobs:
     - name: Create key for ccache
       shell: bash
       run: |
-        git -C libcaide/cbits/cpp-inliner submodule status >llvm-submodule.txt
-        git submodule status >submodules.txt
+        echo >common.txt
+        g++ --version >>common.txt
+        ls -l --time-style=long-iso $(readlink -f $(which g++)) >>common.txt
+        gcc --version >>common.txt
+        ls -l --time-style=long-iso $(readlink -f $(which g++)) >>common.txt
+        cpp --version >>common.txt
+        ls -l --time-style=long-iso $(readlink -f $(which cpp)) >>common.txt
+        cp common.txt llvm-submodule.txt
+        git -C libcaide/cbits/cpp-inliner submodule status >>llvm-submodule.txt
+        cp common.txt submodules.txt
+        git submodule status >>submodules.txt
         cat llvm-submodule.txt submodules.txt
 
     - name: ccache cache
       uses: actions/cache@v2
       env:
         cache-name: ccache
-        cache-version: 2
+        cache-version: 3
       with:
         path: ~/.ccache
         key: ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-${{ hashFiles('llvm-submodule.txt') }}-${{ hashFiles('submodules.txt') }}
         restore-keys: |
           ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-${{ hashFiles('llvm-submodule.txt') }}-
-          ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-
 
     - name: Update cabal index, resolve dependencies and create freeze file
       shell: bash
@@ -99,11 +107,13 @@ jobs:
     - name: Build
       shell: bash
       run: |
+        ccache --show-stats
         cd libcaide
         # Force recompilation due to https://github.com/haskell/cabal/issues/4746
         echo "--$RANDOM" >> libcaide.cabal
         cabal build $CONFIG all
         strip $CAIDE_EXE_RELATIVE_PATH
+        ccache --show-stats
 
     - name: Publish the executable
       uses: actions/upload-artifact@v1
