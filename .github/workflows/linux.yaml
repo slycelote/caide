@@ -70,13 +70,12 @@ jobs:
       uses: actions/cache@v2
       env:
         cache-name: ccache
-        cache-version: 2
+        cache-version: 3
       with:
         path: ~/.ccache
         key: ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-${{ hashFiles('llvm-submodule.txt') }}-${{ hashFiles('submodules.txt') }}
         restore-keys: |
           ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-${{ hashFiles('llvm-submodule.txt') }}-
-          ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-
 
     - name: Update cabal index, resolve dependencies and create freeze file
       shell: bash
