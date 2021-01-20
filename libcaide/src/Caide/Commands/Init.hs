@@ -1,7 +1,4 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE CPP, OverloadedStrings, NamedFieldPuns, ScopedTypeVariables #-}
 #ifdef CLANG_INLINER
 {-# LANGUAGE TemplateHaskell #-}
 #endif
@@ -17,7 +14,7 @@ import Codec.Archive.Zip (extractFilesFromArchive, toArchive, ZipOption(..))
 import qualified Data.ByteString as BS
 import Data.ByteString.Lazy (fromStrict)
 import Data.Char (isSpace)
-import Data.List (takeWhile, dropWhile, dropWhileEnd, filter, isInfixOf)
+import Data.List (dropWhileEnd, isInfixOf)
 import Data.Maybe (fromMaybe)
 import Data.FileEmbed (embedFile)
 import qualified Data.Text as T
@@ -66,7 +63,7 @@ parseGccOutput output = map trim $ filter isDirectory $ takeWhile (not . endOfSe
 initialize :: Bool -> CaideIO ()
 initialize useSystemCppHeaders = do
     curDir <- caideRoot
-    compiler <- liftIO $ getSystemCompilerInfo
+    compiler <- liftIO getSystemCompilerInfo
     _ <- writeCaideConf $ defaultCaideConf curDir useSystemCppHeaders compiler
     _ <- writeCaideState defaultCaideState
     liftIO $ do

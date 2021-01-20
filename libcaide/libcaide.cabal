@@ -1,6 +1,6 @@
 cabal-version:  2.2.0
 name:           libcaide
-version:        2.5.0
+version:        2.6.0
 build-type:     Custom
 license:        GPL-3.0-or-later
 license-file:   LICENSE
@@ -13,7 +13,7 @@ bug-reports:    https://github.com/slycelote/caide/issues
 description:
     Automates certain common tasks that you do during programming competitions:
     parsing, running and debugging problem tests, inlining library code.
-tested-with:    GHC == 8.8.2
+tested-with:    GHC == 8.10.1
 
 source-repository head
   type:         git

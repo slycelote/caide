@@ -145,7 +145,7 @@ errorMessage (_, Right _) = Nothing
 errorMessage (url, Left err) = Just $ T.concat [url, ": ", err]
 
 trySaveProblemWithScaffold :: ParseResult -> CaideIO (Either Text ())
-trySaveProblemWithScaffold pr@(_, (Left _)) = return $ Left $ fromJust $ errorMessage $ pr
+trySaveProblemWithScaffold pr@(_, Left _) = return $ Left $ fromJust $ errorMessage pr
 trySaveProblemWithScaffold (url, Right (problem, tests)) =
     (saveProblemWithScaffold problem tests >> return (Right ())) `catchError` \err ->
         return $ Left $ T.concat [url, ": ", T.pack $ describeError err]

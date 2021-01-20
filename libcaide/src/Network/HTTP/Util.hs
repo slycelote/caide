@@ -35,7 +35,7 @@ downloadDocument url
         responseTimeout = responseTimeoutMicro $ 10*seconds,
         requestHeaders  =
             [ (hAcceptEncoding, "") -- omit this header
-            , (hUserAgent, "wget")
+            , (hUserAgent, "Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0")
             , (hAccept, "*/*")
             ] ++ getAdditionalHeaders (host request)
     }
@@ -45,9 +45,8 @@ downloadDocument url
 
 getAdditionalHeaders :: BS.ByteString -> RequestHeaders
 getAdditionalHeaders requestHost =
-    if requestHost `elem` ["codeforces.com", "www.codeforces.com"]
-        then [(hCookie, "RCPC=4f698e716ffeabe9943d7f1e60e50a0b")]
-        else []
+    [(hCookie, "RCPC=4f698e716ffeabe9943d7f1e60e50a0b") |
+        requestHost `elem` ["codeforces.com", "www.codeforces.com"]]
 
 describeHttpException :: HttpException -> T.Text
 describeHttpException (InvalidUrlException url reason) = T.concat ["URL '", T.pack url, "' is invalid: ", T.pack reason]

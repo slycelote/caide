@@ -161,7 +161,7 @@ processCHelperRequest v root request = do
 
 process :: T.Text -> T.Text -> Verbosity -> F.FilePath -> IO (Maybe T.Text)
 process chid page v root = case parseFromHtml <$> findHtmlParser chid <*> Just page of
-    Nothing -> return . Just $ T.concat $ ["'", chid, "' not supported"]
-    Just (Left err) -> return . Just $ T.concat $ ["Error while parsing the problem: ", err]
+    Nothing -> return . Just $ "'" <> chid <> "' not supported"
+    Just (Left err) -> return . Just $ "Error while parsing the problem: " <> err
     Just (Right (problem, testCases)) -> createProblems v root [Parsed problem testCases] >> return Nothing
 
