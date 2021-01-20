@@ -61,9 +61,9 @@ jobs:
         cpp --version >>common.txt
         ls -l --time-style=long-iso $(readlink -f $(which cpp)) >>common.txt
         cp common.txt llvm-submodule.txt
-        git -C libcaide/cbits/cpp-inliner submodule status >llvm-submodule.txt
+        git -C libcaide/cbits/cpp-inliner submodule status >>llvm-submodule.txt
         cp common.txt submodules.txt
-        git submodule status >submodules.txt
+        git submodule status >>submodules.txt
         cat llvm-submodule.txt submodules.txt
 
     - name: ccache cache
