@@ -1,6 +1,14 @@
 #!/bin/bash
 
-# Disabling this test due to incompatibility with phantomjs
+"$CAIDE" problem https://hackerrank.com/challenges/equal
+"$CAIDE" problem https://hackerrank.com/contests/hourrank-18/challenges/wheres-the-marble
+
+compare_with after-parse Equal/{case1.{in,out},problem.ini}
+compare_with after-parse WherestheMarble/{case1.{in,out},problem.ini}
+
+# Disabling the JS test due to incompatibility with phantomjs
+
+# rm -rf Equal/ WherestheMarble/
 
 # parse_with_js https://hackerrank.com/challenges/equal
 # parse_with_js https://hackerrank.com/contests/hourrank-18/challenges/wheres-the-marble
