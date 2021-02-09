@@ -146,6 +146,8 @@ problemOpts = createProblem
         help "Programming language to switch to"))
     <*> optional (txtOption (long "from-file" <> short 'f' <> metavar "PATH-TO-FILE" <>
         help "Instead of downloading web page containing the description of the problem, read it from file"))
+    <*> optional (txtOption (long "id" <> metavar "ID" <>
+        help "Override problem ID / directory"))
 
 
 contestOpts :: Parser (CaideIO ())

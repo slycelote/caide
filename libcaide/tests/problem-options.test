@@ -1,0 +1,6 @@
+#!/bin/bash
+
+basic_init
+"$CAIDE" problem 'http://codeforces.com/contest/452/problem/A' --id overrideId
+compare_with after-parse overrideId/{problem.ini,overrideId*.cpp}
+

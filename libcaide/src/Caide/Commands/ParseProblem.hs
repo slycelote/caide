@@ -34,12 +34,12 @@ import Caide.Util (mapWithLimitedThreads, readTextFile', withLock)
 
 
 
-createProblem :: URL -> T.Text -> Maybe T.Text -> Maybe T.Text -> CaideIO ()
-createProblem url problemTypeStr maybeLangStr maybeFilePathStr = do
+createProblem :: URL -> T.Text -> Maybe T.Text -> Maybe T.Text -> Maybe T.Text -> CaideIO ()
+createProblem url problemTypeStr maybeLangStr maybeFilePathStr maybeOverrideId = do
     case (maybeFilePathStr, findProblemParser url, findHtmlParserForUrl url) of
         (Just _,           _, Nothing)         -> throw . T.concat $ ["File parser for URL ", url, " not found"]
-        (Just filePathStr, _, Just htmlParser) -> parseExistingProblemFromHtml htmlParser (fromText filePathStr)
-        (Nothing, Just parser, _)              -> parseExistingProblem url parser
+        (Just filePathStr, _, Just htmlParser) -> parseExistingProblemFromHtml htmlParser (fromText filePathStr) maybeOverrideId
+        (Nothing, Just parser, _)              -> parseExistingProblem url parser maybeOverrideId
         (Nothing, Nothing,     _)              -> case optionFromText problemTypeStr of
             Nothing    -> throw . T.concat $ ["Incorrect problem type: ", problemTypeStr]
             Just pType -> createNewProblem url pType
@@ -123,19 +123,23 @@ saveProblemWithScaffold problem samples = do
     lang <- getDefaultLanguage
     generateScaffoldSolution lang
 
-parseExistingProblemFromHtml :: HtmlParser -> F.FilePath -> CaideIO ()
-parseExistingProblemFromHtml htmlParser filePath = do
+overrideProblemId :: Maybe ProblemID -> Problem -> Problem
+overrideProblemId Nothing p = p
+overrideProblemId (Just probId) p = p { problemId = probId }
+
+parseExistingProblemFromHtml :: HtmlParser -> F.FilePath -> Maybe ProblemID -> CaideIO ()
+parseExistingProblemFromHtml htmlParser filePath mbId = do
     parseResult <- parseFromHtml htmlParser <$> readTextFile' filePath
     case parseResult of
         Left err -> throw . T.unlines $ ["Encountered a problem while parsing:", err]
-        Right (problem, samples) -> saveProblem problem samples
+        Right (problem, samples) -> saveProblem (overrideProblemId mbId problem) samples
 
-parseExistingProblem :: URL -> ProblemParser -> CaideIO ()
-parseExistingProblem url parser = do
+parseExistingProblem :: URL -> ProblemParser -> Maybe ProblemID -> CaideIO ()
+parseExistingProblem url parser mbId = do
     parseResult <- liftIO $ parser `parseProblem` url
     case parseResult of
         Left err -> throw . T.unlines $ ["Encountered a problem while parsing:", err]
-        Right (problem, samples) -> saveProblem problem samples
+        Right (problem, samples) -> saveProblem (overrideProblemId mbId problem) samples
 
 -- Pair of URL and either error message or parsed problem
 type ParseResult = (URL, Either Text (Problem, [TestCase]))

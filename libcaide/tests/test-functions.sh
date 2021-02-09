@@ -33,6 +33,10 @@ function parse_with_js {
     "$CAIDE" problem --from-file .page.html "$1"
 }
 
+function basic_init {
+    cp -r "$cur_dir"/_basic_init/* "$cur_dir"/_basic_init/.caide .
+}
+
 # MSYS shell doesn't necessarily kill background jobs on exit
 function cleanup_on_exit {
     local ec=$?
