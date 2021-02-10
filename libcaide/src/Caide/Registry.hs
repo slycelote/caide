@@ -45,7 +45,7 @@ htmlParsers = [codeforcesParser, codeChefHtmlParser, timusParser, gcjParser, poj
 
 problemParsers :: [ProblemParser]
 problemParsers = map htmlParserToProblemParser [codeforcesParser, timusParser,
-    pojParser, rccParser] ++ [codeChefParser]
+    pojParser, rccParser, hackerRankParser] ++ [codeChefParser]
 
 findHtmlParser :: Text -> Maybe HtmlParser
 findHtmlParser chid = find ((== chid) . chelperId) htmlParsers

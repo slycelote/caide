@@ -205,11 +205,35 @@ namespace VsCaide
 
         private void BtnAdd_Click(object sender, RoutedEventArgs e)
         {
-            var problemUrl = slycelote.VsCaide.UI.PromptDialog.Prompt("Input problem URL or name:", "New problem");
-            if (problemUrl == null)
+            var tupleResult = PromptDialog.Prompt(
+                "Input problem URL or name:", "New problem", optionalInputLabel: "Override problem ID");
+            if (tupleResult == null)
                 return;
 
-            CaideExe.Run(new[] { "problem", problemUrl }, loud: Loudness.LOUD);
+            string overrideId = tupleResult.Item2;
+            if (string.IsNullOrWhiteSpace(overrideId))
+                overrideId = null;
+            string problemUrl = tupleResult.Item1;
+            if (string.IsNullOrWhiteSpace(problemUrl))
+            {
+                problemUrl = overrideId;
+                overrideId = null;
+            }
+
+            if (problemUrl == null)
+            {
+                MessageBox.Show("Either problem URL or ID need to be specified");
+                return;
+            }
+
+            var args = new List<string> { "problem", problemUrl };
+            if (overrideId != null)
+            {
+                args.Add("--id");
+                args.Add(overrideId);
+            }
+
+            CaideExe.Run(args.ToArray(), loud: Loudness.LOUD);
             // UI update will be done in fsWatcher callback.
         }
 

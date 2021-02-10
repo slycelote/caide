@@ -19,52 +19,45 @@ namespace slycelote.VsCaide.UI
     /// </summary>
     public partial class PromptDialog : Window
     {
-        public enum InputType
-        {
-            Text,
-            Password
-        }
-
-        private InputType _inputType = InputType.Text;
-
-        public PromptDialog(string question, string title, string defaultValue = "", InputType inputType = InputType.Text)
+        public PromptDialog(string question, string title, string defaultValue = "",
+            string optionalInputLabel = null)
         {
             InitializeComponent();
             this.Loaded += PromptDialog_Loaded;
             txtQuestion.Text = question;
             Title = title;
             txtResponse.Text = defaultValue;
-            _inputType = inputType;
-            if (_inputType == InputType.Password)
-                txtResponse.Visibility = Visibility.Collapsed;
+            if (optionalInputLabel == null)
+            {
+                lblOptionalInputName.Visibility = Visibility.Collapsed;
+                txtOptionalInput.Visibility = Visibility.Collapsed;
+            }
             else
-                txtPasswordResponse.Visibility = Visibility.Collapsed;
+            {
+                lblOptionalInputName.Content = optionalInputLabel;
+                lblOptionalInputName.Target = txtOptionalInput;
+            }
         }
 
         void PromptDialog_Loaded(object sender, RoutedEventArgs e)
         {
-            if (_inputType == InputType.Password)
-                txtPasswordResponse.Focus();
-            else
-                txtResponse.Focus();
+            txtResponse.Focus();
         }
 
-        public static string Prompt(string question, string title, string defaultValue = "", InputType inputType = InputType.Text)
+        public static string Prompt(string question, string title,
+            string defaultValue = "")
         {
-            var inst = new PromptDialog(question, title, defaultValue, inputType);
+            return Prompt(question, title, null, defaultValue).Item1;
+        }
+        
+        public static Tuple<string, string> Prompt(string question, string title,
+            string optionalInputLabel, string defaultValue = "")
+        {
+            var inst = new PromptDialog(question, title, defaultValue, optionalInputLabel);
             inst.ShowDialog();
-            return (inst.DialogResult == true ? inst.ResponseText : null);
-        }
-
-        public string ResponseText
-        {
-            get
-            {
-                if (_inputType == InputType.Password)
-                    return txtPasswordResponse.Password;
-                else
-                    return txtResponse.Text;
-            }
+            return inst.DialogResult == true ? 
+                Tuple.Create(inst.txtResponse.Text, inst.txtOptionalInput.Text) :
+                null;
         }
 
         private void btnOk_Click(object sender, RoutedEventArgs e)

@@ -10,7 +10,8 @@
     <StackPanel Margin="5">
         <TextBlock Name="txtQuestion" Margin="5"/>
         <TextBox Name="txtResponse" Margin="5"/>
-        <PasswordBox Name="txtPasswordResponse" />
+        <Label Name="lblOptionalInputName" />
+        <TextBox Name="txtOptionalInput" Margin="5" />
         <StackPanel Orientation="Horizontal" Margin="0,5,5.2,5" HorizontalAlignment="Right" Width="144">
             <Button Content="_OK" IsDefault="True" Margin="5" Name="btnOk" Click="btnOk_Click" Width="60" />
             <Button Content="_Cancel" IsCancel="True" Margin="5" Name="btnCancel" Click="btnCancel_Click" HorizontalAlignment="Right" Width="60" />
