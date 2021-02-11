@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Main where
+module Caide.CaideMain(
+    caideMain
+) where
 
 import Data.Maybe (isJust, isNothing, fromMaybe)
 
@@ -22,8 +24,8 @@ findRootCaideDir curDir = do
     else findRootCaideDir $ parent curDir
 
 
-main :: IO ()
-main = do
+caideMain :: IO ()
+caideMain = do
     args <- getArgs
     let (cmd:_) = args
         mainAction = runMain args
@@ -44,4 +46,5 @@ main = do
 
 halt :: IO ()
 halt = exitWith $ ExitFailure 0xCA1DE
+
 
