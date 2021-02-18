@@ -133,5 +133,5 @@ jobs:
         cd libcaide
         export CAIDE=$(pwd)/$CAIDE_EXE_RELATIVE_PATH
         MONO=mono CSC=csc tests/run-tests.sh
-        cabal test
+        cabal test $CONFIG
 
