@@ -1,1 +1,2 @@
-{"problems_nonempty":true,"problems":[{"input":{},"name":"a","output":{},"language":{"name":"c#","c#":true},"id":"a","isfirst":true},{"islast":true,"input":{},"name":"b","output":{"file":"output.txt"},"language":{"c++":true,"name":"c++"},"id":"b"}]}
+  name: a, id: a, language: c#, input: {}, output: {}
+  name: b, id: b, language: c++, input: {}, output: {"file":"output.txt"}
