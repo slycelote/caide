@@ -1,13 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Control.Monad (when)
-import System.Exit (exitFailure)
+import Test.HUnit
 
-import Caide.TestCases.TopcoderDeserializer (TopcoderParser, readMany, readToken, runParser)
+import Caide.TestCases.TopcoderDeserializer (readMany, readToken, runParser)
+
+topcoderDeserializerTests :: Test
+topcoderDeserializerTests = TestList
+  [ runParser (readMany readToken) "{a, bc,ghij}" ~?= Right ["a", "bc", "ghij"]
+  ]
+
+allTests :: Test
+allTests = TestList
+  [ topcoderDeserializerTests
+  ]
 
 main :: IO ()
-main = do
-    let v = runParser (readMany readToken) "{a, bc,ghij}"
-    when (v /= Right ["a", "bc", "ghij"]) $ exitFailure
+main = runTestTTAndExit allTests
 
