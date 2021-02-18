@@ -3,9 +3,9 @@ import Distribution.Simple (defaultMainWithHooks, simpleUserHooks,
     UserHooks(confHook, cleanHook, hookedPrograms), )
 import Distribution.Simple.BuildPaths (autogenComponentModulesDir)
 import Distribution.Simple.Program (Program, simpleProgram, )
-import Distribution.Simple.Setup (ConfigFlags(configDistPref, configVerbosity),
+import Distribution.Simple.Setup (ConfigFlags(configDistPref, configSharedLib, configVerbosity),
     CleanFlags(cleanDistPref), Flag,
-    configConfigurationsFlags, fromFlag, )
+    configConfigurationsFlags, fromFlag, toFlag,)
 import Distribution.Simple.Utils (createDirectoryIfMissingVerbose,
     getDirectoryContentsRecursive, notice, rawSystemExit, )
 
@@ -17,7 +17,8 @@ import Distribution.Types.GenericPackageDescription (GenericPackageDescription, 
 import Distribution.Types.HookedBuildInfo (HookedBuildInfo)
 import Distribution.Types.LocalBuildInfo (LocalBuildInfo(hostPlatform),
     localPkgDescr, withAllTargetsInBuildOrder', )
-import Distribution.Types.PackageDescription (PackageDescription(executables))
+import Distribution.Types.Library (Library(libBuildInfo))
+import Distribution.Types.PackageDescription (PackageDescription(executables, library, subLibraries))
 import Distribution.Types.TargetInfo (targetCLBI)
 import Distribution.Verbosity (Verbosity)
 
@@ -79,13 +80,14 @@ inlinerConfHook :: (GenericPackageDescription, HookedBuildInfo) -> ConfigFlags
                 -> IO LocalBuildInfo
 inlinerConfHook (pkg, pbi) flags = do
     -- print flags
-    lbi <- confHook simpleUserHooks (pkg, pbi) flags
+    let cppinliner = lookupConfFlag flags "cppinliner" True
+        flags' = if cppinliner then flags{ configSharedLib = toFlag False } else flags
+    lbi <- confHook simpleUserHooks (pkg, pbi) flags'
 
-    let verbosity = fromFlag (configVerbosity flags)
-        debug = lookupConfFlag flags "debug" False
-        cppinliner = lookupConfFlag flags "cppinliner" True
+    let verbosity = fromFlag (configVerbosity flags')
+        debug = lookupConfFlag flags' "debug" False
         cmakeBuildType  = if debug then "Debug" else "Release"
-        distDir = configDistPref flags
+        distDir = configDistPref flags'
         inlinerBuildDir = getCmakeBuildDir lbi
         zipFile = getResourcesZipFile distDir
 
@@ -220,6 +222,17 @@ onExecutables f pd = pd { executables = map f (executables pd) }
 onExeBuildInfo :: Lifter BuildInfo Executable
 onExeBuildInfo f exe = exe { buildInfo = f (buildInfo exe) }
 
+onLibraries :: Lifter Library PackageDescription
+onLibraries f pd = case library pd' of
+    Nothing -> pd'
+    Just lib -> pd' { library = Just (f lib) }
+  where
+    pd' = pd { subLibraries = map f (subLibraries pd) }
+
+onLibBuildInfo :: Lifter BuildInfo Library
+onLibBuildInfo f lib = lib { libBuildInfo = f (libBuildInfo lib) }
+
 onLocalLibBuildInfo :: Lifter BuildInfo LocalBuildInfo
-onLocalLibBuildInfo = onLocalPkgDescr . onExecutables . onExeBuildInfo
+-- onLocalLibBuildInfo = onLocalPkgDescr . onExecutables . onExeBuildInfo
+onLocalLibBuildInfo = onLocalPkgDescr . onLibraries . onLibBuildInfo
 
