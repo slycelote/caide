@@ -22,8 +22,12 @@ module Caide.TestCases.Types (
 #ifndef AMP
 import Control.Applicative ((<$>))
 #endif
+import Data.Char (isSpace)
+import Data.Either (fromRight)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Text.Parsec as Parsec
 
 import Prelude hiding (FilePath)
 import Filesystem.Path (FilePath)
@@ -65,25 +69,41 @@ serializeTestReport :: TestReport Text -> Text
 serializeTestReport = T.unlines .
             map (\(testName, res) -> T.concat [testName, " ", machineReadable res])
 
-readComparisonResult :: [Text] -> ComparisonResult Text
-readComparisonResult ["OK"] = Success
-readComparisonResult ["ran"] = Ran
-readComparisonResult ["skipped"] = Skipped
-readComparisonResult ["unknown"] = EtalonUnknown
-readComparisonResult ("failed":err) = Failed $ T.unwords err
-readComparisonResult ("error":err) = Error $ T.unwords err
-readComparisonResult _ = Error "Corrupted report file"
+readComparisonResult :: T.Text -> Maybe T.Text -> ComparisonResult Text
+readComparisonResult "OK" _ = Success
+readComparisonResult "ran" _ = Ran
+readComparisonResult "skipped" _ = Skipped
+readComparisonResult "unknown" _ = EtalonUnknown
+readComparisonResult "failed" err = Failed $ fromMaybe "" err
+readComparisonResult "error" err = Error $ fromMaybe "" err
+readComparisonResult _ _ = Error "Corrupted report file"
 
 deserializeTestReport :: Text -> TestReport Text
-deserializeTestReport text = map (parseTest . T.words) reportLines
+deserializeTestReport text = map parseTest reportLines
   where
-    reportLines = filter (not . T.null) . map T.strip $ T.lines text
+    reportLines = filter (not . T.null) $ map T.strip $ T.lines text
 
-    parseTest :: [Text] -> (Text, ComparisonResult Text)
-    -- TODO: More robust handling to preserve whitespace in error message
-    parseTest (testName:testStatus:err) = (testName, readComparisonResult (testStatus:err))
-    parseTest [testName] = (testName, Error "Corrupted report file")
-    parseTest [] = error "Impossible happened in deserializeTestReport"
+    parseTest :: Text -> (Text, ComparisonResult Text)
+    parseTest line = fromRight (error "Impossible happened") $
+        Parsec.parse parser "" line
+
+    parser = do
+        testName <- token
+        rest <- Parsec.optionMaybe $ do
+            skipSpace1
+            status <- token
+            errorMessage <- Parsec.optionMaybe $ do
+                skipSpace1
+                msg <- T.pack <$> Parsec.many1 Parsec.anyToken
+                Parsec.eof
+                pure msg
+            pure $ readComparisonResult status errorMessage
+
+        return (testName, fromMaybe (Error "Corrupted report file") rest)
+
+    skipSpace1 = Parsec.skipMany1 Parsec.space
+    token = T.pack <$> Parsec.many1 nonSpace
+    nonSpace = Parsec.satisfy $ not.isSpace
 
 readTestReport :: FilePath -> IO (TestReport Text)
 readTestReport reportFile = do
