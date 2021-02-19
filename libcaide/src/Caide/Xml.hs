@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, FlexibleContexts, GeneralizedNewtypeDeriving, OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts, GeneralizedNewtypeDeriving, OverloadedStrings #-}
 module Caide.Xml(
       isTag
     , goToChild
@@ -20,9 +20,6 @@ module Caide.Xml(
     , runXmlTransformation
 ) where
 
-#ifndef AMP
-import Control.Applicative (Applicative)
-#endif
 import Control.Monad.Except (ExceptT, runExceptT, throwError, MonadError)
 import Control.Monad.Identity (Identity, runIdentity)
 import Control.Monad.State.Strict (get, put, modify, MonadState, StateT, runStateT, gets)

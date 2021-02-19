@@ -1,13 +1,10 @@
-{-# LANGUAGE CPP, OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Caide.Commands.CHelperHttpServer(
       runHttpServer
 ) where
 
-#ifndef AMP
-import Control.Applicative ((<$>), (<*>))
-#endif
 import Control.Concurrent.Async (withAsync)
 import qualified Control.Concurrent.Async as Async
 import Control.Monad (forM_, void, when)

@@ -1,13 +1,10 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Caide.Commands.ParseProblem(
       createProblem
     , saveProblemWithScaffold
     , parseProblems
 ) where
 
-#ifndef AMP
-import Control.Applicative ((<$>))
-#endif
 import Control.Monad (forM_, unless, when)
 import Control.Monad.Except (catchError)
 import Control.Monad.State (liftIO)

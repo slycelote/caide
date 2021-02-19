@@ -1,11 +1,8 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Caide.Parsers.HackerRank(
       hackerRankParser
 ) where
 
-#ifndef AMP
-import Control.Applicative ((<$>))
-#endif
 import Control.Applicative ((<|>))
 import qualified Data.ByteString.Lazy as LBS
 import Data.Char (isAlphaNum, isSpace)

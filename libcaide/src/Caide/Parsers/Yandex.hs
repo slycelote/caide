@@ -1,11 +1,8 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Caide.Parsers.Yandex(
       yandexParser
 ) where
 
-#ifndef AMP
-import Control.Applicative ((<$>))
-#endif
 import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import qualified Data.Text as T
 import Network.URI (parseURI, uriAuthority, uriRegName)

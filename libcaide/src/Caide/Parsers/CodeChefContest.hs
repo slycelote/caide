@@ -1,11 +1,8 @@
-{-# LANGUAGE CPP, DeriveGeneric, OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 module Caide.Parsers.CodeChefContest(
       codeChefContestParser
 ) where
 
-#ifndef AMP
-import Control.Applicative ((<$>))
-#endif
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Lazy as LBS

@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
 module Caide.Commands(
       runMain
 ) where
@@ -7,12 +7,6 @@ import Control.Exception.Base (catch, SomeException)
 import Control.Monad (void)
 import Control.Monad.Except (catchError)
 import Data.List (foldl')
-#if !MIN_VERSION_base(4, 8, 0)
-import Data.Monoid (mconcat)
-#endif
-#if MIN_VERSION_optparse_applicative(0, 13, 0)
-import Data.Monoid ((<>))
-#endif
 import qualified Data.Text as T
 import Data.Version (showVersion)
 import System.Exit (exitWith, ExitCode(ExitFailure))

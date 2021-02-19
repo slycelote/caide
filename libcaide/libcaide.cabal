@@ -60,6 +60,7 @@ test-suite caide-tests
   hs-source-dirs: test
   main-is: Main.hs
 
+  other-extensions: OverloadedStrings
   ghc-options:     -Wall -static -pgml g++ -threaded -rtsopts=all -with-rtsopts=-N
   if os(windows) {
     ghc-options:   -optl-static
@@ -73,23 +74,8 @@ test-suite caide-tests
 
 
 library
-  -- Due to a cabal bug, linking custom Setup.hs fails when local version
-  -- of unix package doesn't match ghc version. Older unix version in GHC 7.8
-  -- forces us to use an older version of time package.
-  if impl(ghc < 7.10) {
-    build-depends:
-                   base >= 4.7 && < 4.8,
-                   old-locale,
-                   time < 1.5
-  } else {
-    build-depends:
-                   base >= 4.8,
-                   time >= 1.5.0.1
-    -- Functor-Applicative-Monad proposal
-    cpp-options:   -DAMP
-  }
-
   build-depends:
+                   base >= 4.8,
                    aeson,
                    array,
                    async >= 2.0.1,
@@ -116,13 +102,15 @@ library
                    system-filepath,
                    tagsoup >= 0.13,
                    text >= 1.1.0,
+                   time >= 1.5.0.1,
                    unordered-containers,
                    vector,
                    xml,
                    zip-archive
 
-  other-extensions: CPP
   hs-source-dirs:  src
+  other-extensions: CPP, OverloadedStrings, ScopedTypeVariables,
+                    GeneralizedNewtypeDeriving, DeriveGeneric, ForeignFunctionInterface
   ghc-options:     -Wall -static -rtsopts=all
   if flag(debug) {
     ghc-options:   -fprof-auto

@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 module Text.HTML.TagSoup.Utils (
       (~==)
     , (~/=)
@@ -8,9 +7,6 @@ module Text.HTML.TagSoup.Utils (
     , matching
 ) where
 
-#ifndef AMP
-import Control.Applicative ((<$>))
-#endif
 import Data.Char (toLower)
 
 import Text.StringLike (StringLike, toString)

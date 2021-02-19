@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Caide.TestCases.Types (
       ComparisonResult (..)
@@ -19,9 +19,6 @@ module Caide.TestCases.Types (
     , writeTests
 ) where
 
-#ifndef AMP
-import Control.Applicative ((<$>))
-#endif
 import Data.Char (isSpace)
 import Data.Either (fromRight)
 import Data.Maybe (fromMaybe)

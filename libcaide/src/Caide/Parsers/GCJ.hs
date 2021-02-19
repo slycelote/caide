@@ -1,11 +1,8 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Caide.Parsers.GCJ(
       gcjParser
 ) where
 
-#ifndef AMP
-import Control.Applicative ((<$>))
-#endif
 import Data.List (isPrefixOf)
 import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import qualified Data.Text as T

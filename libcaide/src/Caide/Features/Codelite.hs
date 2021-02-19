@@ -1,12 +1,9 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Caide.Features.Codelite(
       feature
 ) where
 
 
-#ifndef AMP
-import Control.Applicative ((<$>))
-#endif
 import Control.Monad (forM_, when)
 import Control.Monad.Except (catchError)
 import Control.Monad.State.Strict (modify, gets)
