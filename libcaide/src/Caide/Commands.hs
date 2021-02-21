@@ -58,6 +58,7 @@ createIoSubCommand (name, desc, cmd) = command name $
 data CommandExtension = AutoCheckUpdates | ReportNewVersion
 
 extendCommand :: CaideIO () -> CommandExtension -> CaideIO ()
+-- TODO: run checkUpdates in parallel with cmd
 extendCommand cmd AutoCheckUpdates = cmd >> (checkUpdates `catchError` const (pure ()))
 extendCommand cmd ReportNewVersion = cmd >> (logIfUpdateAvailable `catchError` const (pure ()))
 

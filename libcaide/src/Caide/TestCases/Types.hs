@@ -3,10 +3,12 @@
 module Caide.TestCases.Types (
       ComparisonResult (..)
     , isSuccessful
-    , humanReadable
-    , machineReadable
+
+    , TestRunResult(..)
+    , makeTestRunResult
 
     , TestReport
+    , humanReadableReport
     , serializeTestReport
     , deserializeTestReport
     , readTestReport
@@ -27,7 +29,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Text.Parsec as Parsec
 
-import Data.Time.Clock (DiffTime, picosecondsToDiffTime)
+import Data.Time.Clock (DiffTime, diffTimeToPicoseconds, picosecondsToDiffTime)
 import Filesystem.Path (FilePath)
 import Filesystem (isFile, readTextFile, writeTextFile)
 import Caide.Util (tshow)
@@ -61,11 +63,35 @@ machineReadable (Error err) = "error " <> err
 machineReadable res = humanReadable res
 
 
-type TestReport = [(Text, ComparisonResult)]
+data TestRunResult = TestRunResult
+    { testRunStatus :: ComparisonResult
+    , testRunTime   :: Maybe DiffTime
+    } deriving (Eq, Show)
+
+type TestReport = [(Text, TestRunResult)]
+
+makeTestRunResult :: ComparisonResult -> TestRunResult
+makeTestRunResult cmp = TestRunResult cmp Nothing
 
 serializeTestReport :: TestReport -> Text
 serializeTestReport = T.unlines .
-            map (\(testName, res) -> T.concat [testName, " ", machineReadable res])
+            map (\(testName, res) -> testName <> " " <> serializeTestRunResult res)
+
+humanReadableReport :: TestReport -> Text
+humanReadableReport = T.unlines .
+            map (\(testName, res) -> testName <> ": " <> humanReadable (testRunStatus res))
+
+picosecondsInMs :: Integer
+picosecondsInMs = 10^(12::Int)
+
+serializeTestRunResult :: TestRunResult -> Text
+serializeTestRunResult (TestRunResult status time) = serializedTime <> machineReadable status
+  where
+    serializedTime = case time of
+        Nothing -> ""
+        Just t  -> ""
+        -- Just t  -> "#time:" <> tshow (diffTimeToPicoseconds t `div` picosecondsInMs) <> "ms "
+
 
 readComparisonResult :: T.Text -> Maybe T.Text -> ComparisonResult
 readComparisonResult "OK" _ = Success
@@ -81,23 +107,24 @@ deserializeTestReport text = map parseTest reportLines
   where
     reportLines = filter (not . T.null) $ map T.strip $ T.lines text
 
-    parseTest :: Text -> (Text, ComparisonResult)
+    parseTest :: Text -> (Text, TestRunResult)
     parseTest line = fromRight (error "Impossible happened") $
         Parsec.parse parser "" line
 
     parser = do
         testName <- token
-        rest <- Parsec.optionMaybe $ do
+        runResult <- Parsec.optionMaybe $ do
             skipSpace1
             status <- token
             errorMessage <- Parsec.optionMaybe $ do
+                -- TODO: parse time
                 skipSpace1
                 msg <- T.pack <$> Parsec.many1 Parsec.anyToken
                 Parsec.eof
                 pure msg
-            pure $ readComparisonResult status errorMessage
+            pure $ makeTestRunResult $ readComparisonResult status errorMessage
 
-        return (testName, fromMaybe (Error "Corrupted report file") rest)
+        return (testName, fromMaybe (makeTestRunResult $ Error "Corrupted report file") runResult)
 
     skipSpace1 = Parsec.skipMany1 Parsec.space
     token = T.pack <$> Parsec.many1 nonSpace

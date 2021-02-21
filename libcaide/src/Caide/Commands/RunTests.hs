@@ -31,18 +31,15 @@ import qualified Caide.Paths as Paths
 import Caide.Problem (currentLanguage, readProblemInfo, readProblemState)
 import Caide.Registry (findLanguage)
 import Caide.Types
-import Caide.TestCases.Types (ComparisonResult(..), TestReport,
-    isSuccessful, humanReadable, readTestReport, serializeTestReport)
+import Caide.TestCases.Types (ComparisonResult(..), isSuccessful,
+    TestRunResult(..), makeTestRunResult,
+    TestReport, humanReadableReport, readTestReport, serializeTestReport)
 import Caide.TestCases.TopcoderComparator
 import Caide.Util (tshow)
 
 
-humanReadableReport :: TestReport -> Text
-humanReadableReport = T.unlines .
-            map (\(testName, res) -> T.concat [testName, ": ", humanReadable res])
-
 humanReadableSummary :: TestReport -> Text
-humanReadableSummary = T.unlines . map toText . group . sort . map (fromComparisonResult . snd)
+humanReadableSummary = T.unlines . map toText . group . sort . map (fromComparisonResult . testRunStatus . snd)
     where toText list = T.concat [head list, "\t", tshow (length list)]
           fromComparisonResult (Error _) = "Error"
           fromComparisonResult (Failed _) = "Failed"
@@ -107,7 +104,7 @@ evalTests = do
         writeTextFile reportFile . serializeTestReport $ report
         T.putStrLn "Results summary\n_______________\nOutcome\tCount"
         T.putStrLn $ humanReadableSummary report
-        return [r | r@(_, res) <- report, isSuccessful res == Just False]
+        return [r | r@(_, res) <- report, isSuccessful (testRunStatus res) == Just False]
 
     unless (null errors) $
         throw $ humanReadableReport errors
@@ -124,14 +121,15 @@ generateReport cmpOptions problemDir = do
             outFile = problemDir </> Paths.testsDir </> replaceExtension testFile "out"
             etalonFile = problemDir </> replaceExtension testFile "out"
         case lookup testName report of
-            Nothing -> return $ Error "Test was not run"
-            Just Ran -> do
+            Nothing -> return $ makeTestRunResult $ Error "Test was not run"
+            Just res@TestRunResult{testRunStatus = Ran} -> do
                 [etalonExists, outFileExists] <- mapM isFile [etalonFile, outFile]
-                if not outFileExists
+                comparisonResult <- if not outFileExists
                    then return $ Error "Output file is missing"
                    else if etalonExists
                        then compareFiles cmpOptions <$> readTextFile etalonFile <*> readTextFile outFile
                        else return EtalonUnknown
+                return $ res{testRunStatus = comparisonResult}
             Just result -> return result
 
     return $ sortBy (comparing fst) $ zip testNames results

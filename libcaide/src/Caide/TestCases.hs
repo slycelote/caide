@@ -8,6 +8,7 @@ import Prelude hiding (FilePath)
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.List (sort, sortOn)
+import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import System.Environment (getExecutablePath)
 
@@ -18,8 +19,8 @@ import qualified Filesystem as FS
 import Filesystem.Util (copyFileToDir, pathToText)
 
 import qualified Caide.Paths as Paths
-import Caide.TestCases.Types (TestList, TestState(..), ComparisonResult(..),
-    readTestReport, writeTests)
+import Caide.TestCases.Types (TestList, TestState(..), TestRunResult(testRunStatus),
+    isSuccessful, readTestReport, writeTests)
 
 
 updateTests :: MonadIO m => FilePath -> m ()
@@ -56,15 +57,15 @@ updateTestList problemDir = do
     let testDir = problemDir </> Paths.testsDir
         previousRunFile = testDir </> Paths.testReportFile
     report <- readTestReport previousRunFile
+    let testNameToStatus = Map.fromList [(name, testRunStatus res) | (name, res) <- report]
     allFiles <- sort <$> FS.listDirectory problemDir
     let allTests    = map (pathToText . basename) . filter (`hasExtension` "in") $ allFiles
         testsToSkip = map (pathToText . basename) . filter (`hasExtension` "skip") $ allFiles
         testState testName = if testName `elem` testsToSkip then Skip else Run
         testList = zip allTests (map testState allTests)
-        succeededAndName (testName, _) = case lookup testName report of
-            Just (Failed _) -> (False, testName)
-            Just (Error _)  -> (False, testName)
-            _               -> (True,  testName)
+        succeededAndName (testName, _) = case isSuccessful =<< Map.lookup testName testNameToStatus of
+            Just False -> (False, testName)
+            _          -> (True,  testName)
         sortedTests = sortOn succeededAndName testList
     writeTests sortedTests $ testDir </> Paths.testListFile
     return sortedTests

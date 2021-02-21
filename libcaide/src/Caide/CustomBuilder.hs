@@ -27,7 +27,8 @@ import qualified Filesystem.Util as FS
 
 import Caide.Logger (logInfo, logWarn, logError)
 import Caide.Types (BuilderResult(BuildFailed, NoEvalTests), Builder, ProblemID)
-import Caide.TestCases.Types (ComparisonResult(Error, Failed, Ran), serializeTestReport)
+import Caide.TestCases.Types (ComparisonResult(Error, Failed, Ran), TestRunResult, makeTestRunResult,
+    serializeTestReport)
 import qualified Caide.TestCases as TestCases
 import qualified Caide.Paths as Paths
 import Caide.Util (tshow)
@@ -106,10 +107,11 @@ executeTest dirPath runExe inFile = liftIO $
     fullInPath  = FS.pathToString $ dirPath </> inFile
     fullOutPath = FS.pathToString $ dirPath </> Paths.testsDir </> replaceExtension inFile "out"
 
-safeExecuteTestWithTimeout :: MonadIO m => Int -> FilePath -> FilePath -> FilePath -> m ComparisonResult
+safeExecuteTestWithTimeout :: MonadIO m => Int -> FilePath -> FilePath -> FilePath -> m TestRunResult
 safeExecuteTestWithTimeout timeLimitMicroSecs dirPath runExe inFile = liftIO $ do
     res <- Exc.try $ timeout timeLimitMicroSecs $ executeTest dirPath runExe inFile
-    return $ case res of
+    -- TODO: Add time
+    return $ makeTestRunResult $ case res of
         Right Nothing  -> Failed "Time limit exceeded"
         Left e         -> Error $ "Error while executing the test: " <> T.pack (Exc.displayException (e :: Exc.SomeException))
         Right (Just r) -> r
