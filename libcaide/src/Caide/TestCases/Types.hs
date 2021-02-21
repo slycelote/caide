@@ -19,6 +19,7 @@ module Caide.TestCases.Types (
     , writeTests
 ) where
 
+import Prelude hiding (FilePath)
 import Data.Char (isSpace)
 import Data.Either (fromRight)
 import Data.Maybe (fromMaybe)
@@ -26,47 +27,47 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Text.Parsec as Parsec
 
-import Prelude hiding (FilePath)
+import Data.Time.Clock (DiffTime, picosecondsToDiffTime)
 import Filesystem.Path (FilePath)
 import Filesystem (isFile, readTextFile, writeTextFile)
 import Caide.Util (tshow)
 
 
-data ComparisonResult a = Success        -- ^ Test passed
-                        | Ran            -- ^ Test ran but hasn't been evaluated
-                        | EtalonUnknown  -- ^ Test ran but etalon is unknown
-                        | Skipped        -- ^ Test was skipped
-                        | Failed a       -- ^ Test failed
-                        | Error a        -- ^ Error (e.g. exception in checker)
-                        deriving (Show, Eq)
+data ComparisonResult = Success        -- ^ Test passed
+                      | Ran            -- ^ Test ran but hasn't been evaluated
+                      | EtalonUnknown  -- ^ Test ran but etalon is unknown
+                      | Skipped        -- ^ Test was skipped
+                      | Failed Text    -- ^ Test failed
+                      | Error Text     -- ^ Error (e.g. exception in checker)
+                      deriving (Show, Eq)
 
-isSuccessful :: ComparisonResult a -> Maybe Bool
+isSuccessful :: ComparisonResult -> Maybe Bool
 isSuccessful (Failed _) = Just False
 isSuccessful (Error _) = Just False
 isSuccessful Success = Just True
 isSuccessful _ = Nothing
 
-humanReadable :: ComparisonResult Text -> Text
+humanReadable :: ComparisonResult -> Text
 humanReadable Success = "OK"
 humanReadable Ran = "ran"
 humanReadable Skipped = "skipped"
-humanReadable (Failed message) = T.append "failed: " message
+humanReadable (Failed message) = "failed: " <> message
 humanReadable EtalonUnknown = "unknown"
 humanReadable (Error err) = err
 
-machineReadable :: ComparisonResult Text -> Text
-machineReadable (Failed message) = T.append "failed " message
-machineReadable (Error err) = T.append "error " err
+machineReadable :: ComparisonResult -> Text
+machineReadable (Failed message) = "failed " <> message
+machineReadable (Error err) = "error " <> err
 machineReadable res = humanReadable res
 
 
-type TestReport a = [(Text, ComparisonResult a)]
+type TestReport = [(Text, ComparisonResult)]
 
-serializeTestReport :: TestReport Text -> Text
+serializeTestReport :: TestReport -> Text
 serializeTestReport = T.unlines .
             map (\(testName, res) -> T.concat [testName, " ", machineReadable res])
 
-readComparisonResult :: T.Text -> Maybe T.Text -> ComparisonResult Text
+readComparisonResult :: T.Text -> Maybe T.Text -> ComparisonResult
 readComparisonResult "OK" _ = Success
 readComparisonResult "ran" _ = Ran
 readComparisonResult "skipped" _ = Skipped
@@ -75,12 +76,12 @@ readComparisonResult "failed" err = Failed $ fromMaybe "" err
 readComparisonResult "error" err = Error $ fromMaybe "" err
 readComparisonResult _ _ = Error "Corrupted report file"
 
-deserializeTestReport :: Text -> TestReport Text
+deserializeTestReport :: Text -> TestReport
 deserializeTestReport text = map parseTest reportLines
   where
     reportLines = filter (not . T.null) $ map T.strip $ T.lines text
 
-    parseTest :: Text -> (Text, ComparisonResult Text)
+    parseTest :: Text -> (Text, ComparisonResult)
     parseTest line = fromRight (error "Impossible happened") $
         Parsec.parse parser "" line
 
@@ -102,7 +103,7 @@ deserializeTestReport text = map parseTest reportLines
     token = T.pack <$> Parsec.many1 nonSpace
     nonSpace = Parsec.satisfy $ not.isSpace
 
-readTestReport :: FilePath -> IO (TestReport Text)
+readTestReport :: FilePath -> IO TestReport
 readTestReport reportFile = do
     reportExists <- isFile reportFile
     if reportExists

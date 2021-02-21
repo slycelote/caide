@@ -37,11 +37,11 @@ import Caide.TestCases.TopcoderComparator
 import Caide.Util (tshow)
 
 
-humanReadableReport :: TestReport Text -> Text
+humanReadableReport :: TestReport -> Text
 humanReadableReport = T.unlines .
             map (\(testName, res) -> T.concat [testName, ": ", humanReadable res])
 
-humanReadableSummary :: TestReport Text -> Text
+humanReadableSummary :: TestReport -> Text
 humanReadableSummary = T.unlines . map toText . group . sort . map (fromComparisonResult . snd)
     where toText list = T.concat [head list, "\t", tshow (length list)]
           fromComparisonResult (Error _) = "Error"
@@ -113,7 +113,7 @@ evalTests = do
         throw $ humanReadableReport errors
 
 
-generateReport :: ComparisonOptions -> FilePath -> IO (TestReport Text)
+generateReport :: ComparisonOptions -> FilePath -> IO TestReport
 generateReport cmpOptions problemDir = do
     let testDir = problemDir </> Paths.testsDir
     testList <- (map filename . filter (`hasExtension` "in") . fst) <$> listDir problemDir
@@ -137,7 +137,7 @@ generateReport cmpOptions problemDir = do
     return $ sortBy (comparing fst) $ zip testNames results
 
 
-compareFiles :: ComparisonOptions -> Text -> Text -> ComparisonResult Text
+compareFiles :: ComparisonOptions -> Text -> Text -> ComparisonResult
 compareFiles cmpOptions etalon out = case () of
     _ | isTopcoder -> tcComparison
       | not (null errors) -> Failed $ T.concat ["Line ", tshow line, ": ", err]
@@ -156,7 +156,7 @@ compareFiles cmpOptions etalon out = case () of
     (line, Failed err) = head errors
 
 
-compareLines :: ComparisonOptions -> Text -> Text -> ComparisonResult Text
+compareLines :: ComparisonOptions -> Text -> Text -> ComparisonResult
 compareLines cmpOptions expectedLine actualLine = case () of
     _ | not (null errors) -> Failed $ T.concat ["Token ", tshow numToken, ": ", err]
       | length actual == length expected -> Success
@@ -168,7 +168,7 @@ compareLines cmpOptions expectedLine actualLine = case () of
     errors = [e | e@(_, Failed _) <- zip [1::Int ..] tokenComparison]
     (numToken, Failed err) = head errors
 
-compareTokens :: ComparisonOptions -> Text -> Text -> ComparisonResult Text
+compareTokens :: ComparisonOptions -> Text -> Text -> ComparisonResult
 compareTokens cmpOptions expected actual = case () of
     _ | expected == actual -> Success
       | areEqualDoubles (doublePrecision cmpOptions) expected actual -> Success

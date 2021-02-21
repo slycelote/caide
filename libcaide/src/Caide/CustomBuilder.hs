@@ -87,7 +87,7 @@ createBuilderFromDirectory dirPath optionModifiers = do
                 Just runExe -> Right $ createBuilderFromRunExe dirPath runExe options
                 Nothing -> Left $ T.concat ["Neither `build' nor `run' executables found in ", FS.pathToText dirPath]
 
-executeTest :: MonadIO m => FilePath -> FilePath -> FilePath -> m (ComparisonResult Text)
+executeTest :: MonadIO m => FilePath -> FilePath -> FilePath -> m ComparisonResult
 executeTest dirPath runExe inFile = liftIO $
     withFile fullInPath ReadMode $ \hin ->
     withFile fullOutPath WriteMode $ \hout -> do
@@ -106,7 +106,7 @@ executeTest dirPath runExe inFile = liftIO $
     fullInPath  = FS.pathToString $ dirPath </> inFile
     fullOutPath = FS.pathToString $ dirPath </> Paths.testsDir </> replaceExtension inFile "out"
 
-safeExecuteTestWithTimeout :: MonadIO m => Int -> FilePath -> FilePath -> FilePath -> m (ComparisonResult Text)
+safeExecuteTestWithTimeout :: MonadIO m => Int -> FilePath -> FilePath -> FilePath -> m ComparisonResult
 safeExecuteTestWithTimeout timeLimitMicroSecs dirPath runExe inFile = liftIO $ do
     res <- Exc.try $ timeout timeLimitMicroSecs $ executeTest dirPath runExe inFile
     return $ case res of
