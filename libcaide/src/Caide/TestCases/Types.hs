@@ -23,11 +23,12 @@ module Caide.TestCases.Types (
 
 import Prelude hiding (FilePath)
 import Data.Char (isSpace)
-import Data.Either (fromRight)
 import Data.Maybe (fromMaybe)
+import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Text.Parsec as Parsec
+import Text.Read (readMaybe)
 
 import Data.Time.Clock (DiffTime, diffTimeToPicoseconds, picosecondsToDiffTime)
 import Filesystem.Path (FilePath)
@@ -82,24 +83,23 @@ humanReadableReport = T.unlines .
             map (\(testName, res) -> testName <> ": " <> humanReadable (testRunStatus res))
 
 picosecondsInMs :: Integer
-picosecondsInMs = 10^(12::Int)
+picosecondsInMs = 10^(9::Int)
 
 serializeTestRunResult :: TestRunResult -> Text
 serializeTestRunResult (TestRunResult status time) = serializedTime <> machineReadable status
   where
     serializedTime = case time of
         Nothing -> ""
-        Just t  -> ""
-        -- Just t  -> "#time:" <> tshow (diffTimeToPicoseconds t `div` picosecondsInMs) <> "ms "
+        Just t  -> "#time:" <> tshow (diffTimeToPicoseconds t `div` picosecondsInMs) <> "ms "
 
 
-readComparisonResult :: T.Text -> Maybe T.Text -> ComparisonResult
+readComparisonResult :: T.Text -> T.Text -> ComparisonResult
 readComparisonResult "OK" _ = Success
 readComparisonResult "ran" _ = Ran
 readComparisonResult "skipped" _ = Skipped
 readComparisonResult "unknown" _ = EtalonUnknown
-readComparisonResult "failed" err = Failed $ fromMaybe "" err
-readComparisonResult "error" err = Error $ fromMaybe "" err
+readComparisonResult "failed" err = Failed err
+readComparisonResult "error" err = Error err
 readComparisonResult _ _ = Error "Corrupted report file"
 
 deserializeTestReport :: Text -> TestReport
@@ -108,25 +108,39 @@ deserializeTestReport text = map parseTest reportLines
     reportLines = filter (not . T.null) $ map T.strip $ T.lines text
 
     parseTest :: Text -> (Text, TestRunResult)
-    parseTest line = fromRight (error "Impossible happened") $
-        Parsec.parse parser "" line
+    parseTest line = either (error . show) id $ Parsec.parse testParser "" line
 
-    parser = do
+    testParser = do
         testName <- token
         runResult <- Parsec.optionMaybe $ do
+            additionalInfo <- Map.fromList <$> additionalInfoParser
             skipSpace1
             status <- token
-            errorMessage <- Parsec.optionMaybe $ do
-                -- TODO: parse time
-                skipSpace1
-                msg <- T.pack <$> Parsec.many1 Parsec.anyToken
-                Parsec.eof
-                pure msg
-            pure $ makeTestRunResult $ readComparisonResult status errorMessage
+            errorMessage <- skipSpace *> (T.pack <$> Parsec.many Parsec.anyChar) <* Parsec.eof
+            let res = makeTestRunResult $ readComparisonResult status errorMessage
+                time = parseTime =<< Map.lookup "time" additionalInfo
+            pure $ res{testRunTime = time}
 
         return (testName, fromMaybe (makeTestRunResult $ Error "Corrupted report file") runResult)
 
+    additionalInfoParser = Parsec.many $ Parsec.try $ do
+        skipSpace1
+        _ <- Parsec.char '#'
+        key <- T.pack <$> Parsec.many1 (Parsec.satisfy $ \c -> c /= ':' && not (isSpace c))
+        _ <- Parsec.char ':'
+        value <- token
+        pure (key, value)
+
+    parseTime s = res
+      where
+        s' = fromMaybe s $ T.stripSuffix "ms" s
+        mbNum = readMaybe $ T.unpack s'
+        res = case mbNum of
+            Nothing  -> Nothing
+            Just num -> Just $ picosecondsToDiffTime $ num * picosecondsInMs
+
     skipSpace1 = Parsec.skipMany1 Parsec.space
+    skipSpace = Parsec.skipMany Parsec.space
     token = T.pack <$> Parsec.many1 nonSpace
     nonSpace = Parsec.satisfy $ not.isSpace
 
@@ -150,7 +164,7 @@ deserializeTestList text = map toTest testLines
     testLines = map T.words . T.lines $ text
 
     toTest [name, state] = (name, read $ T.unpack state)
-    toTest _ = error "Corrupted testList file"
+    toTest _ = error "Corrupted testList file" -- FIXME
 
 readTests :: FilePath -> IO TestList
 readTests testListFile = do
