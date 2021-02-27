@@ -9,7 +9,7 @@ module Caide.Commands.RunTests(
 import Control.Monad (forM, unless)
 import Control.Monad.State (liftIO)
 import Data.Either (isRight)
-import Data.List (group, sort, sortBy)
+import Data.List (sortBy)
 import Data.Maybe (isJust)
 import Data.Ord (comparing)
 import Data.Text (Text)
@@ -33,17 +33,10 @@ import Caide.Registry (findLanguage)
 import Caide.Types
 import Caide.TestCases.Types (ComparisonResult(..), isSuccessful,
     TestRunResult(..), makeTestRunResult,
-    TestReport, humanReadableReport, readTestReport, serializeTestReport)
+    TestReport, humanReadableReport, humanReadableSummary, readTestReport, serializeTestReport)
 import Caide.TestCases.TopcoderComparator
 import Caide.Util (tshow)
 
-
-humanReadableSummary :: TestReport -> Text
-humanReadableSummary = T.unlines . map toText . group . sort . map (fromComparisonResult . testRunStatus . snd)
-    where toText list = T.concat [head list, "\t", tshow (length list)]
-          fromComparisonResult (Error _) = "Error"
-          fromComparisonResult (Failed _) = "Failed"
-          fromComparisonResult r = tshow r
 
 createBuilderFromProblemDirectory :: ProblemID -> CaideIO (Either Text Builder)
 createBuilderFromProblemDirectory probId = do

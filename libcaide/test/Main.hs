@@ -4,7 +4,7 @@ module Main where
 import Test.HUnit
 
 import Caide.TestCases.TopcoderDeserializer (readMany, readToken, runParser)
-import Caide.TestCases.Types (deserializeTestReport,
+import Caide.TestCases.Types (deserializeTestReport, humanReadableReport,
     TestRunResult(testRunTime), makeTestRunResult,
     ComparisonResult(Error, EtalonUnknown, Failed, Success))
 
@@ -36,6 +36,14 @@ testCaseSerializationTests = TestList
       [("case1", (makeTestRunResult Success){testRunTime = Just 0.009})]
   , deserializeTestReport "case1 #time:8 failed #time:7ms error" ~?=
       [("case1", (makeTestRunResult $ Failed "#time:7ms error"){testRunTime = Just 0.008})]
+
+  , humanReadableReport [] ~?= ""
+  , humanReadableReport [ ("case1", makeTestRunResult $ Failed "error")
+                        , ("case2", (makeTestRunResult Success){testRunTime = Just 0.012})
+                        ] ~?=
+        "case1  FAILED: error\ncase2      OK (12ms)"
+  , humanReadableReport [ ("case1", (makeTestRunResult $ Error "message"){testRunTime = Just 0.005}) ] ~?=
+        "case1   ERROR (5ms): message"
   ]
 
 allTests :: Test

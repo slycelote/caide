@@ -9,6 +9,7 @@ module Caide.TestCases.Types (
 
     , TestReport
     , humanReadableReport
+    , humanReadableSummary
     , serializeTestReport
     , deserializeTestReport
     , readTestReport
@@ -23,6 +24,7 @@ module Caide.TestCases.Types (
 
 import Prelude hiding (FilePath)
 import Data.Char (isSpace)
+import Data.List (group, sort)
 import Data.Maybe (fromMaybe)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
@@ -44,6 +46,11 @@ data ComparisonResult = Success        -- ^ Test passed
                       | Error Text     -- ^ Error (e.g. exception in checker)
                       deriving (Show, Eq)
 
+getErrorMessage :: ComparisonResult -> Maybe Text
+getErrorMessage (Failed e) = Just e
+getErrorMessage (Error e) = Just e
+getErrorMessage _ = Nothing
+
 isSuccessful :: ComparisonResult -> Maybe Bool
 isSuccessful (Failed _) = Just False
 isSuccessful (Error _) = Just False
@@ -51,17 +58,20 @@ isSuccessful Success = Just True
 isSuccessful _ = Nothing
 
 humanReadable :: ComparisonResult -> Text
-humanReadable Success = "OK"
-humanReadable Ran = "ran"
-humanReadable Skipped = "skipped"
-humanReadable (Failed message) = "failed: " <> message
-humanReadable EtalonUnknown = "unknown"
-humanReadable (Error err) = err
+humanReadable Success       = "     OK"
+humanReadable Ran           = "UNKNOWN"
+humanReadable Skipped       = "   SKIP"
+humanReadable (Failed _)    = " FAILED"
+humanReadable EtalonUnknown = "UNKNOWN"
+humanReadable (Error _)     = "  ERROR"
 
 machineReadable :: ComparisonResult -> Text
+machineReadable Success = "OK"
+machineReadable Ran = "ran"
+machineReadable EtalonUnknown = "unknown"
+machineReadable Skipped = "skipped"
 machineReadable (Failed message) = "failed " <> message
 machineReadable (Error err) = "error " <> err
-machineReadable res = humanReadable res
 
 
 data TestRunResult = TestRunResult
@@ -78,9 +88,23 @@ serializeTestReport :: TestReport -> Text
 serializeTestReport = T.unlines .
             map (\(testName, res) -> testName <> " " <> serializeTestRunResult res)
 
+humanReadableTime :: Maybe DiffTime -> Text
+humanReadableTime Nothing = ""
+humanReadableTime (Just t) = " (" <> tshow (diffTimeToPicoseconds t `div` picosecondsInMs) <> "ms)"
+
 humanReadableReport :: TestReport -> Text
-humanReadableReport = T.unlines .
-            map (\(testName, res) -> testName <> ": " <> humanReadable (testRunStatus res))
+humanReadableReport = T.intercalate "\n" .
+            map (\(testName, res) -> testName <> " " <>
+                    humanReadable (testRunStatus res) <>
+                    humanReadableTime (testRunTime res) <>
+                    fromMaybe "" (T.append ": " <$> getErrorMessage (testRunStatus res)))
+
+humanReadableSummary :: TestReport -> Text
+humanReadableSummary = T.unlines . map toText . group . sort . map (fromComparisonResult . testRunStatus . snd)
+    where toText list = T.concat [head list, "\t", tshow (length list)]
+          fromComparisonResult (Error _) = "Error"
+          fromComparisonResult (Failed _) = "Failed"
+          fromComparisonResult r = tshow r
 
 picosecondsInMs :: Integer
 picosecondsInMs = 10^(9::Int)
