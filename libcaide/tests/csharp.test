@@ -10,6 +10,7 @@ echo 1 >case1.in
 run_csharp_executable ./prob.exe
 "$CAIDE" make
 cd ..
+sed -i 's/#time:[^ ]* //' prob/.caideproblem/test/report.txt
 compare_with after-make prob/submission.cs prob/.caideproblem/test/report.txt
 cd prob
 "$CSC" submission.cs

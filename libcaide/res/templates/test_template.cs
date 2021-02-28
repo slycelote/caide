@@ -110,6 +110,9 @@ public class Test
                 string inputFile = Path.Combine(testDir, testName + ".in");
 
                 string result = null;
+                var start = DateTime.Now;
+                Func<string> getDuration = () => " #time:" +
+                    ((int)(DateTime.Now - start).TotalMilliseconds).ToString() + "ms";
                 try
                 {
                     result = RunTest(inputFile, Path.Combine(testDir, testName + ".out"));
@@ -117,7 +120,7 @@ public class Test
                 catch
                 {
                     Console.Error.WriteLine("Test " + testName + " threw an exception");
-                    report.WriteLine(testName + " failed");
+                    report.WriteLine(testName + getDuration() + " failed");
                     continue;
                 }
 
@@ -131,24 +134,24 @@ public class Test
                             bool ok = CaideTester.CustomCheck(input, output);
                             if (ok)
                             {
-                                report.WriteLine(testName + " OK");
+                                report.WriteLine(testName + getDuration() + " OK");
                             }
                             else
                             {
                                 Console.Error.WriteLine("Test " + testName + " failed!");
-                                report.WriteLine(testName + " failed");
+                                report.WriteLine(testName + getDuration() + " failed");
                             }
                         }
                     }
                     catch (Exception e)
                     {
                         Console.Error.WriteLine("Checker for test " + testName + " threw an exception: " + e.Message);
-                        report.WriteLine(testName + " error");
+                        report.WriteLine(testName + getDuration() + " error");
                     }
                 }
                 else
                 {
-                    report.WriteLine(testName + " ran");
+                    report.WriteLine(testName + getDuration() + " ran");
                 }
 
                 if (result.Length > 200)
@@ -166,11 +169,7 @@ public class Test
         // optional: evaluate tests automatically
         Process evalTestsProcess = Run(caideExe, "eval_tests");
         evalTestsProcess.WaitForExit();
-        if (evalTestsProcess.ExitCode != 0)
-        {
-            Console.Error.WriteLine("Tests failed!");
-            Environment.Exit(evalTestsProcess.ExitCode);
-        }
+        Environment.Exit(evalTestsProcess.ExitCode);
     }
 }
 
