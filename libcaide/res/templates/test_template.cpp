@@ -6,8 +6,30 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#if __cplusplus >= 201103L
+# include <chrono>
+#endif
 
 using namespace std;
+
+namespace {
+
+struct Stopwatch {
+#if __cplusplus >= 201103L
+    using Clock = chrono::steady_clock;
+    Clock::time_point start;
+    Stopwatch(): start(Clock::now()) {}
+    string GetDuration() const {
+        return " #time:" +
+            to_string(chrono::duration_cast<chrono::milliseconds>(Clock::now() - start).count()) +
+            "ms";
+    }
+#else
+    string GetDuration() const { return ""; }
+#endif
+};
+
+}
 
 #ifdef CAIDE_TOPCODER
 #include "topcoder_serialize.h"
@@ -119,6 +141,7 @@ int main() {
             report << testName << " skipped" << endl;
         } else if (testState == "Run") {
             cerr << "Running test " << testName << endl;
+            Stopwatch stopwatch;
             string result;
             try {
                 runTest((testDir + testName + ".in").c_str(),
@@ -126,9 +149,10 @@ int main() {
                         result);
             } catch (...) {
                 cerr << "Test " << testName << " threw an exception" << endl;
-                report << testName << " failed" << endl;
+                report << testName << stopwatch.GetDuration() << " failed" << endl;
                 continue;
             }
+            string duration = stopwatch.GetDuration();
 
             if (USE_CUSTOM_CHECKER) {
                 try {
@@ -138,18 +162,18 @@ int main() {
                     string message;
                     bool ok = customChecker(input, output, judgeOutput, message);
                     if (ok) {
-                        report << testName << " OK" << endl;
+                        report << testName << duration << " OK" << endl;
                     } else {
                         cerr << "FAILED: " << message << endl;
-                        report << testName << " failed " << message << endl;
+                        report << testName << duration << " failed " << message << endl;
                     }
                 } catch (...) {
                     cerr << "Checker for test " << testName << " threw an exception" << endl;
-                    report << testName << " error" << endl;
+                    report << testName << duration << " error" << endl;
                     continue;
                 }
             } else {
-                report << testName << " ran" << endl;
+                report << testName << duration << " ran" << endl;
             }
 
             // print program output to stderr
