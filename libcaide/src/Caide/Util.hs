@@ -22,7 +22,8 @@ import System.FileLock (SharedExclusive(Exclusive), tryLockFile, unlockFile)
 
 import Filesystem.Util (pathToText, readTextFile)
 import Network.HTTP.Util (downloadDocument)
-import Caide.Configuration (orDefault, readCaideConf)
+import Caide.Configuration (orDefault)
+import Caide.Settings (useFileLock)
 import Caide.Types
 
 
@@ -64,9 +65,8 @@ finally action finalizer = do
 
 withLock :: CaideIO () -> CaideIO ()
 withLock action = do
-    h <- readCaideConf
     hTemp <- getTemporaryConf
-    useLock <- getProp h "core" "use_lock" `orDefault` True
+    useLock <- useFileLock <$> caideSettings
     haveLock <- getProp hTemp "DEFAULT" "have_lock" `orDefault` False
     if not useLock || haveLock
     then action

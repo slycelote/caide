@@ -23,6 +23,7 @@ data Settings = Settings
               , defaultLanguage :: Text
               , enabledTemplateNames :: ![Text]
               , useFileLock :: !Bool
+              , enabledFeatureNames :: ![Text] -- legacy 'features'
               } deriving (Show)
 
 readSettings :: F.FilePath -> IO (Either Text Settings)
@@ -58,6 +59,7 @@ parseSettings rootDir cp = do
     defaultLanguage <- getOpt "core" "language" "cpp"
     enabledTemplateNames <- getOpt "core" "templates" []
     useFileLock <- getOpt "core" "use_lock" True
+    enabledFeatureNames <- getOpt "core" "features" []
 
     pure $ Settings{..}
 

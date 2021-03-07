@@ -21,12 +21,13 @@ import Filesystem.Util (pathToText)
 import qualified Filesystem.Path.CurrentOS as F
 
 import Caide.Types
-import Caide.Configuration (getDefaultLanguage, setActiveProblem, getProblemConfigFile,
+import Caide.Configuration (setActiveProblem, getProblemConfigFile,
                             getProblemStateFile, defaultProblemConfig, defaultProblemState,
                             describeError)
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
 import Caide.Registry (findHtmlParserForUrl, findProblemParser)
+import Caide.Settings (defaultLanguage)
 import Caide.Util (mapWithLimitedThreads, readTextFile', withLock)
 
 
@@ -43,7 +44,7 @@ createProblem url problemTypeStr maybeLangStr maybeFilePathStr maybeOverrideId =
 
     lang <- case maybeLangStr of
         Just langStr -> return langStr
-        Nothing -> getDefaultLanguage
+        Nothing -> defaultLanguage <$> caideSettings
 
     generateScaffoldSolution lang
 
@@ -117,7 +118,7 @@ saveProblem problem samples = do
 saveProblemWithScaffold :: Problem -> [TestCase] -> CaideIO ()
 saveProblemWithScaffold problem samples = do
     saveProblem problem samples
-    lang <- getDefaultLanguage
+    lang <- defaultLanguage <$> caideSettings
     generateScaffoldSolution lang
 
 overrideProblemId :: Maybe ProblemID -> Problem -> Problem

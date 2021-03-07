@@ -17,11 +17,11 @@ import qualified Filesystem as FS
 import qualified Filesystem.Path.CurrentOS as FS
 import qualified Filesystem.Util as FS
 
-import Caide.Configuration (readCaideConf, orDefault)
 import Caide.MustacheUtil (compileTemplates, renderCompiledTemplates, renderTemplates,
     RenderTemplatesOption(AllowOverwrite))
 import qualified Caide.Paths as Paths
 import Caide.Problem (readProblemInfo, readProblemState, jsonEncodeProblem)
+import Caide.Settings (enabledTemplateNames)
 import Caide.Types
 
 isProblem :: FilePath -> IO Bool
@@ -45,8 +45,7 @@ regenerateAll = do
             [ "problems" .= encodedProblems
             ]
 
-    h <- readCaideConf
-    templateNames <- getProp h "core" "templates" `orDefault` []
+    templateNames <- enabledTemplateNames <$> caideSettings
 
     forM_ templateNames $ \templateName -> do
         renderTemplates (root </> "templates" </> FS.fromText templateName) root context [AllowOverwrite True]
