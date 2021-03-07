@@ -101,8 +101,9 @@ library
                    zip-archive
 
   hs-source-dirs:  src
-  other-extensions: CPP, OverloadedStrings, ScopedTypeVariables,
-                    GeneralizedNewtypeDeriving, DeriveGeneric, ForeignFunctionInterface
+  other-extensions: CPP, DeriveGeneric, ForeignFunctionInterface, GeneralizedNewtypeDeriving,
+                    OverloadedStrings, RecordWildCards, ScopedTypeVariables
+
   ghc-options:     -Wall -static -rtsopts=all
   if flag(debug) {
     ghc-options:   -fprof-auto
@@ -161,12 +162,14 @@ library
         Caide.Paths
         Caide.Problem
         Caide.Registry
+        Caide.Settings
         Caide.Templates
         Caide.TestCases
         Caide.TestCases.TopcoderComparator
         Caide.TestCases.TopcoderDeserializer
         Caide.TestCases.Types
         Caide.Types
+        Caide.Types.Option
         Caide.Util
         Caide.Xml
         Data.Text.Encoding.Util

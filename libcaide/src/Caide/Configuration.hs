@@ -10,8 +10,6 @@ module Caide.Configuration(
       -- * Caide configuration
     , readCaideConf
     , readCaideState
-    , writeCaideConf
-    , writeCaideState
     , SystemCompilerInfo(..)
     , defaultCaideConf
     , defaultCaideState
@@ -48,6 +46,7 @@ import Filesystem.Path (FilePath, (</>))
 
 import System.Info (arch, os)
 
+import qualified Caide.Paths as Paths
 import Caide.Types
 
 
@@ -105,28 +104,18 @@ readProblemConfig probId = do
 caideConfFile :: Monad m => CaideM m FilePath
 caideConfFile = do
     root <- caideRoot
-    return $ root </> "caide.ini"
+    return $ Paths.caideConfFile root
 
 caideStateFile :: Monad m => CaideM m FilePath
 caideStateFile = do
     root <- caideRoot
-    return $ root </> ".caide" </> "config"
+    return $ Paths.caideStateFile root
 
 readCaideConf :: CaideIO (ConfigFileHandle Persistent)
 readCaideConf = caideConfFile >>= readConf
 
 readCaideState :: CaideIO (ConfigFileHandle Persistent)
 readCaideState = caideStateFile >>= readConf
-
-writeCaideConf :: Monad m => ConfigParser -> CaideM m (ConfigFileHandle Persistent)
-writeCaideConf cp = do
-    filePath <- caideConfFile
-    createConf filePath cp
-
-writeCaideState :: Monad m => ConfigParser -> CaideM m (ConfigFileHandle Persistent)
-writeCaideState cp = do
-    filePath <- caideStateFile
-    createConf filePath cp
 
 getActiveProblem :: CaideIO ProblemID
 getActiveProblem = do
