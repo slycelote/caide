@@ -37,12 +37,15 @@ custom-setup
                  zip-archive
 
 common exe-flags
-  ghc-options:     -Wall -static -pgml g++ -threaded -rtsopts=all -with-rtsopts=-N
+  ghc-options:     -Wall -static -pgml g++ -rtsopts=all
 
   if os(windows) {
+    -- -threaded runtime on Windows causes native calls in Network.Socket to be uninterruptible:
+    -- https://stackoverflow.com/questions/10608602
     ghc-options:   -optl-static
   } else {
-    ghc-options:   -optl-pthread
+    -- Don't use -static linker option in Linux, since we don't want to statically link glibc
+    ghc-options:   -optl-pthread -threaded -with-rtsopts=-N
   }
   if flag(debug) {
     -- run as cabal configure -fdebug --ghc-option=-debug -O0
