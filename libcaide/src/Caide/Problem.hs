@@ -31,7 +31,7 @@ readProblemInfo probId = do
         }
 
 data ProblemState = ProblemState
-                  { currentLanguage :: Text
+                  { currentLanguage :: !Text
                   }
 
 readProblemState :: ProblemID -> CaideIO ProblemState

@@ -20,7 +20,7 @@ data Settings = Settings
               { autoCheckUpdates :: !Bool
               , chelperPort :: !(Maybe Int)
               , companionPort :: !(Maybe Int)
-              , defaultLanguage :: Text
+              , defaultLanguage :: !Text
               , enabledTemplateNames :: ![Text]
               , useFileLock :: !Bool
               , enabledFeatureNames :: ![Text] -- legacy 'features'
