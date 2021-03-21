@@ -21,6 +21,7 @@ data Settings = Settings
               , chelperPort :: !(Maybe Int)
               , companionPort :: !(Maybe Int)
               , defaultLanguage :: !Text
+              , verboseTestReport :: !Bool
               , enabledTemplateNames :: ![Text]
               , useFileLock :: !Bool
               , enabledFeatureNames :: ![Text] -- legacy 'features'
@@ -57,6 +58,7 @@ parseSettings rootDir cp = do
     companionPort' <- getOpt "core" "companion_port" 10043
     let companionPort = if companionPort' > 0 then Just companionPort' else Nothing
     defaultLanguage <- getOpt "core" "language" "cpp"
+    verboseTestReport <- getOpt "core" "verbose_test_report" False
     enabledTemplateNames <- getOpt "core" "templates" []
     useFileLock <- getOpt "core" "use_lock" True
     enabledFeatureNames <- getOpt "core" "features" []

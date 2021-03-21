@@ -30,6 +30,7 @@ import Caide.Logger (logError)
 import qualified Caide.Paths as Paths
 import Caide.Problem (currentLanguage, readProblemInfo, readProblemState)
 import Caide.Registry (findLanguage)
+import Caide.Settings (verboseTestReport)
 import Caide.Types
 import Caide.TestCases.Types (ComparisonResult(..), isSuccessful,
     TestRunResult(..), makeTestRunResult,
@@ -73,8 +74,8 @@ runTests = do
         NoEvalTests -> evalTests
 
 data ComparisonOptions = ComparisonOptions
-    { doublePrecision :: Double
-    , topcoderType :: Maybe TopcoderValue
+    { doublePrecision :: !Double
+    , topcoderType :: !(Maybe TopcoderValue)
     }
 
 evalTests :: CaideIO ()
@@ -92,15 +93,18 @@ evalTests = do
                 _              -> Nothing
             }
 
-    errors <- liftIO $ do
+    beVerbose <- verboseTestReport <$> caideSettings
+    errorCount <- liftIO $ do
         report <- generateReport cmpOptions problemDir
         writeTextFile reportFile . serializeTestReport $ report
         T.putStrLn "Results summary\n_______________\nOutcome\tCount"
         T.putStrLn $ humanReadableSummary report
-        return [r | r@(_, res) <- report, isSuccessful (testRunStatus res) == Just False]
+        let errors = [r | r@(_, res) <- report, isSuccessful (testRunStatus res) == Just False]
+        T.putStrLn . humanReadableReport $ if beVerbose then report else errors
+        return $ length errors
 
-    unless (null errors) $
-        throw $ humanReadableReport errors
+    unless (errorCount == 0) $
+        throw $ tshow errorCount <> " tests failed!"
 
 
 generateReport :: ComparisonOptions -> FilePath -> IO TestReport
@@ -131,9 +135,9 @@ generateReport cmpOptions problemDir = do
 compareFiles :: ComparisonOptions -> Text -> Text -> ComparisonResult
 compareFiles cmpOptions etalon out = case () of
     _ | isTopcoder -> tcComparison
-      | not (null errors) -> Failed $ T.concat ["Line ", tshow line, ": ", err]
+      | not (null errors) -> Failed $ "Line " <> tshow line <> ": " <> err
       | length actual == length expected -> Success
-      | otherwise -> Failed $ T.concat ["Expected ", tshow (length expected), " line(s)"]
+      | otherwise -> Failed $ "Expected " <> tshow (length expected) <> " line(s)"
   where
     Just returnValueType = topcoderType cmpOptions
     isTopcoder = isJust $ topcoderType cmpOptions
