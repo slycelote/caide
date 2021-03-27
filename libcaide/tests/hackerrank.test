@@ -1,9 +1,10 @@
 #!/bin/bash
 
-"$CAIDE" problem https://hackerrank.com/challenges/equal
+# Disable Equal test temporarily
+# "$CAIDE" problem https://hackerrank.com/challenges/equal
 "$CAIDE" problem https://hackerrank.com/contests/hourrank-18/challenges/wheres-the-marble
 
-compare_with after-parse Equal/{case1.{in,out},problem.ini}
+# compare_with after-parse Equal/{case1.{in,out},problem.ini}
 compare_with after-parse WherestheMarble/{case1.{in,out},problem.ini}
 
 # Disabling the JS test due to incompatibility with phantomjs
