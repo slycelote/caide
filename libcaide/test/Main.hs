@@ -2,6 +2,8 @@
 module Main where
 
 import Test.HUnit
+import System.Environment (getArgs)
+
 
 import Caide.TestCases.TopcoderDeserializer (readMany, readToken, runParser)
 import Caide.TestCases.Types (deserializeTestReport, humanReadableReport,
@@ -42,7 +44,7 @@ testCaseSerializationTests = TestList
                         , ("case2", (makeTestRunResult Success){testRunTime = Just 0.012})
                         ] ~?=
         "case1  FAILED: error\ncase2      OK (12ms)"
-  , humanReadableReport [ ("case1", (makeTestRunResult $ Error "message"){testRunTime = Just 0.005}) ] ~?=
+  , humanReadableReport [("case1", (makeTestRunResult $ Error "message"){testRunTime = Just 0.005})] ~?=
         "case1   ERROR (5ms): message"
   ]
 
@@ -52,6 +54,17 @@ allTests = TestList
   , testCaseSerializationTests
   ]
 
+filterTests :: [String] -> Test -> Test
+filterTests labels t@(TestLabel label innerTest) =
+    if label `elem` labels
+        then t
+        else TestLabel label (filterTests labels innerTest)
+filterTests labels (TestList list) = TestList (map (filterTests labels) list)
+filterTests _ _ = TestList []
+
 main :: IO ()
-main = runTestTTAndExit allTests
+main = do
+    labels <- getArgs
+    let tests = if null labels then allTests else filterTests labels allTests
+    runTestTTAndExit tests
 
