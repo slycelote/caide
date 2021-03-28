@@ -73,7 +73,7 @@ import Caide.Types.Option (Option(..))
 data TestCase = TestCase
     { testCaseInput  :: !Text
     , testCaseOutput :: !Text
-    } deriving (Show)
+    } deriving (Show, Eq)
 
 type ProblemID = Text
 

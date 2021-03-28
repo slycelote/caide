@@ -36,8 +36,10 @@ isHackerRankUrl url = case parseURI (T.unpack url) >>= uriAuthority of
     Just auth -> uriRegName auth `elem` ["hackerrank.com", "www.hackerrank.com"]
 
 data JsonProblem = JsonProblem
-    { name :: T.Text
-    , htmlBody :: T.Text
+    { name        :: !T.Text
+    , problemSlug :: !T.Text
+    , contestSlug :: !T.Text
+    , htmlBody    :: !T.Text
     }
 
 
@@ -51,9 +53,16 @@ instance Aeson.FromJSON JsonProblem where
             [singleton] -> do
                 let Aeson.Object prob = singleton
                 Aeson.Object detail <- prob .: "detail"
-                JsonProblem <$> detail .: "name" <*> detail .: "body_html"
+                JsonProblem <$> detail .: "name" <*> detail .: "slug"
+                            <*> detail .: "contest_slug" <*> detail .: "body_html"
             [] -> fail "no problems found"
             _  -> fail "multiple problems found"
+
+cleanupInput :: T.Text -> T.Text
+cleanupInput = T.strip
+
+cleanupOutput :: T.Text -> T.Text
+cleanupOutput = T.strip
 
 testsFromHtml :: [Tag T.Text] -> [TestCase]
 testsFromHtml tags = testCases where
@@ -62,13 +71,15 @@ testsFromHtml tags = testCases where
     pres = map (drop 1 . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>") ) samples
     texts = map extractText pres
     t = drop (length texts `mod` 2) texts
-    testCases = [TestCase (t!!i) (t!!(i+1)) | i <- [0, 2 .. length t-2]]
+    testCases = [TestCase (cleanupInput $ t!!i) (cleanupOutput $ t!!(i+1)) | i <- [0, 2 .. length t-2]]
+
+hrProblemType :: ProblemType
+hrProblemType = Stream StdIn StdOut
 
 problemFromName :: Maybe T.Text -> Problem
-problemFromName mbName = makeProblem probName probId probType where
+problemFromName mbName = makeProblem probName probId hrProblemType where
     probId = maybe "hrUnknown" (T.filter isAlphaNum) mbName
     probName = fromMaybe "Unknown" mbName
-    probType = Stream StdIn StdOut
 
 testsFromInitialData :: [Tag T.Text] -> Maybe (Problem, [TestCase])
 testsFromInitialData tags = do
@@ -77,7 +88,9 @@ testsFromInitialData tags = do
         json = urlDecode False . T.encodeUtf8 $ urlEncodedJson
     case Aeson.eitherDecode' $ LBS.fromStrict json of
         Left _err -> Nothing
-        Right jsonProblem -> Just (problemFromName $ Just $ name jsonProblem, testsFromHtml $ parseTags $ htmlBody jsonProblem)
+        Right jsonProblem -> Just ( makeProblem (name jsonProblem) (problemSlug jsonProblem) hrProblemType
+                                  , testsFromHtml $ parseTags $ htmlBody jsonProblem
+                                  )
 
 doParse :: T.Text -> Either T.Text (Problem, [TestCase])
 doParse cont = case (testsFromInitialData tags, testCases) of

@@ -4,6 +4,7 @@ module Main where
 import Test.HUnit
 import System.Environment (getArgs)
 
+import ProblemParsers (problemParserTests)
 
 import Caide.TestCases.TopcoderDeserializer (readMany, readToken, runParser)
 import Caide.TestCases.Types (deserializeTestReport, humanReadableReport,
@@ -52,6 +53,7 @@ allTests :: Test
 allTests = TestList
   [ topcoderDeserializerTests
   , testCaseSerializationTests
+  , problemParserTests
   ]
 
 filterTests :: [String] -> Test -> Test
