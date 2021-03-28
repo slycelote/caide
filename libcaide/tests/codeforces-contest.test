@@ -1,5 +1,0 @@
-#!/bin/bash
-"$CAIDE" contest 'https://codeforces.com/contest/1354'
-
-compare_with parsed cf1354*/{problem.ini,*.{in,out}}
-
