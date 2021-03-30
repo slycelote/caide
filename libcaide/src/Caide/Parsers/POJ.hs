@@ -1,34 +1,28 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Caide.Parsers.POJ(
-      pojParser
+      htmlParser
+    , chelperId
+    , isSupportedUrl
 ) where
 
 import Data.Char (isDigit)
 import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import qualified Data.Text as T
-import Network.URI (parseURI, uriAuthority, uriRegName)
 
 import Text.HTML.TagSoup (maybeTagText, parseTags, sections)
 import Text.HTML.TagSoup.Utils
 
-import Caide.Parsers.Common (normalizeText)
+import Caide.Parsers.Common (URL, isHostOneOf, normalizeText)
 import Caide.Types
 
-pojParser :: HtmlParser
-pojParser = HtmlParser
-    { chelperId = "poj"
-    , htmlParserUrlMatches = isPojUrl
-    , parseFromHtml = doParse
-    }
+chelperId :: T.Text
+chelperId = "poj"
 
-isPojUrl :: URL -> Bool
-isPojUrl url = case parseURI (T.unpack url) >>= uriAuthority of
-    Nothing   -> False
-    Just auth -> uriRegName auth `elem` ["poj.org", "www.poj.org"]
+isSupportedUrl :: URL -> Bool
+isSupportedUrl = isHostOneOf ["poj.org", "www.poj.org"]
 
-
-doParse :: T.Text -> Either T.Text (Problem, [TestCase])
-doParse cont =
+htmlParser :: T.Text -> IO (Either T.Text (Problem, [TestCase]))
+htmlParser cont = pure $
     if null testCases
     then Left "Couldn't parse problem"
     else Right problem

@@ -32,12 +32,8 @@ module Caide.Types(
     , caideVerbosity
     , caideSettings
 
-    , HtmlParser (..)
-    , ProblemParser (..)
-    , ContestParser (..)
     , ProgrammingLanguage (..)
     , TestCase (..)
-    , URL
     , Builder
     , BuilderResult(..)
     , Feature (..)
@@ -114,25 +110,6 @@ makeProblem name probId probType = Problem
     , problemFloatTolerance = 0.000001
     }
 
-
-type URL = Text
-
--- | Downloads problem data
-data ProblemParser = ProblemParser
-    { problemUrlMatches :: URL -> Bool
-    , parseProblem      :: URL -> IO (Either Text (Problem, [TestCase]))
-    }
-
-data HtmlParser = HtmlParser
-    { chelperId            :: Text
-    , htmlParserUrlMatches :: URL -> Bool
-    , parseFromHtml        :: Text -> Either Text (Problem, [TestCase])
-    }
-
-data ContestParser = ContestParser
-    { contestUrlMatches :: URL -> Bool
-    , parseContest      :: URL -> CaideIO ()
-    }
 
 data Verbosity = Info | Debug
     deriving (Show, Enum, Ord, Eq, Bounded)

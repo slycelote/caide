@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Caide.Parsers.GCJ(
-      gcjParser
+      htmlParser
+    , chelperId
+    , isSupportedUrl
 ) where
 
 import Data.List (isPrefixOf)
@@ -12,26 +14,22 @@ import Text.HTML.TagSoup (maybeTagText, parseTags, sections)
 import Text.HTML.TagSoup.Match (tagOpenAttrNameLit)
 import Text.HTML.TagSoup.Utils
 
-import Caide.Parsers.Common (normalizeText)
+import Caide.Parsers.Common (URL, normalizeText)
 import Caide.Types
 
-gcjParser :: HtmlParser
-gcjParser = HtmlParser
-    { chelperId = "gcj"
-    , htmlParserUrlMatches = isGcjUrl
-    , parseFromHtml = doParse
-    }
+chelperId :: T.Text
+chelperId = "gcj"
 
-isGcjUrl :: URL -> Bool
-isGcjUrl url = case parseURI (T.unpack url) of
+isSupportedUrl :: URL -> Bool
+isSupportedUrl url = case parseURI (T.unpack url) of
     Nothing   -> False
     Just uri  -> (uriRegName <$> uriAuthority uri) == Just "code.google.com" &&
                  "/codejam/contest" `isPrefixOf` uriPath uri
 
 
-{-# ANN doParse ("HLint: ignore Use head" :: String) #-}
-doParse :: T.Text -> Either T.Text (Problem, [TestCase])
-doParse cont =
+{-# ANN htmlParser ("HLint: ignore Use head" :: String) #-}
+htmlParser :: T.Text -> IO (Either T.Text (Problem, [TestCase]))
+htmlParser cont = pure $
     if null testCases
     then Left "Couldn't parse problem"
     else Right problem

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Caide.Parsers.CodeChef(
-      codeChefParser
-    , codeChefHtmlParser
+      problemParser
+    , chelperProblemParser
 ) where
 
 import Control.Applicative ((<|>))
@@ -21,34 +21,33 @@ import qualified Text.Parsec as Parsec
 import Text.Parsec.Text (Parser)
 
 import Network.HTTP.Util (downloadDocument)
-import Network.URI (parseURI, uriAuthority, uriPath, uriRegName)
+import Network.URI (parseURI, uriPath)
 
 import Text.HTML.TagSoup (Tag(..), innerText, fromTagText, parseTags,
                          isTagClose, isTagCloseName, sections, )
 
-import Caide.Parsers.Common (mergeTextTags, replaceBr)
+import Caide.Parsers.Common (URL, ProblemParser(..), CHelperProblemParser(..),
+    isHostOneOf, mergeTextTags, replaceBr)
 import Caide.Types
 import Caide.Util (tshow)
-import Text.HTML.TagSoup.Utils ((~==), (~/=), (~~/==), matching)
+import Text.HTML.TagSoup.Utils ((~==), (~/=), matching)
 
 
-codeChefParser :: ProblemParser
-codeChefParser = ProblemParser
+problemParser :: ProblemParser
+problemParser = ProblemParser
     { problemUrlMatches = isCodeChefUrl
     , parseProblem = doParse
     }
 
-codeChefHtmlParser :: HtmlParser
-codeChefHtmlParser = HtmlParser
+chelperProblemParser :: CHelperProblemParser
+chelperProblemParser = CHelperProblemParser
     { chelperId = "codechef"
-    , htmlParserUrlMatches = isCodeChefUrl
-    , parseFromHtml = doParseFromHtml
+    , chelperUrlMatches = isCodeChefUrl
+    , chelperParse = doParseFromHtml
     }
 
 isCodeChefUrl :: URL -> Bool
-isCodeChefUrl url = case parseURI (T.unpack url) >>= uriAuthority of
-    Nothing   -> False
-    Just auth -> uriRegName auth `elem` ["codechef.com", "www.codechef.com"]
+isCodeChefUrl = isHostOneOf ["codechef.com", "www.codechef.com"]
 
 orElse :: Either e a -> Either e a -> Either e a
 orElse (Right a) _ = Right a
@@ -179,8 +178,8 @@ problemUrlParser = do
     many1 = Parsec.many1
     string = Parsec.string
 
-doParseFromHtml :: Text -> Either Text (Problem, [TestCase])
-doParseFromHtml cont = do
+doParseFromHtml :: Text -> IO (Either Text (Problem, [TestCase]))
+doParseFromHtml cont = pure $ do
     let tags = parseTags cont
         probType = Stream StdIn StdOut
 
@@ -195,8 +194,8 @@ doParseFromHtml cont = do
     testCases <- parseTestCasesFromHtml tags
     return (makeProblem title probId probType, testCases)
 
-doParse :: URL -> IO (Either Text (Problem, [TestCase]))
-doParse url = case urlPath of
+doParse :: URL -> Maybe T.Text -> IO (Either Text (Problem, [TestCase]))
+doParse url _ = case urlPath of
     Nothing -> return $ Left $ T.append "Unsupported URL: " url
     Just path -> case Parsec.parse problemUrlParser "" path of
         Left err -> return $ Left $ tshow err

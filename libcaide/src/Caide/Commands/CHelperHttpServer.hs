@@ -25,7 +25,8 @@ import Caide.CheckUpdates (checkUpdates)
 import Caide.Configuration (describeError, setActiveProblem)
 import Caide.Commands.ParseProblem (saveProblemWithScaffold)
 import Caide.Logger (logInfo, logError)
-import Caide.Registry (findHtmlParser)
+import Caide.Parsers.Common (CHelperProblemParser(chelperParse))
+import Caide.Registry (findCHelperProblemParser)
 import Caide.Settings (chelperPort, companionPort)
 import Caide.Types
 
@@ -155,8 +156,11 @@ processCHelperRequest v root request = do
 
 
 process :: T.Text -> T.Text -> Verbosity -> F.FilePath -> IO (Maybe T.Text)
-process chid page v root = case parseFromHtml <$> findHtmlParser chid <*> Just page of
+process chid page v root = case findCHelperProblemParser chid of
     Nothing -> return . Just $ "'" <> chid <> "' not supported"
-    Just (Left err) -> return . Just $ "Error while parsing the problem: " <> err
-    Just (Right (problem, testCases)) -> createProblems v root [Parsed problem testCases] >> return Nothing
+    Just parser -> do
+        res <- chelperParse parser page
+        case res of
+            Left err -> return . Just $ "Error while parsing the problem: " <> err
+            Right (problem, testCases) -> createProblems v root [Parsed problem testCases] >> return Nothing
 

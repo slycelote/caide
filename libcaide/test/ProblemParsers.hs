@@ -7,18 +7,18 @@ import Test.HUnit
 import qualified Test.HUnit as HUnit
 import qualified Data.Text as T
 
-import Caide.Parsers.Common (htmlParserToProblemParser)
-import Caide.Parsers.HackerRank (hackerRankParser)
+import Caide.Parsers.Common (URL, ProblemParser(..), makeProblemParser)
+import qualified Caide.Parsers.HackerRank as HackerRank
 
-import Caide.Types (Problem(problemName, problemId), ProblemParser(..), ProblemType(Stream),
-    InputSource(StdIn), OutputTarget(StdOut), URL)
+import Caide.Types (Problem(problemName, problemId), ProblemType(Stream),
+    InputSource(StdIn), OutputTarget(StdOut))
 import qualified Caide.Types as Caide
 
 assertParses :: ProblemParser -> URL -> Problem -> [Caide.TestCase] -> Test
 assertParses parser url expectedProblem expectedTestCases = HUnit.TestCase $ do
     let ProblemParser{..} = parser
     assertBool "The parser must be able to handle the URL" $ problemUrlMatches url
-    parseResult <- parseProblem url
+    parseResult <- parseProblem url Nothing
     case parseResult of
         Left err -> assertFailure $ T.unpack err
         Right (problem, testCases) -> do
@@ -39,6 +39,6 @@ problemParserTests = TestList
     --     [ Caide.TestCase "1\n4\n2 2 3 7" "2" ]
     ]
   where
-    hr = assertParses $ htmlParserToProblemParser hackerRankParser
+    hr = assertParses $ makeProblemParser HackerRank.isSupportedUrl HackerRank.htmlParser
     makeProblem name probId = Caide.makeProblem name probId (Stream StdIn StdOut)
 

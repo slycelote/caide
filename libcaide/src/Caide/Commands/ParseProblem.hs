@@ -26,7 +26,8 @@ import Caide.Configuration (setActiveProblem, getProblemConfigFile,
                             describeError)
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
-import Caide.Registry (findHtmlParserForUrl, findProblemParser)
+import Caide.Parsers.Common (URL, ProblemParser(parseProblem), CHelperProblemParser(chelperParse))
+import Caide.Registry (findCHelperProblemParserByURL, findProblemParser)
 import Caide.Settings (defaultLanguage)
 import Caide.Util (mapWithLimitedThreads, readTextFile', withLock)
 
@@ -34,11 +35,11 @@ import Caide.Util (mapWithLimitedThreads, readTextFile', withLock)
 
 createProblem :: URL -> T.Text -> Maybe T.Text -> Maybe T.Text -> Maybe T.Text -> CaideIO ()
 createProblem url problemTypeStr maybeLangStr maybeFilePathStr maybeOverrideId = do
-    case (maybeFilePathStr, findProblemParser url, findHtmlParserForUrl url) of
-        (Just _,           _, Nothing)         -> throw . T.concat $ ["File parser for URL ", url, " not found"]
-        (Just filePathStr, _, Just htmlParser) -> parseExistingProblemFromHtml htmlParser (fromText filePathStr) maybeOverrideId
-        (Nothing, Just parser, _)              -> parseExistingProblem url parser maybeOverrideId
-        (Nothing, Nothing,     _)              -> case optionFromText problemTypeStr of
+    case (maybeFilePathStr, findProblemParser url, findCHelperProblemParserByURL url) of
+        (_, Just parser, _)  -> parseExistingProblem url parser maybeOverrideId maybeFilePathStr
+        (Just _, _, Nothing) -> throw $ "File parser for URL " <> url <> " not found"
+        (Just filePathStr, _, Just chelperParser) -> parseExistingProblemFromCHelper chelperParser (fromText filePathStr) maybeOverrideId
+        (Nothing, Nothing,  _) -> case optionFromText problemTypeStr of
             Nothing    -> throw . T.concat $ ["Incorrect problem type: ", problemTypeStr]
             Just pType -> createNewProblem url pType
 
@@ -125,16 +126,20 @@ overrideProblemId :: Maybe ProblemID -> Problem -> Problem
 overrideProblemId Nothing p = p
 overrideProblemId (Just probId) p = p { problemId = probId }
 
-parseExistingProblemFromHtml :: HtmlParser -> F.FilePath -> Maybe ProblemID -> CaideIO ()
-parseExistingProblemFromHtml htmlParser filePath mbId = do
-    parseResult <- parseFromHtml htmlParser <$> readTextFile' filePath
+parseExistingProblemFromCHelper :: CHelperProblemParser -> F.FilePath -> Maybe ProblemID -> CaideIO ()
+parseExistingProblemFromCHelper parser filePath mbId = do
+    html <- readTextFile' filePath
+    parseResult <- liftIO $ chelperParse parser html
     case parseResult of
         Left err -> throw . T.unlines $ ["Encountered a problem while parsing:", err]
         Right (problem, samples) -> saveProblem (overrideProblemId mbId problem) samples
 
-parseExistingProblem :: URL -> ProblemParser -> Maybe ProblemID -> CaideIO ()
-parseExistingProblem url parser mbId = do
-    parseResult <- liftIO $ parser `parseProblem` url
+parseExistingProblem :: URL -> ProblemParser -> Maybe ProblemID -> Maybe Text -> CaideIO ()
+parseExistingProblem url parser mbId mbFilePath = do
+    mbHtml <- case mbFilePath of
+        Nothing -> pure Nothing
+        Just path -> Just <$> readTextFile' (decodeString $ T.unpack path)
+    parseResult <- liftIO $ parseProblem parser url mbHtml
     case parseResult of
         Left err -> throw . T.unlines $ ["Encountered a problem while parsing:", err]
         Right (problem, samples) -> saveProblem (overrideProblemId mbId problem) samples
@@ -164,4 +169,5 @@ parseProblems numThreads urls = do
 tryParseProblem :: URL -> IO (Either T.Text (Problem, [TestCase]))
 tryParseProblem url = case findProblemParser url of
     Nothing -> return . Left . T.concat $ ["Couldn't find problem parser for URL: ", url]
-    Just parser -> parser `parseProblem` url
+    Just parser -> parseProblem parser url Nothing
+

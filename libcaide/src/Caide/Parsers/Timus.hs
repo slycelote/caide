@@ -1,33 +1,27 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Caide.Parsers.Timus(
-      timusParser
+      htmlParser
+    , isSupportedUrl
+    , chelperId
 ) where
 
 import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import qualified Data.Text as T
-import Network.URI (parseURI, uriAuthority, uriRegName)
 
 import Text.HTML.TagSoup (maybeTagText, parseTags, sections)
 import Text.HTML.TagSoup.Utils
 
-import Caide.Parsers.Common (normalizeText)
+import Caide.Parsers.Common (URL, isHostOneOf, normalizeText)
 import Caide.Types
 
-timusParser :: HtmlParser
-timusParser = HtmlParser
-    { chelperId = "timus"
-    , htmlParserUrlMatches = isTimusUrl
-    , parseFromHtml = doParse
-    }
+chelperId :: T.Text
+chelperId = "timus"
 
-isTimusUrl :: URL -> Bool
-isTimusUrl url = case parseURI (T.unpack url) >>= uriAuthority of
-    Nothing   -> False
-    Just auth -> uriRegName auth == "acm.timus.ru"
+isSupportedUrl :: URL -> Bool
+isSupportedUrl = isHostOneOf [ "acm.timus.ru" ]
 
-
-doParse :: T.Text -> Either T.Text (Problem, [TestCase])
-doParse cont =
+htmlParser :: T.Text -> IO (Either T.Text (Problem, [TestCase]))
+htmlParser cont = pure $
     if null testCases
     then Left "Couldn't parse problem"
     else Right problem

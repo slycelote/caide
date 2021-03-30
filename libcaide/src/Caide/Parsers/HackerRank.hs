@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Caide.Parsers.HackerRank(
-      hackerRankParser
+      htmlParser
+    , chelperId
+    , isSupportedUrl
 ) where
 
 import Control.Applicative ((<|>))
@@ -15,25 +17,19 @@ import qualified Data.Text.Encoding as T
 import qualified Data.Aeson as Aeson
 import Data.Aeson (withObject, (.:))
 import Network.HTTP.Types (urlDecode)
-import Network.URI (parseURI, uriAuthority, uriRegName)
 import Text.HTML.TagSoup (fromAttrib, maybeTagText, parseTags, partitions, sections,
     Tag(TagText))
 import Text.HTML.TagSoup.Utils
 
+import Caide.Parsers.Common (URL, isHostOneOf)
 import Caide.Types
 
 
-hackerRankParser :: HtmlParser
-hackerRankParser = HtmlParser
-    { chelperId = "hackerrank"
-    , htmlParserUrlMatches = isHackerRankUrl
-    , parseFromHtml = doParse
-    }
+chelperId :: T.Text
+chelperId = "hackerrank"
 
-isHackerRankUrl :: URL -> Bool
-isHackerRankUrl url = case parseURI (T.unpack url) >>= uriAuthority of
-    Nothing   -> False
-    Just auth -> uriRegName auth `elem` ["hackerrank.com", "www.hackerrank.com"]
+isSupportedUrl :: URL -> Bool
+isSupportedUrl = isHostOneOf ["hackerrank.com", "www.hackerrank.com"]
 
 data JsonProblem = JsonProblem
     { name        :: !T.Text
@@ -92,8 +88,8 @@ testsFromInitialData tags = do
                                   , testsFromHtml $ parseTags $ htmlBody jsonProblem
                                   )
 
-doParse :: T.Text -> Either T.Text (Problem, [TestCase])
-doParse cont = case (testsFromInitialData tags, testCases) of
+htmlParser :: T.Text -> IO (Either T.Text (Problem, [TestCase]))
+htmlParser cont = pure $ case (testsFromInitialData tags, testCases) of
     (Just v, _) -> Right v
     (_, []) -> Left "Couldn't find test cases"
     _ -> Right (problemFromName title, testCases)
