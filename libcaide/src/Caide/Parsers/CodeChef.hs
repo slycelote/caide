@@ -27,7 +27,7 @@ import Text.HTML.TagSoup (Tag(..), innerText, fromTagText, parseTags,
                          isTagClose, isTagCloseName, sections, )
 
 import Caide.Parsers.Common (URL, ProblemParser(..), CHelperProblemParser(..),
-    isHostOneOf, mergeTextTags, replaceBr)
+    isHostOneOf, mergeTextTags, normalizeTestCases, replaceBr)
 import Caide.Types
 import Caide.Util (tshow)
 import Text.HTML.TagSoup.Utils ((~==), (~/=), matching)
@@ -161,7 +161,7 @@ parseFromJson problemCode jsonText = do
                  parseTestCasesFromHtml (parseTags body)
     when (null testCases) $ throwError "Could not parse test cases"
     let probType = Stream StdIn StdOut
-    return (makeProblem probName problemCode probType, testCases)
+    return (makeProblem probName problemCode probType, normalizeTestCases testCases)
 
 
 problemUrlParser :: Parser (T.Text, T.Text)
@@ -192,7 +192,7 @@ doParseFromHtml cont = pure $ do
         title = T.strip . T.takeWhile (/= '|') $ innerText titleContents
 
     testCases <- parseTestCasesFromHtml tags
-    return (makeProblem title probId probType, testCases)
+    return (makeProblem title probId probType, normalizeTestCases testCases)
 
 doParse :: URL -> Maybe T.Text -> IO (Either Text (Problem, [TestCase]))
 doParse url _ = case urlPath of

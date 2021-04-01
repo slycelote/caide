@@ -1,4 +1,0 @@
-#!/bin/bash
-"$CAIDE" problem 'http://www.russiancodecup.ru/tasks/round/22/A/'
-compare_with after-parse rccA/case1.{in,out}
-

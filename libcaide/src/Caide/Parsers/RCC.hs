@@ -13,7 +13,7 @@ import qualified Data.Text as T
 import Text.HTML.TagSoup (Tag, maybeTagText, parseTags, sections)
 import Text.HTML.TagSoup.Utils
 
-import Caide.Parsers.Common (URL, isHostOneOf, normalizeText)
+import Caide.Parsers.Common (URL, isHostOneOf, normalizeTestCases)
 import Caide.Types
 
 chelperId :: T.Text
@@ -36,14 +36,13 @@ parseProblemFromTags tags =
 
     title' = listToMaybe titleText >>= maybeTagText
     probId' = T.snoc "" <$> (title' >>= T.find isAlpha)
-    title  = fromMaybe "Unknown" title'
+    title  = T.strip $ fromMaybe "Unknown" title'
     probId = T.append "rcc" . fromMaybe "Unknown" $ probId'
 
-    texts = map normalizeText .
-            mapMaybe (maybeTagText . (!!1)) .
+    texts = mapMaybe (maybeTagText . (!!1)) .
             sections (~~== "<pre class=colorBlue>") $
             tags
-    testCases = [TestCase (texts!!i) (texts!!(i+1)) | i <- [0, 2 .. length texts-2]]
+    testCases = normalizeTestCases [TestCase (texts!!i) (texts!!(i+1)) | i <- [0, 2 .. length texts-2]]
 
     probType = Stream StdIn StdOut
     problem = (makeProblem title probId probType, testCases)

@@ -16,7 +16,7 @@ import Text.HTML.TagSoup.Utils
 import Text.Parsec
 import Text.Parsec.Text (Parser)
 
-import Caide.Parsers.Common (URL, isHostOneOf, replaceBr)
+import Caide.Parsers.Common (URL, isHostOneOf, normalizeTestCases, replaceBr)
 import Caide.Types
 
 
@@ -30,7 +30,7 @@ htmlParser :: T.Text -> IO (Either T.Text (Problem, [TestCase]))
 htmlParser cont = pure $
     if null beforeTitleDiv
     then Left "Couldn't parse problem statement"
-    else Right (makeProblem title probId probType, testCases)
+    else Right (makeProblem title probId probType, normalizeTestCases testCases)
   where
     tags = parseTags cont
     statement = dropWhile (~~/== "<div class=problem-statement>") tags

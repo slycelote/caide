@@ -12,7 +12,7 @@ import qualified Data.Text as T
 import Text.HTML.TagSoup (maybeTagText, parseTags, sections)
 import Text.HTML.TagSoup.Utils
 
-import Caide.Parsers.Common (URL, isHostOneOf, normalizeText)
+import Caide.Parsers.Common (URL, isHostOneOf, normalizeTestCases)
 import Caide.Types
 
 chelperId :: T.Text
@@ -39,11 +39,10 @@ htmlParser cont = pure $
     title  = fromMaybe "Unknown" title'
     probId = T.append "poj" . fromMaybe "Unknown" $ probId'
 
-    texts = map normalizeText .
-            mapMaybe (maybeTagText . (!!1)) .
+    texts = mapMaybe (maybeTagText . (!!1)) .
             sections (~~== "<pre class=sio>") $
             tags
-    testCases = [TestCase (texts!!i) (texts!!(i+1)) | i <- [0, 2 .. length texts-2]]
+    testCases = normalizeTestCases [TestCase (texts!!i) (texts!!(i+1)) | i <- [0, 2 .. length texts-2]]
 
     probType = Stream StdIn StdOut
     problem = (makeProblem title probId probType, testCases)

@@ -11,7 +11,7 @@ import qualified Data.Text as T
 import Text.HTML.TagSoup (maybeTagText, parseTags, partitions, sections, Tag)
 import Text.HTML.TagSoup.Utils
 
-import Caide.Parsers.Common (URL, normalizeText, isHostOneOf)
+import Caide.Parsers.Common (URL, normalizeTestCases, isHostOneOf)
 import Caide.Types
 
 chelperId :: T.Text
@@ -47,11 +47,10 @@ htmlParser cont = pure $
 extractTestCase :: [Tag T.Text] -> [TestCase]
 extractTestCase tags = testCases
   where
-    texts = map normalizeText .
-            mapMaybe maybeTagText .
+    texts = mapMaybe maybeTagText .
             mapMaybe (listToMaybe . drop 1) .
             sections (~~== "<pre>") $
             tags
 
-    testCases = [TestCase (texts!!i) (texts!!(i+1)) | i <- [0, 2 .. length texts-2]]
+    testCases = normalizeTestCases [TestCase (texts!!i) (texts!!(i+1)) | i <- [0, 2 .. length texts-2]]
 

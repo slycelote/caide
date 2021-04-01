@@ -2,7 +2,7 @@
 module Caide.Parsers.Common(
       replaceBr
     , mergeTextTags
-    , normalizeText
+    , normalizeTestCases
     , URL
     , ProblemParser(..)
     , CHelperProblemParser(..)
@@ -24,7 +24,7 @@ import Text.HTML.TagSoup.Utils (isTagName)
 import Text.StringLike (StringLike, strConcat)
 
 import Network.HTTP.Util (downloadDocument)
-import Caide.Types (Problem, TestCase, CaideIO)
+import Caide.Types (Problem, TestCase(TestCase), CaideIO)
 
 
 type URL = T.Text
@@ -59,9 +59,12 @@ makeProblemParser matchPredicate htmlParser = ProblemParser matchPredicate parse
 isHostOneOf :: [String] -> URL -> Bool
 isHostOneOf hosts url = (url & T.unpack & parseURI >>= uriAuthority <&> uriRegName) `elem` (map Just hosts)
 
--- | Replace \r\n with \n, strip
+-- | Replace \r\n with \n, strip all lines
 normalizeText :: T.Text -> T.Text
-normalizeText = T.replace "\r\n" "\n" . T.strip
+normalizeText = T.strip . T.unlines . map T.stripEnd . T.lines
+
+normalizeTestCases :: [TestCase] -> [TestCase]
+normalizeTestCases = map (\(TestCase i o) -> TestCase (normalizeText i) (normalizeText o))
 
 -- | Replaces <br> tags with newlines. Neighbor <br></br> pairs are replaced with a single newline.
 replaceBr :: [Tag T.Text] -> [Tag T.Text]

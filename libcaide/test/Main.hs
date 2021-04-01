@@ -53,7 +53,7 @@ allTests :: Test
 allTests = TestList
   [ topcoderDeserializerTests
   , testCaseSerializationTests
-  , problemParserTests
+  , TestLabel "live-parsers" problemParserTests
   ]
 
 filterTests :: [String] -> Test -> Test
