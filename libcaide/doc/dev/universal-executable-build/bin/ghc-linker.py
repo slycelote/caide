@@ -7,7 +7,7 @@ import os, shutil, subprocess, sys, tempfile
 # [1]: https://tesser.org/doc/posts/2015-08-21-statically-linking-libgmp-in-haskell-programs.html
 
 
-LIBS_FOR_STATIC_LINK = ['gmp', 'z']
+LIBS_FOR_STATIC_LINK = ['gmp', 'z', 'ssl', 'crypto']
 
 def all_args(command):
     """Quoting 'man ld' (or 'man g++'):
@@ -46,7 +46,7 @@ def find_library(lib):
     if ('CFLAGS' in os.environ and '-m32' in os.environ['CFLAGS']) or ('GHC_LINKER_32' in os.environ):
         lib_dirs = ['/lib', '/usr/lib', '/usr/local/lib'] # for 32-bit
     else:
-        lib_dirs = ['/lib64', '/usr/lib64', '/usr/local/lib64'] # for 64-bit
+        lib_dirs = ['/lib64', '/usr/lib64', '/usr/local/lib64', '/usr/lib64/openssl11'] # for 64-bit
     for dir_path in lib_dirs:
         path = dir_path + '/lib' + lib + '.a'
         if os.path.isfile(path):

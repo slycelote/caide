@@ -19,6 +19,10 @@ source-repository head
   type:         git
   location:     https://github.com/slycelote/caide
 
+Flag openssl
+  description: Use openssl library installed in the system instead of Haskell tls package
+  default: False
+
 Flag cppinliner
   description: Include support for inlining C++ code via libclang
   default: True
@@ -77,14 +81,12 @@ library
                    async >= 2.0.1,
                    bytestring,
                    ConfigFile,
-                   connection,
                    containers >= 0.5.0.0,
                    directory,
                    file-embed,
                    filelock,
                    filepath,
                    http-client >= 0.5,
-                   http-client-tls,
                    http-types >= 0.9,
                    httpd-shed,
                    microstache,
@@ -103,6 +105,11 @@ library
                    vector,
                    xml,
                    zip-archive
+  if flag(openssl) {
+    build-depends: http-client-openssl
+  } else {
+    build-depends: http-client-tls, connection
+  }
 
   hs-source-dirs:  src
   other-extensions: CPP, DeriveGeneric, ForeignFunctionInterface, GeneralizedNewtypeDeriving,

@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 module Network.HTTP.Util(
       downloadDocument
 ) where
@@ -12,8 +12,13 @@ import Network.HTTP.Client (HttpException(..), HttpExceptionContent(..), Request
     httpLbs, newManager, parseUrlThrow,
     host, requestHeaders,
     responseStatus, responseBody, responseTimeout, responseTimeoutMicro, )
+
+#ifdef VERSION_http_client_openssl
+import Network.HTTP.Client.OpenSSL (newOpenSSLManager, withOpenSSL)
+#else
 import Network.Connection (TLSSettings(TLSSettingsSimple))
 import Network.HTTP.Client.TLS (mkManagerSettings)
+#endif
 import Network.HTTP.Types.Header (RequestHeaders, hAccept, hAcceptEncoding, hCookie, hUserAgent)
 import Network.HTTP.Types.Status (ok200, statusCode, statusMessage)
 import System.IO.Error (catchIOError, ioeGetErrorString)
@@ -69,8 +74,12 @@ statusExceptionHandler url e = return . Left $ T.concat ["Error fetching URL '",
 
 httpDownloader :: Request -> IO (Either T.Text T.Text)
 httpDownloader request = do
+#ifdef VERSION_http_client_openssl
+    manager <- withOpenSSL newOpenSSLManager
+#else
     let tlsManagerSettings = mkManagerSettings (TLSSettingsSimple True False False) Nothing
     manager <- newManager tlsManagerSettings
+#endif
     response <- httpLbs request manager
     let status = responseStatus response
     return $ if status == ok200
