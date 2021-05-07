@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         cabal: ["3.4"]
-        ghc: ["8.10.3"]
+        ghc: ["8.10.4"]
         os: [ubuntu-latest]
 
     env:
