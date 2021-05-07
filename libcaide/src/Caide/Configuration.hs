@@ -2,16 +2,13 @@
 
 module Caide.Configuration(
       -- * General utilities
-      setProperties
-    , orDefault
+      orDefault
     , withDefault
     , describeError
 
       -- * Caide configuration
     , readCaideConf
     , readCaideState
-    , writeCaideConf
-    , writeCaideState
     , SystemCompilerInfo(..)
     , defaultCaideConf
     , defaultCaideState
@@ -19,8 +16,6 @@ module Caide.Configuration(
       -- * Caide options and state
     , getActiveProblem
     , setActiveProblem
-    , getDefaultLanguage
-    , getFeatures
 
       -- * Problem configuration
     , getProblemConfigFile
@@ -34,13 +29,11 @@ module Caide.Configuration(
 
 import Prelude hiding (readFile, FilePath)
 
-import Control.Monad (forM_)
 import Control.Monad.Except (catchError, throwError)
 import Control.Monad.Trans (liftIO)
 import Data.ConfigFile (ConfigParser, CPError, CPErrorData(OtherProblem, NoOption, NoSection),
                         SectionSpec, OptionSpec, set, emptyCP, add_section)
 import Data.List (intercalate, isPrefixOf)
-import Data.Text (Text)
 import qualified Data.Text as T
 import Filesystem (isDirectory)
 import Filesystem.Path.CurrentOS (encodeString, fromText)
@@ -48,12 +41,9 @@ import Filesystem.Path (FilePath, (</>))
 
 import System.Info (arch, os)
 
+import qualified Caide.Paths as Paths
 import Caide.Types
 
-
-setProperties :: Monad m => ConfigFileHandle c -> [(String, String, Text)] -> CaideM m ()
-setProperties handle properties = forM_ properties $ \(section, key, value) ->
-    setProp handle section key value
 
 rethrowIfFatal :: Monad m => CPError -> CaideM m ()
 rethrowIfFatal (NoSection _, _) = return ()
@@ -102,31 +92,11 @@ readProblemConfig probId = do
 
 
 {--------------------------- Global options and state ----------------------------}
-caideConfFile :: Monad m => CaideM m FilePath
-caideConfFile = do
-    root <- caideRoot
-    return $ root </> "caide.ini"
-
-caideStateFile :: Monad m => CaideM m FilePath
-caideStateFile = do
-    root <- caideRoot
-    return $ root </> ".caide" </> "config"
-
 readCaideConf :: CaideIO (ConfigFileHandle Persistent)
-readCaideConf = caideConfFile >>= readConf
+readCaideConf = caideRoot >>= readConf . Paths.caideConfFile
 
 readCaideState :: CaideIO (ConfigFileHandle Persistent)
-readCaideState = caideStateFile >>= readConf
-
-writeCaideConf :: Monad m => ConfigParser -> CaideM m (ConfigFileHandle Persistent)
-writeCaideConf cp = do
-    filePath <- caideConfFile
-    createConf filePath cp
-
-writeCaideState :: Monad m => ConfigParser -> CaideM m (ConfigFileHandle Persistent)
-writeCaideState cp = do
-    filePath <- caideStateFile
-    createConf filePath cp
+readCaideState = caideRoot >>= readConf . Paths.caideStateFile
 
 getActiveProblem :: CaideIO ProblemID
 getActiveProblem = do
@@ -140,16 +110,6 @@ setActiveProblem :: ProblemID -> CaideIO ()
 setActiveProblem probId = do
     h <- readCaideState
     setProp h "core" "problem" probId
-
-getDefaultLanguage :: CaideIO Text
-getDefaultLanguage = do
-    h <- readCaideConf
-    getProp h "core" "language"
-
-getFeatures :: CaideIO [Text]
-getFeatures = do
-    h <- readCaideConf
-    getProp h "core" "features"
 
 {--------------------------- Internals -----------------------------}
 

@@ -20,9 +20,9 @@ import Caide.Configuration (readCaideState, orDefault)
 import Caide.Types (CaideIO, ProblemID, getProp, setProp, flushConf)
 
 data GlobalState = GlobalState
-                 { activeProblem :: Maybe ProblemID
-                 , latestVersion :: Maybe Version
-                 , lastUpdateCheck :: Maybe UTCTime
+                 { activeProblem :: !(Maybe ProblemID)
+                 , latestVersion :: !(Maybe Version)
+                 , lastUpdateCheck :: !(Maybe UTCTime)
                  } deriving (Generic, Show)
 
 instance Aeson.FromJSON GlobalState

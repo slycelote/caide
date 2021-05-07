@@ -1,13 +1,11 @@
-{-# LANGUAGE CPP, OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Caide.Commands.CHelperHttpServer(
       runHttpServer
 ) where
 
-#ifndef AMP
-import Control.Applicative ((<$>), (<*>))
-#endif
+import Control.Arrow ((&&&))
 import Control.Concurrent.Async (withAsync)
 import qualified Control.Concurrent.Async as Async
 import Control.Monad (forM_, void, when)
@@ -24,10 +22,12 @@ import Data.Aeson (FromJSON(parseJSON), eitherDecode', withObject, (.:))
 import Network.Shed.Httpd (initServerBind, Request(reqBody), Response(Response))
 
 import Caide.CheckUpdates (checkUpdates)
-import Caide.Configuration (describeError, orDefault, readCaideConf, setActiveProblem)
+import Caide.Configuration (describeError, setActiveProblem)
 import Caide.Commands.ParseProblem (saveProblemWithScaffold)
 import Caide.Logger (logInfo, logError)
-import Caide.Registry (findHtmlParser)
+import Caide.Parsers.Common (CHelperProblemParser(chelperParse))
+import Caide.Registry (findCHelperProblemParser)
+import Caide.Settings (chelperPort, companionPort)
 import Caide.Types
 
 
@@ -36,37 +36,33 @@ runHttpServer v root = do
     mbPorts <- runInDirectory v root getPorts
     case mbPorts of
         Left err -> logError $ T.pack $ describeError err
-        Right (companionPort, chelperPort) -> runServers v root companionPort chelperPort
+        Right (companionPort', chelperPort') -> runServers v root companionPort' chelperPort'
 
 
-runServers :: Verbosity -> F.FilePath -> Int -> Int -> IO ()
-runServers v root companionPort chelperPort = withSocketsDo $ do
+runServers :: Verbosity -> F.FilePath -> Maybe Int -> Maybe Int -> IO ()
+runServers v root companionPort' chelperPort' = withSocketsDo $ do
     hSetBuffering stdout NoBuffering
     hSetBuffering stderr NoBuffering
 
-    let servers = case (companionPort > 0, chelperPort > 0) of
-            (True, True)   -> "CHelper and Competitive Companion extensions"
-            (False, True)  -> "CHelper extension"
-            (True, False)  -> "Competitive Companion extension"
-            (False, False) -> ""
-        runServer port handler = when (port > 0) $
-            initServerBind port (tupleToHostAddress (127,0,0,1)) (handler v root)
+    let servers = case (companionPort', chelperPort') of
+            (Just _, Just _)   -> "CHelper and Competitive Companion extensions"
+            (Nothing, Just _)  -> "CHelper extension"
+            (Just _, Nothing)  -> "Competitive Companion extension"
+            (Nothing, Nothing) -> ""
+        runServer port handler = forM_ port $ \p ->
+            initServerBind p (tupleToHostAddress (127,0,0,1)) (handler v root)
     if T.null servers
     then logError "Both CHelper and Competitive Companion servers are disabled. Exiting now."
     else withAsync (void $ runInDirectory v root $ checkUpdates `catchError` const (pure ())) $ \a1 ->
-         withAsync (void $ runServer companionPort processCompanionRequest) $ \a2 ->
-         withAsync (void $ runServer chelperPort processCHelperRequest) $ \a3 -> do
+         withAsync (void $ runServer companionPort' processCompanionRequest) $ \a2 ->
+         withAsync (void $ runServer chelperPort' processCHelperRequest) $ \a3 -> do
              logInfo $ "Running HTTP server for " <> servers <> ". Press Return to terminate."
              _ <- getLine
              forM_ [a1, a2, a3] Async.cancel
 
 
-getPorts :: CaideIO (Int, Int)
-getPorts = do
-    h <- readCaideConf
-    companionPort <- getProp h "core" "companion_port" `orDefault` 10043
-    chelperPort <- getProp h "core" "chelper_port" `orDefault` 4243
-    return (companionPort, chelperPort)
+getPorts :: CaideIO (Maybe Int, Maybe Int)
+getPorts = (companionPort &&& chelperPort) <$> caideSettings
 
 data ParsedProblem = Parsed Problem [TestCase]
 
@@ -160,8 +156,11 @@ processCHelperRequest v root request = do
 
 
 process :: T.Text -> T.Text -> Verbosity -> F.FilePath -> IO (Maybe T.Text)
-process chid page v root = case parseFromHtml <$> findHtmlParser chid <*> Just page of
+process chid page v root = case findCHelperProblemParser chid of
     Nothing -> return . Just $ "'" <> chid <> "' not supported"
-    Just (Left err) -> return . Just $ "Error while parsing the problem: " <> err
-    Just (Right (problem, testCases)) -> createProblems v root [Parsed problem testCases] >> return Nothing
+    Just parser -> do
+        res <- chelperParse parser page
+        case res of
+            Left err -> return . Just $ "Error while parsing the problem: " <> err
+            Right (problem, testCases) -> createProblems v root [Parsed problem testCases] >> return Nothing
 

@@ -1,43 +1,38 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Caide.Parsers.Codeforces(
-      codeforcesParser
+      htmlParser
+    , chelperId
+    , isSupportedUrl
 ) where
 
 import Data.Either (rights)
 import qualified Data.Text as T
 
 import Filesystem.Path.CurrentOS (fromText)
-import Network.URI (parseURI, uriAuthority, uriRegName)
 
-import Text.HTML.TagSoup (fromTagText, innerText,
-                          parseTags, sections, fromAttrib, Tag)
+import Text.HTML.TagSoup (fromTagText, innerText, parseTags, sections, fromAttrib)
 import Text.HTML.TagSoup.Utils
 
 import Text.Parsec
 import Text.Parsec.Text (Parser)
 
-import Caide.Parsers.Common (replaceBr)
+import Caide.Parsers.Common (URL, isHostOneOf, normalizeTestCases, replaceBr)
 import Caide.Types
 
 
-codeforcesParser :: HtmlParser
-codeforcesParser = HtmlParser
-    { chelperId = "codeforces"
-    , htmlParserUrlMatches = isCodeForcesUrl
-    , parseFromHtml = doParse . parseTags
-    }
+chelperId :: T.Text
+chelperId = "codeforces"
 
-isCodeForcesUrl :: URL -> Bool
-isCodeForcesUrl url = case parseURI (T.unpack url) >>= uriAuthority of
-    Nothing   -> False
-    Just auth -> uriRegName auth `elem` ["codeforces.com", "www.codeforces.com", "codeforces.ru", "www.codeforces.ru"]
+isSupportedUrl :: URL -> Bool
+isSupportedUrl = isHostOneOf ["codeforces.com", "www.codeforces.com", "codeforces.ru", "www.codeforces.ru"]
 
-doParse :: [Tag T.Text] -> Either T.Text (Problem, [TestCase])
-doParse tags =
+htmlParser :: T.Text -> IO (Either T.Text (Problem, [TestCase]))
+htmlParser cont = pure $
     if null beforeTitleDiv
     then Left "Couldn't parse problem statement"
-    else Right (makeProblem title probId probType, testCases)
+    else Right (makeProblem title probId probType, normalizeTestCases testCases)
   where
+    tags = parseTags cont
     statement = dropWhile (~~/== "<div class=problem-statement>") tags
     beforeTitleDiv = drop 1 . dropWhile (~~/== "<div class=title>") $ statement
     title = fromTagText $ head beforeTitleDiv

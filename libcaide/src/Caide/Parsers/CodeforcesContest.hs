@@ -1,22 +1,19 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Caide.Parsers.CodeforcesContest(
       codeforcesContestParser
 ) where
 
-#ifndef AMP
-import Control.Applicative ((<$>))
-#endif
 import Control.Monad.Except (liftIO)
 import Data.Maybe (mapMaybe)
 
 import qualified Data.Text as T
-import Network.URI (parseURI, uriAuthority, uriRegName)
 
 import Text.HTML.TagSoup (partitions, parseTags, fromAttrib, Tag)
 import Text.HTML.TagSoup.Utils
 
 
 import Caide.Commands.ParseProblem (parseProblems)
+import Caide.Parsers.Common (URL, ContestParser(..), isHostOneOf)
 import Caide.Types
 import Caide.Util (downloadDocument)
 
@@ -28,9 +25,7 @@ codeforcesContestParser = ContestParser
     }
 
 isCodeForcesUrl :: URL -> Bool
-isCodeForcesUrl url = case parseURI (T.unpack url) >>= uriAuthority of
-    Nothing   -> False
-    Just auth -> uriRegName auth `elem` ["codeforces.com", "www.codeforces.com", "codeforces.ru", "www.codeforces.ru"]
+isCodeForcesUrl = isHostOneOf ["codeforces.com", "www.codeforces.com", "codeforces.ru", "www.codeforces.ru"]
 
 doParseContest :: URL -> CaideIO ()
 doParseContest url = do

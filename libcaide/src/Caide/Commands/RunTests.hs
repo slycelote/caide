@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Caide.Commands.RunTests(
       runTests
@@ -6,14 +6,10 @@ module Caide.Commands.RunTests(
 ) where
 
 
-#ifndef AMP
-import Control.Applicative ((<$>), (<*>))
-#endif
 import Control.Monad (forM, unless)
 import Control.Monad.State (liftIO)
-
 import Data.Either (isRight)
-import Data.List (group, sort, sortBy)
+import Data.List (sortBy)
 import Data.Maybe (isJust)
 import Data.Ord (comparing)
 import Data.Text (Text)
@@ -34,23 +30,14 @@ import Caide.Logger (logError)
 import qualified Caide.Paths as Paths
 import Caide.Problem (currentLanguage, readProblemInfo, readProblemState)
 import Caide.Registry (findLanguage)
+import Caide.Settings (verboseTestReport)
 import Caide.Types
-import Caide.TestCases.Types (ComparisonResult(..), TestReport,
-    isSuccessful, humanReadable, readTestReport, serializeTestReport)
+import Caide.TestCases.Types (ComparisonResult(..), isSuccessful,
+    TestRunResult(..), makeTestRunResult,
+    TestReport, humanReadableReport, humanReadableSummary, readTestReport, serializeTestReport)
 import Caide.TestCases.TopcoderComparator
 import Caide.Util (tshow)
 
-
-humanReadableReport :: TestReport Text -> Text
-humanReadableReport = T.unlines .
-            map (\(testName, res) -> T.concat [testName, ": ", humanReadable res])
-
-humanReadableSummary :: TestReport Text -> Text
-humanReadableSummary = T.unlines . map toText . group . sort . map (fromComparisonResult . snd)
-    where toText list = T.concat [head list, "\t", tshow (length list)]
-          fromComparisonResult (Error _) = "Error"
-          fromComparisonResult (Failed _) = "Failed"
-          fromComparisonResult r = tshow r
 
 createBuilderFromProblemDirectory :: ProblemID -> CaideIO (Either Text Builder)
 createBuilderFromProblemDirectory probId = do
@@ -87,8 +74,8 @@ runTests = do
         NoEvalTests -> evalTests
 
 data ComparisonOptions = ComparisonOptions
-    { doublePrecision :: Double
-    , topcoderType :: Maybe TopcoderValue
+    { doublePrecision :: !Double
+    , topcoderType :: !(Maybe TopcoderValue)
     }
 
 evalTests :: CaideIO ()
@@ -106,18 +93,21 @@ evalTests = do
                 _              -> Nothing
             }
 
-    errors <- liftIO $ do
+    beVerbose <- verboseTestReport <$> caideSettings
+    errorCount <- liftIO $ do
         report <- generateReport cmpOptions problemDir
         writeTextFile reportFile . serializeTestReport $ report
         T.putStrLn "Results summary\n_______________\nOutcome\tCount"
         T.putStrLn $ humanReadableSummary report
-        return [r | r@(_, res) <- report, isSuccessful res == Just False]
+        let errors = [r | r@(_, res) <- report, isSuccessful (testRunStatus res) == Just False]
+        T.putStrLn . humanReadableReport $ if beVerbose then report else errors
+        return $ length errors
 
-    unless (null errors) $
-        throw $ humanReadableReport errors
+    unless (errorCount == 0) $
+        throw $ tshow errorCount <> " tests failed!"
 
 
-generateReport :: ComparisonOptions -> FilePath -> IO (TestReport Text)
+generateReport :: ComparisonOptions -> FilePath -> IO TestReport
 generateReport cmpOptions problemDir = do
     let testDir = problemDir </> Paths.testsDir
     testList <- (map filename . filter (`hasExtension` "in") . fst) <$> listDir problemDir
@@ -128,25 +118,26 @@ generateReport cmpOptions problemDir = do
             outFile = problemDir </> Paths.testsDir </> replaceExtension testFile "out"
             etalonFile = problemDir </> replaceExtension testFile "out"
         case lookup testName report of
-            Nothing -> return $ Error "Test was not run"
-            Just Ran -> do
+            Nothing -> return $ makeTestRunResult $ Error "Test was not run"
+            Just res@TestRunResult{testRunStatus = Ran} -> do
                 [etalonExists, outFileExists] <- mapM isFile [etalonFile, outFile]
-                if not outFileExists
+                comparisonResult <- if not outFileExists
                    then return $ Error "Output file is missing"
                    else if etalonExists
                        then compareFiles cmpOptions <$> readTextFile etalonFile <*> readTextFile outFile
                        else return EtalonUnknown
+                return $ res{testRunStatus = comparisonResult}
             Just result -> return result
 
     return $ sortBy (comparing fst) $ zip testNames results
 
 
-compareFiles :: ComparisonOptions -> Text -> Text -> ComparisonResult Text
+compareFiles :: ComparisonOptions -> Text -> Text -> ComparisonResult
 compareFiles cmpOptions etalon out = case () of
     _ | isTopcoder -> tcComparison
-      | not (null errors) -> Failed $ T.concat ["Line ", tshow line, ": ", err]
+      | not (null errors) -> Failed $ "Line " <> tshow line <> ": " <> err
       | length actual == length expected -> Success
-      | otherwise -> Failed $ T.concat ["Expected ", tshow (length expected), " line(s)"]
+      | otherwise -> Failed $ "Expected " <> tshow (length expected) <> " line(s)"
   where
     Just returnValueType = topcoderType cmpOptions
     isTopcoder = isJust $ topcoderType cmpOptions
@@ -160,7 +151,7 @@ compareFiles cmpOptions etalon out = case () of
     (line, Failed err) = head errors
 
 
-compareLines :: ComparisonOptions -> Text -> Text -> ComparisonResult Text
+compareLines :: ComparisonOptions -> Text -> Text -> ComparisonResult
 compareLines cmpOptions expectedLine actualLine = case () of
     _ | not (null errors) -> Failed $ T.concat ["Token ", tshow numToken, ": ", err]
       | length actual == length expected -> Success
@@ -172,7 +163,7 @@ compareLines cmpOptions expectedLine actualLine = case () of
     errors = [e | e@(_, Failed _) <- zip [1::Int ..] tokenComparison]
     (numToken, Failed err) = head errors
 
-compareTokens :: ComparisonOptions -> Text -> Text -> ComparisonResult Text
+compareTokens :: ComparisonOptions -> Text -> Text -> ComparisonResult
 compareTokens cmpOptions expected actual = case () of
     _ | expected == actual -> Success
       | areEqualDoubles (doublePrecision cmpOptions) expected actual -> Success

@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
 module Caide.Commands(
       runMain
 ) where
@@ -7,12 +7,6 @@ import Control.Exception.Base (catch, SomeException)
 import Control.Monad (void)
 import Control.Monad.Except (catchError)
 import Data.List (foldl')
-#if !MIN_VERSION_base(4, 8, 0)
-import Data.Monoid (mconcat)
-#endif
-#if MIN_VERSION_optparse_applicative(0, 13, 0)
-import Data.Monoid ((<>))
-#endif
 import qualified Data.Text as T
 import Data.Version (showVersion)
 import System.Exit (exitWith, ExitCode(ExitFailure))
@@ -64,6 +58,7 @@ createIoSubCommand (name, desc, cmd) = command name $
 data CommandExtension = AutoCheckUpdates | ReportNewVersion
 
 extendCommand :: CaideIO () -> CommandExtension -> CaideIO ()
+-- TODO: run checkUpdates in parallel with cmd
 extendCommand cmd AutoCheckUpdates = cmd >> (checkUpdates `catchError` const (pure ()))
 extendCommand cmd ReportNewVersion = cmd >> (logIfUpdateAvailable `catchError` const (pure ()))
 
@@ -94,8 +89,7 @@ createSubCommand' (name, desc, cmd) = createSubCommand (name, desc, [], cmd)
 -- when we're offline / GitHub inaccessible / etc.
 commands :: [(String, String, [CommandExtension], Parser (CaideIO ()))]
 commands =
-    [ ("init", "Initialize caide directory", [], initOpts)
-    , ("problem", "Parse a problem or create an empty problem", [AutoCheckUpdates, ReportNewVersion], problemOpts)
+    [ ("problem", "Parse a problem or create an empty problem", [AutoCheckUpdates, ReportNewVersion], problemOpts)
     , ("contest", "Parse an online contest", [AutoCheckUpdates, ReportNewVersion], contestOpts)
     , ("make", "Prepare submission file and update test list", [ReportNewVersion], makeOpts)
     , ("test", "Run tests and generate test report", [ReportNewVersion], pure runTests)
@@ -118,7 +112,9 @@ internalCommands =
 
 
 publicSubCommands :: [Mod CommandFields CaideAction]
-publicSubCommands = map createSubCommand commands ++
+publicSubCommands = [
+    createIoSubCommand ("init", "Initialize caide directory", initOpts) ] ++
+    map createSubCommand commands ++
     [ createIoSubCommand (
         "httpServer",
         "Run HTTP server for CHelper browser extension",
@@ -129,8 +125,8 @@ internalSubCommands :: [Mod CommandFields CaideAction]
 internalSubCommands = map createSubCommand' internalCommands
 
 
-initOpts :: Parser (CaideIO ())
-initOpts = Init.initialize <$>
+initOpts :: Parser CaideAction
+initOpts = (\useSystemHeaders _globalOptions root -> Init.initialize root useSystemHeaders) <$>
     switch (long "cpp-use-system-headers" <>
         help "Use system headers for C++ code inliner, instead of builtin MinGW headers")
 

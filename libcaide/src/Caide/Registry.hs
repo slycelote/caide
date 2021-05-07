@@ -4,14 +4,11 @@ module Caide.Registry(
       languages
     , findLanguage
     , findFeature
-    , findHtmlParser
-    , findHtmlParserForUrl
+    , findCHelperProblemParser
+    , findCHelperProblemParserByURL
     , findProblemParser
 ) where
 
-#ifndef AMP
-import Control.Applicative ((<$>))
-#endif
 import Control.Applicative ((<|>))
 import Data.Char (toLower)
 import Data.List (find)
@@ -27,31 +24,45 @@ import qualified Caide.CSharp.CSharpSimple as CSharpSimple
 
 import qualified Caide.Features.Codelite as Codelite
 
-import Caide.Parsers.Common (htmlParserToProblemParser)
-import Caide.Parsers.Codeforces
-import Caide.Parsers.CodeChef
-import Caide.Parsers.GCJ
-import Caide.Parsers.HackerRank
-import Caide.Parsers.POJ
-import Caide.Parsers.RCC
-import Caide.Parsers.Timus
-import Caide.Parsers.Yandex
+import Caide.Parsers.Common (URL, CHelperProblemParser(CHelperProblemParser, chelperId, chelperUrlMatches),
+    ProblemParser(problemUrlMatches), makeProblemParser)
+
+import qualified Caide.Parsers.Codeforces as Codeforces
+import qualified Caide.Parsers.CodeChef as CodeChef
+import qualified Caide.Parsers.GCJ as GCJ
+import qualified Caide.Parsers.HackerRank as HackerRank
+import qualified Caide.Parsers.POJ as POJ
+import qualified Caide.Parsers.RCC as RCC
+import qualified Caide.Parsers.Timus as Timus
+import qualified Caide.Parsers.Yandex as Yandex
 import qualified Caide.GenericLanguage as GenericLanguage
 
 
-
-htmlParsers :: [HtmlParser]
-htmlParsers = [codeforcesParser, codeChefHtmlParser, timusParser, gcjParser, pojParser, rccParser, hackerRankParser, yandexParser]
+chelperParsers :: [CHelperProblemParser]
+chelperParsers = [ CHelperProblemParser Codeforces.chelperId Codeforces.isSupportedUrl Codeforces.htmlParser
+                 , CodeChef.chelperProblemParser
+                 , CHelperProblemParser GCJ.chelperId GCJ.isSupportedUrl GCJ.htmlParser
+                 , CHelperProblemParser HackerRank.chelperId HackerRank.isSupportedUrl HackerRank.htmlParser
+                 , CHelperProblemParser POJ.chelperId POJ.isSupportedUrl POJ.htmlParser
+                 , CHelperProblemParser RCC.chelperId RCC.isSupportedUrl RCC.htmlParser
+                 , CHelperProblemParser Timus.chelperId Timus.isSupportedUrl Timus.htmlParser
+                 , CHelperProblemParser Yandex.chelperId Yandex.isSupportedUrl Yandex.htmlParser
+                 ]
 
 problemParsers :: [ProblemParser]
-problemParsers = map htmlParserToProblemParser [codeforcesParser, timusParser,
-    pojParser, rccParser, hackerRankParser] ++ [codeChefParser]
+problemParsers = [ makeProblemParser Codeforces.isSupportedUrl Codeforces.htmlParser
+                 , CodeChef.problemParser
+                 , makeProblemParser HackerRank.isSupportedUrl HackerRank.htmlParser
+                 , makeProblemParser POJ.isSupportedUrl POJ.htmlParser
+                 , makeProblemParser RCC.isSupportedUrl RCC.htmlParser
+                 , makeProblemParser Timus.isSupportedUrl Timus.htmlParser
+                 ]
 
-findHtmlParser :: Text -> Maybe HtmlParser
-findHtmlParser chid = find ((== chid) . chelperId) htmlParsers
+findCHelperProblemParser :: Text -> Maybe CHelperProblemParser
+findCHelperProblemParser chid = find ((== chid) . chelperId) chelperParsers
 
-findHtmlParserForUrl :: URL -> Maybe HtmlParser
-findHtmlParserForUrl url = find (`htmlParserUrlMatches` url) htmlParsers
+findCHelperProblemParserByURL :: URL -> Maybe CHelperProblemParser
+findCHelperProblemParserByURL url = find (`chelperUrlMatches` url) chelperParsers
 
 findProblemParser :: URL -> Maybe ProblemParser
 findProblemParser url = find (`problemUrlMatches` url) problemParsers

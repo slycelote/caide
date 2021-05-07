@@ -4,7 +4,6 @@
 module Caide.Util(
       downloadDocument
     , mapWithLimitedThreads
-    , runHtmlParser
     , tshow
     , readTextFile'
     , withLock
@@ -22,17 +21,9 @@ import System.FileLock (SharedExclusive(Exclusive), tryLockFile, unlockFile)
 
 import Filesystem.Util (pathToText, readTextFile)
 import Network.HTTP.Util (downloadDocument)
-import Caide.Configuration (orDefault, readCaideConf)
+import Caide.Configuration (orDefault)
+import Caide.Settings (useFileLock)
 import Caide.Types
-
-
-runHtmlParser :: (T.Text -> Either T.Text (Problem, [TestCase]))
-              -> URL -> IO (Either T.Text (Problem, [TestCase]))
-runHtmlParser parser url = do
-    doc <- downloadDocument url
-    case doc of
-        Left err   -> return $ Left err
-        Right cont -> return $ parser cont
 
 
 -- TODO a more efficient algorithm
@@ -64,9 +55,8 @@ finally action finalizer = do
 
 withLock :: CaideIO () -> CaideIO ()
 withLock action = do
-    h <- readCaideConf
     hTemp <- getTemporaryConf
-    useLock <- getProp h "core" "use_lock" `orDefault` True
+    useLock <- useFileLock <$> caideSettings
     haveLock <- getProp hTemp "DEFAULT" "have_lock" `orDefault` False
     if not useLock || haveLock
     then action

@@ -1,24 +1,16 @@
-{-# LANGUAGE OverloadedStrings, CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Caide.Commands.Archive(
       archiveProblem
 ) where
 
 import Prelude hiding (FilePath)
-#ifndef AMP
-import Control.Applicative ((<$>))
-#endif
 import Control.Monad (unless, when, forM_, forM)
 import Control.Monad.State (liftIO)
 import Data.List (sort)
 import Data.Maybe (mapMaybe)
 import qualified Data.Text as T
 
-import Data.Time (getZonedTime, formatTime)
-#if MIN_VERSION_time(1,5,0)
-import Data.Time (defaultTimeLocale)
-#else
-import System.Locale (defaultTimeLocale)
-#endif
+import Data.Time (defaultTimeLocale, getZonedTime, formatTime)
 
 import Filesystem (isDirectory, createTree, removeTree, listDirectory, isFile)
 import Filesystem.Path.CurrentOS ((</>), fromText, decodeString, basename, FilePath)
@@ -27,9 +19,10 @@ import Filesystem.Util (copyTreeToDir, copyFileToDir, listDir, pathToText)
 import System.IO.Error (catchIOError, ioeGetErrorString, isPermissionError)
 
 import Caide.Commands.Checkout (checkoutProblem)
-import Caide.Configuration (getActiveProblem, getFeatures, setActiveProblem)
+import Caide.Configuration (getActiveProblem, setActiveProblem)
 import qualified Caide.GlobalTemplate as GlobalTemplate
 import Caide.Registry (findFeature)
+import Caide.Settings (enabledFeatureNames)
 import Caide.Types
 import Caide.Util (tshow, withLock)
 
@@ -70,7 +63,7 @@ archiveProblem probId' = withLock $ do
             (p:_) -> checkoutProblem p Nothing
             []    -> setActiveProblem ""
 
-    featureNames <- getFeatures
+    featureNames <- enabledFeatureNames <$> caideSettings
     let features = mapMaybe findFeature featureNames
     forM_ (GlobalTemplate.hook : features) (`onProblemRemoved` probId)
 

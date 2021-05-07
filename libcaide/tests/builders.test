@@ -23,6 +23,7 @@ void solve(istream& in, ostream& out) {
 EOF
 
 "$CAIDE" test
+sed -i 's/#time:[^ ]* //' prob/.caideproblem/test/report.txt
 compare_with after-test prob/.caideproblem/test/report.txt
 
 "$CAIDE" lang csharp
@@ -43,5 +44,6 @@ EOF
 rm prob/.caideproblem/test/{report.txt,*.in,*.out}
 
 "$CAIDE" test
+sed -i 's/#time:[^ ]* //' prob/.caideproblem/test/report.txt
 compare_with after-test prob/.caideproblem/test/report.txt
 

@@ -3,9 +3,6 @@ module Caide.CPP.CPP(
       language
 ) where
 
-#ifndef AMP
-import Control.Applicative ((<$>))
-#endif
 import Control.Monad (when)
 import Control.Monad.State (liftIO)
 import qualified Data.Text as T

@@ -19,10 +19,10 @@ import Text.ParserCombinators.ReadP (readP_to_S)
 import qualified Data.Aeson as Aeson
 
 import Paths_libcaide (version)
-import Caide.Configuration (readCaideConf, orDefault)
 import Caide.GlobalState (GlobalState(latestVersion, lastUpdateCheck), readGlobalState, modifyGlobalState, flushGlobalState)
 import Caide.Logger (logInfo, logWarn)
-import Caide.Types (CaideIO, getProp, throw)
+import Caide.Settings (autoCheckUpdates)
+import Caide.Types (CaideIO, caideSettings, throw)
 import Caide.Util (withLock)
 import Network.HTTP.Util (downloadDocument)
 
@@ -65,8 +65,7 @@ checkUpdatesImpl = do
 
 checkUpdates :: CaideIO ()
 checkUpdates = do
-    h <- readCaideConf
-    checkEnabled <- getProp h "core" "check_updates" `orDefault` True
+    checkEnabled <- autoCheckUpdates <$> caideSettings
     s <- readGlobalState
     t <- liftIO getCurrentTime
     let checkedRecently = case lastUpdateCheck s of

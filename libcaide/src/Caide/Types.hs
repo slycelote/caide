@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, GeneralizedNewtypeDeriving, OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings, ScopedTypeVariables #-}
 
 module Caide.Types(
       Problem (..)
@@ -14,11 +14,9 @@ module Caide.Types(
     , Verbosity (..)
     , CaideIO
     , CaideM
-    , runCaideM
     , runInDirectory
 
     , throw
-    , assert
 
     , Option (..)
     , ConfigFileHandle
@@ -32,32 +30,26 @@ module Caide.Types(
     , setProp
     , caideRoot
     , caideVerbosity
+    , caideSettings
 
-    , HtmlParser (..)
-    , ProblemParser (..)
-    , ContestParser (..)
     , ProgrammingLanguage (..)
     , TestCase (..)
-    , URL
     , Builder
     , BuilderResult(..)
     , Feature (..)
     , noOpFeature
 ) where
 
-#ifndef AMP
-import Control.Applicative (Applicative)
-#endif
 import Control.Exception.Base (displayException)
 import Control.Monad (forM_, unless, when)
 import Control.Monad.Except (ExceptT, MonadError, runExceptT, throwError)
-import Control.Monad.State (StateT, MonadState, runStateT, gets, modify')
-import Control.Monad.Trans (MonadIO, liftIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Reader (MonadReader, reader)
+import Control.Monad.RWS.Strict (RWST, runRWST)
+import Control.Monad.State (MonadState, gets, modify')
 import Data.Char (toLower)
-import Data.List (intercalate)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (catMaybes, isNothing)
 import Data.Text (Text, pack, unpack)
 import qualified Data.Text as T
 import qualified Data.ConfigFile as C
@@ -66,22 +58,25 @@ import System.IO.Error (tryIOError)
 import qualified Filesystem as F
 import qualified Filesystem.Path as F
 import qualified Filesystem.Path.CurrentOS as F
+import Filesystem.Path.CurrentOS ((</>))
 
-import Text.Read (readMaybe)
 
 import Filesystem.Util (readTextFile, writeTextFile)
+
+import Caide.Settings (Settings, readSettings)
+import Caide.Types.Option (Option(..))
 
 data TestCase = TestCase
     { testCaseInput  :: !Text
     , testCaseOutput :: !Text
-    } deriving (Show)
+    } deriving (Show, Eq)
 
 type ProblemID = Text
 
 data Problem = Problem
     { problemName :: !Text      -- ^ Human readable identifier, used for displaying in GUI
     , problemId   :: !ProblemID -- ^ ID used for folder names, code generation etc.
-    , problemFloatTolerance :: Double -- ^ Comparing floating-point values up to this tolerance
+    , problemFloatTolerance :: !Double -- ^ Comparing floating-point values up to this tolerance
     , problemType :: !ProblemType
     } deriving (Show)
 
@@ -116,25 +111,6 @@ makeProblem name probId probType = Problem
     }
 
 
-type URL = Text
-
--- | Downloads problem data
-data ProblemParser = ProblemParser
-    { problemUrlMatches :: URL -> Bool
-    , parseProblem      :: URL -> IO (Either Text (Problem, [TestCase]))
-    }
-
-data HtmlParser = HtmlParser
-    { chelperId            :: Text
-    , htmlParserUrlMatches :: URL -> Bool
-    , parseFromHtml        :: Text -> Either Text (Problem, [TestCase])
-    }
-
-data ContestParser = ContestParser
-    { contestUrlMatches :: URL -> Bool
-    , parseContest      :: URL -> CaideIO ()
-    }
-
 data Verbosity = Info | Debug
     deriving (Show, Enum, Ord, Eq, Bounded)
 
@@ -145,19 +121,8 @@ data ProgrammingLanguage = ProgrammingLanguage
     , inlineCode         :: ProblemID -> CaideIO ()
     }
 
-class Option a where
-    optionToString :: a -> String
-    optionToText   :: a -> Text
-    optionFromString :: String -> Maybe a
-    optionFromText   :: Text -> Maybe a
-
-    optionToString = unpack . optionToText
-    optionToText   = pack . optionToString
-    optionFromString = optionFromText . pack
-    optionFromText   = optionFromString . unpack
-
-newtype CaideM m a = CaideM { unCaideM :: StateT CaideState (ExceptT C.CPError m) a }
-    deriving (Functor, Applicative, Monad, MonadIO, MonadError C.CPError, MonadState CaideState)
+newtype CaideM m a = CaideM { unCaideM :: RWST CaideEnv () CaideState (ExceptT C.CPError m) a }
+    deriving (Functor, Applicative, Monad, MonadIO, MonadError C.CPError, MonadReader CaideEnv, MonadState CaideState)
 
 type CaideIO a = CaideM IO a
 
@@ -198,20 +163,26 @@ data Temporary
 -- | File handle through which it's possible to access options. See 'setProp', 'getProp'
 newtype ConfigFileHandle configType = FileHandle F.FilePath
 
-runCaideM :: Monad m => CaideM m a -> CaideState -> m (Either C.CPError (a, CaideState))
-runCaideM caideAction p = runExceptT $ runStateT (unCaideM caideAction) p
+runCaideM :: Monad m => CaideM m a -> CaideEnv -> CaideState -> m (Either C.CPError (a, CaideState, ()))
+runCaideM caideAction env state = runExceptT $ runRWST (unCaideM caideAction) env state
 
 runInDirectory :: Verbosity -> F.FilePath -> CaideIO a -> IO (Either C.CPError a)
 runInDirectory v dir caideAction = do
-    let initialState = CaideState { root = dir, verbosity = v, files = M.empty }
+    let initialState = CaideState { files = M.empty }
         logEx e = do
             when (v >= Debug) $ print e
             return (Left e)
-    ret <- tryIOError $ runCaideM caideAction initialState
+    ret <- tryIOError $ do
+        iniSettings <- readSettings (dir </> "caide.ini")
+        case iniSettings of
+            Left e  -> pure $ Left (C.OtherProblem (T.unpack e), "")
+            Right s -> do
+                let env = CaideEnv { root = dir, verbosity = v, settings = s }
+                runCaideM caideAction env initialState
     case ret of
         Left e -> logEx (C.OtherProblem $ displayException e, "")
         Right (Left e) -> logEx e
-        Right (Right (a, finalState)) -> do
+        Right (Right (a, finalState, _)) -> do
             forM_ [f | f@(filePath, fileHandle) <- M.assocs (files finalState),
                         modified fileHandle && not (F.null filePath)] $
                 uncurry writeConfigParser
@@ -220,15 +191,15 @@ runInDirectory v dir caideAction = do
 throw :: Monad m => Text -> CaideM m a
 throw desc = throwError (C.OtherProblem $ unpack desc, "")
 
-assert :: Monad m => Bool -> Text -> CaideM m ()
-assert condition message = unless condition $ throw message
-
 -- | Return root caide directory
 caideRoot :: Monad m => CaideM m F.FilePath
-caideRoot = gets root
+caideRoot = reader root
 
 caideVerbosity :: Monad m => CaideM m Verbosity
-caideVerbosity = gets verbosity
+caideVerbosity = reader verbosity
+
+caideSettings :: Monad m => CaideM m Settings
+caideSettings = reader settings
 
 -- | Creates a new config file. Throws if it already exists.
 createConf :: Monad m => F.FilePath -> C.ConfigParser -> CaideM m (ConfigFileHandle Persistent)
@@ -297,35 +268,6 @@ extend :: F.FilePath -> C.ConfigParser -> C.ConfigParser
 extend r conf = conf' { C.accessfunc = C.interpolatingAccess 10, C.usedefault = True }
     where Right conf' = C.set conf "DEFAULT" "caideRoot" $ F.encodeString r
 
-instance Option Bool where
-    optionToString False = "no"
-    optionToString True  = "yes"
-
-    optionFromString s
-        | s' `elem` ["yes", "true", "enabled", "on", "1"]   = Just True
-        | s' `elem` ["no", "false", "disabled", "off", "0"] = Just False
-        | otherwise = Nothing
-      where s' = map toLower s
-
-instance Option Text where
-    optionToText = id
-    optionFromText = Just
-
-instance Option Int where
-    optionToString = show
-    optionFromString = readMaybe
-
-instance Option Double where
-    optionToString = show
-    optionFromString = readMaybe
-
-instance Option a => Option [a] where
-    optionToString = intercalate "," . map optionToString
-    optionFromText text = if any isNothing list
-                        then Nothing
-                        else Just . catMaybes $ list
-      where list = map (optionFromText . T.strip) . T.splitOn "," $ text
-
 instance Option TopcoderType where
     optionToString TCInt    = "int"
     optionToString TCLong   = "long"
@@ -384,20 +326,22 @@ instance Option ProblemType where
             | probType == "file" -> Just $ Stream (parseInput inputSource) (parseOutput outputSource)
         _ -> Nothing
 
-
 data ConfigInMemory = ConfigInMemory
     { configParser :: C.ConfigParser
     , modified     :: Bool
     }
 
-data CaideState = CaideState
-    { root  :: F.FilePath
+data CaideEnv = CaideEnv
+    { root      :: F.FilePath
     , verbosity :: Verbosity
-    , files :: Map F.FilePath ConfigInMemory
+    , settings  :: Settings
+    } deriving (Show)
+
+data CaideState = CaideState
+    { files :: Map F.FilePath ConfigInMemory
     }
 
 
--- Convert deprecated ErrorT style to ExceptT
 convertToCaide :: Monad m => Either C.CPError a -> CaideM m a
 convertToCaide (Left err) = throwError err
 convertToCaide (Right a)  = return a

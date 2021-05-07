@@ -9,6 +9,7 @@ echo 1 >case1.in
 ./prob.exe
 "$CAIDE" make
 cd ..
+sed -i 's/#time:[^ ]* //' prob/.caideproblem/test/report.txt
 compare_with after-make prob/submission.cpp prob/.caideproblem/test/report.txt
 cd prob
 cxx submission.cpp -o submission.exe

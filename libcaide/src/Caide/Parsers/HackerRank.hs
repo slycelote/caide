@@ -1,11 +1,10 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Caide.Parsers.HackerRank(
-      hackerRankParser
+      htmlParser
+    , chelperId
+    , isSupportedUrl
 ) where
 
-#ifndef AMP
-import Control.Applicative ((<$>))
-#endif
 import Control.Applicative ((<|>))
 import qualified Data.ByteString.Lazy as LBS
 import Data.Char (isAlphaNum, isSpace)
@@ -18,29 +17,25 @@ import qualified Data.Text.Encoding as T
 import qualified Data.Aeson as Aeson
 import Data.Aeson (withObject, (.:))
 import Network.HTTP.Types (urlDecode)
-import Network.URI (parseURI, uriAuthority, uriRegName)
 import Text.HTML.TagSoup (fromAttrib, maybeTagText, parseTags, partitions, sections,
     Tag(TagText))
 import Text.HTML.TagSoup.Utils
 
+import Caide.Parsers.Common (URL, isHostOneOf)
 import Caide.Types
 
 
-hackerRankParser :: HtmlParser
-hackerRankParser = HtmlParser
-    { chelperId = "hackerrank"
-    , htmlParserUrlMatches = isHackerRankUrl
-    , parseFromHtml = doParse
-    }
+chelperId :: T.Text
+chelperId = "hackerrank"
 
-isHackerRankUrl :: URL -> Bool
-isHackerRankUrl url = case parseURI (T.unpack url) >>= uriAuthority of
-    Nothing   -> False
-    Just auth -> uriRegName auth `elem` ["hackerrank.com", "www.hackerrank.com"]
+isSupportedUrl :: URL -> Bool
+isSupportedUrl = isHostOneOf ["hackerrank.com", "www.hackerrank.com"]
 
 data JsonProblem = JsonProblem
-    { name :: T.Text
-    , htmlBody :: T.Text
+    { name        :: !T.Text
+    , problemSlug :: !T.Text
+    , contestSlug :: !T.Text
+    , htmlBody    :: !T.Text
     }
 
 
@@ -54,9 +49,16 @@ instance Aeson.FromJSON JsonProblem where
             [singleton] -> do
                 let Aeson.Object prob = singleton
                 Aeson.Object detail <- prob .: "detail"
-                JsonProblem <$> detail .: "name" <*> detail .: "body_html"
+                JsonProblem <$> detail .: "name" <*> detail .: "slug"
+                            <*> detail .: "contest_slug" <*> detail .: "body_html"
             [] -> fail "no problems found"
             _  -> fail "multiple problems found"
+
+cleanupInput :: T.Text -> T.Text
+cleanupInput = T.strip
+
+cleanupOutput :: T.Text -> T.Text
+cleanupOutput = T.strip
 
 testsFromHtml :: [Tag T.Text] -> [TestCase]
 testsFromHtml tags = testCases where
@@ -65,13 +67,15 @@ testsFromHtml tags = testCases where
     pres = map (drop 1 . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>") ) samples
     texts = map extractText pres
     t = drop (length texts `mod` 2) texts
-    testCases = [TestCase (t!!i) (t!!(i+1)) | i <- [0, 2 .. length t-2]]
+    testCases = [TestCase (cleanupInput $ t!!i) (cleanupOutput $ t!!(i+1)) | i <- [0, 2 .. length t-2]]
+
+hrProblemType :: ProblemType
+hrProblemType = Stream StdIn StdOut
 
 problemFromName :: Maybe T.Text -> Problem
-problemFromName mbName = makeProblem probName probId probType where
+problemFromName mbName = makeProblem probName probId hrProblemType where
     probId = maybe "hrUnknown" (T.filter isAlphaNum) mbName
     probName = fromMaybe "Unknown" mbName
-    probType = Stream StdIn StdOut
 
 testsFromInitialData :: [Tag T.Text] -> Maybe (Problem, [TestCase])
 testsFromInitialData tags = do
@@ -80,10 +84,12 @@ testsFromInitialData tags = do
         json = urlDecode False . T.encodeUtf8 $ urlEncodedJson
     case Aeson.eitherDecode' $ LBS.fromStrict json of
         Left _err -> Nothing
-        Right jsonProblem -> Just (problemFromName $ Just $ name jsonProblem, testsFromHtml $ parseTags $ htmlBody jsonProblem)
+        Right jsonProblem -> Just ( makeProblem (name jsonProblem) (problemSlug jsonProblem) hrProblemType
+                                  , testsFromHtml $ parseTags $ htmlBody jsonProblem
+                                  )
 
-doParse :: T.Text -> Either T.Text (Problem, [TestCase])
-doParse cont = case (testsFromInitialData tags, testCases) of
+htmlParser :: T.Text -> IO (Either T.Text (Problem, [TestCase]))
+htmlParser cont = pure $ case (testsFromInitialData tags, testCases) of
     (Just v, _) -> Right v
     (_, []) -> Left "Couldn't find test cases"
     _ -> Right (problemFromName title, testCases)

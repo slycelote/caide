@@ -6,8 +6,9 @@ module Caide.Commands.ParseContest(
 import Data.List (find)
 import qualified Data.Text as T
 
-import Caide.Types
+import Caide.Types (CaideIO, throw)
 
+import Caide.Parsers.Common (URL, ContestParser(..))
 import Caide.Parsers.CodeforcesContest
 import Caide.Parsers.CodeChefContest
 import Caide.Parsers.RccContest

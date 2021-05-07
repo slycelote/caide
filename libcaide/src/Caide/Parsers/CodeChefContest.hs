@@ -1,11 +1,8 @@
-{-# LANGUAGE CPP, DeriveGeneric, OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 module Caide.Parsers.CodeChefContest(
       codeChefContestParser
 ) where
 
-#ifndef AMP
-import Control.Applicative ((<$>))
-#endif
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Lazy as LBS
@@ -14,11 +11,12 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Text (Text)
 import GHC.Generics (Generic)
-import Network.URI (parseURI, uriAuthority, uriPath, uriRegName)
+import Network.URI (parseURI, uriPath)
 
 import qualified Data.Aeson as Aeson
 
 import Caide.Commands.ParseProblem (parseProblems)
+import Caide.Parsers.Common (URL, ContestParser(..), isHostOneOf)
 import Caide.Types
 import Caide.Util (downloadDocument)
 
@@ -29,9 +27,7 @@ codeChefContestParser = ContestParser
     }
 
 isCodeChefUrl :: URL -> Bool
-isCodeChefUrl url = case parseURI (T.unpack url) >>= uriAuthority of
-    Nothing   -> False
-    Just auth -> uriRegName auth `elem` ["codechef.com", "www.codechef.com"]
+isCodeChefUrl = isHostOneOf ["codechef.com", "www.codechef.com"]
 
 data JsonProblem = JsonProblem
                  { code :: Text

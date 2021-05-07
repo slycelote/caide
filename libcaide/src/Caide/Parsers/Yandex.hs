@@ -1,36 +1,27 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Caide.Parsers.Yandex(
-      yandexParser
+      htmlParser
+    , isSupportedUrl
+    , chelperId
 ) where
 
-#ifndef AMP
-import Control.Applicative ((<$>))
-#endif
 import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import qualified Data.Text as T
-import Network.URI (parseURI, uriAuthority, uriRegName)
 
 import Text.HTML.TagSoup (maybeTagText, parseTags, partitions, sections, Tag)
 import Text.HTML.TagSoup.Utils
 
-import Caide.Parsers.Common (normalizeText)
+import Caide.Parsers.Common (URL, normalizeTestCases, isHostOneOf)
 import Caide.Types
 
-yandexParser :: HtmlParser
-yandexParser = HtmlParser
-    { chelperId = "yandex"
-    , htmlParserUrlMatches = isYandexUrl
-    , parseFromHtml = doParse
-    }
+chelperId :: T.Text
+chelperId = "yandex"
 
-isYandexUrl :: URL -> Bool
-isYandexUrl url = case parseURI (T.unpack url) >>= uriAuthority of
-    Nothing   -> False
-    Just auth -> uriRegName auth `elem` ["contest.yandex.ru", "www.contest.yandex.ru", "contest.yandex.com", "www.contest.yandex.com"]
+isSupportedUrl :: URL -> Bool
+isSupportedUrl = isHostOneOf ["contest.yandex.ru", "www.contest.yandex.ru", "contest.yandex.com", "www.contest.yandex.com"]
 
-
-doParse :: T.Text -> Either T.Text (Problem, [TestCase])
-doParse cont =
+htmlParser :: T.Text -> IO (Either T.Text (Problem, [TestCase]))
+htmlParser cont = pure $
     if null testCases
     then Left "Couldn't parse problem"
     else Right problem
@@ -56,11 +47,10 @@ doParse cont =
 extractTestCase :: [Tag T.Text] -> [TestCase]
 extractTestCase tags = testCases
   where
-    texts = map normalizeText .
-            mapMaybe maybeTagText .
+    texts = mapMaybe maybeTagText .
             mapMaybe (listToMaybe . drop 1) .
             sections (~~== "<pre>") $
             tags
 
-    testCases = [TestCase (texts!!i) (texts!!(i+1)) | i <- [0, 2 .. length texts-2]]
+    testCases = normalizeTestCases [TestCase (texts!!i) (texts!!(i+1)) | i <- [0, 2 .. length texts-2]]
 

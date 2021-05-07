@@ -1,4 +1,0 @@
-#!/bin/bash
-"$CAIDE" problem 'http://poj.org/problem?id=1067'
-compare_with after-parse poj1067/case1.{in,out} poj1067/problem.ini
-

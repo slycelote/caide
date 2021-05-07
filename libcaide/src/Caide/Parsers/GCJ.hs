@@ -1,11 +1,10 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Caide.Parsers.GCJ(
-      gcjParser
+      htmlParser
+    , chelperId
+    , isSupportedUrl
 ) where
 
-#ifndef AMP
-import Control.Applicative ((<$>))
-#endif
 import Data.List (isPrefixOf)
 import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import qualified Data.Text as T
@@ -15,26 +14,22 @@ import Text.HTML.TagSoup (maybeTagText, parseTags, sections)
 import Text.HTML.TagSoup.Match (tagOpenAttrNameLit)
 import Text.HTML.TagSoup.Utils
 
-import Caide.Parsers.Common (normalizeText)
+import Caide.Parsers.Common (URL, normalizeTestCases)
 import Caide.Types
 
-gcjParser :: HtmlParser
-gcjParser = HtmlParser
-    { chelperId = "gcj"
-    , htmlParserUrlMatches = isGcjUrl
-    , parseFromHtml = doParse
-    }
+chelperId :: T.Text
+chelperId = "gcj"
 
-isGcjUrl :: URL -> Bool
-isGcjUrl url = case parseURI (T.unpack url) of
+isSupportedUrl :: URL -> Bool
+isSupportedUrl url = case parseURI (T.unpack url) of
     Nothing   -> False
     Just uri  -> (uriRegName <$> uriAuthority uri) == Just "code.google.com" &&
                  "/codejam/contest" `isPrefixOf` uriPath uri
 
 
-{-# ANN doParse ("HLint: ignore Use head" :: String) #-}
-doParse :: T.Text -> Either T.Text (Problem, [TestCase])
-doParse cont =
+{-# ANN htmlParser ("HLint: ignore Use head" :: String) #-}
+htmlParser :: T.Text -> IO (Either T.Text (Problem, [TestCase]))
+htmlParser cont = pure $
     if null testCases
     then Left "Couldn't parse problem"
     else Right problem
@@ -52,12 +47,11 @@ doParse cont =
     isActiveTab t = tagOpenAttrNameLit "div" "style" ("block" `T.isInfixOf`) t &&
                     t ~~== "<div class=dsb-content-pages>"
     activeTab = dropWhile (not . isActiveTab) . dropWhile (~~/== "<div id=dsb-problem-pages") $ tags
-    texts = map normalizeText .
-            mapMaybe (maybeTagText . (!!1)) .
+    texts = mapMaybe (maybeTagText . (!!1)) .
             sections (~~== "<pre class=io-content>") .
             dropWhile (~~/== "<div class=problem-io-wrapper>") $
             activeTab
-    testCases = [TestCase (texts!!0) (texts!!1) | length texts >= 2]
+    testCases = normalizeTestCases [TestCase (texts!!0) (texts!!1) | length texts >= 2]
 
     -- TODO: a special problem type for GCJ-like judges
     probType = Stream StdIn StdOut

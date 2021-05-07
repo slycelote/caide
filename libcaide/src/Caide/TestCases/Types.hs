@@ -1,12 +1,15 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Caide.TestCases.Types (
       ComparisonResult (..)
     , isSuccessful
-    , humanReadable
-    , machineReadable
+
+    , TestRunResult(..)
+    , makeTestRunResult
 
     , TestReport
+    , humanReadableReport
+    , humanReadableSummary
     , serializeTestReport
     , deserializeTestReport
     , readTestReport
@@ -19,73 +22,153 @@ module Caide.TestCases.Types (
     , writeTests
 ) where
 
-#ifndef AMP
-import Control.Applicative ((<$>))
-#endif
+import Prelude hiding (FilePath)
+import Data.Char (isSpace)
+import Data.List (group, sort)
+import Data.Maybe (fromMaybe)
+import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Text.Parsec as Parsec
+import Text.Read (readMaybe)
 
-import Prelude hiding (FilePath)
+import Data.Time.Clock (DiffTime, diffTimeToPicoseconds, picosecondsToDiffTime)
 import Filesystem.Path (FilePath)
 import Filesystem (isFile, readTextFile, writeTextFile)
 import Caide.Util (tshow)
 
 
-data ComparisonResult a = Success        -- ^ Test passed
-                        | Ran            -- ^ Test ran but hasn't been evaluated
-                        | EtalonUnknown  -- ^ Test ran but etalon is unknown
-                        | Skipped        -- ^ Test was skipped
-                        | Failed a       -- ^ Test failed
-                        | Error a        -- ^ Error (e.g. exception in checker)
-                        deriving (Show, Eq)
+data ComparisonResult = Success        -- ^ Test passed
+                      | Ran            -- ^ Test ran but hasn't been evaluated
+                      | EtalonUnknown  -- ^ Test ran but etalon is unknown
+                      | Skipped        -- ^ Test was skipped
+                      | Failed Text    -- ^ Test failed
+                      | Error Text     -- ^ Error (e.g. exception in checker)
+                      deriving (Show, Eq)
 
-isSuccessful :: ComparisonResult a -> Maybe Bool
+getErrorMessage :: ComparisonResult -> Maybe Text
+getErrorMessage (Failed e) = Just e
+getErrorMessage (Error e) = Just e
+getErrorMessage _ = Nothing
+
+isSuccessful :: ComparisonResult -> Maybe Bool
 isSuccessful (Failed _) = Just False
 isSuccessful (Error _) = Just False
 isSuccessful Success = Just True
 isSuccessful _ = Nothing
 
-humanReadable :: ComparisonResult Text -> Text
-humanReadable Success = "OK"
-humanReadable Ran = "ran"
-humanReadable Skipped = "skipped"
-humanReadable (Failed message) = T.append "failed: " message
-humanReadable EtalonUnknown = "unknown"
-humanReadable (Error err) = err
+humanReadable :: ComparisonResult -> Text
+humanReadable Success       = "     OK"
+humanReadable Ran           = "UNKNOWN"
+humanReadable Skipped       = "   SKIP"
+humanReadable (Failed _)    = " FAILED"
+humanReadable EtalonUnknown = "UNKNOWN"
+humanReadable (Error _)     = "  ERROR"
 
-machineReadable :: ComparisonResult Text -> Text
-machineReadable (Failed message) = T.append "failed " message
-machineReadable (Error err) = T.append "error " err
-machineReadable res = humanReadable res
+machineReadable :: ComparisonResult -> Text
+machineReadable Success = "OK"
+machineReadable Ran = "ran"
+machineReadable EtalonUnknown = "unknown"
+machineReadable Skipped = "skipped"
+machineReadable (Failed message) = "failed " <> message
+machineReadable (Error err) = "error " <> err
 
 
-type TestReport a = [(Text, ComparisonResult a)]
+data TestRunResult = TestRunResult
+    { testRunStatus :: ComparisonResult
+    , testRunTime   :: Maybe DiffTime
+    } deriving (Eq, Show)
 
-serializeTestReport :: TestReport Text -> Text
+type TestReport = [(Text, TestRunResult)]
+
+makeTestRunResult :: ComparisonResult -> TestRunResult
+makeTestRunResult cmp = TestRunResult cmp Nothing
+
+serializeTestReport :: TestReport -> Text
 serializeTestReport = T.unlines .
-            map (\(testName, res) -> T.concat [testName, " ", machineReadable res])
+            map (\(testName, res) -> testName <> " " <> serializeTestRunResult res)
 
-readComparisonResult :: [Text] -> ComparisonResult Text
-readComparisonResult ["OK"] = Success
-readComparisonResult ["ran"] = Ran
-readComparisonResult ["skipped"] = Skipped
-readComparisonResult ["unknown"] = EtalonUnknown
-readComparisonResult ("failed":err) = Failed $ T.unwords err
-readComparisonResult ("error":err) = Error $ T.unwords err
-readComparisonResult _ = Error "Corrupted report file"
+humanReadableTime :: Maybe DiffTime -> Text
+humanReadableTime Nothing = ""
+humanReadableTime (Just t) = " (" <> tshow (diffTimeToPicoseconds t `div` picosecondsInMs) <> "ms)"
 
-deserializeTestReport :: Text -> TestReport Text
-deserializeTestReport text = map (parseTest . T.words) reportLines
+humanReadableReport :: TestReport -> Text
+humanReadableReport = T.intercalate "\n" .
+            map (\(testName, res) -> testName <> " " <>
+                    humanReadable (testRunStatus res) <>
+                    humanReadableTime (testRunTime res) <>
+                    fromMaybe "" (T.append ": " <$> getErrorMessage (testRunStatus res)))
+
+humanReadableSummary :: TestReport -> Text
+humanReadableSummary = T.unlines . map toText . group . sort . map (fromComparisonResult . testRunStatus . snd)
+    where toText list = T.concat [head list, "\t", tshow (length list)]
+          fromComparisonResult (Error _) = "Error"
+          fromComparisonResult (Failed _) = "Failed"
+          fromComparisonResult r = tshow r
+
+picosecondsInMs :: Integer
+picosecondsInMs = 10^(9::Int)
+
+serializeTestRunResult :: TestRunResult -> Text
+serializeTestRunResult (TestRunResult status time) = serializedTime <> machineReadable status
   where
-    reportLines = filter (not . T.null) . map T.strip $ T.lines text
+    serializedTime = case time of
+        Nothing -> ""
+        Just t  -> "#time:" <> tshow (diffTimeToPicoseconds t `div` picosecondsInMs) <> "ms "
 
-    parseTest :: [Text] -> (Text, ComparisonResult Text)
-    -- TODO: More robust handling to preserve whitespace in error message
-    parseTest (testName:testStatus:err) = (testName, readComparisonResult (testStatus:err))
-    parseTest [testName] = (testName, Error "Corrupted report file")
-    parseTest [] = error "Impossible happened in deserializeTestReport"
 
-readTestReport :: FilePath -> IO (TestReport Text)
+readComparisonResult :: T.Text -> T.Text -> ComparisonResult
+readComparisonResult "OK" _ = Success
+readComparisonResult "ran" _ = Ran
+readComparisonResult "skipped" _ = Skipped
+readComparisonResult "unknown" _ = EtalonUnknown
+readComparisonResult "failed" err = Failed err
+readComparisonResult "error" err = Error err
+readComparisonResult _ _ = Error "Corrupted report file"
+
+deserializeTestReport :: Text -> TestReport
+deserializeTestReport text = map parseTest reportLines
+  where
+    reportLines = filter (not . T.null) $ map T.strip $ T.lines text
+
+    parseTest :: Text -> (Text, TestRunResult)
+    parseTest line = either (error . show) id $ Parsec.parse testParser "" line
+
+    testParser = do
+        testName <- token
+        runResult <- Parsec.optionMaybe $ do
+            additionalInfo <- Map.fromList <$> additionalInfoParser
+            skipSpace1
+            status <- token
+            errorMessage <- skipSpace *> (T.pack <$> Parsec.many Parsec.anyChar) <* Parsec.eof
+            let res = makeTestRunResult $ readComparisonResult status errorMessage
+                time = parseTime =<< Map.lookup "time" additionalInfo
+            pure $ res{testRunTime = time}
+
+        return (testName, fromMaybe (makeTestRunResult $ Error "Corrupted report file") runResult)
+
+    additionalInfoParser = Parsec.many $ Parsec.try $ do
+        skipSpace1
+        _ <- Parsec.char '#'
+        key <- T.pack <$> Parsec.many1 (Parsec.satisfy $ \c -> c /= ':' && not (isSpace c))
+        _ <- Parsec.char ':'
+        value <- token
+        pure (key, value)
+
+    parseTime s = res
+      where
+        s' = fromMaybe s $ T.stripSuffix "ms" s
+        mbNum = readMaybe $ T.unpack s'
+        res = case mbNum of
+            Nothing  -> Nothing
+            Just num -> Just $ picosecondsToDiffTime $ num * picosecondsInMs
+
+    skipSpace1 = Parsec.skipMany1 Parsec.space
+    skipSpace = Parsec.skipMany Parsec.space
+    token = T.pack <$> Parsec.many1 nonSpace
+    nonSpace = Parsec.satisfy $ not.isSpace
+
+readTestReport :: FilePath -> IO TestReport
 readTestReport reportFile = do
     reportExists <- isFile reportFile
     if reportExists
@@ -105,7 +188,7 @@ deserializeTestList text = map toTest testLines
     testLines = map T.words . T.lines $ text
 
     toTest [name, state] = (name, read $ T.unpack state)
-    toTest _ = error "Corrupted testList file"
+    toTest _ = error "Corrupted testList file" -- FIXME
 
 readTests :: FilePath -> IO TestList
 readTests testListFile = do

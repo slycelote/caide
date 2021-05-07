@@ -4,6 +4,8 @@ module Caide.Paths(
     , testsDir
     , testReportFile
     , testListFile
+    , caideConfFile
+    , caideStateFile
 ) where
 
 import Prelude hiding (FilePath)
@@ -11,6 +13,12 @@ import Prelude hiding (FilePath)
 import qualified Filesystem.Path.CurrentOS as FS
 import Filesystem.Path.CurrentOS (FilePath, (</>))
 import Caide.Types (ProblemID)
+
+caideConfFile :: FilePath -> FilePath
+caideConfFile root = root </> "caide.ini"
+
+caideStateFile :: FilePath -> FilePath
+caideStateFile root = root </> ".caide" </> "config"
 
 problemDir :: FilePath -> ProblemID -> FilePath
 problemDir root probId = root </> FS.fromText probId

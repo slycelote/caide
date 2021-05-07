@@ -1,1 +1,1 @@
-{"input":{},"name":"b","output":{"file":"output.txt"},"language":{"name":"c#","c#":true},"id":"b"}
+name: b, id: b, language: c#, input: {}, output: {"file":"output.txt"}

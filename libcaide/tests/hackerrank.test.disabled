@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Disabling the JS test due to incompatibility with phantomjs
+
+# rm -rf equal/ wheres-the-marble/
+
+# parse_with_js https://hackerrank.com/challenges/equal
+# parse_with_js https://hackerrank.com/contests/hourrank-18/challenges/wheres-the-marble
+
+# compare_with after-parse equal/{case1.{in,out},problem.ini}
+# compare_with after-parse wheres-the-marble/{case1.{in,out},problem.ini}
+

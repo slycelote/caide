@@ -1,6 +1,6 @@
 cabal-version:  3.0
 name:           libcaide
-version:        2.6.0
+version:        2.7.0
 build-type:     Custom
 license:        GPL-3.0-or-later
 license-file:   LICENSE
@@ -19,6 +19,10 @@ source-repository head
   type:         git
   location:     https://github.com/slycelote/caide
 
+Flag openssl
+  description: Use openssl library installed in the system instead of Haskell tls package
+  default: False
+
 Flag cppinliner
   description: Include support for inlining C++ code via libclang
   default: True
@@ -36,73 +40,53 @@ custom-setup
                  filepath,
                  zip-archive
 
+common exe-flags
+  ghc-options:     -Wall -static -pgml g++ -rtsopts=all
+
+  if os(windows) {
+    -- -threaded runtime on Windows causes native calls in Network.Socket to be uninterruptible:
+    -- https://stackoverflow.com/questions/10608602
+    ghc-options:   -optl-static
+  } else {
+    -- Don't use -static linker option in Linux, since we don't want to statically link glibc
+    ghc-options:   -optl-pthread -threaded -with-rtsopts=-N
+  }
+  if flag(debug) {
+    -- run as cabal configure -fdebug --ghc-option=-debug -O0
+    ghc-options:   -fprof-auto
+  }
+
 executable caide
+  import: exe-flags
   build-depends: base, libcaide
   default-language: Haskell2010
   hs-source-dirs: app
   main-is: Main.hs
-  ghc-options:     -Wall -static -pgml g++ -threaded -rtsopts=all -with-rtsopts=-N
-
-  if os(windows) {
-    ghc-options:   -optl-static
-  } else {
-    ghc-options:   -optl-pthread
-  }
-  if flag(debug) {
-    -- run as cabal configure -fdebug --ghc-option=-debug -O0
-    ghc-options:   -fprof-auto
-  }
 
 test-suite caide-tests
+  import: exe-flags
   type: exitcode-stdio-1.0
-  build-depends: base, libcaide
+  build-depends: base, libcaide, HUnit, text
   default-language: Haskell2010
   hs-source-dirs: test
   main-is: Main.hs
-
-  ghc-options:     -Wall -static -pgml g++ -threaded -rtsopts=all -with-rtsopts=-N
-  if os(windows) {
-    ghc-options:   -optl-static
-  } else {
-    ghc-options:   -optl-pthread
-  }
-  if flag(debug) {
-    -- run as cabal configure -fdebug --ghc-option=-debug -O0
-    ghc-options:   -fprof-auto
-  }
-
+  other-modules: ProblemParsers
+  other-extensions: OverloadedStrings, RecordWildCards
 
 library
-  -- Due to a cabal bug, linking custom Setup.hs fails when local version
-  -- of unix package doesn't match ghc version. Older unix version in GHC 7.8
-  -- forces us to use an older version of time package.
-  if impl(ghc < 7.10) {
-    build-depends:
-                   base >= 4.7 && < 4.8,
-                   old-locale,
-                   time < 1.5
-  } else {
-    build-depends:
-                   base >= 4.8,
-                   time >= 1.5.0.1
-    -- Functor-Applicative-Monad proposal
-    cpp-options:   -DAMP
-  }
-
   build-depends:
+                   base >= 4.8,
                    aeson,
                    array,
                    async >= 2.0.1,
                    bytestring,
                    ConfigFile,
-                   connection,
                    containers >= 0.5.0.0,
                    directory,
                    file-embed,
                    filelock,
                    filepath,
                    http-client >= 0.5,
-                   http-client-tls,
                    http-types >= 0.9,
                    httpd-shed,
                    microstache,
@@ -116,13 +100,21 @@ library
                    system-filepath,
                    tagsoup >= 0.13,
                    text >= 1.1.0,
+                   time >= 1.5.0.1,
                    unordered-containers,
                    vector,
                    xml,
                    zip-archive
+  if flag(openssl) {
+    build-depends: http-client-openssl
+  } else {
+    build-depends: http-client-tls, connection
+  }
 
-  other-extensions: CPP
   hs-source-dirs:  src
+  other-extensions: CPP, DeriveGeneric, ForeignFunctionInterface, GeneralizedNewtypeDeriving,
+                    OverloadedStrings, RecordWildCards, ScopedTypeVariables
+
   ghc-options:     -Wall -static -rtsopts=all
   if flag(debug) {
     ghc-options:   -fprof-auto
@@ -181,12 +173,14 @@ library
         Caide.Paths
         Caide.Problem
         Caide.Registry
+        Caide.Settings
         Caide.Templates
         Caide.TestCases
         Caide.TestCases.TopcoderComparator
         Caide.TestCases.TopcoderDeserializer
         Caide.TestCases.Types
         Caide.Types
+        Caide.Types.Option
         Caide.Util
         Caide.Xml
         Data.Text.Encoding.Util

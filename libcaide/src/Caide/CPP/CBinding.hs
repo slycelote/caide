@@ -4,9 +4,6 @@ module Caide.CPP.CBinding(
       inlineLibraryCode
 ) where
 
-#ifndef AMP
-import Control.Applicative ((<$>))
-#endif
 import qualified Data.Text as T
 import Foreign
 import Foreign.C.String
