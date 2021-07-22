@@ -60,6 +60,10 @@ jobs:
         ls -l --time-style=long-iso $(readlink -f $(which g++)) >>common.txt
         cpp --version >>common.txt
         ls -l --time-style=long-iso $(readlink -f $(which cpp)) >>common.txt
+        cmake --version >>common.txt
+        ls -l --time-style=long-iso $(readlink -f $(which cmake)) >>common.txt
+        ninja --version >>common.txt
+        ls -l --time-style=long-iso $(readlink -f $(which ninja)) >>common.txt
         cp common.txt llvm-submodule.txt
         git -C libcaide/cbits/cpp-inliner submodule status >>llvm-submodule.txt
         cp common.txt submodules.txt
