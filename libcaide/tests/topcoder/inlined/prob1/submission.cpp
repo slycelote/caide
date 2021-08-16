@@ -12,6 +12,10 @@
 class ClassName {
 public:
     /// caide keep
+    ClassName() {
+    }
+
+    /// caide keep
     long long methodName(int i, double d) {
         long long result = 0;
         return result;
