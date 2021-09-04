@@ -63,6 +63,7 @@ std::string getLatest() {
 
     if (f.empty())
         throw std::runtime_error("Input file not found");
+    std::cerr << "Using " << f << " as input file" << std::endl;
     return f;
 }
 #endif
