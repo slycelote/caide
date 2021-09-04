@@ -18,8 +18,9 @@ import qualified Filesystem.Path.CurrentOS as F
 import Filesystem.Path.CurrentOS ((</>))
 
 import Data.FileEmbed (embedDir)
-import Filesystem.Util (readTextFile, writeTextFile)
+import Filesystem.Util (pathToText, readTextFile, writeTextFile)
 
+import Caide.Logger (logWarn)
 import Caide.Types
 
 templates' :: [(String, ByteString)]
@@ -56,7 +57,10 @@ getTemplate path = do
                     Left _ -> overwrite
                     Right original -> if original == current
                         then T.length original `seq` overwrite
-                        else return current
+                        else do
+                            logWarn $ "Builtin template " <> pathToText path <>
+                                      " was updated both upstream and locally. Compilation error is possible."
+                            return current
 
 mbReadFile :: F.FilePath -> IO (Either Text Text)
 mbReadFile path = do
