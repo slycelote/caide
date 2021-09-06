@@ -50,7 +50,7 @@ namespace slycelote.VsCaide.Core.UI
         public static string Prompt(string question, string title,
             string defaultValue = "")
         {
-            return Prompt(question, title, null, defaultValue).Item1;
+            return Prompt(question, title, null, defaultValue)?.Item1;
         }
 
         public static Tuple<string, string> Prompt(string question, string title,
