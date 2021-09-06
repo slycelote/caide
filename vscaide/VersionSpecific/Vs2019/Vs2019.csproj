@@ -75,11 +75,11 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\CommonUtilities\CommonUtilities.csproj">
-      <Project>{e386f4f0-5343-423b-bc7b-a5c0b5953e4e}</Project>
-      <Name>CommonUtilities</Name>
+    <ProjectReference Include="..\..\VsCaideCore\VsCaideCore.csproj">
+      <Project>{c9795409-51b0-42ff-8575-74e3fea70e54}</Project>
+      <Name>VsCaideCore</Name>
     </ProjectReference>
-    <ProjectReference Include="..\VsInterface\VsInterface.csproj">
+    <ProjectReference Include="..\..\VsInterface\VsInterface.csproj">
       <Project>{a34a05f8-cd09-48b2-a64a-5e32502b9c96}</Project>
       <Name>VsInterface</Name>
     </ProjectReference>

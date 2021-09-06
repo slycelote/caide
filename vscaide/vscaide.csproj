@@ -23,7 +23,7 @@
     <ProjectGuid>{461C8E62-458A-4477-BF5D-C95B2DF625BD}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>VsCaide</RootNamespace>
+    <RootNamespace>slycelote.VsCaide</RootNamespace>
     <AssemblyName>VsCaide</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <GeneratePkgDefFile>true</GeneratePkgDefFile>
@@ -54,28 +54,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="CHelperServer.cs" />
-    <Compile Include="NotifyPropertyChangedBase.cs" />
+    <Compile Include="Project.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TestCase.cs" />
-    <Compile Include="UI\ArchiveProblemsWindow.xaml.cs">
-      <DependentUpon>ArchiveProblemsWindow.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="UI\EditTestsWindow.xaml.cs">
-      <DependentUpon>EditTestsWindow.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="UI\ExtendedCheckBox.cs" />
-    <Compile Include="UI\PromptDialog.xaml.cs">
-      <DependentUpon>PromptDialog.xaml</DependentUpon>
-    </Compile>
     <Compile Include="VsCaideMainWindow.cs" />
     <Compile Include="VsCaideMainWindowCommand.cs" />
-    <Compile Include="VsCaideMainWindowControl.xaml.cs">
-      <DependentUpon>VsCaideMainWindowControl.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="VsCaideModel.cs" />
     <Compile Include="VsCaidePackage.cs" />
-    <Compile Include="VsVersionDispatcher.cs" />
+    <Compile Include="VsPre2022Services.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Key.snk" />
@@ -211,40 +195,24 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="CommonUtilities\CommonUtilities.csproj">
-      <Project>{e386f4f0-5343-423b-bc7b-a5c0b5953e4e}</Project>
-      <Name>CommonUtilities</Name>
-    </ProjectReference>
     <ProjectReference Include="VersionSpecific\Vs2017\Vs2017.csproj">
       <Project>{8f37650d-5dc4-4558-b615-cf510b5a1d3f}</Project>
       <Name>Vs2017</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="VersionSpecific\Vs2019\Vs2019.csproj">
       <Project>{29a54bb9-5e03-4b41-b0f2-2e5f10480922}</Project>
       <Name>Vs2019</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="VersionSpecific\VsInterface\VsInterface.csproj">
+    <ProjectReference Include="VsCaideCore\VsCaideCore.csproj">
+      <Project>{c9795409-51b0-42ff-8575-74e3fea70e54}</Project>
+      <Name>VsCaideCore</Name>
+    </ProjectReference>
+    <ProjectReference Include="VsInterface\VsInterface.csproj">
       <Project>{a34a05f8-cd09-48b2-a64a-5e32502b9c96}</Project>
       <Name>VsInterface</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Include="UI\ArchiveProblemsWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="UI\EditTestsWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="UI\PromptDialog.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="VsCaideMainWindowControl.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -13,12 +13,12 @@ using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.Win32;
-using slycelote.VsCaide.Utilities;
-
+using slycelote.VsCaide.Core;
+using slycelote.VsCaide.VsInterface;
 using SolutionEvents = Microsoft.VisualStudio.Shell.Events.SolutionEvents;
 using Task = System.Threading.Tasks.Task;
 
-namespace VsCaide
+namespace slycelote.VsCaide
 {
     /// <summary>
     /// This is the class that implements the package exposed by this assembly.
@@ -75,13 +75,13 @@ namespace VsCaide
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
             await JoinableTaskFactory.SwitchToMainThreadAsync();
-            await Services.InitializeAsync(this);
+            VsImplementation.Services = await VsPre2022Services.ConstructAsync(this);
             SolutionEvents.OnAfterCloseSolution += SolutionEvents_OnAfterCloseSolution;
             SolutionEvents.OnBeforeOpenSolution += SolutionEvents_OnBeforeOpenSolution;
             SolutionEvents.OnBeforeBackgroundSolutionLoadBegins += SolutionEvents_OnBeforeBackgroundSolutionLoadBegins;
             SolutionEvents.OnAfterBackgroundSolutionLoadComplete += SolutionEvents_OnAfterBackgroundSolutionLoadComplete;
             SolutionEvents.OnBeforeCloseProject += SolutionEvents_OnBeforeCloseProject;
-            var monitorSelection = Services.MonitorSelection;
+            var monitorSelection = (await GetServiceAsync(typeof(IVsMonitorSelection))) as IVsMonitorSelection;
             _ = ErrorHandler.ThrowOnFailure(
                 monitorSelection.AdviseSelectionEvents(this, out uint monitorSelectionCookie));
 
@@ -139,7 +139,8 @@ namespace VsCaide
             ThreadHelper.ThrowIfNotOnUIThread();
             if (e.IsRemoved && !SolutionUtilities.IgnoreSolutionEvents)
             {
-                GetMainWindowControl()?.OnBeforeCloseProject(e.Hierarchy);
+                GetMainWindowControl()?.OnBeforeCloseProject(
+                    VsImplementation.Services.GetProjectFromHierarchy(e.Hierarchy));
             }
         }
 
@@ -164,7 +165,8 @@ namespace VsCaide
 
             if (!SolutionUtilities.IgnoreSolutionEvents)
             {
-                GetMainWindowControl()?.OnStartupProjectChanged(varValueNew as IVsHierarchy);
+                GetMainWindowControl()?.OnStartupProjectChanged(
+                    VsImplementation.Services.GetProjectFromHierarchy(varValueNew));
             }
 
             return VSConstants.S_OK;

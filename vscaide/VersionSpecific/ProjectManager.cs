@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 
-using VsInterface;
-using slycelote.VsCaide.Utilities;
+using slycelote.VsCaide.VsInterface;
+using slycelote.VsCaide.Core;
 
 using EnvDTE;
 using EnvDTE80;
@@ -20,6 +20,13 @@ namespace slycelote.VsCaide.VsSpecific
     /// </summary>
     public class ProjectManager : IProjectManager
     {
+        private readonly DTE dte;
+
+        public ProjectManager(DTE dte)
+        {
+            this.dte = dte;
+        }
+
         private static void AddDirectoryRecursively(VCProject vcProject, string directory)
         {
             var requiredDirectories = new HashSet<string>(
@@ -64,7 +71,6 @@ namespace slycelote.VsCaide.VsSpecific
 
         private Project RecreateProjectOfCorrectType(string projectName, ProjectType projectType)
         {
-            var dte = Services.DTE;
             var solution = dte.Solution as Solution2;
             string solutionDir = SolutionUtilities.GetSolutionDir();
             string projectDir = Path.Combine(solutionDir, projectName);
@@ -170,8 +176,6 @@ namespace slycelote.VsCaide.VsSpecific
                 }
             }
 
-            var dte = Services.DTE;
-
             dte.Solution.SolutionBuild.StartupProjects = project.UniqueName;
 
             var allItems = project.ProjectItems.OfType<ProjectItem>();
@@ -203,7 +207,6 @@ namespace slycelote.VsCaide.VsSpecific
 
             var vcProject = (VCProject)project.Object;
 
-            var dte = Services.DTE;
             var solution = dte.Solution as Solution2;
 
             var cpplibProject = solution.Projects.OfType<Project>().SingleOrDefault(p => p.Name == "cpplib");
@@ -282,7 +285,6 @@ namespace slycelote.VsCaide.VsSpecific
             if (!Directory.Exists(cppLibraryDir))
                 return;
 
-            var dte = Services.DTE;
             var solution = dte.Solution as Solution2;
 
             var allProjects = solution.Projects.OfType<Project>();
