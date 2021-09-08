@@ -11,6 +11,7 @@ using EnvDTE80;
 using VSLangProj;
 
 using Microsoft.VisualStudio.VCProjectEngine;
+using Microsoft.VisualStudio.Shell;
 
 namespace slycelote.VsCaide.VsSpecific
 {
@@ -71,12 +72,15 @@ namespace slycelote.VsCaide.VsSpecific
 
         private Project RecreateProjectOfCorrectType(string projectName, ProjectType projectType)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             var solution = dte.Solution as Solution2;
             string solutionDir = SolutionUtilities.GetSolutionDir();
             string projectDir = Path.Combine(solutionDir, projectName);
 
             var allProjects = solution.Projects.OfType<Project>();
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             var oldProject = allProjects.SingleOrDefault(p => p.Name == projectName);
+#pragma warning restore VSTHRD010
             if (oldProject != null && projectType.Belongs(oldProject))
                 return oldProject;
 
@@ -133,7 +137,9 @@ namespace slycelote.VsCaide.VsSpecific
                     Exclusive: false);
 
                 allProjects = solution.Projects.OfType<Project>();
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
                 newProject = allProjects.SingleOrDefault(p => p.Name == projectName);
+#pragma warning restore VSTHRD010
                 if (newProject == null)
                 {
                     Logger.LogError("Couldn't create {0} project", projectName);
@@ -154,6 +160,7 @@ namespace slycelote.VsCaide.VsSpecific
 
         public void CreateAndActivateCSharpProject(string selectedProblem)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             Project project = RecreateProjectOfCorrectType(selectedProblem, CSharpProjectType);
             if (project == null)
             {
@@ -170,7 +177,9 @@ namespace slycelote.VsCaide.VsSpecific
             var projectDir = Path.Combine(solutionDir, selectedProblem);
             foreach (var fileName in new[]{solutionFile, testFile})
             {
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
                 if (!project.ProjectItems.OfType<ProjectItem>().Any(item => item.Name.Equals(fileName, StringComparison.CurrentCultureIgnoreCase)))
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
                 {
                     project.ProjectItems.AddFromFile(Path.Combine(projectDir, fileName));
                 }
@@ -179,7 +188,9 @@ namespace slycelote.VsCaide.VsSpecific
             dte.Solution.SolutionBuild.StartupProjects = project.UniqueName;
 
             var allItems = project.ProjectItems.OfType<ProjectItem>();
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             var solutionCs = allItems.Single(i => i.Name == solutionFile);
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             var solutionCsWindow = solutionCs.Open(EnvDTE.Constants.vsViewKindCode);
             solutionCsWindow.Visible = true;
             solutionCsWindow.Activate();
@@ -191,6 +202,7 @@ namespace slycelote.VsCaide.VsSpecific
 
         public void CreateAndActivateCppProject(string selectedProblem, string language)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             Project project = RecreateProjectOfCorrectType(selectedProblem, CppProjectType);
 
             // Ensure that the project contains necessary files
@@ -199,7 +211,9 @@ namespace slycelote.VsCaide.VsSpecific
 
             foreach (var fileName in new[]{solutionFile, testFile})
             {
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
                 if (!project.ProjectItems.OfType<ProjectItem>().Any(item => item.Name.Equals(fileName, StringComparison.CurrentCultureIgnoreCase)))
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
                 {
                     project.ProjectItems.AddFromFile(fileName);
                 }
@@ -209,12 +223,16 @@ namespace slycelote.VsCaide.VsSpecific
 
             var solution = dte.Solution as Solution2;
 
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             var cpplibProject = solution.Projects.OfType<Project>().SingleOrDefault(p => p.Name == "cpplib");
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             if (cpplibProject != null)
             {
                 var references = (VSLangProj.References)vcProject.References;
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
                 var cpplibReference = references.OfType<VSLangProj.Reference>().SingleOrDefault(r =>
                         r.SourceProject != null && r.SourceProject.UniqueName == cpplibProject.UniqueName);
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
                 if (language != "simplecpp")
                 {
                     if (cpplibReference == null)
@@ -266,7 +284,9 @@ namespace slycelote.VsCaide.VsSpecific
             if (SolutionUtilities.HasSolutionLoaded())
             {
                 var allItems = project.ProjectItems.OfType<ProjectItem>();
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
                 var solutionCpp = allItems.Single(i => i.Name == solutionFile);
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
                 var solutionCppWindow = solutionCpp.Open(EnvDTE.Constants.vsViewKindCode);
                 solutionCppWindow.Visible = true;
                 solutionCppWindow.Activate();
@@ -279,6 +299,7 @@ namespace slycelote.VsCaide.VsSpecific
 
         public void CreateCppLibProject()
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             var solutionDir = SolutionUtilities.GetSolutionDir();
             const string cpplib = "cpplib";
             var cppLibraryDir = Path.Combine(solutionDir, cpplib);
@@ -288,7 +309,9 @@ namespace slycelote.VsCaide.VsSpecific
             var solution = dte.Solution as Solution2;
 
             var allProjects = solution.Projects.OfType<Project>();
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             var project = allProjects.SingleOrDefault(p => p.Name == cpplib);
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
 
             VCProject vcProject;
             if (project == null)
@@ -297,7 +320,9 @@ namespace slycelote.VsCaide.VsSpecific
                 solution.AddFromTemplate(Paths.CppProjectTemplate, Path.Combine(solutionDir, cpplib), cpplib,
                     Exclusive: false);
                 allProjects = solution.Projects.OfType<Project>();
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
                 project = allProjects.SingleOrDefault(p => p.Name == cpplib);
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
                 if (project == null)
                 {
                     Logger.LogError("Couldn't create {0} project", cpplib);
@@ -325,12 +350,15 @@ namespace slycelote.VsCaide.VsSpecific
 
         public void CreateSubmissionCppProject()
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             Project project = RecreateProjectOfCorrectType("submission", CppProjectType);
 
             var submissionFile = Path.Combine("..", "submission.cpp");
 
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             if (!project.ProjectItems.OfType<ProjectItem>().Any(item =>
                 submissionFile.Equals(item.Name, StringComparison.CurrentCultureIgnoreCase)))
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             {
                 project.ProjectItems.AddFromFile(submissionFile);
             }
@@ -351,6 +379,7 @@ namespace slycelote.VsCaide.VsSpecific
 
         public void CreateSubmissionCsProject()
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             Project project = RecreateProjectOfCorrectType("submission", CSharpProjectType);
 
             // Create submission.cs file if it's missing.
@@ -360,8 +389,10 @@ namespace slycelote.VsCaide.VsSpecific
                 File.WriteAllText(submissionCs, "");
             }
 
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             if (!project.ProjectItems.OfType<ProjectItem>().Any(item =>
                 "submission.cs".Equals(item.Name, StringComparison.CurrentCultureIgnoreCase)))
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             {
                 project.ProjectItems.AddFromFile(submissionCs);
             }
@@ -369,14 +400,22 @@ namespace slycelote.VsCaide.VsSpecific
 
         private readonly static ProjectType CSharpProjectType = new ProjectType
         {
-            Belongs = p => p.Kind == PrjKind.prjKindCSharpProject,
+            Belongs = p =>
+            {
+                ThreadHelper.ThrowIfNotOnUIThread();
+                return p.Kind == PrjKind.prjKindCSharpProject;
+            },
             ProjectTemplate = Paths.CSharpProjectTemplate,
             RequiresEmptyDirectoryForCreation = true,
         };
 
         private readonly static ProjectType CppProjectType = new ProjectType
         {
-            Belongs = p => p.Object is VCProject,
+            Belongs = p =>
+            {
+                ThreadHelper.ThrowIfNotOnUIThread();
+                return p.Object is VCProject;
+            },
             ProjectTemplate = Paths.CppProjectTemplate,
             RequiresEmptyDirectoryForCreation = false,
         };
