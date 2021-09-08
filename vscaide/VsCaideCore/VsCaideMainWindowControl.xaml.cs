@@ -324,44 +324,52 @@ namespace slycelote.VsCaide.Core
 
         private async void FsWatcher_Fired(object sender, FileSystemEventArgs e)
         {
-            var fsWatcher = sender as FileSystemWatcher;
-            if (fsWatcher != this.fsWatcher)
+            try
             {
-                return;
-            }
-
-            if (e.ChangeType == WatcherChangeTypes.Changed)
-            {
-                lock (fsWatcher)
+                var fsWatcher = sender as FileSystemWatcher;
+                if (fsWatcher != this.fsWatcher)
                 {
-                    if (DateTime.Now <= lastChange + TimeSpan.FromSeconds(2))
-                        return;
-                    lastChange = DateTime.Now;
+                    return;
                 }
-            }
 
-            if (e.ChangeType == WatcherChangeTypes.Renamed)
+                if (e.ChangeType == WatcherChangeTypes.Changed)
+                {
+                    lock (fsWatcher)
+                    {
+                        if (DateTime.Now <= lastChange + TimeSpan.FromSeconds(2))
+                            return;
+                        lastChange = DateTime.Now;
+                    }
+                }
+
+                if (e.ChangeType == WatcherChangeTypes.Renamed)
+                {
+                    return;
+                }
+
+                string fileName = e.Name.ToLower();
+                if ((e.ChangeType == WatcherChangeTypes.Created || e.ChangeType == WatcherChangeTypes.Deleted) &&
+                    fileName != ".caideproblem" && fileName != "problem.ini")
+                {
+                    return;
+                }
+
+                await services.SwitchToMainThreadAsync();
+                Logger.Trace("[!] {0} {1}", fileName, e.ChangeType);
+
+                if (!fsWatcher.Path.StartsWith(SolutionUtilities.GetSolutionDir(), StringComparison.CurrentCultureIgnoreCase))
+                {
+                    fsWatcher.EnableRaisingEvents = false;
+                    return;
+                }
+
+                ReloadProblemList();
+            }
+            catch (Exception ex)
             {
-                return;
+                // Exceptions thrown from async void methods crash the process.
+                Logger.Trace("{0}", ex);
             }
-
-            string fileName = e.Name.ToLower();
-            if ((e.ChangeType == WatcherChangeTypes.Created || e.ChangeType == WatcherChangeTypes.Deleted) &&
-                fileName != ".caideproblem" && fileName != "problem.ini")
-            {
-                return;
-            }
-
-            await services.SwitchToMainThreadAsync();
-            Logger.Trace("[!] {0} {1}", fileName, e.ChangeType);
-
-            if (!fsWatcher.Path.StartsWith(SolutionUtilities.GetSolutionDir(), StringComparison.CurrentCultureIgnoreCase))
-            {
-                fsWatcher.EnableRaisingEvents = false;
-                return;
-            }
-
-            ReloadProblemList();
         }
 
         /************************
