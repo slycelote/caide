@@ -57,8 +57,8 @@ namespace slycelote.VsCaide.Core.UI
             string optionalInputLabel, string defaultValue = "")
         {
             var inst = new PromptDialog(question, title, defaultValue, optionalInputLabel);
-            inst.ShowDialog();
-            return inst.DialogResult == true ?
+            bool? result = inst.ShowDialog();
+            return result == true ?
                 Tuple.Create(inst.txtResponse.Text, inst.txtOptionalInput.Text) :
                 null;
         }

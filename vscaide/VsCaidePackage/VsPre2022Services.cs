@@ -22,12 +22,14 @@
             services.DTE = await GetAsync<DTE>(package);
             services.Solution = await GetAsync<SVsSolution, IVsSolution>(package);
             services.GeneralOutputWindow = await GetAsync<SVsGeneralOutputWindowPane, IVsOutputWindowPane>(package);
+            /*
             services.MonitorSelection = await GetAsync<IVsMonitorSelection>(package);
             services.CommandWindow = await GetAsync<IVsCommandWindow>(package);
             services.Shell = await GetAsync<IVsShell>(package);
             services.OutputWindow = await GetAsync<IVsOutputWindow>(package);
             services.FileChangeEx = await GetAsync<IVsFileChangeEx>(package);
             services.Log = await GetAsync<SVsActivityLog, IVsActivityLog>(package);
+            */
             return services;
         }
 
@@ -175,12 +177,14 @@
         private DTE DTE { get; set; }
         private IVsSolution Solution { get; set; }
         private IVsOutputWindowPane GeneralOutputWindow { get; set; }
+        /*
         private IVsMonitorSelection MonitorSelection { get; set; }
         private IVsCommandWindow CommandWindow { get; set; }
         private IVsShell Shell { get; set; }
         private IVsOutputWindow OutputWindow { get; set; }
         private IVsFileChangeEx FileChangeEx { get; set; }
         private IVsActivityLog Log { get; set; }
+        */
 
         private static async Task<TInterface> GetAsync<TServiceType, TInterface>(AsyncPackage package)
             where TInterface : class

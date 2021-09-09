@@ -29,8 +29,8 @@ namespace slycelote.VsCaide.Core
                 CreateNoWindow = true,
             };
             caideProcess = Process.Start(psi);
-            _ = new ReadStreamToOutputWindow(caideProcess.StandardOutput, cancelTokenSource.Token).RunAsync();
-            _ = new ReadStreamToOutputWindow(caideProcess.StandardError, cancelTokenSource.Token).RunAsync();
+            Task.Run(() => new ReadStreamToOutputWindow(caideProcess.StandardOutput, cancelTokenSource.Token).RunAsync());
+            Task.Run(() => new ReadStreamToOutputWindow(caideProcess.StandardError, cancelTokenSource.Token).RunAsync());
         }
 
         public void Stop()
@@ -68,6 +68,8 @@ namespace slycelote.VsCaide.Core
             {
                 char[] buf = new char[2048];
                 var services = VsInterface.VsImplementation.Services;
+                // Use main thread "by default" to be able to log to output window.
+                await services.SwitchToMainThreadAsync(cancelToken);
                 for (;;)
                 {
                     if (cancelToken.IsCancellationRequested)
@@ -75,9 +77,9 @@ namespace slycelote.VsCaide.Core
                         return;
                     }
 
-                    int bytesRead = await reader.ReadAsync(buf, 0, buf.Length).ConfigureAwait(false);
-                    await services.SwitchToMainThreadAsync(cancelToken);
-                    _ = services.WriteToOutputWindow(new string(buf, 0, bytesRead));
+                    // For reading, switch to thread pool.
+                    int charsRead = await Task.Run(() => reader.ReadAsync(buf, 0, buf.Length));
+                    _ = services.WriteToOutputWindow(new string(buf, 0, charsRead));
                 }
             }
             catch (OperationCanceledException) { }

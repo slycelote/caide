@@ -75,6 +75,7 @@ namespace slycelote.VsCaide
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
             await JoinableTaskFactory.SwitchToMainThreadAsync();
+            progress.Report(new ServiceProgressData("Initializing VsCaide extension"));
             VsImplementation.Services = await VsPre2022Services.ConstructAsync(this);
             SolutionEvents.OnAfterCloseSolution += SolutionEvents_OnAfterCloseSolution;
             SolutionEvents.OnBeforeOpenSolution += SolutionEvents_OnBeforeOpenSolution;
@@ -90,6 +91,7 @@ namespace slycelote.VsCaide
             bool isSolutionLoaded = await IsSolutionLoadedAsync();
             if (isSolutionLoaded)
             {
+                progress.Report(new ServiceProgressData("Loading VsCaide solution"));
                 SolutionEvents_OnAfterLoadedSolution();
             }
 
