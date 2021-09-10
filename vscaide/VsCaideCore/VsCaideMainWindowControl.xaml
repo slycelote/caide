@@ -7,7 +7,7 @@
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300"
              Name="CaideMainToolWindow">
-    <Grid Background="White">
+    <Grid Background="Transparent">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -24,18 +24,18 @@
         <Button Grid.Row="0" Grid.Column="0" Content="Reload problem list" Name="btnReload" Margin="10,5" />
         <Button Grid.Row="0" Grid.Column="1" Content="Run tests" Name="btnRunTests" Margin="10,5"/>
         <Button Grid.Row="0" Grid.Column="2" Content="Debug tests" Name="btnDebugTests" Margin="10,5"/>
-        <Label Grid.Row="1" Grid.Column="0" Content="Selected problem:" Margin="10,5" HorizontalAlignment="Right"/>
+        <Label Grid.Row="1" Grid.Column="0" Content="Selected problem:" Name="lblSelectedProblem" Margin="10,5" HorizontalAlignment="Right"/>
         <ComboBox Grid.Row="1" Grid.Column="1" Name="cbProblems" Margin="10,5" />
         <Button Grid.Row="1" Grid.Column="2" Content="Edit tests" Name="btnEditTests" Margin="10,5"/>
         <Button Grid.Row="2" Grid.Column="0" Content="Add problem..." Name="btnAddProblem" Margin="10,5" />
         <Button Grid.Row="2" Grid.Column="1" Content="Parse contest..." Name="btnParseContest" Margin="10,5"/>
         <Button Grid.Row="2" Grid.Column="2" Content="Archive selected" Name="btnArchiveProblem" Margin="10,5"/>
-        <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Content="Selected programming language:" Margin="10,5" HorizontalAlignment="Right"/>
+        <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Content="Selected programming language:" Name="lblSelectedLanguage" Margin="10,5" HorizontalAlignment="Right"/>
         <ComboBox Grid.Row="3" Grid.Column="2" Name="cbProgrammingLanguage" Margin="10,5" />
         <Button Grid.Row="4" Grid.Column="3" Content="Advanced..." Name="btnAdvanced" Margin="10,5"
                 VerticalAlignment="Bottom" HorizontalAlignment="Right">
             <Button.ContextMenu>
-                <ContextMenu>
+                <ContextMenu Name="menuAdvanced">
                     <MenuItem Header="Edit config" Name="menuEditConfig" />
                     <MenuItem Header="Archive problems..." Name="menuArchiveProblems" />
                 </ContextMenu>

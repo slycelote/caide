@@ -126,6 +126,50 @@ namespace slycelote.VsCaide.Core
             menuArchiveProblems.Click += MenuArchiveProblems_Click;
         }
 
+        private TResource GetResource<TResource>(object resourceKey)
+            where TResource: class
+        {
+            try
+            {
+                return this.FindResource(resourceKey) as TResource;
+            }
+            catch (ResourceReferenceKeyNotFoundException)
+            {
+                return null;
+            }
+            catch (ArgumentNullException)
+            {
+                return null;
+            }
+        }
+
+        public void SetStyles(object buttonStyleResourceKey,
+            object comboBoxStyleResourceKey,
+            object backgroundBrushResourceKey, object foregroundBrushResourceKey)
+        {
+            var btnStyle = GetResource<Style>(buttonStyleResourceKey);
+            foreach (var btn in new[] {btnAddProblem, btnAdvanced, btnArchiveProblem, btnCreateSolution,
+                btnDebugTests, btnEditTests, btnParseContest, btnReload, btnRunTests})
+            {
+                btn.Style = btnStyle;
+            }
+
+            var cbStyle = GetResource<Style>(comboBoxStyleResourceKey);
+            foreach (var cb in new [] {cbProblems, cbProgrammingLanguage})
+            {
+                cb.Style = cbStyle;
+            }
+
+            var fgColor = GetResource<Brush>(foregroundBrushResourceKey);
+            foreach (var lbl in new[] {lblSelectedLanguage, lblSelectedProblem})
+            {
+                lbl.Foreground = fgColor;
+            }
+
+            //menuAdvanced.Background = GetResource<Brush>(backgroundBrushResourceKey);
+            //menuAdvanced.Foreground = fgColor;
+        }
+
         private void MenuArchiveProblems_Click(object sender, RoutedEventArgs e)
         {
             var selection = ArchiveProblemsWindow.SelectProblems(model.Problems);

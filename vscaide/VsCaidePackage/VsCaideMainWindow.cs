@@ -2,6 +2,7 @@
 {
     using System;
     using System.Runtime.InteropServices;
+    using Microsoft.VisualStudio.PlatformUI;
     using Microsoft.VisualStudio.Shell;
     using Microsoft.VisualStudio.Shell.Interop;
     using slycelote.VsCaide.Core;
@@ -32,12 +33,28 @@
             // we are not calling Dispose on this object. This is because ToolWindowPane calls Dispose on
             // the object returned by the Content property.
             this.Content = new VsCaideMainWindowControl(this);
+            UpdateStyles();
+            VSColorTheme.ThemeChanged += VSColorTheme_ThemeChanged;
+        }
+
+        private void VSColorTheme_ThemeChanged(ThemeChangedEventArgs e)
+        {
+            UpdateStyles();
+        }
+
+        private void UpdateStyles()
+        {
+            (this.Content as VsCaideMainWindowControl)?.SetStyles(
+                VsResourceKeys.ButtonStyleKey,
+                VsResourceKeys.ComboBoxStyleKey,
+                EnvironmentColors.SystemMenuBrushKey,
+                EnvironmentColors.SystemMenuTextBrushKey);
         }
 
         public void Show()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            (Frame as IVsWindowFrame)?.Show();
+            (Frame as IVsWindowFrame)?.ShowNoActivate();
         }
     }
 }
