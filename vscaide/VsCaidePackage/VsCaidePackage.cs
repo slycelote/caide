@@ -119,24 +119,28 @@ namespace slycelote.VsCaide
         }
 
         private void SolutionEvents_OnAfterLoadedSolution(object sender = null, EventArgs e = null)
+            => ExceptionUtilities.CatchAll(() =>
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             GetMainWindowControl()?.OnAfterLoadedSolution();
-        }
+        });
 
         private void SolutionEvents_OnAfterBackgroundSolutionLoadComplete(object sender = null, EventArgs e = null)
+            => ExceptionUtilities.CatchAll(() =>
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             GetMainWindowControl()?.OnAfterBackgroundSolutionLoadComplete();
-        }
+        });
 
         private void SolutionEvents_OnBeforeBackgroundSolutionLoadBegins(object sender, EventArgs e)
+            => ExceptionUtilities.CatchAll(() =>
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             GetMainWindowControl()?.OnBeforeBackgroundSolutionLoadBegins();
-        }
+        });
 
         private void SolutionEvents_OnBeforeCloseProject(object sender, Microsoft.VisualStudio.Shell.Events.CloseProjectEventArgs e)
+            => ExceptionUtilities.CatchAll(() =>
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             if (e.IsRemoved && !SolutionUtilities.IgnoreSolutionEvents)
@@ -144,21 +148,24 @@ namespace slycelote.VsCaide
                 GetMainWindowControl()?.OnBeforeCloseProject(
                     VsImplementation.Services.GetProjectFromHierarchy(e.Hierarchy));
             }
-        }
+        });
 
         private void SolutionEvents_OnBeforeOpenSolution(object sender, Microsoft.VisualStudio.Shell.Events.BeforeOpenSolutionEventArgs e)
+            => ExceptionUtilities.CatchAll(() =>
         {
             GetMainWindowControl()?.OnBeforeOpenSolution();
-        }
+        });
 
         private void SolutionEvents_OnAfterCloseSolution(object sender, EventArgs e)
+            => ExceptionUtilities.CatchAll(() =>
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             GetMainWindowControl()?.OnAfterCloseSolution();
-        }
+        });
 
         #region IVsSelectionEvents
         public int OnElementValueChanged(uint elementid, object varValueOld, object varValueNew)
+            => ExceptionUtilities.CatchAll(VSConstants.E_UNEXPECTED, () =>
         {
             if (elementid != (uint)VSConstants.VSSELELEMID.SEID_StartupProject)
                 return VSConstants.S_OK;
@@ -172,18 +179,20 @@ namespace slycelote.VsCaide
             }
 
             return VSConstants.S_OK;
-        }
+        });
 
         #region Unrelated events
         public int OnSelectionChanged(IVsHierarchy pHierOld, uint itemidOld, IVsMultiItemSelect pMISOld, ISelectionContainer pSCOld, IVsHierarchy pHierNew, uint itemidNew, IVsMultiItemSelect pMISNew, ISelectionContainer pSCNew)
+            => ExceptionUtilities.CatchAll(VSConstants.E_UNEXPECTED, () =>
         {
             return VSConstants.S_OK;
-        }
+        });
 
         public int OnCmdUIContextChanged(uint dwCmdUICookie, int fActive)
+            => ExceptionUtilities.CatchAll(VSConstants.E_UNEXPECTED, () =>
         {
             return VSConstants.S_OK;
-        }
+        });
         #endregion
         #endregion
     }

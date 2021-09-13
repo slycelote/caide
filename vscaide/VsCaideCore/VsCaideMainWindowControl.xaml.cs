@@ -170,7 +170,8 @@ namespace slycelote.VsCaide.Core
             //menuAdvanced.Foreground = fgColor;
         }
 
-        private void MenuArchiveProblems_Click(object sender, RoutedEventArgs e)
+        private void MenuArchiveProblems_Click(object sender, RoutedEventArgs e) 
+            => ExceptionUtilities.CatchAll(() =>
         {
             var selection = ArchiveProblemsWindow.SelectProblems(model.Problems);
             if (selection == null || selection.SelectedProblems.Count == 0)
@@ -185,68 +186,77 @@ namespace slycelote.VsCaide.Core
             }
 
             ReloadProblemList();
-        }
+        });
 
-        private void MenuEditConfig_Click(object sender, RoutedEventArgs e)
+        private void MenuEditConfig_Click(object sender, RoutedEventArgs e) =>
+            ExceptionUtilities.CatchAll(() =>
         {
             services.ThrowIfNotOnUIThread();
             var configFile = Path.Combine(SolutionUtilities.GetSolutionDir(), "caide.ini");
             services.ExecuteCommand("File.OpenFile", configFile);
-        }
+        });
 
-        private void BtnAdvanced_Click(object sender, RoutedEventArgs e)
+        private void BtnAdvanced_Click(object sender, RoutedEventArgs e) 
+            => ExceptionUtilities.CatchAll(() =>
         {
             btnAdvanced.ContextMenu.IsOpen = true;
-        }
+        });
 
-        private void BtnEditTests_Click(object sender, RoutedEventArgs e)
+        private void BtnEditTests_Click(object sender, RoutedEventArgs e) 
+            => ExceptionUtilities.CatchAll(() =>
         {
             var currentProblem = model.SelectedProblem;
             var problemDirectory = Path.Combine(SolutionUtilities.GetSolutionDir(), currentProblem.Name);
             var testCases = TestCase.FromDirectory(problemDirectory);
             testCases = EditTestsWindow.Edit(testCases);
             TestCase.WriteToDirectory(testCases, problemDirectory);
-        }
+        });
 
-        private void BtnParseContest_Click(object sender, RoutedEventArgs e)
+        private void BtnParseContest_Click(object sender, RoutedEventArgs e) 
+            => ExceptionUtilities.CatchAll(() =>
         {
             string url = PromptDialog.Prompt("Enter contest URL: ", "Parse contest");
             if (url == null)
                 return;
             CaideExe.Run(new[] { "contest", url }, loud: Loudness.LOUD);
-        }
+        });
 
         /************************
          * User actions handlers
          ************************/
 
         private void BtnArchiveProblem_Click(object sender, RoutedEventArgs e)
+            => ExceptionUtilities.CatchAll(() =>
         {
             var currentProblem = model.SelectedProblem;
             if (currentProblem == null || string.IsNullOrEmpty(currentProblem.Name))
                 return;
             services.ThrowIfNotOnUIThread();
             ArchiveProblem(currentProblem);
-        }
+        });
 
         private void BtnDebugTests_Click(object sender, RoutedEventArgs e)
+            => ExceptionUtilities.CatchAll(() =>
         {
             services.ThrowIfNotOnUIThread();
             services.ExecuteCommand("Debug.Start");
-        }
+        });
 
         private void BtnRunTests_Click(object sender, RoutedEventArgs e)
+            => ExceptionUtilities.CatchAll(() =>
         {
             services.ThrowIfNotOnUIThread();
             services.ExecuteCommand("Debug.StartWithoutDebugging");
-        }
+        });
 
         private void BtnReload_Click(object sender, RoutedEventArgs e)
+            => ExceptionUtilities.CatchAll(() =>
         {
             ReloadProblemList();
-        }
+        });
 
         private void BtnAdd_Click(object sender, RoutedEventArgs e)
+            => ExceptionUtilities.CatchAll(() =>
         {
             var tupleResult = PromptDialog.Prompt(
                 "Input problem URL or name:", "New problem", optionalInputLabel: "Override problem ID");
@@ -278,11 +288,12 @@ namespace slycelote.VsCaide.Core
 
             CaideExe.Run(args.ToArray(), loud: Loudness.LOUD);
             // UI update will be done in fsWatcher callback.
-        }
+        });
 
         private string recentFolder = null;
 
         private void BtnCreate_Click(object sender, RoutedEventArgs e)
+            => ExceptionUtilities.CatchAll(() =>
         {
             services.ThrowIfNotOnUIThread();
             string solutionDir = SolutionUtilities.GetSolutionDir();
@@ -316,9 +327,10 @@ namespace slycelote.VsCaide.Core
                           Path.Combine(solutionDir, "vs_common.props"), overwrite: true);
                 services.SaveSolution();
             }
-        }
+        });
 
         private void CbProblems_SelectionChanged(object sender, SelectionChangedEventArgs e)
+            => ExceptionUtilities.CatchAll(() =>
         {
             bool isUserInitiated = model.ChangingProperty != nameof(VsCaideModel.SelectedProblem);
             if (!isUserInitiated)
@@ -343,9 +355,10 @@ namespace slycelote.VsCaide.Core
                 // TODO: Add/check caide.exe error code / message.
                 ReloadProblemList();
             }
-        }
+        });
 
         private void CbProgrammingLanguage_SelectionChanged(object sender, SelectionChangedEventArgs e)
+            => ExceptionUtilities.CatchAll(() =>
         {
             bool isUserInitiated = model.ChangingProperty != nameof(VsCaideModel.ProgrammingLanguage);
             if (!isUserInitiated)
@@ -364,11 +377,11 @@ namespace slycelote.VsCaide.Core
             }
 
             UpdateCurrentProject(newLanguage);
-        }
+        });
 
         private async void FsWatcher_Fired(object sender, FileSystemEventArgs e)
         {
-            try
+            await ExceptionUtilities.CatchAllAsync(async () =>
             {
                 var fsWatcher = sender as FileSystemWatcher;
                 if (fsWatcher != this.fsWatcher)
@@ -408,12 +421,7 @@ namespace slycelote.VsCaide.Core
                 }
 
                 ReloadProblemList();
-            }
-            catch (Exception ex)
-            {
-                // Exceptions thrown from async void methods crash the process.
-                Logger.Trace("{0}", ex);
-            }
+            });
         }
 
         /************************
@@ -421,10 +429,11 @@ namespace slycelote.VsCaide.Core
          ************************/
 
         public void OnBeforeOpenSolution()
+            => ExceptionUtilities.CatchAll(() =>
         {
             LogMethod();
             SolutionUtilities.SolutionLoadStart = DateTime.Now;
-        }
+        });
 
         public void OnAfterLoadedSolution()
         {

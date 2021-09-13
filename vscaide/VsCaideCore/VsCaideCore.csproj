@@ -52,6 +52,7 @@
     <Compile Include="CaideExe.cs" />
     <Compile Include="CHelperServer.cs" />
     <Compile Include="CommandLine.cs" />
+    <Compile Include="ExceptionUtilities.cs" />
     <Compile Include="FileUtility.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="NotifyPropertyChangedBase.cs" />

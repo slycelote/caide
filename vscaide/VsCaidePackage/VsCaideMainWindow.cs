@@ -38,13 +38,14 @@
         }
 
         private void VSColorTheme_ThemeChanged(ThemeChangedEventArgs e)
+            => ExceptionUtilities.CatchAll(() =>
         {
             UpdateStyles();
-        }
+        });
 
         private void UpdateStyles()
         {
-            (this.Content as VsCaideMainWindowControl)?.SetStyles(
+            (this.Content as VsCaideMainWindowControl).SetStyles(
                 VsResourceKeys.ButtonStyleKey,
                 VsResourceKeys.ComboBoxStyleKey,
                 EnvironmentColors.SystemMenuBrushKey,
@@ -54,7 +55,7 @@
         public void Show()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            (Frame as IVsWindowFrame)?.ShowNoActivate();
+            (Frame as IVsWindowFrame).ShowNoActivate();
         }
     }
 }
