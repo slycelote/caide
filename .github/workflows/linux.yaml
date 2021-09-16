@@ -19,7 +19,7 @@ jobs:
         os: [ubuntu-latest]
 
     env:
-      CAIDE_EXE_RELATIVE_PATH: dist-newstyle/build/x86_64-linux/ghc-${{ matrix.ghc }}/libcaide-2.7.0/build/caide/caide
+      CAIDE_EXE_RELATIVE_PATH: dist-newstyle/build/x86_64-linux/ghc-${{ matrix.ghc }}/libcaide-2.8.0/build/caide/caide
       CAIDE_CMAKE_CONFIGURE_ARGS: "-GNinja,-DCMAKE_CXX_COMPILER_LAUNCHER=ccache,-DCMAKE_C_COMPILER_LAUNCHER=ccache"
       CONFIG: "--enable-tests --enable-benchmarks --enable-coverage"
 

@@ -1,6 +1,6 @@
 cabal-version:  3.0
 name:           libcaide
-version:        2.7.0
+version:        2.8.0
 build-type:     Custom
 license:        GPL-3.0-or-later
 license-file:   LICENSE
