@@ -104,6 +104,7 @@ problemParserTests = TestList
     chef = assertParses CodeChef.problemParser
     cf = assertParses $ makeProblemParser Codeforces.isSupportedUrl Codeforces.htmlParser
     poj = assertParses $ makeProblemParser POJ.isSupportedUrl POJ.htmlParser
-    rcc = assertParses $ makeProblemParser RCC.isSupportedUrl RCC.htmlParser
+    -- rcc = assertParses $ makeProblemParser RCC.isSupportedUrl RCC.htmlParser
+    rcc _ _ _ = TestList [] -- The site is unavailable
     timus = assertParses $ makeProblemParser Timus.isSupportedUrl Timus.htmlParser
 

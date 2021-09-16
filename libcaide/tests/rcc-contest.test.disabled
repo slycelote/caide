@@ -1,3 +1,0 @@
-#!/bin/bash
-"$CAIDE" contest http://www.russiancodecup.ru/championship/round/35/
-compare_with parsed rcc{A..E}/case1.{in,out}
