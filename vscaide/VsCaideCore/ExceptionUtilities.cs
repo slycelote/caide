@@ -20,7 +20,13 @@
             }
             catch (Exception e) when (IsNonFatal(e))
             {
-                Logger.Trace("Exception in {0}: {1}", functionName, e);
+                try
+                {
+                    Logger.LogError("Exception in {0}: {1}", functionName, e);
+                }
+                catch (Exception e2) when (IsNonFatal(e2))
+                {  }
+
                 return returnValueOnException;
             }
         }
@@ -40,7 +46,12 @@
             }
             catch (Exception e) when (IsNonFatal(e))
             {
-                Logger.Trace("Exception in {0}: {1}", functionName, e);
+                try
+                {
+                    Logger.LogError("Exception in {0}: {1}", functionName, e);
+                }
+                catch (Exception e2) when (IsNonFatal(e2))
+                {  }
             }
         }
 
