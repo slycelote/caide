@@ -76,7 +76,7 @@ test-suite caide-tests
 library
   build-depends:
                    base >= 4.8,
-                   aeson,
+                   aeson < 2.0.0.0,
                    array,
                    async >= 2.0.1,
                    bytestring,
