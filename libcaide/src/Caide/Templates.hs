@@ -10,7 +10,6 @@ import Control.Monad (unless, when)
 import Data.ByteString (ByteString)
 import Data.Maybe (isNothing)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import Data.Text.Encoding.Util (universalNewlineConversionOnInput)
 import Filesystem (isFile, createTree)
@@ -18,8 +17,9 @@ import qualified Filesystem.Path.CurrentOS as F
 import Filesystem.Path.CurrentOS ((</>))
 
 import Data.FileEmbed (embedDir)
-import Filesystem.Util (readTextFile, writeTextFile)
+import Filesystem.Util (pathToText, readTextFile, writeTextFile)
 
+import Caide.Logger (logWarn)
 import Caide.Types
 
 templates' :: [(String, ByteString)]
@@ -48,15 +48,19 @@ getTemplate path = do
     mbCurrent <- liftIO $ mbReadFile currentPath
     case mbCurrent of
         Left _ -> overwrite
-        Right current -> if current == builtin
-            then return builtin
-            else do
-                mbOriginal <- liftIO $ mbReadFile originalPath
-                case mbOriginal of
-                    Left _ -> overwrite
-                    Right original -> if original == current
-                        then T.length original `seq` overwrite
-                        else return current
+        Right current -> do
+            mbOriginal <- liftIO $ mbReadFile originalPath
+            case (mbOriginal == Right current, mbOriginal == Right builtin) of
+                (True, True)   -> return builtin -- No modification
+                (True, False)  -> overwrite      -- Only upstream modified
+                (False, True)  -> return current -- Only user modified
+                (False, False) -> case current == builtin of
+                    True -> overwrite -- user and upstream modified in consistent way
+                    False -> do
+                        logWarn $ "Builtin template " <> pathToText path <>
+                                  " was updated both upstream and locally. Compilation error is possible." <>
+                                  " (Rename or delete local copy to accept upstream changes.)"
+                        return current
 
 mbReadFile :: F.FilePath -> IO (Either Text Text)
 mbReadFile path = do

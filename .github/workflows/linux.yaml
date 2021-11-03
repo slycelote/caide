@@ -15,11 +15,11 @@ jobs:
     strategy:
       matrix:
         cabal: ["3.4"]
-        ghc: ["8.10.4"]
+        ghc: ["8.10.7"]
         os: [ubuntu-latest]
 
     env:
-      CAIDE_EXE_RELATIVE_PATH: dist-newstyle/build/x86_64-linux/ghc-${{ matrix.ghc }}/libcaide-2.7.0/build/caide/caide
+      CAIDE_EXE_RELATIVE_PATH: dist-newstyle/build/x86_64-linux/ghc-${{ matrix.ghc }}/libcaide-2.8.0/build/caide/caide
       CAIDE_CMAKE_CONFIGURE_ARGS: "-GNinja,-DCMAKE_CXX_COMPILER_LAUNCHER=ccache,-DCMAKE_C_COMPILER_LAUNCHER=ccache"
       CONFIG: "--enable-tests --enable-benchmarks --enable-coverage"
 
@@ -62,6 +62,10 @@ jobs:
         ls -l --time-style=long-iso $(readlink -f $(which g++)) >>common.txt
         cpp --version >>common.txt
         ls -l --time-style=long-iso $(readlink -f $(which cpp)) >>common.txt
+        cmake --version >>common.txt
+        ls -l --time-style=long-iso $(readlink -f $(which cmake)) >>common.txt
+        ninja --version >>common.txt
+        ls -l --time-style=long-iso $(readlink -f $(which ninja)) >>common.txt
         cp common.txt llvm-submodule.txt
         git -C libcaide/cbits/cpp-inliner submodule status >>llvm-submodule.txt
         cp common.txt submodules.txt

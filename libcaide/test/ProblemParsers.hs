@@ -61,6 +61,12 @@ problemParserTests = TestList
     , chef "https://www.codechef.com/problems/DEMTREE"
         (makeProblem "Maximize Walk Value" "DEMTREE")
         [ Caide.TestCase "7 1 5\n1 1 2 2 3 3\n3 5 4 2 7 9 1\n1\n2 3 100\n1 1 100\n2 1 100\n4 5 100\n4 7 100" "6\n6\n6\n20\n16" ]
+    , chef "https://www.codechef.com/SNCKQL21/problems/LUCKYNUM"
+        (makeProblem "Lucky Number" "LUCKYNUM")
+        [ Caide.TestCase "3\n0 0 0\n7 8 9\n2 7 7" "NO\nYES\nYES" ]
+    , chef "https://www.codechef.com/SNCKQL21/problems/TESTSERIES"
+        (makeProblem "Test Match Series" "TESTSERIES")
+        [ Caide.TestCase "3\n0 1 2 1 0\n0 1 2 1 2\n2 2 2 2 1" "INDIA\nDRAW\nENGLAND" ]
 
     , cf "http://codeforces.com/contest/452/problem/A"
         (makeProblem "A. Eevee" "cf452A")
@@ -104,6 +110,7 @@ problemParserTests = TestList
     chef = assertParses CodeChef.problemParser
     cf = assertParses $ makeProblemParser Codeforces.isSupportedUrl Codeforces.htmlParser
     poj = assertParses $ makeProblemParser POJ.isSupportedUrl POJ.htmlParser
-    rcc = assertParses $ makeProblemParser RCC.isSupportedUrl RCC.htmlParser
+    -- rcc = assertParses $ makeProblemParser RCC.isSupportedUrl RCC.htmlParser
+    rcc _ _ _ = TestList [] -- The site is unavailable
     timus = assertParses $ makeProblemParser Timus.isSupportedUrl Timus.htmlParser
 

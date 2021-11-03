@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings, RecordWildCards #-}
 module Caide.Parsers.CodeChef(
       problemParser
     , chelperProblemParser
@@ -7,14 +7,13 @@ module Caide.Parsers.CodeChef(
 import Control.Applicative ((<|>))
 import Control.Monad (when)
 import Control.Monad.Except (throwError)
-import qualified Data.ByteString.Lazy as LBS
-import qualified Data.HashMap.Strict as HashMap
-import Data.Either (fromRight, rights,)
+import Data.Either (fromRight, rights, )
 import qualified Data.List as List
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, )
 import qualified Data.Text as T
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
+import GHC.Generics (Generic)
 
 import qualified Data.Aeson as Aeson
 import qualified Text.Parsec as Parsec
@@ -53,9 +52,15 @@ orElse :: Either e a -> Either e a -> Either e a
 orElse (Right a) _ = Right a
 orElse (Left _) b = b
 
+makeTestCase :: Text -> Text -> Either Text TestCase
+makeTestCase input' output' =
+    if (T.null input' || T.null output')
+    then Left "Empty test input and/or output"
+    else Right $ TestCase input' output'
+
 parseMarkdown2 :: Text -> Either Text [TestCase]
-parseMarkdown2 body = do
-    let suffixes = drop 1 $ T.splitOn "###Sample Input" body
+parseMarkdown2 body' = do
+    let suffixes = drop 1 $ T.splitOn "###Sample Input" body'
         parseChunk :: Text -> Text
         parseChunk text = T.strip $ T.dropWhile (not . (`elem` ['\r', '\n'])) text
 
@@ -64,10 +69,8 @@ parseMarkdown2 body = do
             let chunks = take 2 $ T.splitOn "###" suffix
             when (length chunks /= 2) $
                 throwError "Couldn't parse test output"
-            let [input, output] = map parseChunk chunks
-            when (T.null input || T.null output) $
-                throwError "Empty test input and/or output"
-            return $ TestCase input output
+            let [input', output'] = map parseChunk chunks
+            makeTestCase input' output'
 
         parsedSuffixes = map parseSuffix suffixes
         testCases = rights parsedSuffixes
@@ -75,8 +78,8 @@ parseMarkdown2 body = do
     return testCases
 
 parseTestCasesFromMarkdown :: Text -> Either Text [TestCase]
-parseTestCasesFromMarkdown body = do
-    let chunks = map T.strip $ T.splitOn "```" body
+parseTestCasesFromMarkdown body' = do
+    let chunks = map T.strip $ T.splitOn "```" body'
         n = length chunks
         inputIdx = [1, 5..n-1]
         outputIdx = [3, 7..n-1]
@@ -86,7 +89,7 @@ parseTestCasesFromMarkdown body = do
             , testCaseOutput = chunks!!ox
             }
         testCases1 = map mkTestCase idxPairs
-        testCases2 = fromRight [] $ parseMarkdown2 body
+        testCases2 = fromRight [] $ parseMarkdown2 body'
 
     case List.find (not . null) [testCases1, testCases2] of
         Just testCases -> return testCases
@@ -99,10 +102,8 @@ parseHtml1 tags = do
     let pres = take 2 $ sections (~== "<pre>") tags
     when (length pres /= 2) $ throwError "Can't find <pre> tags"
     let pres' = map (takeWhile (~/= "</pre>")) pres
-        [input, output] = map (T.strip . innerText) pres'
-    when (T.null input || T.null output) $
-        throwError "Empty input and/or output"
-    return $ TestCase input output
+        [input', output'] = map (T.strip . innerText) pres'
+    makeTestCase input' output'
 
 
 parseHtml2 :: [Tag Text] -> Either Text TestCase
@@ -111,10 +112,8 @@ parseHtml2 tags = do
     let ps = take 2 $ sections (~== "<p>") tags
     when (length ps /= 2) $ throwError "Can't find <p> tags"
     let ps' = map (takeWhile (~/= "</p>")) ps
-        [input, output] = map (T.strip . innerText) ps'
-    when (T.null input || T.null output) $
-        throwError "Empty input and/or output"
-    return $ TestCase input output
+        [input', output'] = map (T.strip . innerText) ps'
+    makeTestCase input' output'
 
 
 parseTestCasesFromHtml :: [Tag Text] -> Either Text [TestCase]
@@ -137,28 +136,51 @@ parseTestCasesFromHtml tags = do
         Just testCases -> return testCases
         _ -> throwError "Couldn't find tests"
 
+data ChefTestCase = ChefTestCase
+                  { input :: Text
+                  , output :: Text
+                  } deriving (Generic, Show)
+instance Aeson.FromJSON ChefTestCase
 
-fromAesonString :: Aeson.Value -> Maybe Text
-fromAesonString value = case value of
-    Aeson.String s -> Just s
-    _ -> Nothing
+data ChefProblemComponents = ChefProblemComponents
+                       { sampleTestCases :: [ChefTestCase]
+                       } deriving (Generic, Show)
+instance Aeson.FromJSON ChefProblemComponents
+
+data ChefProblem = ChefProblem
+                 { problem_code :: Maybe Text
+                 , problem_name :: Maybe Text
+                 , body :: Maybe Text
+                 , problemComponents :: Maybe ChefProblemComponents
+                 } deriving (Generic, Show)
+
+instance Aeson.FromJSON ChefProblem
+
+
+mapLeft :: (e1 -> e2) -> Either e1 a -> Either e2 a
+mapLeft f = either (Left . f) Right
+
+maybeToEither :: e -> Maybe a -> Either e a
+maybeToEither e = maybe (Left e) Right
+
+
+parseTestCasesFromJson :: ChefProblem -> Either Text [TestCase]
+parseTestCasesFromJson ChefProblem{..} = do
+    components <- maybeToEither "no problemComponents" problemComponents
+    when (null (sampleTestCases components)) $ throwError "No test cases in JSON"
+    let mkTestCase :: ChefTestCase -> TestCase
+        mkTestCase ChefTestCase{..} = TestCase input output
+    return $ map mkTestCase $ sampleTestCases components
+
 
 parseFromJson :: Text -> Text -> Either Text (Problem, [TestCase])
 parseFromJson problemCode jsonText = do
-    let mbJson = Aeson.decode . LBS.fromStrict . encodeUtf8 $ jsonText
-    obj <- case mbJson of
-        Just (Aeson.Object o) -> return o
-        _ -> throwError "Could not parse CodeChef JSON"
-    let probName = fromMaybe problemCode $
-                     (HashMap.lookup "problem_name" obj >>= fromAesonString) <|>
-                     (HashMap.lookup "problem_code" obj >>= fromAesonString)
-        mbBody = HashMap.lookup "body" obj
-    body <- case mbBody of
-        Just (Aeson.String s) -> return s
-        _ -> throwError "Could not find problem body in CodeChef JSON"
-
-    testCases <- parseTestCasesFromMarkdown body `orElse`
-                 parseTestCasesFromHtml (parseTags body)
+    chefProblem <- mapLeft T.pack . Aeson.eitherDecodeStrict . encodeUtf8 $ jsonText
+    let probName = fromMaybe problemCode $ problem_name chefProblem <|> problem_code chefProblem
+        eitherBody = maybeToEither "No body found in JSON" (body chefProblem)
+    testCases <- parseTestCasesFromJson chefProblem `orElse`
+                 (parseTestCasesFromMarkdown =<< eitherBody) `orElse`
+                 ((parseTestCasesFromHtml . parseTags) =<< eitherBody)
     when (null testCases) $ throwError "Could not parse test cases"
     let probType = Stream StdIn StdOut
     return (makeProblem probName problemCode probType, normalizeTestCases testCases)

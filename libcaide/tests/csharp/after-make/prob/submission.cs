@@ -37,6 +37,7 @@ public class Program {
 
         if (f == null)
             throw new Exception("Input file not found");
+        Console.Error.WriteLine("Using " + f + " as input file");
         return f;
     }
 

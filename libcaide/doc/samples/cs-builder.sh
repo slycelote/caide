@@ -2,7 +2,7 @@
 
 # To use this builder, set CAIDE variable below to full path to caide executable
 # and add the following section to caide.ini file:
-# [csharp_builder]
+# [csharp]
 # build_and_run_tests: bash /full/path/to/this/file.sh
 # evaluates_tests: yes
 

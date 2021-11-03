@@ -34,5 +34,5 @@ _ReSharper*/
 ### Other build artifacts
 
 # This file should be built in libcaide project and copied manually here.
-Resources/caide.exe
+VsCaidePackage/Resources/caide.exe
 

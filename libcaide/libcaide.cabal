@@ -1,6 +1,6 @@
 cabal-version:  3.0
 name:           libcaide
-version:        2.7.0
+version:        2.8.0
 build-type:     Custom
 license:        GPL-3.0-or-later
 license-file:   LICENSE
@@ -76,7 +76,7 @@ test-suite caide-tests
 library
   build-depends:
                    base >= 4.8,
-                   aeson,
+                   aeson < 2.0.0.0,
                    array,
                    async >= 2.0.1,
                    bytestring,

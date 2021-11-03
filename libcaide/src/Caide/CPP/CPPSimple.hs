@@ -117,7 +117,11 @@ buildTopcoderSolution :: TopcoderProblemDescriptor -> [T.Text]
 buildTopcoderSolution desc =
     [ T.concat ["class ", tcClassName desc, " {"]
     , "public:"
-    -- TODO: pass the signature of main solution method to inliner
+    -- TODO: pass the signatures of class constructor and main solution method to inliner
+    , "    /// caide keep"
+    , "    " <> tcClassName desc <> "() {"
+    , "    }"
+    , ""
     , "    /// caide keep"
     , T.concat ["    ", declareValue method, "(",
               T.intercalate ", " (map declareValue params),
