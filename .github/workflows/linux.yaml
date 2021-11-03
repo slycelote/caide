@@ -44,7 +44,7 @@ jobs:
       with:
         submodules: 'recursive'
 
-    - uses: actions/setup-haskell@v1
+    - uses: haskell/actions/setup@v1
       id: setup-haskell-cabal
       with:
         ghc-version: ${{ matrix.ghc }}
