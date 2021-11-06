@@ -25,7 +25,7 @@ assertParses parser url expectedProblem expectedTestCases = HUnit.TestCase $ do
     assertBool "The parser must be able to handle the URL" $ problemUrlMatches url
     parseResult <- parseProblem url Nothing
     case parseResult of
-        Left err -> assertFailure $ T.unpack err
+        Left err -> assertFailure $ T.unpack $ url <> ": " <> err
         Right (problem, testCases) -> do
             assertEqual "Problem name" (problemName expectedProblem) (problemName problem)
             assertEqual "Problem ID" (problemId expectedProblem) (problemId problem)
