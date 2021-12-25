@@ -9,6 +9,9 @@
 
     public interface IVsServices
     {
+        // Constructors can't be async, so we provide this method instead.
+        Task InitializeAsync();
+
         IProjectManager GetProjectManager();
 
         int ThrowOnFailure(int hr);

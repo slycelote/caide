@@ -5,12 +5,12 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{8F37650D-5DC4-4558-B615-CF510B5A1D3F}</ProjectGuid>
+    <ProjectGuid>{C74EB6C5-A4B1-47A3-8D93-1A633F08723C}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Vs2017</RootNamespace>
-    <AssemblyName>Vs2017</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <RootNamespace>Vs2022</RootNamespace>
+    <AssemblyName>Vs2022</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -32,14 +32,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <!-- There's no nuget package for VCProjectEngine version 15. -->
-    <Reference Include="Microsoft.VisualStudio.VCProjectEngine, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-      <!-- Newer VS versions can't automatically find the 2017 version of VCProjectEngine.dll.
-           Set the following path according to your VS 2017 installation.
-           If you don't have VS 2017 installed, remove this project. The resulting extension won't work in VS 2017.  -->
-      <HintPath>c:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\PublicAssemblies\Microsoft.VisualStudio.VCProjectEngine.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -50,7 +42,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="..\ProjectImpl.cs">
       <Link>ProjectImpl.cs</Link>
     </Compile>
@@ -71,7 +62,10 @@
       <Name>VsInterface</Name>
     </ProjectReference>
   </ItemGroup>
-  <Import Project="..\..\msbuild\vssdk.props" />
+  <Import Project="..\..\msbuild\vssdk-2022.props" />
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.VCProjectEngine" Version="17.0.31902.203" ExcludeAssets="runtime" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.

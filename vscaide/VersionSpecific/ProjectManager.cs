@@ -15,11 +15,7 @@ using Microsoft.VisualStudio.Shell;
 
 namespace slycelote.VsCaide.VsSpecific
 {
-    /// <summary>
-    /// This is a common implementation for all Visual Studio versions.
-    /// The only difference is which version of VCProjectEngine assembly the DLL references.
-    /// </summary>
-    public class ProjectManager : IProjectManager
+    internal class ProjectManager : IProjectManager
     {
         private readonly DTE dte;
 

@@ -1,9 +1,12 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29728.190
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{CCB67970-0144-44A8-BD7E-1546808BC287}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vs2017", "VersionSpecific\Vs2017\Vs2017.csproj", "{8F37650D-5DC4-4558-B615-CF510B5A1D3F}"
 EndProject
@@ -14,6 +17,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VsInterface", "VsInterface\VsInterface.csproj", "{A34A05F8-CD09-48B2-A64A-5E32502B9C96}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "vscaide", "VsCaidePackage\vscaide.csproj", "{461C8E62-458A-4477-BF5D-C95B2DF625BD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vs2022", "VersionSpecific\Vs2022\Vs2022.csproj", "{C74EB6C5-A4B1-47A3-8D93-1A633F08723C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,6 +46,10 @@ Global
 		{461C8E62-458A-4477-BF5D-C95B2DF625BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{461C8E62-458A-4477-BF5D-C95B2DF625BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{461C8E62-458A-4477-BF5D-C95B2DF625BD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C74EB6C5-A4B1-47A3-8D93-1A633F08723C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C74EB6C5-A4B1-47A3-8D93-1A633F08723C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C74EB6C5-A4B1-47A3-8D93-1A633F08723C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C74EB6C5-A4B1-47A3-8D93-1A633F08723C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
