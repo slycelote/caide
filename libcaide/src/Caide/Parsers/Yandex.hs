@@ -52,5 +52,5 @@ extractTestCase tags = testCases
             sections (~~== "<pre>") $
             tags
 
-    testCases = normalizeTestCases [TestCase (texts!!i) (texts!!(i+1)) | i <- [0, 2 .. length texts-2]]
+    testCases = normalizeTestCases [TestCase (texts!!i) (Just $ texts!!(i+1)) | i <- [0, 2 .. length texts-2]]
 

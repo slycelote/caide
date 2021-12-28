@@ -42,7 +42,7 @@ htmlParser cont = pure $
     extractText = T.dropWhile (`elem` ['\r', '\n']) . innerText . replaceBr . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>")
     inputs = map extractText inputDivs
     outputs = map extractText outputDivs
-    testCases = zipWith TestCase inputs outputs
+    testCases = zipWith TestCase inputs (map Just outputs)
 
     -- Contest
     sidebar = dropWhile (~/= "<div id=sidebar>") tags

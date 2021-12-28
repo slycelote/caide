@@ -64,7 +64,7 @@ normalizeText :: T.Text -> T.Text
 normalizeText = T.strip . T.unlines . map T.stripEnd . T.lines
 
 normalizeTestCases :: [TestCase] -> [TestCase]
-normalizeTestCases = map (\(TestCase i o) -> TestCase (normalizeText i) (normalizeText o))
+normalizeTestCases = map (\(TestCase i o) -> TestCase (normalizeText i) (normalizeText <$> o))
 
 -- | Replaces <br> tags with newlines. Neighbor <br></br> pairs are replaced with a single newline.
 replaceBr :: [Tag T.Text] -> [Tag T.Text]

@@ -67,7 +67,7 @@ testsFromHtml tags = testCases where
     pres = map (drop 1 . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>") ) samples
     texts = map extractText pres
     t = drop (length texts `mod` 2) texts
-    testCases = [TestCase (cleanupInput $ t!!i) (cleanupOutput $ t!!(i+1)) | i <- [0, 2 .. length t-2]]
+    testCases = [TestCase (cleanupInput $ t!!i) (Just $ cleanupOutput $ t!!(i+1)) | i <- [0, 2 .. length t-2]]
 
 hrProblemType :: ProblemType
 hrProblemType = Stream StdIn StdOut

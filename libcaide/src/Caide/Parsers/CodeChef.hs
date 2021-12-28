@@ -56,7 +56,7 @@ makeTestCase :: Text -> Text -> Either Text TestCase
 makeTestCase input' output' =
     if (T.null input' || T.null output')
     then Left "Empty test input and/or output"
-    else Right $ TestCase input' output'
+    else Right $ TestCase input' (Just output')
 
 parseMarkdown2 :: Text -> Either Text [TestCase]
 parseMarkdown2 body' = do
@@ -86,7 +86,7 @@ parseTestCasesFromMarkdown body' = do
         idxPairs = zip inputIdx outputIdx
         mkTestCase (ix, ox) = TestCase
             { testCaseInput  = chunks!!ix
-            , testCaseOutput = chunks!!ox
+            , testCaseOutput = Just $ chunks!!ox
             }
         testCases1 = map mkTestCase idxPairs
         testCases2 = fromRight [] $ parseMarkdown2 body'
@@ -130,7 +130,7 @@ parseTestCasesFromHtml tags = do
         rootTextNodes = extractCurrentLevelTextNodes . mergeTextTags . replaceBr $ testsContainer
         inputsAndOutputs = filter (not . T.null) . map (T.strip . fromTagText) $ rootTextNodes
         testCases3 = if null pres then [] else [
-            TestCase (inputsAndOutputs!!i) (inputsAndOutputs!!(i+1)) | i <- [0, 2 .. length inputsAndOutputs-2]]
+            TestCase (inputsAndOutputs!!i) (Just $ inputsAndOutputs!!(i+1)) | i <- [0, 2 .. length inputsAndOutputs-2]]
 
     case List.find (not . null) [testCases1, testCases2, testCases3] of
         Just testCases -> return testCases
@@ -169,7 +169,7 @@ parseTestCasesFromJson ChefProblem{..} = do
     components <- maybeToEither "no problemComponents" problemComponents
     when (null (sampleTestCases components)) $ throwError "No test cases in JSON"
     let mkTestCase :: ChefTestCase -> TestCase
-        mkTestCase ChefTestCase{..} = TestCase input output
+        mkTestCase ChefTestCase{..} = TestCase input $ Just output
     return $ map mkTestCase $ sampleTestCases components
 
 

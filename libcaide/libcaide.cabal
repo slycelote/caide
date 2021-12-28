@@ -183,6 +183,7 @@ library
         Caide.Types.Option
         Caide.Util
         Caide.Xml
+        Control.Monad.Util
         Data.Text.Encoding.Util
         Data.Text.IO.Util
         Filesystem.Util

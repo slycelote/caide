@@ -6,6 +6,7 @@ module Caide.Commands.ParseProblem(
 ) where
 
 import Control.Monad (forM_, unless, when)
+import Control.Monad.Util (whenJust)
 import Control.Monad.Except (catchError)
 import Control.Monad.State (liftIO)
 import Data.Char (isAlphaNum, isAscii)
@@ -111,7 +112,7 @@ saveProblem problem samples = do
             let inFile  = problemDir </> decodeString ("case" ++ show i ++ ".in")
                 outFile = problemDir </> decodeString ("case" ++ show i ++ ".out")
             writeTextFile inFile  $ testCaseInput sample
-            writeTextFile outFile $ testCaseOutput sample
+            whenJust (testCaseOutput sample) $ \o -> writeTextFile outFile $ o
 
     initializeProblem problem
     liftIO $ T.putStrLn . T.concat $ ["Problem successfully parsed into folder ", probId]
