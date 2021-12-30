@@ -172,7 +172,7 @@ generateTesterCode _ = [
     "}"
     ]
 
-generateSolutionCall :: TopcoderProblemDescriptor -> T.Text
+generateSolutionCall :: TopcoderProblemDescription -> T.Text
 generateSolutionCall tcDesc = T.concat $ [
     "result = new ", tcClassName tcDesc, "().", tcValueName method, "("
     ] ++ intersperse ", " (map tcValueName methodParams) ++ [

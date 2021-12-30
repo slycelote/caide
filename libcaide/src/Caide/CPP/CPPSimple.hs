@@ -113,7 +113,7 @@ isNumberType value = tcValueDimension value == 0 && isBaseNumberType (tcValueTyp
     isBaseNumberType TCDouble = True
     isBaseNumberType _ = False
 
-buildTopcoderSolution :: TopcoderProblemDescriptor -> [T.Text]
+buildTopcoderSolution :: TopcoderProblemDescription -> [T.Text]
 buildTopcoderSolution desc =
     [ T.concat ["class ", tcClassName desc, " {"]
     , "public:"

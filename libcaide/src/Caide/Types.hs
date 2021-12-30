@@ -8,7 +8,7 @@ module Caide.Types(
     , OutputTarget (..)
     , TopcoderType (..)
     , TopcoderValue (..)
-    , TopcoderProblemDescriptor (..)
+    , TopcoderProblemDescription (..)
     , makeProblem
 
     , Verbosity (..)
@@ -80,14 +80,15 @@ data Problem = Problem
     , problemType :: !ProblemType
     } deriving (Show)
 
-data ProblemType = Topcoder !TopcoderProblemDescriptor | Stream !InputSource !OutputTarget
-    deriving (Show)
+data ProblemType = Topcoder !TopcoderProblemDescription
+                 | Stream !InputSource !OutputTarget
+                 deriving (Show)
 data InputSource = StdIn | FileInput !F.FilePath | InputFilePattern !Text
     deriving (Show)
 data OutputTarget = StdOut | FileOutput !F.FilePath
     deriving (Show)
 
-data TopcoderProblemDescriptor = TopcoderProblemDescriptor
+data TopcoderProblemDescription = TopcoderProblemDescription
     { tcClassName        :: !Text
     , tcMethod           :: !TopcoderValue
     , tcMethodParameters :: ![TopcoderValue]
@@ -308,7 +309,7 @@ instance Option ProblemType where
         "file,", inputSourceToString input, ",", outputTargetToString output]
 
     optionFromText s | "topcoder," `T.isPrefixOf` s = case maybeParams of
-        Just (method:params) -> Just $ Topcoder TopcoderProblemDescriptor
+        Just (method:params) -> Just $ Topcoder TopcoderProblemDescription
             { tcClassName = className
             , tcMethod = method
             , tcMethodParameters = params

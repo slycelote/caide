@@ -14,7 +14,7 @@ import Data.Text (Text)
 import Filesystem.Util (pathToText)
 
 import qualified Caide.Configuration as Conf
-import Caide.Types (Problem(..), ProblemType(..), TopcoderProblemDescriptor(..), ProblemID,
+import Caide.Types (Problem(..), ProblemType(..), TopcoderProblemDescription(..), ProblemID,
     InputSource(..), OutputTarget(..), CaideIO, getProp)
 
 readProblemInfo :: ProblemID -> CaideIO Problem
@@ -50,7 +50,7 @@ jsonEncodeProblem Problem{..} ProblemState{..} = Aeson.object $
     typeEntries (Topcoder topcoderDesc) = ["topcoder" .= encodeTopcoderDesc topcoderDesc]
     typeEntries (Stream input output) = ["input" .= encodeInput input, "output" .= encodeOutput output]
 
-encodeTopcoderDesc :: TopcoderProblemDescriptor -> Aeson.Value
+encodeTopcoderDesc :: TopcoderProblemDescription -> Aeson.Value
 encodeTopcoderDesc _ = Aeson.object [] -- TODO
 
 encodeInput :: InputSource -> Aeson.Value
