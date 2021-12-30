@@ -8,6 +8,7 @@ module Caide.Types(
     , OutputTarget (..)
     , TopcoderType (..)
     , TopcoderValue (..)
+    , TopcoderMethod (..)
     , TopcoderProblemDescription (..)
     , makeProblem
 
@@ -90,8 +91,7 @@ data OutputTarget = StdOut | FileOutput !F.FilePath
 
 data TopcoderProblemDescription = TopcoderProblemDescription
     { tcClassName        :: !Text
-    , tcMethod           :: !TopcoderValue
-    , tcMethodParameters :: ![TopcoderValue]
+    , tcSingleMethod     :: !TopcoderMethod
     } deriving (Show)
 
 data TopcoderValue = TopcoderValue
@@ -102,6 +102,12 @@ data TopcoderValue = TopcoderValue
 
 data TopcoderType = TCInt | TCLong | TCDouble | TCString
     deriving (Show)
+
+data TopcoderMethod = TopcoderMethod
+    { tcMethod     :: !TopcoderValue
+    , tcParameters :: ![TopcoderValue]
+    } deriving (Show)
+
 
 makeProblem :: Text -> ProblemID -> ProblemType -> Problem
 makeProblem name probId probType = Problem
@@ -304,15 +310,14 @@ instance Option ProblemType where
     -- topcoder,class,method:retType,param1:type1,param2:type2
     optionToString (Topcoder desc) =
         optionToString ("topcoder" : tcClassName desc :
-                        map optionToText (tcMethod desc : tcMethodParameters desc))
+                        map optionToText (tcMethod (tcSingleMethod desc) : tcParameters (tcSingleMethod desc)))
     optionToString (Stream input output) = concat [
         "file,", inputSourceToString input, ",", outputTargetToString output]
 
     optionFromText s | "topcoder," `T.isPrefixOf` s = case maybeParams of
         Just (method:params) -> Just $ Topcoder TopcoderProblemDescription
             { tcClassName = className
-            , tcMethod = method
-            , tcMethodParameters = params
+            , tcSingleMethod = TopcoderMethod { tcMethod = method, tcParameters = params }
             }
         _ -> Nothing
       where

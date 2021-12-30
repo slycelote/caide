@@ -76,7 +76,7 @@ generateSolutionFiles (Topcoder desc) root probID = do
     solutionPath = problemDir </> fromText (T.append probID ".cpp")
     testProgramPath = problemDir </> fromText (T.append probID "_test.cpp")
 
-    tcTestPreamble = buildTopcoderTestPreamble (tcMethod desc) (tcMethodParameters desc)
+    tcTestPreamble = buildTopcoderTestPreamble (tcMethod $ tcSingleMethod desc) (tcParameters $ tcSingleMethod desc)
     tcSolution = buildTopcoderSolution desc
 
 
@@ -142,8 +142,7 @@ buildTopcoderSolution desc =
     ]
   where
     declareValue value = T.concat [cppType value, " ", tcValueName value]
-    method = tcMethod desc
-    params = tcMethodParameters desc
+    TopcoderMethod method params = tcSingleMethod desc
 
 
 inlineCPPCode :: ProblemID -> CaideIO ()

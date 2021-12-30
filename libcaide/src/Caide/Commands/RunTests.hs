@@ -89,7 +89,7 @@ evalTests = do
         cmpOptions = ComparisonOptions
             { doublePrecision = problemFloatTolerance problem
             , topcoderType = case problemType problem of
-                Topcoder descr -> Just . tcMethod $ descr
+                Topcoder descr -> Just . tcMethod . tcSingleMethod $ descr
                 _              -> Nothing
             }
 

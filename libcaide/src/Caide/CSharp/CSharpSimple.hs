@@ -81,8 +81,7 @@ generateSolutionFiles (Topcoder tcDesc) root probID = do
   where
     problemDir = root </> fromText probID
     scaffoldPath = problemDir </> fromText (T.append probID ".cs")
-    method = tcMethod tcDesc
-    params = tcMethodParameters tcDesc
+    TopcoderMethod method params = tcSingleMethod tcDesc
     declare val = T.concat [csharpType (tcValueType val) (tcValueDimension val), " ", tcValueName val]
     solutionDeclaration = [
         T.concat ["public class ", tcClassName tcDesc],
@@ -135,7 +134,7 @@ generateTesterCode (Topcoder tcDesc) = [
     "        ReadTopcoderOutput(output);",
     "    }",
     "    private static void ReadTopcoderInput(TextReader reader) {"
-    ] ++ map (T.append "        ") (concatMap tcInit (tcMethodParameters tcDesc)) ++ [
+    ] ++ map (T.append "        ") (concatMap tcInit params) ++ [
     "    }",
     "    private static void ReadTopcoderOutput(TextReader reader) {"
     ] ++ [
@@ -145,19 +144,20 @@ generateTesterCode (Topcoder tcDesc) = [
     "    }",
     "",
     "    private static void WriteTopcoderInput(TextWriter writer) {"
-    ] ++ map (T.append "        " . tcWrite) (tcMethodParameters tcDesc) ++ [
+    ] ++ map (T.append "        " . tcWrite) params ++ [
     "    }",
     "",
     "    private static void WriteTopcoderOutput(TextWriter writer) {"
     ] ++ [T.append "        " $ tcWrite returnValue] ++ [
     "    }",
     ""
-    ] ++ map (T.append "    " . tcDeclare) (tcMethodParameters tcDesc) ++ [
+    ] ++ map (T.append "    " . tcDeclare) params ++ [
     T.append "    " $ tcDeclare returnValue,
     "}"
     ]
   where
-    returnValue = (tcMethod tcDesc) {tcValueName = "result"}
+    returnValue = (tcMethod $ tcSingleMethod tcDesc) {tcValueName = "result"}
+    params = tcParameters $ tcSingleMethod tcDesc
 
 generateTesterCode _ = [
     "partial class CaideTester",
@@ -175,12 +175,11 @@ generateTesterCode _ = [
 generateSolutionCall :: TopcoderProblemDescription -> T.Text
 generateSolutionCall tcDesc = T.concat $ [
     "result = new ", tcClassName tcDesc, "().", tcValueName method, "("
-    ] ++ intersperse ", " (map tcValueName methodParams) ++ [
+    ] ++ intersperse ", " (map tcValueName params) ++ [
     ");"
     ]
   where
-    method = tcMethod tcDesc
-    methodParams = tcMethodParameters tcDesc
+    TopcoderMethod method params = tcSingleMethod tcDesc
 
 tcInit :: TopcoderValue -> [T.Text]
 tcInit (TopcoderValue name type_ dimension) = [
