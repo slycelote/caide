@@ -8,8 +8,10 @@ module Caide.Parsers.HackerRank(
 import Control.Applicative ((<|>))
 import qualified Data.ByteString.Lazy as LBS
 import Data.Char (isAlphaNum, isSpace)
+import Data.Function ((&))
 import qualified Data.HashMap.Strict as HashMap
 import Data.List (find)
+import Data.List.Util (chunksOf)
 import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -66,8 +68,7 @@ testsFromHtml tags = testCases where
 
     pres = map (drop 1 . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>") ) samples
     texts = map extractText pres
-    t = drop (length texts `mod` 2) texts
-    testCases = [TestCase (cleanupInput $ t!!i) (Just $ cleanupOutput $ t!!(i+1)) | i <- [0, 2 .. length t-2]]
+    testCases = texts & chunksOf 2 & map (\[i, o] -> TestCase (cleanupInput i) (Just $ cleanupOutput o))
 
 hrProblemType :: ProblemType
 hrProblemType = Stream StdIn StdOut

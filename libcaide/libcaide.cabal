@@ -185,6 +185,7 @@ library
         Caide.Xml
         Control.Monad.Util
         Data.Either.Util
+        Data.List.Util
         Data.Text.Encoding.Util
         Data.Text.IO.Util
         Filesystem.Util

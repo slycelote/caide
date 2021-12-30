@@ -9,7 +9,9 @@ import Control.Monad (when)
 import Control.Monad.Except (throwError)
 import Data.Either (fromRight, rights, )
 import Data.Either.Util (maybeToEither, mapLeft, orElse)
+import Data.Function ((&))
 import qualified Data.List as List
+import Data.List.Util (chunksOf)
 import Data.Maybe (fromMaybe, )
 import qualified Data.Text as T
 import Data.Text (Text)
@@ -76,16 +78,8 @@ parseMarkdown2 body' = do
 
 parseTestCasesFromMarkdown :: Text -> Either Text [TestCase]
 parseTestCasesFromMarkdown body' = do
-    let chunks = map T.strip $ T.splitOn "```" body'
-        n = length chunks
-        inputIdx = [1, 5..n-1]
-        outputIdx = [3, 7..n-1]
-        idxPairs = zip inputIdx outputIdx
-        mkTestCase (ix, ox) = TestCase
-            { testCaseInput  = chunks!!ix
-            , testCaseOutput = Just $ chunks!!ox
-            }
-        testCases1 = map mkTestCase idxPairs
+    let testCases1 = T.splitOn "```" body' & map T.strip & chunksOf 4 &
+            map (\[_, i, _, o] -> TestCase i (Just o))
         testCases2 = fromRight [] $ parseMarkdown2 body'
 
     case List.find (not . null) [testCases1, testCases2] of
@@ -126,8 +120,9 @@ parseTestCasesFromHtml tags = do
         testsContainer = drop 1 . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>") . last $ pres
         rootTextNodes = extractCurrentLevelTextNodes . mergeTextTags . replaceBr $ testsContainer
         inputsAndOutputs = filter (not . T.null) . map (T.strip . fromTagText) $ rootTextNodes
-        testCases3 = if null pres then [] else [
-            TestCase (inputsAndOutputs!!i) (Just $ inputsAndOutputs!!(i+1)) | i <- [0, 2 .. length inputsAndOutputs-2]]
+        testCases3 = if null pres
+            then []
+            else inputsAndOutputs & chunksOf 2 & map (\[i, o] -> TestCase i (Just o))
 
     case List.find (not . null) [testCases1, testCases2, testCases3] of
         Just testCases -> return testCases

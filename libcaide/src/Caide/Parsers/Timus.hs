@@ -5,6 +5,8 @@ module Caide.Parsers.Timus(
     , chelperId
 ) where
 
+import Data.Function ((&))
+import Data.List.Util (chunksOf)
 import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import qualified Data.Text as T
 
@@ -34,12 +36,10 @@ htmlParser cont = pure $
     title  = fromMaybe "Unknown" title'
     probId = T.append "timus" . fromMaybe "Unknown" $ probId'
 
-    texts = mapMaybe (maybeTagText . (!!1)) .
-            sections (~~== "<pre>") .
-            takeWhile (~~/== "</table>") .
-            dropWhile (~~/== "<table class=sample>") $
-            tags
-    testCases = normalizeTestCases [TestCase (texts!!i) (Just $ texts!!(i+1)) | i <- [0, 2 .. length texts-2]]
+    texts = tags & dropWhile (~~/== "<table class=sample>") & takeWhile (~~/== "</table>") &
+            sections (~~== "<pre>") & mapMaybe (maybeTagText . (!!1))
+
+    testCases = texts & chunksOf 2 & map (\[i, o] -> TestCase i (Just o)) & normalizeTestCases
 
     probType = Stream StdIn StdOut
     problem = (makeProblem title probId probType, testCases)
