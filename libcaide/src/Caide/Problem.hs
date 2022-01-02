@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE NamedFieldPuns, OverloadedStrings, RecordWildCards #-}
 module Caide.Problem(
       Problem(..)
     , ProblemState(..)
@@ -7,15 +7,17 @@ module Caide.Problem(
     , readProblemState
 ) where
 
+import qualified Data.Map as Map
+import Data.Text (Text)
+import qualified Data.Vector as Vector
+
 import qualified Data.Aeson as Aeson
 import Data.Aeson ((.=))
-import Data.Text (Text)
 
 import Filesystem.Util (pathToText)
 
 import qualified Caide.Configuration as Conf
-import Caide.Types (Problem(..), ProblemType(..), TopcoderProblemDescription(..), ProblemID,
-    InputSource(..), OutputTarget(..), CaideIO, getProp)
+import Caide.Types
 
 readProblemInfo :: ProblemID -> CaideIO Problem
 readProblemInfo probId = do
@@ -50,8 +52,30 @@ jsonEncodeProblem Problem{..} ProblemState{..} = Aeson.object $
     typeEntries (Topcoder topcoderDesc) = ["topcoder" .= encodeTopcoderDesc topcoderDesc]
     typeEntries (Stream input output) = ["input" .= encodeInput input, "output" .= encodeOutput output]
 
+encodeType :: TopcoderType -> Text
+encodeType TCInt = "int"
+encodeType TCLong = "long"
+encodeType TCDouble = "double"
+encodeType TCString = "string"
+
+encodeValue :: TopcoderValue -> Aeson.Value
+encodeValue TopcoderValue{..} = Aeson.object $
+    [ "name" .= tcValueName
+    , "dimension" .= tcValueDimension
+    , "type" .= Aeson.String (encodeType tcValueType)
+    ]
+
+encodeMethod :: TopcoderMethod -> Aeson.Value
+encodeMethod TopcoderMethod{tcMethod, tcParameters} = Aeson.object $
+    [ "method" .= encodeValue tcMethod
+    , "parameters" .= Aeson.Array (Vector.fromList [ encodeValue v | v <- tcParameters ])
+    ]
+
 encodeTopcoderDesc :: TopcoderProblemDescription -> Aeson.Value
-encodeTopcoderDesc _ = Aeson.object [] -- TODO
+encodeTopcoderDesc desc = Aeson.object
+    [ "className" .= tcClassName desc
+    , "singleMethod" .= encodeMethod (tcSingleMethod desc)
+    ]
 
 encodeInput :: InputSource -> Aeson.Value
 encodeInput (FileInput path) = Aeson.object ["file" .= pathToText path]
