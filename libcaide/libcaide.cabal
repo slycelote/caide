@@ -71,7 +71,7 @@ test-suite caide-tests
   hs-source-dirs: test
   main-is: Main.hs
   other-modules: ProblemParsers
-  other-extensions: OverloadedStrings, RecordWildCards
+  other-extensions: OverloadedLists, OverloadedStrings, RecordWildCards
 
 library
   build-depends:
@@ -96,6 +96,7 @@ library
                    optparse-applicative >= 0.15,
                    parsec,
                    process,
+                   scientific,
                    system-fileio >= 0.3.16,
                    system-filepath,
                    tagsoup >= 0.13,

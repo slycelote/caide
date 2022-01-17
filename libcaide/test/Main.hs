@@ -1,11 +1,14 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLists, OverloadedStrings #-}
 module Main where
 
 import Test.HUnit
 import System.Environment (getArgs)
 
+import qualified Data.Aeson as Aeson
+
 import ProblemParsers (problemParserTests)
 
+import Caide.MustacheUtil (enrich)
 import Caide.TestCases.TopcoderDeserializer (readMany, readToken, runParser)
 import Caide.TestCases.Types (deserializeTestReport, humanReadableReport,
     TestRunResult(testRunTime), makeTestRunResult,
@@ -49,10 +52,26 @@ testCaseSerializationTests = TestList
         "case1   ERROR (5ms): message"
   ]
 
+enrichTests :: Test
+enrichTests = TestList
+  [ enrich (o [("foo", n 1)]) ~?=
+      o [("foo", n 1), ("foo_is_1", b True)]
+  , enrich (a [n 1, n 2, n 3]) ~?= a [n 1, n 2, n 3]
+  , enrich (a [o [("foo", s "#")]]) ~?=
+      a [o [("foo", s "#"), ("isfirst", b True), ("islast", b True)]]
+  ] where
+  o = Aeson.Object
+  n = Aeson.Number
+  b = Aeson.Bool
+  a = Aeson.Array
+  s = Aeson.String
+
+
 allTests :: Test
 allTests = TestList
   [ topcoderDeserializerTests
   , testCaseSerializationTests
+  , TestLabel "enrich" enrichTests
   , TestLabel "live-parsers" problemParserTests
   ]
 

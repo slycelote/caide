@@ -7,7 +7,6 @@ module Caide.Problem(
     , readProblemState
 ) where
 
-import qualified Data.Map as Map
 import Data.Text (Text)
 import qualified Data.Vector as Vector
 
@@ -46,11 +45,16 @@ jsonEncodeProblem :: Problem -> ProblemState -> Aeson.Value
 jsonEncodeProblem Problem{..} ProblemState{..} = Aeson.object $
     [ "id" .= problemId
     , "name" .= problemName
-    , "language" .= Aeson.object ["name" .= currentLanguage, currentLanguage .= Aeson.Bool True]
-    ] ++ typeEntries problemType
+    , "language" .= cleanLanguage currentLanguage
+    ]
+    -- ++ ["codeSnippets" .= problemCodeSnippets | not (Map.null problemCodeSnippets) ]
+    ++ typeEntries problemType
   where
     typeEntries (Topcoder topcoderDesc) = ["topcoder" .= encodeTopcoderDesc topcoderDesc]
     typeEntries (Stream input output) = ["input" .= encodeInput input, "output" .= encodeOutput output]
+    cleanLanguage "c++" = "cpp"
+    cleanLanguage "c#" = "csharp"
+    cleanLanguage s = s
 
 encodeType :: TopcoderType -> Text
 encodeType TCInt = "int"

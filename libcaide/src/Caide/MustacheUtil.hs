@@ -6,6 +6,7 @@ module Caide.MustacheUtil(
     , renderCompiledTemplates
     , RenderTemplatesOption(..)
     , enrich
+    , compileAndRender
 ) where
 
 
@@ -14,23 +15,34 @@ import qualified Control.Exception as Exc
 import Control.Exception.Base (try)
 import Control.Monad (forM, forM_, unless)
 import Control.Monad.IO.Class (liftIO)
+import qualified Data.Char as Char
+import Data.Either.Util (mapLeft)
+import Data.Function ((&))
 import qualified Data.HashMap.Strict as Map
+import Data.List.NonEmpty (NonEmpty)
+import Data.Semigroup (sconcat)
 import qualified Data.Text as T
+import Data.Text (Text)
 import qualified Data.Text.Lazy as LazyText
 import qualified Data.Vector as Vector
 import qualified System.IO.Error as IOError
 
+import Data.Scientific as Scientific
 import Filesystem (copyPermissions, isFile, removeFile, writeTextFile)
 import Filesystem.Path.CurrentOS ((</>))
 import qualified Filesystem.Path.CurrentOS as FS
 import qualified Filesystem.Util as FS
 
 import qualified Data.Aeson as Aeson
+import qualified Text.Parsec as Parsec
+import qualified Text.Parsec.Error as Parsec
 
-import Text.Microstache (MustacheException, Template, compileMustacheFile, displayMustacheWarning, renderMustacheW)
+import Text.Microstache (MustacheException, Template, PName(PName),
+    compileMustacheFile, compileMustacheText, displayMustacheWarning, renderMustacheW)
 
 import Caide.Logger (logWarn)
 import Caide.Types
+import Caide.Util (tshow)
 
 
 data RenderTemplatesOption = AllowOverwrite Bool
@@ -105,22 +117,49 @@ renderTemplate templateFile template targetDir enrichedContext (Options{allowOve
 
 
 enrich :: Aeson.Value -> Aeson.Value
-enrich (Aeson.Object hashMap) = Aeson.Object $ Map.union transformedMap nonEmptyIndicators
+enrich (Aeson.Object hashMap) = Aeson.Object $ transformedMap <> nonEmptyIndicators <> equalsIndicators
   where
     transformedMap = Map.map enrich hashMap
-    keysWithNonEmptyArrayValues = [k | (k, Aeson.Array v) <- Map.toList transformedMap, not (Vector.null v)]
-    nonEmptyIndicators = Map.fromList [(k <> "_nonempty", Aeson.Bool True) | k <- keysWithNonEmptyArrayValues]
+    keysWithNonEmptyArrayValues =
+        [k | (k, Aeson.Array v) <- Map.toList transformedMap, not (Vector.null v)]
+    nonEmptyIndicators = Map.fromList
+        [(k <> "_nonempty", Aeson.Bool True) | k <- keysWithNonEmptyArrayValues]
+    keysForEqualsIndicators =
+        [(k <> "_is_" <> t) | (k, Aeson.String t) <- Map.toList transformedMap] <>
+        [(k <> "_is_" <> tshow (i :: Int)) |
+            (k, Aeson.Number n) <- Map.toList transformedMap, let Just i = Scientific.toBoundedInteger n]
+    equalsIndicators = Map.fromList
+        [(k, Aeson.Bool True) | k <- keysForEqualsIndicators, T.all isIdentifier k]
+    isIdentifier c = Char.isAlphaNum c || c == '_'
+
 
 enrich (Aeson.Array vector) = Aeson.Array $ Vector.imap addFirstLast transformedVector
   where
     transformedVector = Vector.map enrich vector
 
     addFirstLast :: Int -> Aeson.Value -> Aeson.Value
-    addFirstLast idx (Aeson.Object hashMap) = Aeson.Object $ Map.union hashMap firstLastIndicators
+    addFirstLast idx (Aeson.Object hashMap) = Aeson.Object $ hashMap <> firstLastIndicators
       where
-        firstLastIndicators = Map.fromList $ [("isfirst", Aeson.Bool True) | idx == 0] ++
-                                             [("islast",  Aeson.Bool True) | idx == Vector.length vector - 1]
+        firstLastIndicators = Map.fromList $
+            [("isfirst", Aeson.Bool True) | idx == 0] <>
+            [("islast",  Aeson.Bool True) | idx == Vector.length vector - 1]
     addFirstLast _idx v = v
 
 enrich v = v
+
+-- A version of compileMustacheText that returns errors as text, including name as location.
+compileMustacheText' :: Text -> Text -> Either Text Template
+compileMustacheText' name templateText = templateText & LazyText.fromStrict &
+    compileMustacheText (PName name) & mapLeft (\err -> tshow $
+        Parsec.setErrorPos (Parsec.setSourceName (Parsec.errorPos err) (T.unpack name)) err)
+
+compileAndRender :: NonEmpty (Text, Text) -> Aeson.Value -> Either Text (Maybe Text, Text)
+compileAndRender templatesWithNames json = do
+    compiledTemplates <- forM templatesWithNames $ \(name, text) -> compileMustacheText' name text
+    let template = sconcat compiledTemplates
+        (warnings, result) = renderMustacheW template (enrich json)
+        allWarnings = case warnings of
+            [] -> Nothing
+            _  -> Just $ T.intercalate "; " $ map (T.pack . displayMustacheWarning) warnings
+    return (allWarnings, LazyText.toStrict result)
 
