@@ -84,9 +84,9 @@ encodeTopcoderDesc desc = Aeson.object
 encodeInput :: InputSource -> Aeson.Value
 encodeInput (FileInput path) = Aeson.object ["file" .= pathToText path]
 encodeInput (InputFilePattern p) = Aeson.object ["regex" .= p]
-encodeInput StdIn = Aeson.object []
+encodeInput StdIn = Aeson.object ["stdin" .= Aeson.Bool True]
 
 encodeOutput :: OutputTarget -> Aeson.Value
 encodeOutput (FileOutput path) = Aeson.object ["file" .= pathToText path]
-encodeOutput StdOut = Aeson.object []
+encodeOutput StdOut = Aeson.object ["stdout" .= Aeson.Bool True]
 

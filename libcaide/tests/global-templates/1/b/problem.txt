@@ -1,1 +1,1 @@
-name: b, id: b, language: cpp, input: {}, output: {"file":"output.txt"}
+name: b, id: b, language: cpp, input: {"stdin":true}, output: {"file":"output.txt"}

@@ -1,1 +1,1 @@
-name: b, id: b, language: csharp, input: {}, output: {"file":"output.txt"}
+name: b, id: b, language: csharp, input: {"stdin":true}, output: {"file":"output.txt"}
