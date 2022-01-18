@@ -1,0 +1,18 @@
+{{#topcoder}}
+public class {{className}}
+{
+{{#singleMethod}}
+    {{#method}}
+    public {{>cstype}} {{name}}(
+    {{/method}}
+    {{#parameters}}
+        {{>cstype}} {{name}}{{#islast}}){{/islast}}{{^islast}},{{/islast}}
+    {{/parameters}}
+    {
+        return default({{#method}}{{>cstype}}{{/method}});
+    }
+{{/singleMethod}}
+}
+{{/topcoder}}
+{{^topcoder}}
+{{/topcoder}}

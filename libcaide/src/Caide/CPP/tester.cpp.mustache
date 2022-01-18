@@ -1,0 +1,8 @@
+{{#topcoder}}
+#define CAIDE_TOPCODER 1
+#define CAIDE_TC_RETURN_TYPE {{#singleMethod.method}}{{>cpptype}}{{/singleMethod.method}}
+#define CAIDE_TC_PARAM_LIST \
+{{#singleMethod.parameters}}    CAIDE_TC_PARAM({{>cpptype}}, {{name}})\
+{{/singleMethod.parameters}}
+
+{{/topcoder}}

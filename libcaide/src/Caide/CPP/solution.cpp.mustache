@@ -1,0 +1,26 @@
+{{#topcoder}}
+class {{className}} {
+public:
+    {{! TODO: pass the signatures of class constructor and main solution method to inliner }}
+    /// caide keep
+    {{className}}() {
+    }
+
+    /// caide keep
+    {{#singleMethod}}
+    {{#method}}{{>cpptype}} {{name}}({{/method}}{{#
+    parameters}}{{>cpptype}} {{name}}{{^islast}}, {{/islast}}{{/parameters}}) {
+        {{#method}}{{>cpptype}} result{{>typeinit}};{{/method}}{{! TODO: caide_result }}
+        return result;
+    }
+    {{/singleMethod}}
+};
+
+{{#singleMethod}}
+{{#method}}{{>cpptype}}{{/method}} solve({{#parameters}}{{>cpptype}} {{name}}, {{/parameters}}int) {
+{{/singleMethod}}
+    {{className}} sol;{{! TODO: caide_sol }}
+    return sol.{{singleMethod.method.name}}({{#singleMethod.parameters}}{{name}}{{^islast}}, {{/islast}}{{/singleMethod.parameters}});
+}
+
+{{/topcoder}}

@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
 module Caide.CSharp.CSharpSimple(
       language
 ) where
@@ -6,16 +6,18 @@ module Caide.CSharp.CSharpSimple(
 import Control.Monad (unless)
 import Control.Monad.State (liftIO)
 
-import Data.List (intersperse)
-import qualified Data.Text as T
+import qualified Data.List.NonEmpty as NonEmpty
+import Data.Text (Text)
+
+import Data.FileEmbed (embedStringFile)
 
 import Filesystem (copyFile, isFile)
-import Filesystem.Util (appendTextFile, writeTextFile, pathToText)
-import qualified Filesystem.Path as F
+import Filesystem.Util (appendTextFile, writeTextFile)
 import Filesystem.Path ((</>))
 import Filesystem.Path.CurrentOS (fromText)
 
-import Caide.Problem (readProblemInfo)
+import Caide.MustacheUtil (compileAndRender)
+import Caide.Problem (ProblemState, jsonEncodeProblem, readProblemInfo, readProblemState)
 import Caide.Templates (copyTemplateUnlessExists, getTemplate)
 import Caide.Types
 import Caide.Util (readTextFile')
@@ -30,72 +32,58 @@ language = ProgrammingLanguage
 generateCSharpScaffold :: ProblemID -> CaideIO ()
 generateCSharpScaffold probID = do
     root <- caideRoot
-    probType <- problemType <$> readProblemInfo probID
+    problem <- readProblemInfo probID
+    problemState <- readProblemState probID
 
-    generateSolutionFiles probType root probID
+    generateSolutionAndMain problem problemState
 
     let problemDir = root </> fromText probID
-        testProgramPath = problemDir </> fromText (T.append probID "_test.cs")
-        testerCode = generateTesterCode probType
+        testProgramPath = problemDir </> fromText (probID <> "_test.cs")
+        testerCode = generateTesterCode problem problemState
 
     testFileExists <- liftIO $ isFile testProgramPath
     unless testFileExists $ do
         testTemplate <- getTemplate "test_template.cs"
-        liftIO $ writeTextFile testProgramPath $ T.append testTemplate $ T.unlines testerCode
+        liftIO $ writeTextFile testProgramPath $ testTemplate <> testerCode
 
-generateSolutionFiles :: ProblemType -> F.FilePath -> ProblemID -> CaideIO ()
-generateSolutionFiles (Stream input output) root probID = do
+solutionTemplates :: NonEmpty.NonEmpty (Text, Text)
+solutionTemplates =
+    NonEmpty.fromList [ ("solution.cs", $(embedStringFile "src/Caide/CSharp/solution.cs.mustache"))
+                      , ("cstype", $(embedStringFile "src/Caide/CSharp/cstype.mustache"))
+                      ]
+
+mainTemplates :: NonEmpty.NonEmpty (Text, Text)
+mainTemplates =
+    NonEmpty.fromList [ ("main.cs", $(embedStringFile "src/Caide/CSharp/main.cs.mustache"))
+                      ]
+
+generateSolutionAndMain :: Problem -> ProblemState -> CaideIO ()
+generateSolutionAndMain problem@Problem{problemType=Stream _ _} state = do
+    root <- caideRoot
+    let probID = problemId problem
+        problemDir = root </> fromText probID
+        solutionPath = problemDir </> fromText (probID <> ".cs")
+        mainProgramPath = problemDir </> "main.cs"
+
     mainFileExists <- liftIO $ isFile mainProgramPath
     unless mainFileExists $ do
         mainTemplate <- getTemplate "main_template.cs"
-        liftIO $ writeTextFile mainProgramPath $ T.append caideConstants mainTemplate
+        liftIO $ writeTextFile mainProgramPath $
+            renderTemplate mainTemplates problem state <> "\n" <> mainTemplate
 
-    copyTemplateUnlessExists "solution_template.cs" scaffoldPath
-  where
-    problemDir = root </> fromText probID
-    scaffoldPath = problemDir </> fromText (T.append probID ".cs")
-    mainProgramPath = problemDir </> "main.cs"
-    inputPreamble = case input of
-        StdIn -> [ "    public const string InputFile = null;"
-                 , "    public const string InputFilePattern = null;"
-                 ]
-        FileInput fileName -> [ "    public const string InputFile = \"" <> pathToText fileName <> "\";"
-                              , "    public const string InputFilePattern = null;"
-                              ]
-        InputFilePattern p -> [ "    public const string InputFile = null;"
-                              , "    public const string InputFilePattern = \"" <> p <> "\";"
-                              ]
+    copyTemplateUnlessExists "solution_template.cs" solutionPath
 
-    outputPreamble = case output of
-        StdOut -> "    public const string OutputFile = null;"
-        FileOutput fileName -> T.concat ["    public const string OutputFile = \"", pathToText fileName, "\";"]
-    caideConstants = T.unlines $ ["class CaideConstants {"] ++ inputPreamble ++ [outputPreamble, "}"]
+generateSolutionAndMain problem@Problem{problemType=Topcoder _} state = do
+    root <- caideRoot
+    let probID = problemId problem
+        problemDir = root </> fromText probID
+        solutionPath = problemDir </> fromText (probID <> ".cs")
 
-
-generateSolutionFiles (Topcoder tcDesc) root probID = do
-    solutionFileExists <- liftIO $ isFile scaffoldPath
+    solutionFileExists <- liftIO $ isFile solutionPath
     unless solutionFileExists $ do
-        templateSolution <- getTemplate "topcoder_solution_template.cs"
-        liftIO $
-            writeTextFile scaffoldPath $ T.append templateSolution $ T.unlines solutionDeclaration
-  where
-    problemDir = root </> fromText probID
-    scaffoldPath = problemDir </> fromText (T.append probID ".cs")
-    TopcoderMethod method params = tcSingleMethod tcDesc
-    declare val = T.concat [csharpType (tcValueType val) (tcValueDimension val), " ", tcValueName val]
-    solutionDeclaration = [
-        T.concat ["public class ", tcClassName tcDesc],
-        "{",
-        T.concat $ ["    public ", declare method, "("] ++
-                    intersperse ", " (map declare params) ++
-                    [")"],
-        "    {",
-        T.concat ["        ", declare (method {tcValueName = "result"}),
-                  " = default(", csharpType (tcValueType method) (tcValueDimension method), ");"],
-        "        return result;",
-        "    }",
-        "}"
-        ]
+        userSolutionTemplate <- getTemplate "topcoder_solution_template.cs"
+        liftIO $ writeTextFile solutionPath $
+            userSolutionTemplate <> "\n" <> renderTemplate solutionTemplates problem state
 
 
 inlineCSharpCode :: ProblemID -> CaideIO ()
@@ -103,113 +91,34 @@ inlineCSharpCode probID = do
     root <- caideRoot
     probType <- problemType <$> readProblemInfo probID
     let problemDir = root </> fromText probID
-        solutionPath = problemDir </> fromText (T.append probID ".cs")
+        solutionPath = problemDir </> fromText (probID <> ".cs")
         mainProgramPath = problemDir </> "main.cs"
         inlinedCodePath = problemDir </> "submission.cs"
 
+    liftIO $ copyFile solutionPath inlinedCodePath
     case probType of
-        Topcoder _ -> liftIO $ copyFile solutionPath inlinedCodePath
         Stream _ _ -> do
             mainCode <- readTextFile' mainProgramPath
-            liftIO $ do
-                copyFile solutionPath inlinedCodePath
-                appendTextFile inlinedCodePath mainCode
+            liftIO $ appendTextFile inlinedCodePath mainCode
+        Topcoder _ -> return ()
+        -- LeetCodeMethod _ -> return ()
+        -- LeetCodeClass _ _ _ -> return ()
 
     liftIO $ copyFile inlinedCodePath $ root </> "submission.cs"
 
-generateTesterCode :: ProblemType -> [T.Text]
-generateTesterCode (Topcoder tcDesc) = [
-    "partial class CaideTester",
-    "{",
-    "    public const bool IS_TOPCODER_PROBLEM = true;",
-    "",
-    "    public static void TopcoderSolve(TextReader input, TextWriter output) {",
-    "        ReadTopcoderInput(input);",
-    T.append "        " $ generateSolutionCall tcDesc,
-    "        WriteTopcoderOutput(output);",
-    "    }",
-    "",
-    "    private static void ReadIfTopcoderProblem(TextReader input, TextReader output) {",
-    "        ReadTopcoderInput(input);",
-    "        ReadTopcoderOutput(output);",
-    "    }",
-    "    private static void ReadTopcoderInput(TextReader reader) {"
-    ] ++ map (T.append "        ") (concatMap tcInit params) ++ [
-    "    }",
-    "    private static void ReadTopcoderOutput(TextReader reader) {"
-    ] ++ [
-    T.concat ["        result = ",
-              tcDeserializer (tcValueType returnValue) (tcValueDimension returnValue),
-              ".Deserialize(reader);"],
-    "    }",
-    "",
-    "    private static void WriteTopcoderInput(TextWriter writer) {"
-    ] ++ map (T.append "        " . tcWrite) params ++ [
-    "    }",
-    "",
-    "    private static void WriteTopcoderOutput(TextWriter writer) {"
-    ] ++ [T.append "        " $ tcWrite returnValue] ++ [
-    "    }",
-    ""
-    ] ++ map (T.append "    " . tcDeclare) params ++ [
-    T.append "    " $ tcDeclare returnValue,
-    "}"
-    ]
-  where
-    returnValue = (tcMethod $ tcSingleMethod tcDesc) {tcValueName = "result"}
-    params = tcParameters $ tcSingleMethod tcDesc
+testerTemplates :: NonEmpty.NonEmpty (Text, Text)
+testerTemplates =
+    NonEmpty.fromList [ ("tester.cs", $(embedStringFile "src/Caide/CSharp/tester.cs.mustache"))
+                      , ("cstype", $(embedStringFile "src/Caide/CSharp/cstype.mustache"))
+                      , ("serializer", $(embedStringFile "src/Caide/CSharp/serializer.mustache"))
+                      ]
 
-generateTesterCode _ = [
-    "partial class CaideTester",
-    "{",
-    "   public const bool IS_TOPCODER_PROBLEM = false;",
-    "",
-    "   public static void TopcoderSolve(TextReader input, TextWriter output) {",
-    "   }",
-    "",
-    "   private static void ReadIfTopcoderProblem(TextReader input, TextReader output) {",
-    "   }",
-    "}"
-    ]
+generateTesterCode :: Problem -> ProblemState -> Text
+generateTesterCode = renderTemplate testerTemplates
 
-generateSolutionCall :: TopcoderProblemDescription -> T.Text
-generateSolutionCall tcDesc = T.concat $ [
-    "result = new ", tcClassName tcDesc, "().", tcValueName method, "("
-    ] ++ intersperse ", " (map tcValueName params) ++ [
-    ");"
-    ]
-  where
-    TopcoderMethod method params = tcSingleMethod tcDesc
-
-tcInit :: TopcoderValue -> [T.Text]
-tcInit (TopcoderValue name type_ dimension) = [
-    "Caide.TCSerializeUtil.SkipUpTo(reader, c => !char.IsWhiteSpace(c));",
-    "Caide.TCSerializeUtil.SkipWhile(reader, char.IsWhiteSpace);",
-    T.concat [name, " = ", tcDeserializer type_ dimension, ".Deserialize(reader);"]
-    ]
-
-tcWrite :: TopcoderValue -> T.Text
-tcWrite (TopcoderValue name type_ dimension) = T.concat [
-    tcDeserializer type_ dimension, ".Serialize(writer, ", name, ");"
-    ]
-
-tcDeserializer :: TopcoderType -> Int -> T.Text
-tcDeserializer TCInt 0 = "new Caide.IntSerializer()"
-tcDeserializer TCLong 0 = "new Caide.LongSerializer()"
-tcDeserializer TCDouble 0 = "new Caide.DoubleSerializer()"
-tcDeserializer TCString 0 = "new Caide.StringSerializer()"
-tcDeserializer _ dimension | dimension <= 0  = "ERROR: Unknown type"
-tcDeserializer type_ dimension = T.concat ["Caide.S.v(", tcDeserializer type_ (dimension-1), ")"]
-
-tcDeclare :: TopcoderValue -> T.Text
-tcDeclare (TopcoderValue name type_ dimension) = T.concat [
-    "static ", csharpType type_ dimension, " ", name, ";"]
-
-csharpType :: TopcoderType -> Int -> T.Text
-csharpType TCInt 0 = "int"
-csharpType TCLong 0 = "long"
-csharpType TCDouble 0 = "double"
-csharpType TCString 0 = "string"
-csharpType _ dimension | dimension <= 0 = "ERROR: Unknown type"
-csharpType type_ dimension = T.concat $ csharpType type_ 0 : replicate dimension "[]"
-
+renderTemplate :: NonEmpty.NonEmpty (Text, Text) -> Problem -> ProblemState -> Text
+renderTemplate templates problem state = let
+    json = jsonEncodeProblem problem state
+    in case compileAndRender templates json of
+        Left err -> err
+        Right (_warnings, result) -> result

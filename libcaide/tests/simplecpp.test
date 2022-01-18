@@ -13,4 +13,13 @@ sed -i 's/#time:[^ ]* //' prob/.caideproblem/test/report.txt
 compare_with after-make prob/submission.cpp prob/.caideproblem/test/report.txt
 cd prob
 cxx submission.cpp -o submission.exe
+cd ..
+
+
+"$CAIDE" problem prob2 --lang simplecpp --type topcoder,ClassName,methodName:long,i:int,d:double,s:String,vi:vint,vs:vString
+cd prob2
+cxx prob*.cpp -o prob2.exe
+./prob2.exe
+"$CAIDE" make
+cxx -c submission.cpp
 

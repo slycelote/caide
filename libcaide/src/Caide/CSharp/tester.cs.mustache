@@ -1,0 +1,70 @@
+partial class CaideTester
+{
+    public const bool IS_TOPCODER_PROBLEM = {{#topcoder}}true{{/topcoder}}{{^topcoder}}false{{/topcoder}};
+
+{{#topcoder}}
+    class Params
+    {
+        {{#singleMethod.parameters}}public {{>cstype}} {{name}}; {{/singleMethod.parameters}}
+    }
+
+    static Params p = new Params();
+    {{#singleMethod.method}}static {{>cstype}} result;{{/singleMethod.method}}
+
+    public static void TopcoderSolve(TextReader input, TextWriter output)
+    {
+        ReadTopcoderInput(input);
+        result = new {{className}}().{{singleMethod.method.name}}(
+        {{#singleMethod.parameters}}
+            p.{{name}}{{^islast}},{{/islast}}
+        {{/singleMethod.parameters}}
+        );
+        ReadTopcoderOutput(input);
+    }
+
+    private static void ReadIfTopcoderProblem(TextReader input, TextReader output)
+    {
+        ReadTopcoderInput(input);
+        ReadTopcoderOutput(output);
+    }
+
+    private static void ReadTopcoderInput(TextReader reader)
+    {
+    {{#singleMethod.parameters}}
+        Caide.TCSerializeUtil.SkipUpTo(reader, c => !char.IsWhiteSpace(c));
+        Caide.TCSerializeUtil.SkipWhile(reader, char.IsWhiteSpace);
+        p.{{name}} = {{>serializer}}.Deserialize(reader);
+
+    {{/singleMethod.parameters}}
+    }
+
+    private static void ReadTopcoderOutput(TextReader reader)
+    {
+    {{#singleMethod.method}}
+        result = {{>serializer}}.Deserialize(reader);
+    {{/singleMethod.method}}
+    }
+
+    private static void WriteTopcoderInput(TextWriter writer)
+    {
+    {{#singleMethod.parameters}}
+        {{>serializer}}.Serialize(writer, p.{{name}});
+    {{/singleMethod.parameters}}
+    }
+
+    private static void WriteTopcoderOutput(TextWriter writer)
+    {
+    {{#singleMethod.method}}
+        {{>serializer}}.Serialize(writer, result);
+    {{/singleMethod.method}}
+    }
+{{/topcoder}}
+{{^topcoder}}
+    public static void TopcoderSolve(TextReader input, TextWriter output) {
+    }
+
+    private static void ReadIfTopcoderProblem(TextReader input, TextReader output) {
+    }
+{{/topcoder}}
+}
+

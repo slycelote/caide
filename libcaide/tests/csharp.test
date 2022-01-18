@@ -14,4 +14,12 @@ sed -i 's/#time:[^ ]* //' prob/.caideproblem/test/report.txt
 compare_with after-make prob/submission.cs prob/.caideproblem/test/report.txt
 cd prob
 "$CSC" submission.cs
+cd ../
+
+"$CAIDE" problem prob2 --lang csharp --type topcoder,ClassName,methodName:long,i:int,d:double,s:String,vi:vint,vs:vString
+cd prob2
+"$CSC" -out:prob.exe prob*.cs
+run_csharp_executable ./prob.exe
+"$CAIDE" make
+"$CSC" -target:library submission.cs
 
