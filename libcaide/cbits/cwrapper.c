@@ -10,6 +10,9 @@ void inlineCppCode(
     const char** macrosToKeep,
     int numMacrosToKeep,
 
+    const char** identifiersToKeep,
+    int numIdentifiersToKeep,
+
     int maxConsequentEmptyLines,
 
     const char** cppFilePaths,
@@ -23,6 +26,8 @@ void inlineCppCode(
     opts.numClangOptions = numClangOptions;
     opts.macrosToKeep = macrosToKeep;
     opts.numMacrosToKeep = numMacrosToKeep;
+    opts.identifiersToKeep = identifiersToKeep;
+    opts.numIdentifiersToKeep = numIdentifiersToKeep;
     opts.maxConsequentEmptyLines = maxConsequentEmptyLines;
 
     caideInlineCppCode(&opts, cppFilePaths, numCppFiles, outputFilePath);

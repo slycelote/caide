@@ -31,7 +31,7 @@ inlineCPPCode :: ProblemID -> CaideIO ()
 inlineCPPCode probID = do
     root <- caideRoot
     let problemDir = root </> fromText probID
-        solutionPath = problemDir </> fromText (T.append probID ".cpp")
+        solutionPath = problemDir </> fromText (probID <> ".cpp")
         mainFilePath = problemDir </> "main.cpp"
         tempDir = problemDir </> ".caideproblem"
         libraryDirectory = root </> "cpplib"
@@ -51,16 +51,24 @@ inlineCPPCode probID = do
     let allCppFiles = case problemType problem of
             Stream _ _ -> solutionPath:mainFilePath:libraryCPPFiles
             Topcoder _ -> solutionPath:libraryCPPFiles
+        identifiersToPreserve = getIdentifiersToPreserve (problemType problem)
         outputPath = problemDir </> "submission.cpp"
 
+
     ret <- liftIO $
-        inlineLibraryCode tempDir cmdLineOptions macrosToKeep maxConsequentEmptyLines allCppFiles outputPath
+        inlineLibraryCode tempDir cmdLineOptions macrosToKeep identifiersToPreserve maxConsequentEmptyLines allCppFiles outputPath
 
     when (ret /= 0) $
-        throw . T.concat $ ["C++ inliner failed with error code ", tshow ret]
+        throw $ "C++ inliner failed with error code " <> tshow ret
 
     liftIO $ copyFile outputPath $ root </> "submission.cpp"
 
+getIdentifiersToPreserve :: ProblemType -> [T.Text]
+getIdentifiersToPreserve (Stream _ _) = []
+getIdentifiersToPreserve (Topcoder desc) =
+    [ tcClassName desc <> "::" <> tcClassName desc -- constructor
+    , tcClassName desc <> "::" <> tcValueName (tcMethod (tcSingleMethod desc)) -- main method
+    ]
 
 listDirectoryRecursively :: FilePath -> IO [FilePath]
 listDirectoryRecursively dir = do
