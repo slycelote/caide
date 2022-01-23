@@ -51,6 +51,7 @@ inlineCPPCode probID = do
     let allCppFiles = case problemType problem of
             Stream _ _ -> solutionPath:mainFilePath:libraryCPPFiles
             Topcoder _ -> solutionPath:libraryCPPFiles
+            LeetCodeMethod _ -> solutionPath:libraryCPPFiles
         identifiersToPreserve = getIdentifiersToPreserve (problemType problem)
         outputPath = problemDir </> "submission.cpp"
 
@@ -68,6 +69,10 @@ getIdentifiersToPreserve (Stream _ _) = []
 getIdentifiersToPreserve (Topcoder desc) =
     [ tcClassName desc <> "::" <> tcClassName desc -- constructor
     , tcClassName desc <> "::" <> tcValueName (tcMethod (tcSingleMethod desc)) -- main method
+    ]
+getIdentifiersToPreserve (LeetCodeMethod method) =
+    [ defaultLeetCodeClassName <> "::" <> defaultLeetCodeClassName -- constructor
+    , defaultLeetCodeClassName <> "::" <> tcValueName (tcMethod method) -- main method
     ]
 
 listDirectoryRecursively :: FilePath -> IO [FilePath]

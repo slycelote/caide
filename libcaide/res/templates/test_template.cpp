@@ -147,6 +147,10 @@ int main() {
                 runTest((testDir + testName + ".in").c_str(),
                         (testDir + testName + ".out").c_str(),
                         result);
+            } catch (const exception& e) {
+                cerr << "Test " << testName << " threw an exception: " << e.what() << endl;
+                report << testName << stopwatch.GetDuration() << " failed" << endl;
+                continue;
             } catch (...) {
                 cerr << "Test " << testName << " threw an exception" << endl;
                 report << testName << stopwatch.GetDuration() << " failed" << endl;
@@ -227,12 +231,19 @@ CAIDE_TC_RETURN_TYPE solve(
     int);
 #undef CAIDE_TC_PARAM
 
+static void skipChar(istream& is) {
+#ifndef CAIDE_LEETCODE
+    char c; is >> c;
+#else
+    (void)is;
+#endif
+}
+
 void solve(istream& caide_in, ostream& caide_out) {
     caide_out << std::setprecision(12);
 
     // Declare and read parameters
-    char caide_char;
-#define CAIDE_TC_PARAM(type, name) type name; caide_in >> caide_char; tcread(caide_in, name);
+#define CAIDE_TC_PARAM(type, name) type name; skipChar(caide_in); tcread(caide_in, name);
     CAIDE_TC_PARAM_LIST
 #undef CAIDE_TC_PARAM
 

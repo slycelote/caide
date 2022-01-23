@@ -10,6 +10,7 @@ module Caide.Types(
     , TopcoderValue (..)
     , TopcoderMethod (..)
     , TopcoderProblemDescription (..)
+    , defaultLeetCodeClassName
     , makeProblem
 
     , Verbosity (..)
@@ -49,6 +50,7 @@ import Control.Monad.Reader (MonadReader, reader)
 import Control.Monad.RWS.Strict (RWST, runRWST)
 import Control.Monad.State (MonadState, gets, modify')
 import Data.Char (toLower)
+import qualified Data.List as List
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Text (Text, pack, unpack)
@@ -79,35 +81,40 @@ data Problem = Problem
     , problemId   :: !ProblemID -- ^ ID used for folder names, code generation etc.
     , problemFloatTolerance :: !Double -- ^ Comparing floating-point values up to this tolerance
     , problemType :: !ProblemType
+    , problemCodeSnippets :: !(Map Text Text) -- maps language id to code snippet
     } deriving (Show)
 
 data ProblemType = Topcoder !TopcoderProblemDescription
+                 | LeetCodeMethod !TopcoderMethod -- ^ Class with a single method; class name is Solution
+                 -- | LeetCodeClass !Text ![TopcoderValue] ![TopcoderMethod] -- ^ Class name, ctor parameters and methods
                  | Stream !InputSource !OutputTarget
-                 deriving (Show)
+                 deriving (Show, Eq)
 data InputSource = StdIn | FileInput !F.FilePath | InputFilePattern !Text
-    deriving (Show)
+    deriving (Show, Eq)
 data OutputTarget = StdOut | FileOutput !F.FilePath
-    deriving (Show)
+    deriving (Show, Eq)
 
 data TopcoderProblemDescription = TopcoderProblemDescription
     { tcClassName        :: !Text
     , tcSingleMethod     :: !TopcoderMethod
-    } deriving (Show)
+    } deriving (Show, Eq)
 
 data TopcoderValue = TopcoderValue
     { tcValueName      :: !Text          -- ^ Parameter/method name
     , tcValueType      :: !TopcoderType  -- ^ Base type of the parameter, e.g. int for vector<vector<int>>
     , tcValueDimension :: !Int           -- ^ Dimension, e.g. 2 for vector<vector<int>>
-    } deriving (Show)
+    } deriving (Show, Eq)
 
 data TopcoderType = TCInt | TCLong | TCDouble | TCString
-    deriving (Show)
+    deriving (Show, Eq)
 
 data TopcoderMethod = TopcoderMethod
-    { tcMethod     :: !TopcoderValue
-    , tcParameters :: ![TopcoderValue]
-    } deriving (Show)
+    { tcMethod     :: !TopcoderValue    -- ^ name and return type of the method
+    , tcParameters :: ![TopcoderValue]  -- ^ names and types of parameters
+    } deriving (Show, Eq)
 
+defaultLeetCodeClassName :: Text
+defaultLeetCodeClassName = "Solution"
 
 makeProblem :: Text -> ProblemID -> ProblemType -> Problem
 makeProblem name probId probType = Problem
@@ -115,6 +122,7 @@ makeProblem name probId probType = Problem
     , problemId = probId
     , problemType = probType
     , problemFloatTolerance = 0.000001
+    , problemCodeSnippets = M.empty
     }
 
 
@@ -311,6 +319,10 @@ instance Option ProblemType where
     optionToString (Topcoder desc) =
         optionToString ("topcoder" : tcClassName desc :
                         map optionToText (tcMethod (tcSingleMethod desc) : tcParameters (tcSingleMethod desc)))
+    -- leetcode;method:retType,param1:type1,param2:type2
+    optionToString (LeetCodeMethod m) =
+        List.intercalate "," ("leetcode" : map optionToString (tcMethod m : tcParameters m))
+    -- optionToString (LeetCodeClass _ _ _) = "leetcode;" <> error "Not implemented" -- TODO
     optionToString (Stream input output) = concat [
         "file,", inputSourceToString input, ",", outputTargetToString output]
 
@@ -326,6 +338,16 @@ instance Option ProblemType where
         maybeParams = if length components >= 3
             then mapM optionFromText paramsStr
             else Nothing
+
+    optionFromText s | "leetcode," `T.isPrefixOf` s = let
+        components = tail $ T.splitOn "," s
+        mbValues = mapM optionFromText components
+        in case mbValues of
+            Just (method:params) -> Just $ LeetCodeMethod $ TopcoderMethod method params
+            _ -> Nothing
+
+    -- optionFromText s | "leetcode;" `T.isPrefixOf` s = error "Not implemented" -- TODO
+
 
     optionFromText s = case optionFromText s of
         Just [probType, inputSource, outputSource]

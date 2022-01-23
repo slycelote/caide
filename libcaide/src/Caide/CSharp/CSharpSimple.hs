@@ -73,7 +73,14 @@ generateSolutionAndMain problem@Problem{problemType=Stream _ _} state = do
 
     copyTemplateUnlessExists "solution_template.cs" solutionPath
 
-generateSolutionAndMain problem@Problem{problemType=Topcoder _} state = do
+generateSolutionAndMain problem@Problem{problemType=Topcoder _} state =
+    generateSolutionAndMainForTopcoder problem state
+
+generateSolutionAndMain problem@Problem{problemType=LeetCodeMethod _} state =
+    generateSolutionAndMainForTopcoder problem state
+
+generateSolutionAndMainForTopcoder :: Problem -> ProblemState -> CaideIO ()
+generateSolutionAndMainForTopcoder problem state = do
     root <- caideRoot
     let probID = problemId problem
         problemDir = root </> fromText probID
@@ -84,7 +91,6 @@ generateSolutionAndMain problem@Problem{problemType=Topcoder _} state = do
         userSolutionTemplate <- getTemplate "topcoder_solution_template.cs"
         liftIO $ writeTextFile solutionPath $
             userSolutionTemplate <> "\n" <> renderTemplate solutionTemplates problem state
-
 
 inlineCSharpCode :: ProblemID -> CaideIO ()
 inlineCSharpCode probID = do
@@ -101,7 +107,7 @@ inlineCSharpCode probID = do
             mainCode <- readTextFile' mainProgramPath
             liftIO $ appendTextFile inlinedCodePath mainCode
         Topcoder _ -> return ()
-        -- LeetCodeMethod _ -> return ()
+        LeetCodeMethod _ -> return ()
         -- LeetCodeClass _ _ _ -> return ()
 
     liftIO $ copyFile inlinedCodePath $ root </> "submission.cs"
@@ -122,3 +128,4 @@ renderTemplate templates problem state = let
     in case compileAndRender templates json of
         Left err -> err
         Right (_warnings, result) -> result
+

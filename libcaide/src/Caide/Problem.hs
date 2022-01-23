@@ -7,11 +7,17 @@ module Caide.Problem(
     , readProblemState
 ) where
 
+import qualified Data.ByteString.Lazy as LBS
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
-import qualified Data.Vector as Vector
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
+
 
 import qualified Data.Aeson as Aeson
 import Data.Aeson ((.=))
+import qualified Data.Map.Strict as Map
+import qualified Data.Vector as Vector
 
 import Filesystem.Util (pathToText)
 
@@ -24,11 +30,14 @@ readProblemInfo probId = do
     pname <- getProp hProblemInfo "problem" "name"
     ptype <- getProp hProblemInfo "problem" "type"
     fpTolerance <- getProp hProblemInfo "problem" "double_precision"
+    snippets <- (LBS.fromStrict . T.encodeUtf8) <$>
+        getProp hProblemInfo "problem" "snippets" `Conf.orDefault` "{}"
     return $ Problem
         { problemName = pname
         , problemId = probId
         , problemFloatTolerance = fpTolerance
         , problemType = ptype
+        , problemCodeSnippets = fromMaybe Map.empty (Aeson.decode snippets)
         }
 
 data ProblemState = ProblemState
@@ -47,11 +56,13 @@ jsonEncodeProblem Problem{..} ProblemState{..} = Aeson.object $
     , "name" .= problemName
     , "language" .= cleanLanguage currentLanguage
     ]
-    -- ++ ["codeSnippets" .= problemCodeSnippets | not (Map.null problemCodeSnippets) ]
+    ++ ["codeSnippets" .= problemCodeSnippets | not (Map.null problemCodeSnippets) ]
     ++ typeEntries problemType
   where
-    typeEntries (Topcoder topcoderDesc) = ["topcoder" .= encodeTopcoderDesc topcoderDesc]
-    typeEntries (Stream input output) = ["input" .= encodeInput input, "output" .= encodeOutput output]
+    typeEntries (Topcoder topcoderDesc) = ["type" .= T.pack "topcoder", "topcoder" .= encodeTopcoderDesc topcoderDesc]
+    typeEntries (LeetCodeMethod method) = ["type" .= T.pack "leetcode", "topcoder" .= encodeTopcoderDesc (
+        TopcoderProblemDescription defaultLeetCodeClassName method)]
+    typeEntries (Stream input output) = ["type" .= T.pack "stream", "input" .= encodeInput input, "output" .= encodeOutput output]
     cleanLanguage "c++" = "cpp"
     cleanLanguage "c#" = "csharp"
     cleanLanguage s = s

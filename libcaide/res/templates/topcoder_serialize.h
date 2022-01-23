@@ -46,7 +46,7 @@ struct Serializer<std::string> {
         char c;
         in >> c;
         if (c != '"')
-            throw std::invalid_argument("Expected a quote character");
+            throw std::invalid_argument("Expected a quote character, got " + std::string(1, c));
         std::string s;
         for (;;) {
             c = in.get();
@@ -74,12 +74,12 @@ struct Serializer<std::vector<T> > {
     static std::vector<T> deserialize(std::istream& in) {
         char c;
         in >> c;
-        if (c != '{')
-            throw std::invalid_argument("Expected a { character");
+        if (c != '{' && c != '[') // Topcoder uses {} for arrays, and LeetCode -- []
+            throw std::invalid_argument("Expected a { or [ character, got " + std::string(1, c));
         std::vector<T> val;
         for (;;) {
             in >> c;
-            if (c == '}')
+            if (c == '}' || c == ']')
                 break;
 
             if (in.eof())
@@ -88,7 +88,7 @@ struct Serializer<std::vector<T> > {
             if (val.empty())
                 in.putback(c);
             else if (c != ',')
-                throw std::invalid_argument("Expected a comma");
+                throw std::invalid_argument("Expected a comma, got " + std::string(1, c));
 
             T elem = Serializer<T>::deserialize(in);
             val.push_back(elem);

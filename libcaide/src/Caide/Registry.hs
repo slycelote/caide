@@ -31,6 +31,7 @@ import qualified Caide.Parsers.Codeforces as Codeforces
 import qualified Caide.Parsers.CodeChef as CodeChef
 import qualified Caide.Parsers.GCJ as GCJ
 import qualified Caide.Parsers.HackerRank as HackerRank
+import qualified Caide.Parsers.LeetCode as LeetCode
 import qualified Caide.Parsers.POJ as POJ
 import qualified Caide.Parsers.RCC as RCC
 import qualified Caide.Parsers.Timus as Timus
@@ -53,6 +54,7 @@ problemParsers :: [ProblemParser]
 problemParsers = [ makeProblemParser Codeforces.isSupportedUrl Codeforces.htmlParser
                  , CodeChef.problemParser
                  , makeProblemParser HackerRank.isSupportedUrl HackerRank.htmlParser
+                 , LeetCode.problemParser
                  , makeProblemParser POJ.isSupportedUrl POJ.htmlParser
                  , makeProblemParser RCC.isSupportedUrl RCC.htmlParser
                  , makeProblemParser Timus.isSupportedUrl Timus.htmlParser

@@ -1,4 +1,6 @@
+{{#codeSnippets.cpp}}{{&.}}{{/codeSnippets.cpp}}
 {{#topcoder}}
+{{^codeSnippets.cpp}}
 class {{className}} {
 public:
     {{#singleMethod}}
@@ -9,6 +11,7 @@ public:
     }
     {{/singleMethod}}
 };
+{{/codeSnippets.cpp}}
 
 {{#singleMethod}}
 {{#method}}{{>cpptype}}{{/method}} solve({{#parameters}}{{>cpptype}} {{name}}, {{/parameters}}int) {
@@ -16,5 +19,4 @@ public:
     {{className}} sol;
     return sol.{{singleMethod.method.name}}({{#singleMethod.parameters}}{{name}}{{^islast}}, {{/islast}}{{/singleMethod.parameters}});
 }
-
 {{/topcoder}}

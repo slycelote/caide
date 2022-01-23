@@ -9,12 +9,18 @@ import Control.Monad (forM_, unless, when)
 import Control.Monad.Util (whenJust)
 import Control.Monad.Except (catchError)
 import Control.Monad.State (liftIO)
+import qualified Data.ByteString.Lazy as LBS
 import Data.Char (isAlphaNum, isAscii)
 import Data.Either (lefts)
+import Data.Function ((&))
 import Data.Maybe (fromJust)
 import qualified Data.Text as T
 import qualified Data.Text.IO.Util as T
 import Data.Text (Text)
+import Data.Text.Encoding.Util (safeDecodeUtf8)
+
+import qualified Data.Aeson as Aeson
+import qualified Data.Map.Strict as Map
 
 import Filesystem (createDirectory, createTree, writeTextFile, isDirectory)
 import Filesystem.Path.CurrentOS (fromText, decodeString, (</>))
@@ -65,6 +71,10 @@ initializeProblem problem = withLock $ do
     hProblemConf <- createConf problemConfPath defaultProblemConfig
     setProp hProblemConf "problem" "name" $ problemName problem
     setProp hProblemConf "problem" "type" $ problemType problem
+    let snippets = problemCodeSnippets problem & Aeson.encode & LBS.toStrict & safeDecodeUtf8
+    unless (Map.null (problemCodeSnippets problem)) $
+        setProp hProblemConf "problem" "snippets" snippets
+
     hProblemState <- createConf problemStatePath defaultProblemState
 
     flushConf hProblemConf

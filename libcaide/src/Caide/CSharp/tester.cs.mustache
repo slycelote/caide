@@ -1,7 +1,14 @@
 partial class CaideTester
 {
-    public const bool IS_TOPCODER_PROBLEM = {{#topcoder}}true{{/topcoder}}{{^topcoder}}false{{/topcoder}};
+{{^topcoder}}
+    public static void Solve(TextReader input, TextWriter output)
+    {
+        new Solution().solve(input, output);
+    }
 
+    public static void ParseInputAndOutput(TextReader input, TextReader output)
+    { }
+{{/topcoder}}
 {{#topcoder}}
     class Params
     {
@@ -11,27 +18,66 @@ partial class CaideTester
     static Params p = new Params();
     {{#singleMethod.method}}static {{>cstype}} result;{{/singleMethod.method}}
 
-    public static void TopcoderSolve(TextReader input, TextWriter output)
+    public static void Solve(TextReader input, TextWriter output)
     {
         ReadTopcoderInput(input);
-        result = new {{className}}().{{singleMethod.method.name}}(
+        result = CallSolutionMethod<{{#singleMethod.method}}{{>cstype}}{{/singleMethod.method}}>(
+            new {{className}}(), "{{singleMethod.method.name}}"
         {{#singleMethod.parameters}}
-            p.{{name}}{{^islast}},{{/islast}}
+            , p.{{name}}
         {{/singleMethod.parameters}}
         );
-        ReadTopcoderOutput(input);
+        WriteTopcoderOutput(output);
     }
 
-    private static void ReadIfTopcoderProblem(TextReader input, TextReader output)
+    public static void ParseInputAndOutput(TextReader input, TextReader output)
     {
         ReadTopcoderInput(input);
         ReadTopcoderOutput(output);
     }
 
+    private static TResult CallSolutionMethod<TResult>(Object solutionObject, string methodName,
+        params Object[] args)
+    {
+        // LeetCode uses a method name from the one specified in metadata.
+        var candidates = new System.Collections.Generic.List<string> {methodName};
+        char first = methodName[0];
+        candidates.Add(char.ToUpper(first) + methodName.Substring(1));
+        var snakeCase = new System.Text.StringBuilder();
+        snakeCase.Append(first);
+        foreach (char c in methodName.Substring(1))
+        {
+            if (char.IsLower(c))
+            {
+                snakeCase.Append(c);
+            }
+            else
+            {
+                snakeCase.Append('_');
+                snakeCase.Append(char.ToLower(c));
+            }
+        }
+
+        candidates.Add(snakeCase.ToString());
+
+        foreach (string name in candidates)
+        {
+            var method = solutionObject.GetType().GetMethod(name);
+            if (method != null)
+            {
+                return (TResult)method.Invoke(solutionObject, args);
+            }
+        }
+
+        throw new System.Exception("Method " + methodName + " not found");
+    }
+
     private static void ReadTopcoderInput(TextReader reader)
     {
     {{#singleMethod.parameters}}
+        {{#type_is_topcoder}}{{! TODO: remove this for Topcoder}}
         Caide.TCSerializeUtil.SkipUpTo(reader, c => !char.IsWhiteSpace(c));
+        {{/type_is_topcoder}}
         Caide.TCSerializeUtil.SkipWhile(reader, char.IsWhiteSpace);
         p.{{name}} = {{>serializer}}.Deserialize(reader);
 
@@ -59,12 +105,4 @@ partial class CaideTester
     {{/singleMethod.method}}
     }
 {{/topcoder}}
-{{^topcoder}}
-    public static void TopcoderSolve(TextReader input, TextWriter output) {
-    }
-
-    private static void ReadIfTopcoderProblem(TextReader input, TextReader output) {
-    }
-{{/topcoder}}
 }
-

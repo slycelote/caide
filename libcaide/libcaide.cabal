@@ -79,6 +79,7 @@ library
                    aeson < 2.0.0.0,
                    array,
                    async >= 2.0.1,
+                   attoparsec,
                    bytestring,
                    ConfigFile,
                    containers >= 0.5.0.0,
@@ -166,6 +167,7 @@ library
         Caide.Parsers.Common
         Caide.Parsers.GCJ
         Caide.Parsers.HackerRank
+        Caide.Parsers.LeetCode
         Caide.Parsers.POJ
         Caide.Parsers.RCC
         Caide.Parsers.RccContest

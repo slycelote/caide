@@ -1,4 +1,5 @@
-{{#topcoder}}
+{{#codeSnippets.csharp}}{{&.}}{{/codeSnippets.csharp}}
+{{^codeSnippets.csharp}}{{#topcoder}}
 public class {{className}}
 {
 {{#singleMethod}}
@@ -13,6 +14,4 @@ public class {{className}}
     }
 {{/singleMethod}}
 }
-{{/topcoder}}
-{{^topcoder}}
-{{/topcoder}}
+{{/topcoder}}{{/codeSnippets.csharp}}

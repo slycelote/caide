@@ -22,4 +22,13 @@ cxx prob*.cpp -o prob2.exe
 ./prob2.exe
 "$CAIDE" make
 cxx -c submission.cpp
+cd ..
+
+"$CAIDE" problem prob3 --lang simplecpp --type leetcode,methodName:long,i:int,d:double,s:String,vi:vint,vs:vString
+cd prob3
+cxx prob*.cpp -o prob3.exe
+./prob3.exe
+"$CAIDE" make
+cxx -c submission.cpp
+cd ..
 

@@ -14,7 +14,7 @@ static partial class CaideTester
     public static bool ENABLE_CUSTOM_CHECKER = false;
     public static bool CustomCheck(TextReader input, TextReader output)
     {
-        ReadIfTopcoderProblem(input, output);
+        ParseInputAndOutput(input, output);
 
         // Implement the checker here.
         // Use static variables of this class
@@ -35,18 +35,7 @@ public class Test
 
         using (TextReader input = new StreamReader(inputFileName))
         {
-            if (CaideTester.IS_TOPCODER_PROBLEM)
-            {
-                CaideTester.TopcoderSolve(input, output);
-            }
-            else
-            {
-                Type type = Type.GetType("Solution");
-                ConstructorInfo constructor = type.GetConstructor(new Type[] { });
-                MethodInfo method = type.GetMethod("solve", new[] { typeof(StreamReader), typeof(StreamWriter) });
-                object instance = constructor.Invoke(new object[] {});
-                method.Invoke(instance, new object[] { input, output });
-            }
+            CaideTester.Solve(input, output);
         }
 
         // save program output
@@ -117,9 +106,9 @@ public class Test
                 {
                     result = RunTest(inputFile, Path.Combine(testDir, testName + ".out"));
                 }
-                catch
+                catch (Exception e)
                 {
-                    Console.Error.WriteLine("Test " + testName + " threw an exception");
+                    Console.Error.WriteLine("Test " + testName + " threw an exception: " + e);
                     report.WriteLine(testName + getDuration() + " failed");
                     continue;
                 }
@@ -339,12 +328,17 @@ namespace Caide
         {
             List<T> res = new List<T>();
             input.SkipWhile(char.IsWhiteSpace);
-            input.Consume('{');
+            char open = input.ReadChar();
+            if (open != '{' && open != '[') // Topcoder uses {} for arrays, and LeetCode -- []
+            {
+                throw new IOException("{ or [ character is expected");
+            }
+
             while (true)
             {
                 input.SkipWhile(char.IsWhiteSpace);
                 char c = input.PeekChar();
-                if (c == '}')
+                if (c == '}' || c == ']')
                 {
                     input.Read();
                     break;

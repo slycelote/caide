@@ -3,7 +3,6 @@
 "$CAIDE" init
 "$CAIDE" problem prob
 "$CAIDE" lang csharp
-compare_with after-lang prob/{prob,prob_test}.cs
 cd prob
 "$CSC" -out:prob.exe prob*.cs
 echo 1 >case1.in
@@ -22,4 +21,13 @@ cd prob2
 run_csharp_executable ./prob.exe
 "$CAIDE" make
 "$CSC" -target:library submission.cs
+cd ..
+
+"$CAIDE" problem prob3 --lang csharp --type leetcode,methodName:long,i:int,d:double,s:String,vi:vint,vs:vString
+cd prob3
+"$CSC" -out:prob.exe prob*.cs
+run_csharp_executable ./prob.exe
+"$CAIDE" make
+"$CSC" -target:library submission.cs
+cd ..
 
