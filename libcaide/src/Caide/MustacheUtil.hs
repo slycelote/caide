@@ -28,7 +28,7 @@ import qualified Data.Vector as Vector
 import qualified System.IO.Error as IOError
 
 import Data.Scientific as Scientific
-import Filesystem (copyPermissions, isFile, removeFile, writeTextFile)
+import Filesystem (copyPermissions, isDirectory, isFile, removeFile, writeTextFile)
 import Filesystem.Path.CurrentOS ((</>))
 import qualified Filesystem.Path.CurrentOS as FS
 import qualified Filesystem.Util as FS
@@ -77,7 +77,10 @@ renderTemplates templatesDir targetDir context optionModifiers = do
 
 compileTemplates :: FS.FilePath -> CaideIO [(FS.FilePath, Template)]
 compileTemplates templatesDir = do
-    templates <- liftIO $ fst <$> FS.listDir templatesDir
+    isDir <- liftIO $ isDirectory templatesDir
+    templates <- if isDir
+        then liftIO $ fst <$> FS.listDir templatesDir
+        else return []
     forM templates $ \templateFile -> do
         templateOrException <- liftIO $ try $ compileMustacheFile (FS.encodeString templateFile)
         case templateOrException of
