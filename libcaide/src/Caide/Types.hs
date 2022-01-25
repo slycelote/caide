@@ -105,7 +105,7 @@ data TopcoderValue = TopcoderValue
     , tcValueDimension :: !Int           -- ^ Dimension, e.g. 2 for vector<vector<int>>
     } deriving (Show, Eq)
 
-data TopcoderType = TCInt | TCLong | TCDouble | TCString
+data TopcoderType = TCInt | TCLong | TCDouble | TCString | TCBool
     deriving (Show, Eq)
 
 data TopcoderMethod = TopcoderMethod
@@ -288,12 +288,14 @@ instance Option TopcoderType where
     optionToString TCLong   = "long"
     optionToString TCDouble = "double"
     optionToString TCString = "String"
+    optionToString TCBool = "bool"
 
     optionFromString "int"    = Just TCInt
     optionFromString "long"   = Just TCLong
     optionFromString "double" = Just TCDouble
     optionFromString "String" = Just TCString
     optionFromString "string" = Just TCString
+    optionFromString "bool"   = Just TCBool
     optionFromString _        = Nothing
 
 -- name:vvType

@@ -23,7 +23,7 @@ run_csharp_executable ./prob.exe
 "$CSC" -target:library submission.cs
 cd ..
 
-"$CAIDE" problem prob3 --lang csharp --type leetcode,methodName:long,i:int,d:double,s:String,vi:vint,vs:vString
+"$CAIDE" problem prob3 --lang csharp --type leetcode,methodName:long,i:int,d:double,s:String,b:bool,vi:vint,vs:vString
 cd prob3
 "$CSC" -out:prob.exe prob*.cs
 run_csharp_executable ./prob.exe

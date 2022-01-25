@@ -138,6 +138,16 @@ problemParserTests = TestList
             { problemType = mkProblemType "leetcode,findMedianSortedArrays:double,nums1:vint,nums2:vint" }
             [ mkTestCase "[1,3]\n[2]" "2.00000"
             , mkTestCase "[1,2]\n[3,4]" "2.50000" ]
+        , lc "https://leetcode.com/problems/sequential-digits"
+            (makeProblem "Sequential Digits" "sequential-digits")
+            { problemType = mkProblemType "leetcode,sequentialDigits:vint,low:int,high:int" }
+            [ mkTestCase "100\n300" "[123,234]"
+            , mkTestCase "1000\n13000" "[1234,2345,3456,4567,5678,6789,12345]" ]
+        , lc "https://leetcode.com/problems/detect-capital"
+            (makeProblem "Detect Capital" "detect-capital")
+            { problemType = mkProblemType "leetcode,detectCapitalUse:bool,word:String" }
+            [ mkTestCase "\"USA\"" "true"
+            , mkTestCase "\"FlaG\"" "false" ]
         ]
     ]
   where

@@ -296,6 +296,28 @@ namespace Caide
         }
     }
 
+    class BoolSerializer : TCSerializer<bool>
+    {
+        public bool Deserialize(TextReader input)
+        {
+            input.SkipWhile(char.IsWhiteSpace);
+            StringBuilder s = new StringBuilder();
+            for (int i = 0; i < 4; ++i)
+                s.Append(input.ReadChar());
+            if (s.ToString() == "true")
+                return true;
+            else if (s.ToString() == "fals" && input.ReadChar() == 'e')
+                return false;
+            else
+                throw new IOException("true or fales is expected");
+        }
+
+        public void Serialize(TextWriter output, bool val)
+        {
+            output.Write(val ? "true" : "false");
+        }
+    }
+
     class StringSerializer : TCSerializer<string>
     {
         public string Deserialize(TextReader input)

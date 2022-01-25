@@ -163,18 +163,28 @@ numTests :: [TestCase] -> (Int, Int)
 numTests tests = (length [t | t@(TestCase _ (Just _)) <- tests], length tests)
 
 typeParser :: Parsec.Parsec Text () (TopcoderType, Int)
-typeParser = do
+typeParser =
     let (try, string, many, eof) = (Parsec.try, Parsec.string, Parsec.many, Parsec.eof)
-    typ <- try (string "integer" $> TCInt)
-        <|> try (string "string" $> TCString)
-        <|> try (string "double" $> TCDouble)
-    arr <- many (string "[]")
-    eof
-    return (typ, length arr)
+        elementTypeParser = try (string "integer" $> TCInt)
+            <|> try (string "string" $> TCString)
+            <|> try (string "double" $> TCDouble)
+            <|> try (string "boolean" $> TCBool)
+        format1 = do
+            _ <- try $ string "list<"
+            typ <- elementTypeParser
+            _ <- string ">"
+            eof
+            return (typ, 1)
+        format2 = do
+            typ <- elementTypeParser
+            arr <- many (string "[]")
+            eof
+            return (typ, length arr)
+    in format1 <|> format2
 
 parseValue :: Param -> Either Text TopcoderValue
 parseValue Param{name, type_} = do
-    (typ, dim) <- mapLeft tshow $ Parsec.parse typeParser "" type_
+    (typ, dim) <- mapLeft tshow $ Parsec.parse typeParser (T.unpack name) type_
     return TopcoderValue{tcValueName = name, tcValueType = typ, tcValueDimension = dim}
 
 parseMethod :: MethodMetaData -> Either Text TopcoderMethod

@@ -72,6 +72,7 @@ encodeType TCInt = "int"
 encodeType TCLong = "long"
 encodeType TCDouble = "double"
 encodeType TCString = "string"
+encodeType TCBool = "bool"
 
 encodeValue :: TopcoderValue -> Aeson.Value
 encodeValue TopcoderValue{..} = Aeson.object $

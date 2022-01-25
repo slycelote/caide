@@ -38,6 +38,33 @@ struct Serializer {
 };
 
 template<>
+struct Serializer<bool> {
+    static void serialize(std::ostream& out, bool val) {
+        out << (val ? "true" : "false");
+    }
+
+    static bool deserialize(std::istream& in) {
+        std::string val(4, ' ');
+        for (int i = 0; i < 4; ++i)
+            if (!(in >> val[i]))
+                throw std::invalid_argument(
+                        std::string("Couldn't deserialize a value of type bool"));
+
+        if (val == "true")
+            return true;
+        else if (val == "fals") {
+            char c;
+            in >> c;
+            if (c == 'e')
+                return false;
+        }
+
+        throw std::invalid_argument(
+                std::string("Couldn't deserialize a value of type bool"));
+    }
+};
+
+template<>
 struct Serializer<std::string> {
     static void serialize(std::ostream& out, const std::string& val) {
         out << '"' << val << '"';
