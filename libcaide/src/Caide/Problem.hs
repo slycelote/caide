@@ -30,8 +30,13 @@ readProblemInfo probId = do
     pname <- getProp hProblemInfo "problem" "name"
     ptype <- getProp hProblemInfo "problem" "type"
     fpTolerance <- getProp hProblemInfo "problem" "double_precision"
+
+    -- We keep snippets in the state file to avoid huge chunk of text in problem.ini.
+    -- Users won't need to modify per-problem snippets anyway (if they do they'll modify
+    -- generated code).
+    hProblemState <- Conf.readProblemState probId
     snippets <- (LBS.fromStrict . T.encodeUtf8) <$>
-        getProp hProblemInfo "problem" "snippets" `Conf.orDefault` "{}"
+        getProp hProblemState "problem" "snippets" `Conf.orDefault` "{}"
     return $ Problem
         { problemName = pname
         , problemId = probId

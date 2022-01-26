@@ -71,11 +71,11 @@ initializeProblem problem = withLock $ do
     hProblemConf <- createConf problemConfPath defaultProblemConfig
     setProp hProblemConf "problem" "name" $ problemName problem
     setProp hProblemConf "problem" "type" $ problemType problem
-    let snippets = problemCodeSnippets problem & Aeson.encode & LBS.toStrict & safeDecodeUtf8
-    unless (Map.null (problemCodeSnippets problem)) $
-        setProp hProblemConf "problem" "snippets" snippets
 
     hProblemState <- createConf problemStatePath defaultProblemState
+    let snippets = problemCodeSnippets problem & Aeson.encode & LBS.toStrict & safeDecodeUtf8
+    unless (Map.null (problemCodeSnippets problem)) $
+        setProp hProblemState "problem" "snippets" snippets
 
     flushConf hProblemConf
     flushConf hProblemState
