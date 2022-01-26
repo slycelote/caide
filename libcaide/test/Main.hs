@@ -15,8 +15,9 @@ import Caide.TestCases.Types (deserializeTestReport, humanReadableReport,
     ComparisonResult(Error, EtalonUnknown, Failed, Success))
 
 topcoderDeserializerTests :: Test
-topcoderDeserializerTests = TestList
+topcoderDeserializerTests = TestLabel "topcoder-deser" $ TestList
   [ runParser (readMany readToken) "{a, bc,ghij}" ~?= Right ["a", "bc", "ghij"]
+  , runParser (readMany readToken) "[1, 2, 3]" ~?= Right ["1", "2", "3"]
   ]
 
 

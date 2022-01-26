@@ -90,7 +90,8 @@ evalTests = do
             { doublePrecision = problemFloatTolerance problem
             , topcoderType = case problemType problem of
                 Topcoder descr -> Just . tcMethod . tcSingleMethod $ descr
-                _              -> Nothing
+                Stream _ _     -> Nothing
+                LeetCodeMethod method -> Just $ tcMethod method
             }
 
     beVerbose <- verboseTestReport <$> caideSettings

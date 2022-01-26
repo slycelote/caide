@@ -54,16 +54,21 @@ scanUntil charPred = do
     put rest
     return skipped
 
+readChar :: TopcoderParser Char
+readChar = do
+    _ <- scanUntil (not . isSpace)
+    c <- peek
+    advance 1
+    return c
+
 consume :: Char -> TopcoderParser ()
 consume c = do
-    _ <- scanUntil (not . isSpace)
-    cur <- peek
+    cur <- readChar
     when (cur /= c) $
-        throwError $ T.concat ["Expected char ", T.singleton c, "but found ", T.singleton cur]
-    advance 1
+        throwError $ "Expected char " <> T.singleton c <> "but found " <> T.singleton cur
 
 isTokenSeparator :: Char -> Bool
-isTokenSeparator c = isSpace c || isJust (T.find (==c) "{}\",")
+isTokenSeparator c = isSpace c || isJust (T.find (==c) "{}[]\",")
 
 readToken :: TopcoderParser Text
 readToken = scanUntil (not . isSpace) >> peek >> scanUntil isTokenSeparator
@@ -80,9 +85,13 @@ readDouble = scanUntil (not . isSpace) >> wrapTextReader T.double
 
 readMany :: TopcoderParser a -> TopcoderParser [a]
 readMany elemParser = do
-    consume '{'
+    open <- readChar
+    when (open /= '{' && open /= '[') $
+        throwError $ "Expected { or [, but found " <> T.singleton open
     ret <- go []
-    consume '}'
+    close <- readChar
+    when (close /= '}' && close /= ']') $
+        throwError $ "Expected } or ], but found " <> T.singleton close
     return . reverse $ ret
   where
     go accum = do
@@ -90,15 +99,16 @@ readMany elemParser = do
         c <- peek
         case c of
             '}' -> return accum
+            ']' -> return accum
             ',' -> do
                 when (null accum) $
-                    throwError . T.concat $ ["Unexpected character ", T.singleton c]
+                    throwError $ "Unexpected character " <> T.singleton c
                 advance 1
                 currentElement <- elemParser
                 go (currentElement:accum)
             _   -> do
                 unless (null accum) $
-                    throwError . T.concat $ ["Unexpected character ", T.singleton c]
+                    throwError $ "Unexpected character " <> T.singleton c
                 currentElement <- elemParser
                 go (currentElement:accum)
 
