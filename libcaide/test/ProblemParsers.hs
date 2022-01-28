@@ -148,6 +148,12 @@ problemParserTests = TestList
             { problemType = mkProblemType "leetcode,detectCapitalUse:bool,word:String" }
             [ mkTestCase "\"USA\"" "true"
             , mkTestCase "\"FlaG\"" "false" ]
+        , lc "https://leetcode.com/problems/k-highest-ranked-items-within-a-price-range"
+            (makeProblem "K Highest Ranked Items Within a Price Range" "k-highest-ranked-items-within-a-price-range")
+            { problemType = mkProblemType "leetcode,highestRankedKItems:vvint,grid:vvint,pricing:vint,start:vint,k:int" }
+            [ mkTestCase "[[1,2,0,1],[1,3,0,1],[0,2,5,1]]\n[2,5]\n[0,0]\n3" "[[0,1],[1,1],[2,1]]"
+            , mkTestCase "[[1,2,0,1],[1,3,3,1],[0,2,5,1]]\n[2,3]\n[2,3]\n2" "[[2,1],[1,2]]"
+            , mkTestCase "[[1,1,1],[0,0,1],[2,3,4]]\n[2,3]\n[0,0]\n3" "[[2,1],[2,0]]" ]
         ]
     ]
   where

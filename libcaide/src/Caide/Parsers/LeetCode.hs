@@ -169,17 +169,22 @@ typeParser =
             <|> try (string "string" $> TCString)
             <|> try (string "double" $> TCDouble)
             <|> try (string "boolean" $> TCBool)
+
         format1 = do
             _ <- try $ string "list<"
+            arr <- many (string "list<")
+            let n = 1 + length arr
             typ <- elementTypeParser
-            _ <- string ">"
+            _ <- Parsec.count n (string ">")
             eof
-            return (typ, 1)
+            return (typ, n)
+
         format2 = do
             typ <- elementTypeParser
             arr <- many (string "[]")
             eof
             return (typ, length arr)
+
     in format1 <|> format2
 
 parseValue :: Param -> Either Text TopcoderValue
