@@ -5,110 +5,69 @@ module Caide.TestCases.TopcoderDeserializer(
     , readQuotedString
     , readMany
     , runParser
-    , TopcoderParser
+    -- Reexport from Attoparsec
+    , Parser
 ) where
 
-import Control.Monad (unless, when)
-import Control.Monad.Except (MonadError, Except, runExcept, throwError)
-import Control.Monad.State (StateT, MonadState, get, put, runStateT)
+import Control.Monad.Fail (fail)
+import qualified Data.ByteString as BS
 import Data.Char (isSpace)
+import Data.Functor ((<&>))
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Read as T
+import qualified Data.Text.Encoding as T
+import qualified Data.Text.Encoding.Util as T
 
--- | Parser of input/output data in Topcoder format
-newtype TopcoderParser a = TopcoderParser { unTP :: StateT Text (Except Text) a }
-    deriving (Functor, Applicative, Monad, MonadError Text, MonadState Text)
+import Data.Attoparsec.ByteString.Char8 (Parser, IResult(Done, Fail, Partial), Result,
+    feed, parse, (<?>), eitherResult,
+    anyChar, char, double,
+    sepBy, skipSpace, takeTill, takeWhile1)
 
-runParser :: TopcoderParser a -> Text -> Either Text a
-runParser parser text = case runExcept (runStateT (unTP parser) text) of
-    Left err     -> Left err
-    Right (a, _) -> Right a
 
-wrapTextReader :: T.Reader a -> TopcoderParser a
-wrapTextReader reader = TopcoderParser { unTP = do
-    text <- get
-    let res = reader text
-    case res of
-        Left err -> throwError . T.pack $ err
-        Right (a, rest) -> put rest >> return a
-}
+-- | Adds failing offset to error messages and transforms them to Text
+runParser :: Parser a -> Text -> Either Text a
+runParser parser text =
+    let bs = T.encodeUtf8 text
 
-peek :: TopcoderParser Char
-peek = do
-    text <- get
-    when (T.null text) $ throwError "Unexpected end of file"
-    return . T.head $ text
+        processResult :: Result a -> Either Text a
+        processResult result = case result of
+            Done _ r -> Right r
+            Fail bsRest _ _ ->
+                let Left err = eitherResult result
+                    offset = BS.length bs - BS.length bsRest
+                in Left $ "Offset " <> T.pack (show offset <> ": " <> err)
+            Partial _ -> processResult $ feed result BS.empty
 
-advance :: Int -> TopcoderParser ()
-advance n = do
-    text <- get
-    when (T.length text < n) $ throwError "Unexpected end of file"
-    put $ T.drop n text
-
-scanUntil :: (Char -> Bool) -> TopcoderParser Text
-scanUntil charPred = do
-    text <- get
-    let (skipped, rest) = T.break charPred text
-    put rest
-    return skipped
-
-readChar :: TopcoderParser Char
-readChar = do
-    _ <- scanUntil (not . isSpace)
-    c <- peek
-    advance 1
-    return c
-
-consume :: Char -> TopcoderParser ()
-consume c = do
-    cur <- readChar
-    when (cur /= c) $
-        throwError $ "Expected char " <> T.singleton c <> "but found " <> T.singleton cur
+    in processResult $ parse parser bs
 
 isTokenSeparator :: Char -> Bool
 isTokenSeparator c = isSpace c || isJust (T.find (==c) "{}[]\",")
 
-readToken :: TopcoderParser Text
-readToken = scanUntil (not . isSpace) >> peek >> scanUntil isTokenSeparator
+readToken :: Parser Text
+readToken = skipSpace >> takeWhile1 (not . isTokenSeparator) <&> T.safeDecodeUtf8
 
-readQuotedString :: TopcoderParser Text
+readQuotedString :: Parser Text
 readQuotedString = do
-    consume '"'
-    ret <- scanUntil (== '"')
-    advance 1
-    return ret
+    _ <- char '"' <?> "opening double quote"
+    ret <- takeTill (== '"')
+    _ <- char '"' <?> "closing double quote"
+    return $ T.safeDecodeUtf8 ret
 
-readDouble :: TopcoderParser Double
-readDouble = scanUntil (not . isSpace) >> wrapTextReader T.double
+readDouble :: Parser Double
+readDouble = double
 
-readMany :: TopcoderParser a -> TopcoderParser [a]
+readMany :: Parser a -> Parser [a]
 readMany elemParser = do
-    open <- readChar
-    when (open /= '{' && open /= '[') $
-        throwError $ "Expected { or [, but found " <> T.singleton open
-    ret <- go []
-    close <- readChar
-    when (close /= '}' && close /= ']') $
-        throwError $ "Expected } or ], but found " <> T.singleton close
-    return . reverse $ ret
-  where
-    go accum = do
-        _ <- scanUntil (not . isSpace)
-        c <- peek
-        case c of
-            '}' -> return accum
-            ']' -> return accum
-            ',' -> do
-                when (null accum) $
-                    throwError $ "Unexpected character " <> T.singleton c
-                advance 1
-                currentElement <- elemParser
-                go (currentElement:accum)
-            _   -> do
-                unless (null accum) $
-                    throwError $ "Unexpected character " <> T.singleton c
-                currentElement <- elemParser
-                go (currentElement:accum)
+    skipSpace
+    open <- anyChar <?> "open bracket"
+    close <- case open of
+        '{' -> pure '}'
+        '[' -> pure ']'
+        _   -> fail $ "Expected { or [, but found " <> [open]
+    skipSpace
+    ret <- (elemParser <?> "Array element") `sepBy` (skipSpace >> char ',' >> skipSpace <?> "comma")
+    skipSpace
+    _ <- char close <?> "close bracket"
+    return ret
 

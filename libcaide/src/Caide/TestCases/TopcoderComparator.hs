@@ -4,7 +4,6 @@ module Caide.TestCases.TopcoderComparator(
 ) where
 
 import Data.Text (Text)
-import qualified Data.Text as T
 
 import Caide.TestCases.TopcoderDeserializer
 import Caide.Types (TopcoderType(..), TopcoderValue, tcValueType, tcValueDimension)
@@ -24,17 +23,17 @@ doubleComparator precision expected actual = if abs (expected - actual) <= preci
 
 listComparator :: Comparator a -> Comparator [a]
 listComparator elemComparator expected actual = if length expected /= length actual
-    then Just . T.concat $
-        ["Different list lengths: expected ", tshow (length expected), " got ", tshow (length actual)]
+    then Just $
+        "Different list lengths: expected " <> tshow (length expected) <> " got " <> tshow (length actual)
     else case failedComparisons of
         []            -> Nothing
-        ((i, err):_)  -> Just . T.concat $ ["Elements ", tshow i, " differ: ", err]
+        ((i, err):_)  -> Just $ "Elements " <> tshow i <> " differ: " <> err
   where
    comparisonResults = zip [1::Int ..] $ zipWith elemComparator expected actual
    failedComparisons = [(i, err) | (i, Just err) <- comparisonResults]
 
 mkError :: (Show a) => a -> a -> Maybe Text
-mkError expected actual = Just . T.concat $ ["Expected ", tshow expected, ", got ", tshow actual]
+mkError expected actual = Just $ "Expected " <> tshow expected <> ", got " <> tshow actual
 
 
 tcCompare :: TopcoderValue -> Double -> Text -> Text -> Maybe Text
@@ -66,12 +65,11 @@ tcCompare topcoderValue doublePrecision expectedText actualText = case tcValueDi
     d = (readDouble, doubleComparator doublePrecision)
     t = (readToken, tokenComparator)
 
-    v :: (TopcoderParser a, Comparator a) -> (TopcoderParser [a], Comparator [a])
+    v :: (Parser a, Comparator a) -> (Parser [a], Comparator [a])
     v (parser, comparator) = (readMany parser, listComparator comparator)
 
-    eval :: (TopcoderParser a, Comparator a) -> Maybe Text
-    eval (parser, comparator) = case runParser parser expectedText of
-        Left err -> Just $ T.append "Couldn't parse expected value: " err
-        Right expected -> case runParser parser actualText of
-            Left err -> Just $ T.append "Couldn't parse returned value: " err
-            Right actual -> comparator expected actual
+    eval :: (Parser a, Comparator a) -> Maybe Text
+    eval (parser, comparator) = case (runParser parser expectedText, runParser parser actualText) of
+        (Left err, _) -> Just $ "Couldn't parse expected value: " <> err
+        (_, Left err) -> Just $ "Couldn't parse returned value: " <> err
+        (Right expected, Right actual) -> comparator expected actual

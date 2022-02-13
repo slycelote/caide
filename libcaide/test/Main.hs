@@ -9,15 +9,31 @@ import qualified Data.Aeson as Aeson
 import ProblemParsers (problemParserTests)
 
 import Caide.MustacheUtil (enrich)
-import Caide.TestCases.TopcoderDeserializer (readMany, readToken, runParser)
+import Caide.TestCases.TopcoderDeserializer (readMany, readQuotedString, readToken, runParser)
 import Caide.TestCases.Types (deserializeTestReport, humanReadableReport,
     TestRunResult(testRunTime), makeTestRunResult,
     ComparisonResult(Error, EtalonUnknown, Failed, Success))
 
 topcoderDeserializerTests :: Test
 topcoderDeserializerTests = TestLabel "topcoder-deser" $ TestList
-  [ runParser (readMany readToken) "{a, bc,ghij}" ~?= Right ["a", "bc", "ghij"]
+  [ runParser readToken "a" ~?= Right "a"
+  , runParser readQuotedString "\"\"" ~?= Right ""
+  , runParser readQuotedString "\"abc\"" ~?= Right "abc"
+  , runParser (readMany readToken) "{}" ~?= Right []
+  , runParser (readMany readToken) "[] " ~?= Right []
+  , runParser (readMany readToken) "{1}" ~?= Right ["1"]
+  , runParser (readMany readToken) "{a, bc,ghij}" ~?= Right ["a", "bc", "ghij"]
   , runParser (readMany readToken) "[1, 2, 3]" ~?= Right ["1", "2", "3"]
+  , runParser (readMany readToken) "[1, 2, 3 ]" ~?= Right ["1", "2", "3"]
+  , runParser (readMany readToken) "[ 1, 2, 3 ]" ~?= Right ["1", "2", "3"]
+  , runParser (readMany (readMany readToken)) "[[ 1, 2, 3 ], [4, 5]]" ~?= Right [["1", "2", "3"], ["4", "5"]]
+
+  , runParser readToken "" ~?= Left "Offset 0: not enough input"
+  , runParser readQuotedString "\"abc" ~?= Left "Offset 4: closing double quote > \": not enough input"
+  , runParser (readMany readToken) "" ~?= Left "Offset 0: open bracket: not enough input"
+  , runParser (readMany readToken) "[" ~?= Left "Offset 1: close bracket > ]: not enough input"
+  , runParser (readMany readToken) "[1, 2, ]" ~?= Left "Offset 5: close bracket > ]: Failed reading: satisfyWith"
+  , runParser (readMany readToken) "[1, 2 3]" ~?= Left "Offset 6: close bracket > ]: Failed reading: satisfyWith"
   ]
 
 
