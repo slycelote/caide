@@ -5,6 +5,7 @@ module Caide.TestCases.TopcoderDeserializer(
     , readQuotedString
     , readMany
     , runParser
+    , runParserBS
     -- Reexport from Attoparsec
     , Parser
 ) where
@@ -26,13 +27,12 @@ import Data.Attoparsec.ByteString.Char8 (Parser, IResult(Done, Fail, Partial), R
 
 
 -- | Adds failing offset to error messages and transforms them to Text
-runParser :: Parser a -> Text -> Either Text a
-runParser parser text =
-    let bs = T.encodeUtf8 text
-
-        processResult :: Result a -> Either Text a
+-- Returns the remaining portion of input and the parsed value.
+runParserBS :: Parser a -> BS.ByteString -> Either Text (BS.ByteString, a)
+runParserBS parser bs =
+    let processResult :: Result a -> Either Text (BS.ByteString, a)
         processResult result = case result of
-            Done _ r -> Right r
+            Done i r -> Right (i, r)
             Fail bsRest _ _ ->
                 let Left err = eitherResult result
                     offset = BS.length bs - BS.length bsRest
@@ -40,6 +40,10 @@ runParser parser text =
             Partial _ -> processResult $ feed result BS.empty
 
     in processResult $ parse parser bs
+
+-- | Adds failing offset to error messages and transforms them to Text
+runParser :: Parser a -> Text -> Either Text a
+runParser parser text = snd <$> runParserBS parser (T.encodeUtf8 text)
 
 isTokenSeparator :: Char -> Bool
 isTokenSeparator c = isSpace c || isJust (T.find (==c) "{}[]\",")

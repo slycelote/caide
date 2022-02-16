@@ -8,11 +8,14 @@ import qualified Data.Aeson as Aeson
 
 import ProblemParsers (problemParserTests)
 
+import Caide.Commands.ConvertTestCase (convertTopcoderParameters)
 import Caide.MustacheUtil (enrich)
 import Caide.TestCases.TopcoderDeserializer (readMany, readQuotedString, readToken, runParser)
 import Caide.TestCases.Types (deserializeTestReport, humanReadableReport,
     TestRunResult(testRunTime), makeTestRunResult,
     ComparisonResult(Error, EtalonUnknown, Failed, Success))
+import Caide.Types (TopcoderValue(TopcoderValue), TopcoderType(TCInt, TCString))
+
 
 topcoderDeserializerTests :: Test
 topcoderDeserializerTests = TestLabel "topcoder-deser" $ TestList
@@ -36,6 +39,18 @@ topcoderDeserializerTests = TestLabel "topcoder-deser" $ TestList
   , runParser (readMany readToken) "[1, 2 3]" ~?= Left "Offset 6: close bracket > ]: Failed reading: satisfyWith"
   ]
 
+
+convertTestCaseInputTests :: Test
+convertTestCaseInputTests = TestLabel "convert-input" $ TestList
+  [ convertTopcoderParameters [] False "" ~?= Right []
+  , convertTopcoderParameters [TopcoderValue "a" TCInt 0] False "1" ~?= Right ["1"]
+  , convertTopcoderParameters [TopcoderValue "a" TCInt 1] False "{1, 2, 3}"
+      ~?= Right ["3", "1", "2", "3"]
+  , convertTopcoderParameters [TopcoderValue "a" TCInt 0, TopcoderValue "b" TCString 0] True " { 123 , \"abc\" } "
+      ~?= Right ["123", "abc"]
+  , convertTopcoderParameters [TopcoderValue "a" TCInt 0, TopcoderValue "b" TCString 1] False " 123 [\"abc\", \"456\" ] "
+      ~?= Right ["123", "2", "abc", "456"]
+  ]
 
 testCaseSerializationTests :: Test
 testCaseSerializationTests = TestList
@@ -70,7 +85,7 @@ testCaseSerializationTests = TestList
   ]
 
 enrichTests :: Test
-enrichTests = TestList
+enrichTests = TestLabel "enrich" $ TestList
   [ enrich (o [("foo", n 1)]) ~?=
       o [("foo", n 1), ("foo_is_1", b True)]
   , enrich (a [n 1, n 2, n 3]) ~?= a [n 1, n 2, n 3]
@@ -88,7 +103,8 @@ allTests :: Test
 allTests = TestList
   [ topcoderDeserializerTests
   , testCaseSerializationTests
-  , TestLabel "enrich" enrichTests
+  , convertTestCaseInputTests
+  , enrichTests
   , TestLabel "live-parsers" problemParserTests
   ]
 

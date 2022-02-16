@@ -146,6 +146,7 @@ library
         Caide.Commands.BuildScaffold
         Caide.Commands.CHelperHttpServer
         Caide.Commands.Checkout
+        Caide.Commands.ConvertTestCase
         Caide.Commands.GetOpt
         Caide.Commands.Init
         Caide.Commands.Make
@@ -186,6 +187,7 @@ library
         Caide.Types.Option
         Caide.Util
         Caide.Xml
+        Control.Exception.Extended
         Control.Monad.Util
         Data.Either.Util
         Data.List.Util

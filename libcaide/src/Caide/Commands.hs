@@ -12,8 +12,7 @@ import Data.Version (showVersion)
 import System.Exit (exitWith, ExitCode(ExitFailure))
 import System.Environment (getExecutablePath)
 
-import qualified Filesystem.Path as F
-import qualified Filesystem.Path.CurrentOS as F
+import qualified Filesystem.Path.CurrentOS as FS
 import Filesystem.Path.CurrentOS ((</>))
 import Options.Applicative
 import Options.Applicative.Types (Backtracking(..))
@@ -28,6 +27,7 @@ import Caide.Commands.Archive
 import Caide.Commands.BuildScaffold
 import Caide.Commands.Checkout
 import Caide.Commands.CHelperHttpServer
+import Caide.Commands.ConvertTestCase
 import Caide.Commands.GetOpt
 import Caide.Commands.Make
 import Caide.Commands.ParseProblem (createProblem)
@@ -49,7 +49,7 @@ globalOptionsParser :: Parser GlobalOptions
 globalOptionsParser = GlobalOptions . toVerbosity . length
     <$> many (flag' () (short 'v' <> help "Verbose output"))
 
-type CaideAction = GlobalOptions -> F.FilePath -> IO ()
+type CaideAction = GlobalOptions -> FS.FilePath -> IO ()
 
 createIoSubCommand :: (String, String, Parser CaideAction) -> Mod CommandFields CaideAction
 createIoSubCommand (name, desc, cmd) = command name $
@@ -67,7 +67,7 @@ caideIoToIo extensions cmd globalOptions root = do
     ret <- runInDirectory (verbosity globalOptions) root $ foldl' extendCommand cmd extensions
 
     -- Save path to caide executable
-    let fileNameStr = F.encodeString (root </> ".caide" </> "caideExe.txt")
+    let fileNameStr = FS.encodeString (root </> ".caide" </> "caideExe.txt")
         ignoreException :: SomeException -> IO ()
         ignoreException = const $ return ()
     (getExecutablePath >>= \caideExe -> writeFileAtomic fileNameStr caideExe) `catch` ignoreException
@@ -107,6 +107,8 @@ internalCommands =
     , ("probgetstate", "(Internal) print problem state", probOptionsCmd getProbState)
     , ("update_tests", "(Internal) Update test list and status", updateTestsOpts)
     , ("eval_tests", "(Internal) Generate test report", pure evalTests)
+    , ("convert_test_input", "(Internal) Convert test input from a structured (Topcoder/LeetCode) to a simple line-based format",
+          convertTestCaseInputOpts)
     , ("printRoot", "(Internal) Show caide root directory", pure printRoot)
     ]
 
@@ -182,6 +184,12 @@ updateTestsOpts :: Parser (CaideIO ())
 updateTestsOpts = updateTests <$>
     optional (txtArgument (metavar "PROBLEM" <> help "Problem ID (matches problem directory)"))
 
+convertTestCaseInputOpts :: Parser (CaideIO ())
+convertTestCaseInputOpts = convertTestCaseInput <$>
+    fileArgument (metavar "TEST-INPUT-FILE" <> help "Path to the file containing test case input") <*>
+    optional (txtArgument (metavar "PROBLEM" <> help "Problem ID (matches problem directory)"))
+
+
 data Options = Options
              { globalOptions :: GlobalOptions
              , caideAction :: CaideAction
@@ -200,7 +208,7 @@ opts = info (helper <*> optionsParser) $
     progDesc "Additional help is available with 'caide -h' or 'caide COMMAND -h'" <>
     footer "http://github.com/slycelote/caide"
 
-runMain :: [String] -> Either (IO ()) (F.FilePath -> IO ())
+runMain :: [String] -> Either (IO ()) (FS.FilePath -> IO ())
 runMain args = case parseResult of
     -- Run the parsed action
     Success (Options{..}) -> Right $ \root -> caideAction globalOptions root
@@ -221,4 +229,7 @@ txtArgument mods = T.pack <$> strArgument mods
 
 txtOption :: Mod OptionFields String -> Parser T.Text
 txtOption mods = T.pack <$> strOption mods
+
+fileArgument :: Mod ArgumentFields String -> Parser FS.FilePath
+fileArgument mods = FS.decodeString <$> strArgument mods
 

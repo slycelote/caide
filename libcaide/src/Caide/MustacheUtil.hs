@@ -1,4 +1,4 @@
-{-# LANGUAGE NamedFieldPuns, OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns, OverloadedStrings, ScopedTypeVariables #-}
 module Caide.MustacheUtil(
       renderTemplates
     , renderTemplates'
@@ -10,9 +10,7 @@ module Caide.MustacheUtil(
 ) where
 
 
-import Control.Exception (Exception(displayException))
-import qualified Control.Exception as Exc
-import Control.Exception.Base (try)
+import qualified Control.Exception.Extended as Exc
 import Control.Monad (forM, forM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Char as Char
@@ -67,10 +65,10 @@ renderTemplates templatesDir targetDir context optionModifiers = do
         enrichedContext = enrich context
     templates <- liftIO $ fst <$> FS.listDir templatesDir
     forM_ templates $ \templateFile -> do
-        templateOrException <- liftIO $ try $ compileMustacheFile (FS.encodeString templateFile)
+        templateOrException <- liftIO $ Exc.try $ compileMustacheFile (FS.encodeString templateFile)
         template <- case templateOrException of
-            Left e -> throw $ T.unwords
-                ["Couldn't parse Mustache template in", FS.pathToText templateFile, ":", T.pack $ displayException (e :: MustacheException)]
+            Left (e :: MustacheException) -> throw $ T.unwords
+                ["Couldn't parse Mustache template in", FS.pathToText templateFile, ":", T.pack $ Exc.displayException e]
             Right t -> return t
         renderTemplate templateFile template targetDir enrichedContext options
     pure $ length templates
@@ -82,10 +80,10 @@ compileTemplates templatesDir = do
         then liftIO $ fst <$> FS.listDir templatesDir
         else return []
     forM templates $ \templateFile -> do
-        templateOrException <- liftIO $ try $ compileMustacheFile (FS.encodeString templateFile)
+        templateOrException <- liftIO $ Exc.try $ compileMustacheFile (FS.encodeString templateFile)
         case templateOrException of
-            Left e -> throw $ T.unwords
-                ["Couldn't parse Mustache template in", FS.pathToText templateFile, ":", T.pack $ displayException (e :: MustacheException)]
+            Left (e :: MustacheException) -> throw $ T.unwords
+                ["Couldn't parse Mustache template in", FS.pathToText templateFile, ":", T.pack $ Exc.displayException e]
             Right t -> pure (templateFile, t)
 
 
@@ -95,10 +93,6 @@ renderCompiledTemplates templates targetDir context optionModifiers = do
         enrichedContext = enrich context
     forM_ templates $ \(templateFile, template) ->
         renderTemplate templateFile template targetDir enrichedContext options
-
-ignoring :: Exception e => IO () -> (e -> Bool) -> IO ()
-action `ignoring` predicate = Exc.catchJust
-    (\e -> if predicate e then Just () else Nothing) action pure
 
 renderTemplate :: FS.FilePath -> Template -> FS.FilePath -> Aeson.Value -> Options -> CaideIO ()
 renderTemplate templateFile template targetDir enrichedContext (Options{allowOverwrite}) = do
@@ -113,7 +107,7 @@ renderTemplate templateFile template targetDir enrichedContext (Options{allowOve
                 ["Warning(s) for Mustache template", FS.pathToText templateFile, ":", T.intercalate "; " warningTexts]
             let strictText = LazyText.toStrict renderedTemplate
             liftIO $ if T.null $ T.strip strictText
-                then removeFile newFileName `ignoring` IOError.isDoesNotExistError
+                then removeFile newFileName `Exc.ignoring` IOError.isDoesNotExistError
                 else do
                     writeTextFile newFileName strictText
                     copyPermissions templateFile newFileName
