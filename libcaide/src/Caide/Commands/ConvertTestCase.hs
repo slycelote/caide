@@ -1,6 +1,7 @@
 {-# LANGUAGE NamedFieldPuns, OverloadedStrings, ScopedTypeVariables #-}
 module Caide.Commands.ConvertTestCase(
       convertTestCaseInput
+    , convertTestCaseOutput
     , convertTopcoderParameters -- ^ for tests only
 ) where
 
@@ -22,29 +23,23 @@ import Data.Attoparsec.ByteString.Char8 ((<?>))
 import qualified Data.Scientific as Sci
 
 import qualified Filesystem.Path.CurrentOS as FS
-import Filesystem.Path.CurrentOS ((</>))
 import qualified Filesystem as FS
 
 import Filesystem.Util (readTextFile, writeTextFile)
 
 import Caide.Configuration (getActiveProblem)
-import Caide.Paths (problemDir, testsDir)
 import Caide.Problem (readProblemInfo)
 import Caide.TestCases.TopcoderDeserializer (Parser, runParser,
     readDouble, readQuotedString, readToken, readMany)
 import Caide.Types
 
 
-convertTestCaseInput :: FS.FilePath -> Maybe ProblemID -> CaideIO ()
-convertTestCaseInput inputFile mbProbId = do
-    root <- caideRoot
+convertTestCaseInput :: FS.FilePath -> FS.FilePath -> Maybe ProblemID -> CaideIO ()
+convertTestCaseInput inputFile outputFile mbProbId = do
     probId <- case mbProbId of
         Just p  -> pure p
         Nothing -> getActiveProblem
     problem <- readProblemInfo probId
-    let name = FS.filename inputFile
-        outputFile = problemDir root probId </> testsDir </> name
-
     needUpdate <- liftIO $ isOutputOutdated inputFile outputFile
     when needUpdate $ case problemType problem of
         Stream _ _ -> liftIO $ FS.copyFile inputFile outputFile
@@ -55,15 +50,28 @@ convertTestCaseInput inputFile mbProbId = do
             res <- convertTopcoderMethod tcMethod inputFile False
             liftIO $ writeTextFile outputFile res
 
+convertTestCaseOutput :: FS.FilePath -> FS.FilePath -> Maybe ProblemID -> CaideIO ()
+convertTestCaseOutput inputFile outputFile mbProbId = do
+    probId <- case mbProbId of
+        Just p  -> pure p
+        Nothing -> getActiveProblem
+    problem <- readProblemInfo probId
+    needUpdate <- liftIO $ isOutputOutdated inputFile outputFile
+    when needUpdate $ case problemType problem of
+        Stream _ _ -> liftIO $ FS.copyFile inputFile outputFile
+        Topcoder TopcoderProblemDescription{tcSingleMethod} -> do
+            res <- readAndConvertTopcoderParameters [tcMethod tcSingleMethod] inputFile False
+            liftIO $ writeTextFile outputFile res
+        LeetCodeMethod TopcoderMethod{tcMethod} -> do
+            res <- readAndConvertTopcoderParameters [tcMethod] inputFile False
+            liftIO $ writeTextFile outputFile res
+
 isOutputOutdated :: FS.FilePath -> FS.FilePath -> IO Bool
 isOutputOutdated inputFile outputFile = do
     inputTime <- FS.getModified inputFile
-    mbOutputTime <- Exc.catchIf isDoesNotExistError
-        (Just <$> FS.getModified outputFile)
-        (\_ -> pure Nothing)
-    return $ case mbOutputTime of
-        Just outputTime -> outputTime < inputTime
-        Nothing -> True
+    Exc.handleIf isDoesNotExistError (\_ -> return True) $ do
+        outputTime <- FS.getModified outputFile
+        return $ outputTime < inputTime
 
 convertTopcoderMethod :: TopcoderMethod -> FS.FilePath -> Bool -> CaideIO Text
 convertTopcoderMethod TopcoderMethod{tcParameters} = readAndConvertTopcoderParameters tcParameters

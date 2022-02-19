@@ -109,6 +109,8 @@ internalCommands =
     , ("eval_tests", "(Internal) Generate test report", pure evalTests)
     , ("convert_test_input", "(Internal) Convert test input from a structured (Topcoder/LeetCode) to a simple line-based format",
           convertTestCaseInputOpts)
+    , ("convert_test_output", "(Internal) Convert test output from a structured (Topcoder/LeetCode) to a simple line-based format",
+          convertTestCaseOutputOpts)
     , ("printRoot", "(Internal) Show caide root directory", pure printRoot)
     ]
 
@@ -187,6 +189,13 @@ updateTestsOpts = updateTests <$>
 convertTestCaseInputOpts :: Parser (CaideIO ())
 convertTestCaseInputOpts = convertTestCaseInput <$>
     fileArgument (metavar "TEST-INPUT-FILE" <> help "Path to the file containing test case input") <*>
+    fileArgument (metavar "TEST-OUTPUT-FILE" <> help "Path to the generated file containing test case input in a simplified format") <*>
+    optional (txtArgument (metavar "PROBLEM" <> help "Problem ID (matches problem directory)"))
+
+convertTestCaseOutputOpts :: Parser (CaideIO ())
+convertTestCaseOutputOpts = convertTestCaseOutput <$>
+    fileArgument (metavar "TEST-INPUT-FILE" <> help "Path to the file containing test case output") <*>
+    fileArgument (metavar "TEST-OUTPUT-FILE" <> help "Path to the generated file containing test case output in a simplified format") <*>
     optional (txtArgument (metavar "PROBLEM" <> help "Problem ID (matches problem directory)"))
 
 
