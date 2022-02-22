@@ -1,17 +1,25 @@
 {{#codeSnippets.csharp}}{{&.}}{{/codeSnippets.csharp}}
-{{^codeSnippets.csharp}}{{#topcoder}}
-public class {{className}}
+{{#solutionClass}}
+// Powered by caide (code generator, tester, and library code inliner)
+{{^codeSnippets.csharp}}
+class {{className}}
 {
-{{#singleMethod}}
-    {{#method}}
-    public {{>cstype}} {{name}}(
-    {{/method}}
-    {{#parameters}}
-        {{>cstype}} {{name}}{{#islast}}){{/islast}}{{^islast}},{{/islast}}
-    {{/parameters}}
+    {{#constructor}}
+    public {{className}}(
+        {{#parameters}}{{>cstype}} {{identifier.csharp}}{{^islast}}, {{/islast}}{{/parameters}})
     {
-        return default({{#method}}{{>cstype}}{{/method}});
     }
-{{/singleMethod}}
+    {{/constructor}}
+
+    {{#methods}}
+    public {{#method}}{{>cstype}} {{identifier.csharp}}({{/method}}
+    {{#parameters}}{{>cstype}} {{identifier.csharp}}{{^islast}}, {{/islast}}{{/parameters}})
+    {
+        {{#method}}{{>cstype}} result = default({{>cstype}});{{/method}}
+        return result;
+    }
+
+    {{/methods}}
 }
-{{/topcoder}}{{/codeSnippets.csharp}}
+{{/codeSnippets.csharp}}
+{{/solutionClass}}

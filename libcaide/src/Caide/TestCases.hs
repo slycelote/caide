@@ -14,7 +14,6 @@ import System.Environment (getExecutablePath)
 
 
 import Filesystem.Path.CurrentOS (FilePath, (</>), basename, hasExtension)
-import qualified Filesystem.Path.CurrentOS as FS
 import qualified Filesystem as FS
 import Filesystem.Util (copyFileToDir, pathToText)
 
@@ -25,27 +24,24 @@ import Caide.TestCases.Types (TestList, TestState(..), TestRunResult(testRunStat
 
 updateTests :: MonadIO m => FilePath -> m ()
 updateTests problemDir = liftIO $ do
-    copyTestInputs problemDir
-    _ <- updateTestList problemDir
-    -- TODO: Avoid caideExe.txt files?
-    caideExe <- getExecutablePath
-    FS.writeTextFile (problemDir </> Paths.testsDir </> "caideExe.txt") $ T.pack caideExe
-
-copyTestInputs :: FilePath -> IO ()
-copyTestInputs problemDir = do
     let tempTestDir = problemDir </> Paths.testsDir
     FS.createTree tempTestDir
 
     -- Cleanup output from previous test run
-    let filesToKeep = ["testList.txt", "report.txt", "caideExe.txt"]
-    filesToClear <- filter ((`notElem` filesToKeep) . FS.encodeString . FS.filename) <$> FS.listDirectory tempTestDir
+    filesToClear <- filter (`hasExtension` "out") <$> FS.listDirectory tempTestDir
     forM_ filesToClear FS.removeFile
 
-    fileList <- FS.listDirectory problemDir
     -- Copy input files.
     -- TODO: don't.
+    fileList <- FS.listDirectory problemDir
     let testInputs = filter (`hasExtension` "in") fileList
     forM_ testInputs $ \inFile -> copyFileToDir inFile tempTestDir
+
+    _ <- updateTestList problemDir
+
+    -- TODO: Avoid caideExe.txt files?
+    caideExe <- getExecutablePath
+    FS.writeTextFile (problemDir </> Paths.testsDir </> "caideExe.txt") $ T.pack caideExe
 
 
 -- | Updates testList.txt file:

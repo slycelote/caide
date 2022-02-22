@@ -35,7 +35,7 @@ import qualified Data.Aeson as Aeson
 import qualified Text.Parsec as Parsec
 import qualified Text.Parsec.Error as Parsec
 
-import Text.Microstache (MustacheException, Template, PName(PName),
+import Text.Microstache (MustacheException, Template(templateActual), PName(PName),
     compileMustacheFile, compileMustacheText, displayMustacheWarning, renderMustacheW)
 
 import Caide.Logger (logWarn)
@@ -137,9 +137,10 @@ enrich (Aeson.Array vector) = Aeson.Array $ Vector.imap addFirstLast transformed
     addFirstLast :: Int -> Aeson.Value -> Aeson.Value
     addFirstLast idx (Aeson.Object hashMap) = Aeson.Object $ hashMap <> firstLastIndicators
       where
-        firstLastIndicators = Map.fromList $
-            [("isfirst", Aeson.Bool True) | idx == 0] <>
-            [("islast",  Aeson.Bool True) | idx == Vector.length vector - 1]
+        firstLastIndicators = Map.fromList
+            [ ("isfirst", Aeson.Bool (idx == 0))
+            , ("islast",  Aeson.Bool (idx == Vector.length vector - 1))
+            ]
     addFirstLast _idx v = v
 
 enrich v = v
@@ -150,13 +151,17 @@ compileMustacheText' name templateText = templateText & LazyText.fromStrict &
     compileMustacheText (PName name) & mapLeft (\err -> tshow $
         Parsec.setErrorPos (Parsec.setSourceName (Parsec.errorPos err) (T.unpack name)) err)
 
-compileAndRender :: NonEmpty (Text, Text) -> Aeson.Value -> Either Text (Maybe Text, Text)
-compileAndRender templatesWithNames json = do
+compileAndRender :: NonEmpty (Text, Text) -> [Text] -> Aeson.Value -> Either Text (Maybe Text, [Text])
+compileAndRender templatesWithNames primaryTemplateNames json = do
     compiledTemplates <- forM templatesWithNames $ \(name, text) -> compileMustacheText' name text
     let template = sconcat compiledTemplates
-        (warnings, result) = renderMustacheW template (enrich json)
-        allWarnings = case warnings of
+        enrichedValue = enrich json
+        results = [renderMustacheW template{templateActual = PName name} enrichedValue
+                     | name <- primaryTemplateNames]
+        renderedTexts = map (LazyText.toStrict . snd) results
+        warnings = concatMap fst results
+        warningTexts = case warnings of
             [] -> Nothing
             _  -> Just $ T.intercalate "; " $ map (T.pack . displayMustacheWarning) warnings
-    return (allWarnings, LazyText.toStrict result)
+    return (warningTexts, renderedTexts)
 

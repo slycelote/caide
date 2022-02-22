@@ -188,7 +188,7 @@ library
         Caide.Util
         Caide.Xml
         Control.Exception.Extended
-        Control.Monad.Util
+        Control.Monad.Extended
         Data.Either.Util
         Data.List.Util
         Data.Text.Encoding.Util

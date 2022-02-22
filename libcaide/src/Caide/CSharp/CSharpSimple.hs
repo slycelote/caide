@@ -3,24 +3,25 @@ module Caide.CSharp.CSharpSimple(
       language
 ) where
 
-import Control.Monad (unless)
-import Control.Monad.State (liftIO)
+import Control.Monad.Extended (liftIO, unlessM, whenJust)
 
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Text (Text)
 
 import Data.FileEmbed (embedStringFile)
 
-import Filesystem (copyFile, isFile)
+import qualified Filesystem as FS
+import qualified Filesystem.Path.CurrentOS as FS
+import Filesystem.Path.CurrentOS ((</>))
 import Filesystem.Util (appendTextFile, writeTextFile)
-import Filesystem.Path ((</>))
-import Filesystem.Path.CurrentOS (fromText)
+import Caide.Util (readTextFile')
 
+import Caide.Logger (logDebug)
 import Caide.MustacheUtil (compileAndRender)
+import Caide.Paths (problemDir)
 import Caide.Problem (ProblemState, jsonEncodeProblem, readProblemInfo, readProblemState)
 import Caide.Templates (copyTemplateUnlessExists, getTemplate)
 import Caide.Types
-import Caide.Util (readTextFile')
 
 
 language :: ProgrammingLanguage
@@ -28,6 +29,7 @@ language = ProgrammingLanguage
     { generateScaffold = generateCSharpScaffold
     , inlineCode = inlineCSharpCode
     }
+
 
 generateCSharpScaffold :: ProblemID -> CaideIO ()
 generateCSharpScaffold probID = do
@@ -37,41 +39,34 @@ generateCSharpScaffold probID = do
 
     generateSolutionAndMain problem problemState
 
-    let problemDir = root </> fromText probID
-        testProgramPath = problemDir </> fromText (probID <> "_test.cs")
-        testerCode = generateTesterCode problem problemState
+    let probDir = problemDir root probID
+        testProgramPath = probDir </> FS.fromText (probID <> "_test.cs")
 
-    testFileExists <- liftIO $ isFile testProgramPath
-    unless testFileExists $ do
-        testTemplate <- getTemplate "test_template.cs"
-        liftIO $ writeTextFile testProgramPath $ testTemplate <> testerCode
+    testerCode <- renderTemplate "tester.cs" problem problemState
+    unlessM (liftIO $ FS.isFile testProgramPath) $ do
+        userTestTemplate <- getTemplate "test_template.cs"
+        liftIO $ writeTextFile testProgramPath $ testerCode <> "\n" <> userTestTemplate
 
-solutionTemplates :: NonEmpty.NonEmpty (Text, Text)
-solutionTemplates =
-    NonEmpty.fromList [ ("solution.cs", $(embedStringFile "src/Caide/CSharp/solution.cs.mustache"))
-                      , ("cstype", $(embedStringFile "src/Caide/CSharp/cstype.mustache"))
-                      ]
-
-mainTemplates :: NonEmpty.NonEmpty (Text, Text)
-mainTemplates =
-    NonEmpty.fromList [ ("main.cs", $(embedStringFile "src/Caide/CSharp/main.cs.mustache"))
-                      ]
+probIdAndDir :: Problem -> CaideIO (ProblemID, FS.FilePath)
+probIdAndDir problem = do
+    root <- caideRoot
+    let probID = problemId problem
+    return (probID, problemDir root probID)
 
 generateSolutionAndMain :: Problem -> ProblemState -> CaideIO ()
 generateSolutionAndMain problem@Problem{problemType=Stream _ _} state = do
-    root <- caideRoot
-    let probID = problemId problem
-        problemDir = root </> fromText probID
-        solutionPath = problemDir </> fromText (probID <> ".cs")
-        mainProgramPath = problemDir </> "main.cs"
+    (probID, probDir) <- probIdAndDir problem
+    let solutionPath = probDir </> FS.fromText (probID <> ".cs")
+        mainProgramPath = probDir </> "main.cs"
 
-    mainFileExists <- liftIO $ isFile mainProgramPath
-    unless mainFileExists $ do
-        mainTemplate <- getTemplate "main_template.cs"
+    unlessM (liftIO $ FS.isFile mainProgramPath) $ do
+        userMainTemplate <- getTemplate "main_template.cs"
+        mainTemplate <- renderTemplate "main.cs" problem state
         liftIO $ writeTextFile mainProgramPath $
-            renderTemplate mainTemplates problem state <> "\n" <> mainTemplate
+            mainTemplate <> "\n" <> userMainTemplate
 
     copyTemplateUnlessExists "solution_template.cs" solutionPath
+
 
 generateSolutionAndMain problem@Problem{problemType=Topcoder _} state =
     generateSolutionAndMainForTopcoder problem state
@@ -79,29 +74,48 @@ generateSolutionAndMain problem@Problem{problemType=Topcoder _} state =
 generateSolutionAndMain problem@Problem{problemType=LeetCodeMethod _} state =
     generateSolutionAndMainForTopcoder problem state
 
+
 generateSolutionAndMainForTopcoder :: Problem -> ProblemState -> CaideIO ()
 generateSolutionAndMainForTopcoder problem state = do
-    root <- caideRoot
-    let probID = problemId problem
-        problemDir = root </> fromText probID
-        solutionPath = problemDir </> fromText (probID <> ".cs")
+    (probID, probDir) <- probIdAndDir problem
+    let solutionPath = probDir </> FS.fromText (probID <> ".cs")
 
-    solutionFileExists <- liftIO $ isFile solutionPath
-    unless solutionFileExists $ do
+    unlessM (liftIO $ FS.isFile solutionPath) $ do
         userSolutionTemplate <- getTemplate "topcoder_solution_template.cs"
+        solutionTemplate <- renderTemplate "solution.cs" problem state
         liftIO $ writeTextFile solutionPath $
-            userSolutionTemplate <> "\n" <> renderTemplate solutionTemplates problem state
+            userSolutionTemplate <> "\n" <> solutionTemplate
+
+
+renderTemplate :: Text -> Problem -> ProblemState -> CaideIO Text
+renderTemplate primaryTemplateName problem state = do
+    let json = jsonEncodeProblem problem state
+    case compileAndRender allTemplates [primaryTemplateName] json of
+        Left err -> throw err
+        Right (warnings, res) -> do
+            whenJust warnings logDebug
+            return $ head res
+
+allTemplates :: NonEmpty.NonEmpty (Text, Text)
+allTemplates = NonEmpty.fromList
+             [ ("tester.cs", $(embedStringFile "src/Caide/CSharp/tester.cs.mustache"))
+             , ("solution.cs", $(embedStringFile "src/Caide/CSharp/solution.cs.mustache"))
+             , ("main.cs", $(embedStringFile "src/Caide/CSharp/main.cs.mustache"))
+             , ("cstype", $(embedStringFile "src/Caide/CSharp/cstype.mustache"))
+             , ("serializer", $(embedStringFile "src/Caide/CSharp/serializer.mustache"))
+             ]
+
 
 inlineCSharpCode :: ProblemID -> CaideIO ()
 inlineCSharpCode probID = do
     root <- caideRoot
     probType <- problemType <$> readProblemInfo probID
-    let problemDir = root </> fromText probID
-        solutionPath = problemDir </> fromText (probID <> ".cs")
-        mainProgramPath = problemDir </> "main.cs"
-        inlinedCodePath = problemDir </> "submission.cs"
+    let probDir = problemDir root probID
+        solutionPath = probDir </> FS.fromText (probID <> ".cs")
+        mainProgramPath = probDir </> "main.cs"
+        inlinedCodePath = probDir </> "submission.cs"
 
-    liftIO $ copyFile solutionPath inlinedCodePath
+    liftIO $ FS.copyFile solutionPath inlinedCodePath
     case probType of
         Stream _ _ -> do
             mainCode <- readTextFile' mainProgramPath
@@ -110,22 +124,5 @@ inlineCSharpCode probID = do
         LeetCodeMethod _ -> return ()
         -- LeetCodeClass _ _ _ -> return ()
 
-    liftIO $ copyFile inlinedCodePath $ root </> "submission.cs"
-
-testerTemplates :: NonEmpty.NonEmpty (Text, Text)
-testerTemplates =
-    NonEmpty.fromList [ ("tester.cs", $(embedStringFile "src/Caide/CSharp/tester.cs.mustache"))
-                      , ("cstype", $(embedStringFile "src/Caide/CSharp/cstype.mustache"))
-                      , ("serializer", $(embedStringFile "src/Caide/CSharp/serializer.mustache"))
-                      ]
-
-generateTesterCode :: Problem -> ProblemState -> Text
-generateTesterCode = renderTemplate testerTemplates
-
-renderTemplate :: NonEmpty.NonEmpty (Text, Text) -> Problem -> ProblemState -> Text
-renderTemplate templates problem state = let
-    json = jsonEncodeProblem problem state
-    in case compileAndRender templates json of
-        Left err -> err
-        Right (_warnings, result) -> result
+    liftIO $ FS.copyFile inlinedCodePath $ root </> "submission.cs"
 

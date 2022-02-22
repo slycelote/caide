@@ -1,0 +1,52 @@
+{{#solutionClass}}
+#include "class_tester.h"
+{{/solutionClass}}
+#include <istream>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+
+namespace caide_tester {
+
+bool customChecker(std::istream& inputStream, std::istream& userOutputStream,
+    std::istream& judgeOutputStream, std::string& errorMessage)
+{
+{{#solutionClass}}
+    Test_{{className}} sample, userOutput;
+{{#isMultiMethodInput}}
+    std::string methodName;
+    while (inputStream >> methodName) {
+{{#constructor}}
+        if (methodName == "{{className}}") {
+            sample.method_{{className}}.readInputs(inputStream);
+            sample.method_{{className}}.readOutput(judgeOutputStream);
+            userOutput.method_{{className}}.readOutput(userOutputStream);
+        } else
+{{/constructor}}
+{{#methods}}
+        if (methodName == "{{method.name}}") {
+            sample.method_{{method.name}}.readInputs(inputStream);
+            sample.method_{{method.name}}.readOutput(judgeOutputStream);
+            userOutput.method_{{method.name}}.readOutput(userOutputStream);
+        } else
+{{/methods}}
+        {
+            throw std::runtime_error(methodName + ": unknown method");
+        }
+    }
+{{/isMultiMethodInput}}
+
+{{^isMultiMethodInput}}
+{{#methods}} {{! Must be a single method. }}
+    sample.method_{{method.name}}.readInputs(inputStream);
+    sample.method_{{method.name}}.readOutput(judgeOutputStream);
+    userOutput.method_{{method.name}}.readOutput(userOutputStream);
+{{/methods}}
+{{/isMultiMethodInput}}
+{{/solutionClass}}
+
+    errorMessage = "";
+    return true;
+}
+
+}

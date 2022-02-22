@@ -1,11 +1,6 @@
 {{#type_is_leetcode}}
 #define CAIDE_LEETCODE 1
 {{/type_is_leetcode}}
-{{#topcoder}}
+{{#type_is_topcoder}}
 #define CAIDE_TOPCODER 1
-#define CAIDE_TC_RETURN_TYPE {{#singleMethod.method}}{{>cpptype}}{{/singleMethod.method}}
-#define CAIDE_TC_PARAM_LIST \
-{{#singleMethod.parameters}}    CAIDE_TC_PARAM({{>cpptype}}, {{name}})\
-{{/singleMethod.parameters}}
-
-{{/topcoder}}
+{{/type_is_topcoder}}

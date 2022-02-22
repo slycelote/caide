@@ -1,108 +1,235 @@
-partial class CaideTester
+// Disable 'unreachable code' warning
+#pragma warning disable 162,429
+
+namespace CaideTester
 {
-{{^topcoder}}
-    public static void Solve(TextReader input, TextWriter output)
+using System;
+using System.IO;
+
+partial class TestRunner
+{
+    public static bool USE_CUSTOM_CHECKER = false;
+    public static string CustomCheck(TextReader inputStream, TextReader userOutputStream, TextReader judgeOutputStream)
     {
-        new Solution().solve(input, output);
+    {{#solutionClass}}
+        Test_{{className}} sample = new Test_{{className}}(), userOutput = new Test_{{className}}();
+    {{#isMultiMethodInput}}
+        while (true) {
+            string methodName = inputStream.ReadLine();
+    {{#constructor}}
+            if (methodName == "{{className}}") {
+                sample.method_{{className}}.readInputs(inputStream);
+                sample.method_{{className}}.readOutput(judgeOutputStream);
+                userOutput.method_{{className}}.readOutput(userOutputStream);
+            } else
+    {{/constructor}}
+    {{#methods}}
+            if (methodName == "{{method.name}}") {
+                sample.method_{{method.name}}.readInputs(inputStream);
+                sample.method_{{method.name}}.readOutput(judgeOutputStream);
+                userOutput.method_{{method.name}}.readOutput(userOutputStream);
+            } else
+    {{/methods}}
+            {
+                throw new Exception(methodName + ": unknown method");
+            }
+        }
+    {{/isMultiMethodInput}}
+
+    {{^isMultiMethodInput}}
+    {{#methods}} {{! Must be a single method. }}
+        sample.method_{{method.name}}.readInputs(inputStream);
+        sample.method_{{method.name}}.readOutput(judgeOutputStream);
+        userOutput.method_{{method.name}}.readOutput(userOutputStream);
+    {{/methods}}
+    {{/isMultiMethodInput}}
+    {{/solutionClass}}
+
+        return null;
+    }
+}
+
+}
+
+namespace CaideTester
+{
+
+using System;
+using System.IO;
+
+{{#solutionClass}}
+{{#methods}}
+class Method_{{method.name}}
+{
+{{#parameters}}
+    public {{>cstype}} i_{{name}};
+{{/parameters}}
+{{#method}}
+    public {{>cstype}} o_{{name}};
+{{/method}}
+
+    public void readInputs(TextReader input)
+    {
+{{#parameters}}
+        i_{{name}} = {{>serializer}}.Deserialize(input);
+{{/parameters}}
     }
 
-    public static void ParseInputAndOutput(TextReader input, TextReader output)
-    { }
-{{/topcoder}}
-{{#topcoder}}
-    class Params
+    public void writeInputs(TextWriter output)
     {
-        {{#singleMethod.parameters}}public {{>cstype}} {{name}}; {{/singleMethod.parameters}}
+{{#parameters}}
+    {{>serializer}}.Serialize(output, i_{{name}});
+{{/parameters}}
     }
 
-    static Params p = new Params();
-    {{#singleMethod.method}}static {{>cstype}} result;{{/singleMethod.method}}
-
-    public static void Solve(TextReader input, TextWriter output)
+{{#method}}
+    public void readOutput(TextReader input)
     {
-        ReadTopcoderInput(input);
-        result = CallSolutionMethod<{{#singleMethod.method}}{{>cstype}}{{/singleMethod.method}}>(
-            new {{className}}(), "{{singleMethod.method.name}}"
-        {{#singleMethod.parameters}}
-            , p.{{name}}
-        {{/singleMethod.parameters}}
+        o_{{name}} = {{>serializer}}.Deserialize(input);
+    }
+
+    public void writeOutput(TextWriter output)
+    {
+    {{>serializer}}.Serialize(output, o_{{name}});
+    }
+{{/method}}
+
+    public void call(ref {{className}} solution)
+    {
+{{^method.type_is_void}}
+        o_{{method.name}} =
+{{/method.type_is_void}}
+        solution.{{method.identifier.csharp}}(
+{{#parameters}}
+            i_{{identifier.csharp}}{{^islast}}, {{/islast}}
+{{/parameters}}
         );
-        WriteTopcoderOutput(output);
+    }
+}
+
+{{/methods}}
+{{#constructor}}
+class Method_{{className}}
+{
+{{#parameters}}
+    public {{>cstype}} i_{{name}};
+{{/parameters}}
+    public object o_{{className}};
+
+    public void readInputs(TextReader input)
+    {
+{{#parameters}}
+        i_{{name}} = {{>serializer}}.Deserialize(input);
+{{/parameters}}
     }
 
-    public static void ParseInputAndOutput(TextReader input, TextReader output)
+    public void writeInputs(TextWriter output)
     {
-        ReadTopcoderInput(input);
-        ReadTopcoderOutput(output);
+{{#parameters}}
+    {{>serializer}}.Serialize(output, i_{{name}});
+{{/parameters}}
     }
 
-    private static TResult CallSolutionMethod<TResult>(Object solutionObject, string methodName,
-        params Object[] args)
+    public void readOutput(TextReader input)
     {
-        // LeetCode uses a method name from the one specified in metadata.
-        var candidates = new System.Collections.Generic.List<string> {methodName};
-        char first = methodName[0];
-        candidates.Add(char.ToUpper(first) + methodName.Substring(1));
-        var snakeCase = new System.Text.StringBuilder();
-        snakeCase.Append(first);
-        foreach (char c in methodName.Substring(1))
+        o_{{className}} = new NullSerializer().Deserialize(input);
+    }
+
+    public void writeOutput(TextWriter output)
+    {
+        new NullSerializer().Serialize(output, o_{{className}});
+    }
+
+    public void call(ref {{className}} solution)
+    {
+        solution = new {{className}}(
+{{#parameters}}
+            i_{{name}}{{^islast}}, {{/islast}}
+{{/parameters}}
+        );
+    }
+}
+{{/constructor}}
+
+class Test_{{className}}
+{
+    public {{className}} solution{{^constructor}} = new {{className}}(){{/constructor}};
+
+{{#methods}}
+    public Method_{{method.name}} method_{{method.name}} = new Method_{{method.name}}();
+{{/methods}}
+{{#constructor}}
+    public Method_{{className}} method_{{className}} = new Method_{{className}}();
+{{/constructor}}
+}
+
+{{/solutionClass}}
+
+partial class TestRunner
+{
+    public const bool IsLeetCode =
+        {{#type_is_leetcode}}true{{/type_is_leetcode}}
+        {{^type_is_leetcode}}false{{/type_is_leetcode}};
+    public const bool IsTopcoder =
+        {{#type_is_topcoder}}true{{/type_is_topcoder}}
+        {{^type_is_topcoder}}false{{/type_is_topcoder}};
+
+    public static void Solve(TextReader input, TextWriter output)
+    {
+{{^solutionClass}}
+        new Solution().solve(input, output);
+{{/solutionClass}}
+{{#solutionClass}}
+        CaideTester.Test_{{className}} tester = new CaideTester.Test_{{className}}();
+
+{{#isMultiMethodInput}}
+        output.Write('{');
+        bool first = true;
+        while (true)
         {
-            if (char.IsLower(c))
+            string methodName = input.ReadLine();
+            if (methodName == null)
+                break;
+            if (!first)
             {
-                snakeCase.Append(c);
+                output.Write(", ");
+                first = false;
             }
-            else
+{{#constructor}}
+            if (methodName == "{{className}}")
             {
-                snakeCase.Append('_');
-                snakeCase.Append(char.ToLower(c));
+                CaideTester.Method_{{className}} m = tester.method_{{className}};
+                m.readInputs(input);
+                m.call(ref tester.solution);
+                m.writeOutput(output);
+            } else
+{{/constructor}}
+{{#methods}}
+            if (methodName == "{{method.name}}")
+            {
+                CaideTester.Method_{{method.name}} m = tester.method_{{method.name}};
+                m.readInputs(input);
+                m.call(ref tester.solution);
+                m.writeOutput(output);
+            } else
+{{/methods}}
+            {
+                throw new Exception(methodName + ": unknown method");
             }
         }
 
-        candidates.Add(snakeCase.ToString());
-
-        foreach (string name in candidates)
-        {
-            var method = solutionObject.GetType().GetMethod(name);
-            if (method != null)
-            {
-                return (TResult)method.Invoke(solutionObject, args);
-            }
-        }
-
-        throw new System.Exception("Method " + methodName + " not found");
+        output.Write('}');
+{{/isMultiMethodInput}}
+{{^isMultiMethodInput}}
+{{#methods}}{{! Must be a single method }}
+        CaideTester.Method_{{method.name}} m = tester.method_{{method.name}};
+        m.readInputs(input);
+        m.call(ref tester.solution);
+        m.writeOutput(output);
+{{/methods}}
+{{/isMultiMethodInput}}
+{{/solutionClass}}
     }
+}
 
-    private static void ReadTopcoderInput(TextReader reader)
-    {
-    {{#singleMethod.parameters}}
-        {{#type_is_topcoder}}{{! TODO: remove this for Topcoder}}
-        Caide.TCSerializeUtil.SkipUpTo(reader, c => !char.IsWhiteSpace(c));
-        {{/type_is_topcoder}}
-        Caide.TCSerializeUtil.SkipWhile(reader, char.IsWhiteSpace);
-        p.{{name}} = {{>serializer}}.Deserialize(reader);
-
-    {{/singleMethod.parameters}}
-    }
-
-    private static void ReadTopcoderOutput(TextReader reader)
-    {
-    {{#singleMethod.method}}
-        result = {{>serializer}}.Deserialize(reader);
-    {{/singleMethod.method}}
-    }
-
-    private static void WriteTopcoderInput(TextWriter writer)
-    {
-    {{#singleMethod.parameters}}
-        {{>serializer}}.Serialize(writer, p.{{name}});
-    {{/singleMethod.parameters}}
-    }
-
-    private static void WriteTopcoderOutput(TextWriter writer)
-    {
-    {{#singleMethod.method}}
-        {{>serializer}}.Serialize(writer, result);
-    {{/singleMethod.method}}
-    }
-{{/topcoder}}
 }

@@ -8,7 +8,9 @@ module Caide.Problem(
 ) where
 
 import qualified Data.ByteString.Lazy as LBS
-import Data.Maybe (fromMaybe)
+import Data.Char (isUpper, toLower)
+import Data.Function ((&))
+import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -64,10 +66,20 @@ jsonEncodeProblem Problem{..} ProblemState{..} = Aeson.object $
     ++ ["codeSnippets" .= problemCodeSnippets | not (Map.null problemCodeSnippets) ]
     ++ typeEntries problemType
   where
-    typeEntries (Topcoder topcoderDesc) = ["type" .= T.pack "topcoder", "topcoder" .= encodeTopcoderDesc topcoderDesc]
-    typeEntries (LeetCodeMethod method) = ["type" .= T.pack "leetcode", "topcoder" .= encodeTopcoderDesc (
-        TopcoderProblemDescription defaultLeetCodeClassName method)]
-    typeEntries (Stream input output) = ["type" .= T.pack "stream", "input" .= encodeInput input, "output" .= encodeOutput output]
+    typeEntries (Topcoder topcoderDesc) =
+        [ "type" .= T.pack "topcoder"
+        , "solutionClass" .= encodeTopcoderDesc topcoderDesc problemCodeSnippets True
+        ]
+    typeEntries (LeetCodeMethod method) =
+        [ "type" .= T.pack "leetcode"
+        , "solutionClass" .= encodeTopcoderDesc
+            (TopcoderProblemDescription defaultLeetCodeClassName method) problemCodeSnippets False
+        ]
+    typeEntries (Stream input output) =
+        [ "type" .= T.pack "stream"
+        , "input" .= encodeInput input
+        , "output" .= encodeOutput output
+        ]
     cleanLanguage "c++" = "cpp"
     cleanLanguage "c#" = "csharp"
     cleanLanguage s = s
@@ -79,24 +91,65 @@ encodeType TCDouble = "double"
 encodeType TCString = "string"
 encodeType TCBool = "bool"
 
-encodeValue :: TopcoderValue -> Aeson.Value
-encodeValue TopcoderValue{..} = Aeson.object $
+-- TODO: register snake-case/dash-separated/etc as functions in Jinja template?
+data IdentifierKind = VariableName | MethodName | ClassName | KeepAsWritten
+
+-- LeetCode uses different name convention for different languages.
+findIdentifier :: Text -> Text -> IdentifierKind -> Maybe Text -> Text
+findIdentifier origIdentifier lang identKind mbCode =
+  let
+    dashSeparated = T.concatMap
+        (\c -> (if isUpper c then "-" else "") <> T.singleton (toLower c))
+        origIdentifier
+    snakeCase = T.replace "-" "_" dashSeparated
+    titleCase = T.toTitle origIdentifier
+
+    isIdentOk ident = case mbCode of
+        Nothing -> True
+        Just code -> ident `T.isInfixOf` code
+
+    bestGuess = case identKind of
+      KeepAsWritten -> origIdentifier
+      MethodName    | lang `elem` ["c", "csharp", "go"] -> titleCase
+      VariableName  | lang `elem` ["erlang"] -> titleCase
+      _k            | lang `elem` ["erlang"] -> snakeCase
+                    | lang `elem` ["racket"] -> dashSeparated
+      ClassName     -> origIdentifier
+      _k            | lang `elem` ["ruby", "rust", "elixir"] -> snakeCase
+                    | otherwise -> origIdentifier
+
+    candidates = bestGuess : [ dashSeparated, snakeCase, titleCase ]
+  in candidates & filter isIdentOk & listToMaybe & fromMaybe origIdentifier
+
+encodeValue :: Map.Map Text Text -> IdentifierKind -> TopcoderValue -> Aeson.Value
+encodeValue codeSnippets identKind TopcoderValue{..} = Aeson.object $
     [ "name" .= tcValueName
+    , "identifier" .= Aeson.object [ lang .= findIdent lang | lang <- languages ]
     , "dimension" .= tcValueDimension
     , "type" .= Aeson.String (encodeType tcValueType)
     ]
+  where
+    languages = Map.keys codeSnippets ++
+        [ "cpp", "java", "python", "python3", "c", "csharp", "javascript", "ruby", "swift", "golang", "scala", "kotlin", "rust", "php", "typescript", "racket", "erlang", "elixir" ]
+    findIdent lang = findIdentifier tcValueName lang identKind (Map.lookup lang codeSnippets)
 
-encodeMethod :: TopcoderMethod -> Aeson.Value
-encodeMethod TopcoderMethod{tcMethod, tcParameters} = Aeson.object $
-    [ "method" .= encodeValue tcMethod
-    , "parameters" .= Aeson.Array (Vector.fromList [ encodeValue v | v <- tcParameters ])
+encodeMethod :: Map.Map Text Text -> TopcoderMethod -> Bool -> Aeson.Value
+encodeMethod codeSnippets TopcoderMethod{tcMethod, tcParameters} isTopcoder = Aeson.object $
+    [ "method" .= encodeValue codeSnippets (if isTopcoder then KeepAsWritten else MethodName) tcMethod
+    , "parameters" .= Aeson.Array (Vector.fromList (
+            map (encodeValue codeSnippets (if isTopcoder then KeepAsWritten else VariableName)) tcParameters))
     ]
 
-encodeTopcoderDesc :: TopcoderProblemDescription -> Aeson.Value
-encodeTopcoderDesc desc = Aeson.object
-    [ "className" .= tcClassName desc
-    , "singleMethod" .= encodeMethod (tcSingleMethod desc)
+encodeTopcoderDesc :: TopcoderProblemDescription -> Map.Map Text Text -> Bool -> Aeson.Value
+encodeTopcoderDesc TopcoderProblemDescription{tcClassName, tcSingleMethod} codeSnippets isTopcoder = Aeson.object
+    [ "className" .= tcClassName
+    , "identifier" .= Aeson.object [ lang .= findIdent lang | lang <- languages ]
+    , "methods" .= Aeson.Array (Vector.singleton $ encodeMethod codeSnippets tcSingleMethod isTopcoder)
     ]
+  where
+    languages = Map.keys codeSnippets ++
+        [ "cpp", "java", "python", "python3", "c", "csharp", "javascript", "ruby", "swift", "golang", "scala", "kotlin", "rust", "php", "typescript", "racket", "erlang", "elixir" ]
+    findIdent lang = findIdentifier tcClassName lang ClassName (Map.lookup lang codeSnippets)
 
 encodeInput :: InputSource -> Aeson.Value
 encodeInput (FileInput path) = Aeson.object ["file" .= pathToText path]

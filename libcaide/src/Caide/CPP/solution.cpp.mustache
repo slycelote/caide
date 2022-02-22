@@ -1,22 +1,31 @@
+{{#type_is_leetcode}}
+{{! Requires -include leetcode_predefined.h in clang command line }}
+#ifndef ONLINE_JUDGE
+#include "predefined/leetcode_predefined.h"
+#endif
+{{/type_is_leetcode}}
+
 {{#codeSnippets.cpp}}{{&.}}{{/codeSnippets.cpp}}
-{{#topcoder}}
+{{#solutionClass}}
 {{^codeSnippets.cpp}}
 class {{className}} {
 public:
-    {{#singleMethod}}
-    {{#method}}{{>cpptype}} {{name}}({{/method}}{{#
-    parameters}}{{>cpptype}} {{name}}{{^islast}}, {{/islast}}{{/parameters}}) {
-        {{#method}}{{>cpptype}} result{{>typeinit}};{{/method}}
+    {{#constructor}}
+    {{className}}({{#parameters}}{{>cpptype}} {{identifier.cpp}}{{^islast}}, {{/islast}}{{/parameters}}) {
+    }
+
+    {{/constructor}}
+    {{#methods}}
+    {{#method}}{{>cpptype}} {{identifier.cpp}}({{/method}}{{#
+    parameters}}{{>cpptype}} {{identifier.cpp}}{{^islast}}, {{/islast}}{{/parameters}}) {
+        {{#method}}{{>cpptype}} result{{#dimension_is_0}}{{^type_is_string}} = 0{{/type_is_string}}{{/dimension_is_0}};{{/method}}
         return result;
     }
-    {{/singleMethod}}
+    {{/methods}}
 };
 {{/codeSnippets.cpp}}
 
-{{#singleMethod}}
-{{#method}}{{>cpptype}}{{/method}} solve({{#parameters}}{{>cpptype}} {{name}}, {{/parameters}}int) {
-{{/singleMethod}}
-    {{className}} sol;
-    return sol.{{singleMethod.method.name}}({{#singleMethod.parameters}}{{name}}{{^islast}}, {{/islast}}{{/singleMethod.parameters}});
-}
-{{/topcoder}}
+#ifndef ONLINE_JUDGE
+#include "class_tester_impl.h"
+#endif
+{{/solutionClass}}

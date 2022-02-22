@@ -1,0 +1,133 @@
+#include "test_util.h"
+#include <istream>
+#include <ostream>
+#include <string>
+#include <vector>
+
+{{#solutionClass}}
+class {{className}};
+{{/solutionClass}}
+
+namespace caide_tester {
+
+{{#solutionClass}}
+{{#methods}}
+struct Method_{{method.name}} {
+{{#parameters}}
+  {{>cpptype}} i_{{name}};
+{{/parameters}}
+{{#method}}
+  {{>cpptype}} o_{{name}};
+{{/method}}
+
+    Method_{{method.name}}() {
+{{#parameters}}
+{{#dimension_is_0}}
+{{^type_is_string}}        i_{{name}} = 0;{{/type_is_string}}
+{{/dimension_is_0}}
+{{/parameters}}
+{{#method}}
+{{#dimension_is_0}}
+{{^type_is_string}}        o_{{name}} = 0;{{/type_is_string}}
+{{/dimension_is_0}}
+{{/method}}
+    }
+
+    void readInputs(std::istream& in) {
+{{#parameters}}
+        deletePointer(i_{{name}});
+        readPlain(in, i_{{name}});
+{{/parameters}}
+    }
+
+    void writeInputs(std::ostream& out) {
+{{#parameters}}
+        writeStructured(out, i_{{name}});
+{{/parameters}}
+    }
+
+    void readOutput(std::istream& in) {
+{{#method}}
+        deletePointer(o_{{name}});
+        readPlain(in, o_{{name}});
+{{/method}}
+    }
+
+    void writeOutput(std::ostream& out) {
+        writeStructured(out, o_{{method.name}});
+    }
+
+    void call({{className}}*& solution);
+
+    ~Method_{{method.name}}() {
+{{#parameters}}
+        deletePointer(i_{{name}});
+{{/parameters}}
+        deletePointer(o_{{method.name}});
+    }
+};
+
+{{/methods}}
+{{#constructor}}
+struct Method_{{className}} {
+{{#parameters}}
+  {{>cpptype}} i_{{name}};
+{{/parameters}}
+    void* o_{{className}};
+
+    Method_{{className}}() {
+{{#parameters}}
+{{#dimension_is_0}}
+{{^type_is_string}}        i_{{name}} = 0;{{/type_is_string}}
+{{/dimension_is_0}}
+{{/parameters}}
+        o_{{className}} = 0;
+    }
+
+    void readInputs(std::istream& in) {
+{{#parameters}}
+        deletePointer(i_{{name}});
+        readPlain(in, i_{{name}});
+{{/parameters}}
+    }
+
+    void writeInputs(std::ostream& out) {
+{{#parameters}}
+        writeStructured(out, i_{{name}});
+{{/parameters}}
+    }
+
+    void readOutput(std::istream& in) {
+        readPlain(in, o_{{className}});
+    }
+
+    void writeOutput(std::ostream& out) {
+        writeStructured(out, o_{{className}});
+    }
+
+    void call({{className}}*& solution);
+
+    ~Method_{{className}}() {
+{{#parameters}}
+        deletePointer(i_{{name}});
+{{/parameters}}
+    }
+};
+{{/constructor}}
+
+struct Test_{{className}} {
+    {{className}}* solution;
+{{#methods}}
+    Method_{{method.name}} method_{{method.name}};
+{{/methods}}
+{{#constructor}}
+    Method_{{className}} method_{{className}};
+{{/constructor}}
+    Test_{{className}}();
+    ~Test_{{className}}();
+};
+
+{{/solutionClass}}
+
+}
+

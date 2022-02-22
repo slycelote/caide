@@ -1,3 +1,5 @@
-{{#dimension_is_1}}vector<{{/dimension_is_1}}{{#dimension_is_2}}vector<vector<{{/dimension_is_2}}{{#dimension_is_3}}vector<vector<vector<{{/dimension_is_3}}{{type
+{{#type_is_void}}void*{{/type_is_void
+}}{{^type_is_void}}{{#dimension_is_1}}std::vector<{{/dimension_is_1}}{{#dimension_is_2}}std::vector<std::vector<{{/dimension_is_2}}{{#dimension_is_3}}std::vector<std::vector<std::vector<{{/dimension_is_3
+}}{{#type_is_string}}std::{{/type_is_string}}{{type
 }}{{#type_is_long}} long{{/type_is_long
-}}{{#dimension_is_1}}>{{/dimension_is_1}}{{#dimension_is_2}}> >{{/dimension_is_2}}{{#dimension_is_3}}> > >{{/dimension_is_3}}
+}}{{#dimension_is_1}}>{{/dimension_is_1}}{{#dimension_is_2}}> >{{/dimension_is_2}}{{#dimension_is_3}}> > >{{/dimension_is_3}}{{/type_is_void}}

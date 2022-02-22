@@ -5,8 +5,7 @@ module Caide.Commands.ParseProblem(
     , parseProblems
 ) where
 
-import Control.Monad (forM_, unless, when)
-import Control.Monad.Util (whenJust)
+import Control.Monad.Extended (forM_, unless, when, whenJust)
 import Control.Monad.Except (catchError)
 import Control.Monad.State (liftIO)
 import qualified Data.ByteString.Lazy as LBS
