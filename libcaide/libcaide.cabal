@@ -180,7 +180,6 @@ library
         Caide.Settings
         Caide.Templates
         Caide.TestCases
-        Caide.TestCases.TopcoderComparator
         Caide.TestCases.TopcoderDeserializer
         Caide.TestCases.Types
         Caide.Types

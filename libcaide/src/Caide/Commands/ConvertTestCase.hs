@@ -20,7 +20,6 @@ import System.IO.Error (isDoesNotExistError)
 import qualified Data.Aeson as Aeson
 import qualified Data.Attoparsec.ByteString.Char8 as Atto
 import Data.Attoparsec.ByteString.Char8 ((<?>))
-import qualified Data.Scientific as Sci
 
 import qualified Filesystem.Path.CurrentOS as FS
 import qualified Filesystem as FS
@@ -29,8 +28,7 @@ import Filesystem.Util (readTextFile, writeTextFile)
 
 import Caide.Configuration (getActiveProblem)
 import Caide.Problem (readProblemInfo)
-import Caide.TestCases.TopcoderDeserializer (Parser, runParser,
-    readDouble, readQuotedString, readToken, readMany)
+import qualified Caide.TestCases.TopcoderDeserializer as TC
 import Caide.Types
 
 
@@ -85,50 +83,13 @@ readAndConvertTopcoderParameters values inputFile isTopcoderFormat = do
             let res = convertTopcoderParameters values isTopcoderFormat r
             in either throw (return . T.unlines) res
 
-type JsonConverter a = a -> Aeson.Value
-
-jsonParser :: TopcoderValue -> Parser Aeson.Value
-jsonParser TopcoderValue{tcValueName, tcValueType, tcValueDimension} =
-    case tcValueDimension of
-        0 -> case tcValueType of
-            TCDouble -> eval d
-            TCString -> eval s
-            _        -> eval t
-
-        1 -> case tcValueType of
-            TCDouble -> eval $ v d
-            TCString -> eval $ v s
-            _        -> eval $ v t
-
-        2 -> case tcValueType of
-            TCDouble -> eval $ v $ v d
-            TCString -> eval $ v $ v s
-            _        -> eval $ v $ v t
-
-        3 -> case tcValueType of
-            TCDouble -> eval $ v $ v $ v d
-            TCString -> eval $ v $ v $ v s
-            _        -> eval $ v $ v $ v t
-
-        _ -> fail $ T.unpack tcValueName <> ": dimension is too high"
-  where
-    s = (readQuotedString, Aeson.String)
-    d = (readDouble, Aeson.Number . Sci.fromFloatDigits)
-    t = (readToken, Aeson.String)
-
-    v :: (Parser a, JsonConverter a) -> (Parser [a], JsonConverter [a])
-    v (parser, converter) = (readMany parser, Aeson.Array . Vec.map converter . Vec.fromList)
-
-    eval :: (Parser a, JsonConverter a) -> Parser Aeson.Value
-    eval (parser, converter) = converter <$> parser
-
 listSepBy :: Monad m => [m a] -> m () -> m [a]
 listSepBy parsers sep = do
     let s = List.intersperse (sep $> Nothing) (map (Just <$>) parsers)
     mbRes <- sequence s
     return $ catMaybes mbRes
 
-valuesAsJsonParser :: [TopcoderValue] -> Bool -> Parser [Aeson.Value]
+valuesAsJsonParser :: [TopcoderValue] -> Bool -> TC.Parser [Aeson.Value]
 valuesAsJsonParser values isTopcoderFormat = do
     let (skipSpace, char) = (Atto.skipSpace, Atto.char)
     -- Topcoder plugin currently writes inputs separated by commas and
@@ -138,7 +99,7 @@ valuesAsJsonParser values isTopcoderFormat = do
         void (char '{') <?> "opening brace"
     skipSpace
     let separator = if isTopcoderFormat then skipSpace >> char ',' >> skipSpace else skipSpace
-    res <- map jsonParser values `listSepBy` separator
+    res <- map TC.jsonParser values `listSepBy` separator
     when isTopcoderFormat $ do
         skipSpace
         void (char '}') <?> "closing brace"
@@ -147,7 +108,7 @@ valuesAsJsonParser values isTopcoderFormat = do
 convertTopcoderParameters :: [TopcoderValue] -> Bool -> Text -> Either Text [Text]
 convertTopcoderParameters values isTopcoderFormat text = do
     let parser = valuesAsJsonParser values isTopcoderFormat
-    jsonValues <- runParser parser text
+    jsonValues <- TC.runParser parser text
     pure $ concatMap convertJsonValue jsonValues
 
 convertJsonValue :: Aeson.Value -> [Text]

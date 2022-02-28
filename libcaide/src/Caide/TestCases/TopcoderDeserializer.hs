@@ -1,30 +1,37 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, NamedFieldPuns, OverloadedStrings #-}
 module Caide.TestCases.TopcoderDeserializer(
-      readToken
+      -- Reexport from Attoparsec
+      Parser
+    , runParser
+    , runParserBS
+    , jsonParser
+
+    , readToken
     , readDouble
     , readQuotedString
     , readMany
-    , runParser
-    , runParserBS
-    -- Reexport from Attoparsec
-    , Parser
 ) where
 
 import Control.Monad.Fail (fail)
 import qualified Data.ByteString as BS
 import Data.Char (isSpace)
 import Data.Functor ((<&>))
+import Data.Int (Int64)
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Encoding.Util as T
 
+import qualified Data.Aeson as Aeson
+import qualified Data.Scientific as Sci
+import qualified Data.Vector as Vec
 import Data.Attoparsec.ByteString.Char8 (Parser, IResult(Done, Fail, Partial), Result,
     feed, parse, (<?>), eitherResult,
-    anyChar, char, double,
-    sepBy, skipSpace, takeTill, takeWhile1)
+    anyChar, char, digit, double,
+    many1, sepBy, skipSpace, takeTill, takeWhile1)
 
+import Caide.Types (TopcoderType(..), TopcoderValue(..))
 
 -- | Adds failing offset to error messages and transforms them to Text
 -- Returns the remaining portion of input and the parsed value.
@@ -61,6 +68,18 @@ readQuotedString = do
 readDouble :: Parser Double
 readDouble = double
 
+readLong :: Parser Int64
+readLong = read <$> many1 digit
+
+readBool :: Parser Bool
+readBool = do
+    s <- readToken
+    if s == "true"
+        then return True
+        else if s == "false"
+            then return False
+            else fail $ "Expected 'true' or 'false', got '" <> T.unpack s <> "'"
+
 readMany :: Parser a -> Parser [a]
 readMany elemParser = do
     skipSpace
@@ -74,4 +93,50 @@ readMany elemParser = do
     skipSpace
     _ <- char close <?> "close bracket"
     return ret
+
+type JsonConverter a = a -> Aeson.Value
+
+jsonParser :: TopcoderValue -> Parser Aeson.Value
+jsonParser TopcoderValue{tcValueName, tcValueType, tcValueDimension} =
+    case tcValueDimension of
+        0 -> case tcValueType of
+            TCInt    -> eval i
+            TCLong   -> eval i
+            TCDouble -> eval d
+            TCString -> eval s
+            TCBool   -> eval b
+
+        1 -> case tcValueType of
+            TCInt    -> eval $ v i
+            TCLong   -> eval $ v i
+            TCDouble -> eval $ v d
+            TCString -> eval $ v s
+            TCBool   -> eval $ v b
+
+        2 -> case tcValueType of
+            TCInt    -> eval $ v $ v i
+            TCLong   -> eval $ v $ v i
+            TCDouble -> eval $ v $ v d
+            TCString -> eval $ v $ v s
+            TCBool   -> eval $ v $ v b
+
+        3 -> case tcValueType of
+            TCInt    -> eval $ v $ v $ v i
+            TCLong   -> eval $ v $ v $ v i
+            TCDouble -> eval $ v $ v $ v d
+            TCString -> eval $ v $ v $ v s
+            TCBool   -> eval $ v $ v $ v b
+
+        _ -> fail $ T.unpack tcValueName <> ": dimension is too high"
+  where
+    s = (readQuotedString, Aeson.String)
+    d = (readDouble, Aeson.Number . Sci.fromFloatDigits)
+    i = (readLong, Aeson.Number . (\n -> Sci.scientific n 0) . toInteger)
+    b = (readBool, Aeson.Bool)
+
+    v :: (Parser a, JsonConverter a) -> (Parser [a], JsonConverter [a])
+    v (parser, converter) = (readMany parser, Aeson.Array . Vec.map converter . Vec.fromList)
+
+    eval :: (Parser a, JsonConverter a) -> Parser Aeson.Value
+    eval (parser, converter) = converter <$> parser
 
