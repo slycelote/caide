@@ -272,7 +272,8 @@ setProp (FileHandle path) section key value = do
     case mf of
         Nothing -> throw $ T.append "Unknown file handle " $ toText path
         Just f  -> do
-            newConf <- convertToCaide $ C.set (configParser f) section key (optionToString value)
+            let escapedPercent = concatMap (\c -> if c == '%' then "%%" else [c]) (optionToString value)
+            newConf <- convertToCaide $ C.set (configParser f) section key escapedPercent
             let newFile = ConfigInMemory { configParser = newConf, modified = True}
             modifyWithFiles $ M.insert path newFile
 
