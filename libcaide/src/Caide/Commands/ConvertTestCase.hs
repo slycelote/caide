@@ -33,46 +33,49 @@ import Caide.Types
 
 
 convertTestCaseInput :: FS.FilePath -> FS.FilePath -> Maybe ProblemID -> CaideIO ()
-convertTestCaseInput inputFile outputFile mbProbId = do
-    probId <- case mbProbId of
-        Just p  -> pure p
-        Nothing -> getActiveProblem
-    problem <- readProblemInfo probId
-    needUpdate <- liftIO $ isOutputOutdated inputFile outputFile
-    when needUpdate $ case problemType problem of
-        Stream _ _ -> liftIO $ FS.copyFile inputFile outputFile
-        Topcoder TopcoderProblemDescription{tcSingleMethod} -> do
-            res <- convertTopcoderMethod tcSingleMethod inputFile True
-            liftIO $ writeTextFile outputFile res
-        LeetCodeMethod tcMethod -> do
-            res <- convertTopcoderMethod tcMethod inputFile False
-            liftIO $ writeTextFile outputFile res
+convertTestCaseInput = convertTestCase Input
 
 convertTestCaseOutput :: FS.FilePath -> FS.FilePath -> Maybe ProblemID -> CaideIO ()
-convertTestCaseOutput inputFile outputFile mbProbId = do
+convertTestCaseOutput = convertTestCase Output
+
+data TestCasePartType = Input | Output
+
+convertTestCase :: TestCasePartType -> FS.FilePath -> FS.FilePath -> Maybe ProblemID -> CaideIO ()
+convertTestCase inputType inputFile outputFile mbProbId = do
     probId <- case mbProbId of
         Just p  -> pure p
         Nothing -> getActiveProblem
     problem <- readProblemInfo probId
-    needUpdate <- liftIO $ isOutputOutdated inputFile outputFile
+    inputTime <- liftIO $ FS.getModified inputFile
+    needUpdate <- liftIO $ Exc.handleIf isDoesNotExistError (\_ -> return True) $ do
+        outputTime <- FS.getModified outputFile
+        return $ outputTime < inputTime
     when needUpdate $ case problemType problem of
         Stream _ _ -> liftIO $ FS.copyFile inputFile outputFile
         Topcoder TopcoderProblemDescription{tcSingleMethod} -> do
-            res <- readAndConvertTopcoderParameters [tcMethod tcSingleMethod] inputFile False
+            res <- case inputType of
+                Input -> readAndConvertTopcoderParameters (tcParameters tcSingleMethod) inputFile True
+                Output -> readAndConvertTopcoderParameters [tcMethod tcSingleMethod] inputFile False
             liftIO $ writeTextFile outputFile res
-        LeetCodeMethod TopcoderMethod{tcMethod} -> do
-            res <- readAndConvertTopcoderParameters [tcMethod] inputFile False
+        LeetCodeMethod _ -> do
+            res <- convertJson inputFile
             liftIO $ writeTextFile outputFile res
 
-isOutputOutdated :: FS.FilePath -> FS.FilePath -> IO Bool
-isOutputOutdated inputFile outputFile = do
-    inputTime <- FS.getModified inputFile
-    Exc.handleIf isDoesNotExistError (\_ -> return True) $ do
-        outputTime <- FS.getModified outputFile
-        return $ outputTime < inputTime
 
-convertTopcoderMethod :: TopcoderMethod -> FS.FilePath -> Bool -> CaideIO Text
-convertTopcoderMethod TopcoderMethod{tcParameters} = readAndConvertTopcoderParameters tcParameters
+convertJson :: FS.FilePath -> CaideIO Text
+convertJson inputFile = do
+    text <- liftIO $ readTextFile inputFile
+    case text of
+        Left err -> throw err
+        Right r ->
+            let res = convertJsonValues r
+            in either throw (return . T.unlines) res
+
+convertJsonValues :: Text -> Either Text [Text]
+convertJsonValues text = do
+    let parser = Aeson.json `Atto.sepBy` Atto.skipSpace
+    jsonValues <- TC.runParser parser text
+    pure $ concatMap convertJsonValue jsonValues
 
 readAndConvertTopcoderParameters :: [TopcoderValue] -> FS.FilePath -> Bool -> CaideIO Text
 readAndConvertTopcoderParameters values inputFile isTopcoderFormat = do
@@ -89,7 +92,7 @@ listSepBy parsers sep = do
     mbRes <- sequence s
     return $ catMaybes mbRes
 
-valuesAsJsonParser :: [TopcoderValue] -> Bool -> TC.Parser [Aeson.Value]
+valuesAsJsonParser :: [TopcoderValue] -> Bool -> Atto.Parser [Aeson.Value]
 valuesAsJsonParser values isTopcoderFormat = do
     let (skipSpace, char) = (Atto.skipSpace, Atto.char)
     -- Topcoder plugin currently writes inputs separated by commas and
