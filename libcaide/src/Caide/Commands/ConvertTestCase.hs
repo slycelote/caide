@@ -10,16 +10,20 @@ import Control.Monad (void, when)
 import Control.Monad.Fail (fail)
 import Control.Monad.IO.Class (liftIO)
 import Data.Functor (($>))
+import Data.Int (Int64)
 import qualified Data.List as List
 import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Vector as Vec
+import Data.Word (Word64)
 import System.IO.Error (isDoesNotExistError)
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Attoparsec.ByteString.Char8 as Atto
 import Data.Attoparsec.ByteString.Char8 ((<?>))
+
+import qualified Data.Scientific as Sci
 
 import qualified Filesystem.Path.CurrentOS as FS
 import qualified Filesystem as FS
@@ -118,7 +122,12 @@ convertJsonValue :: Aeson.Value -> [Text]
 convertJsonValue (Aeson.Array vec) =
     T.pack (show $ Vec.length vec) : concatMap convertJsonValue (Vec.toList vec)
 convertJsonValue (Aeson.String s) = [s]
-convertJsonValue (Aeson.Number n) = [T.pack $ show n]
+convertJsonValue (Aeson.Number n) = case Sci.toBoundedInteger n of
+  Just (i :: Int64) -> [T.pack $ show i]
+  _ -> case Sci.toBoundedInteger n of
+    Just (i :: Word64) -> [T.pack $ show i]
+    _ -> [T.pack $ show n]
+
 convertJsonValue (Aeson.Bool b) = [T.toLower $ T.pack $ show b]
 convertJsonValue x = error $ "convertJsonValue: unexpected " <> show x
 
