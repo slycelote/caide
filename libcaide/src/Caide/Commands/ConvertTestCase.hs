@@ -129,5 +129,6 @@ convertJsonValue (Aeson.Number n) = case Sci.toBoundedInteger n of
     _ -> [T.pack $ show n]
 
 convertJsonValue (Aeson.Bool b) = [T.toLower $ T.pack $ show b]
+convertJsonValue Aeson.Null = ["null"]
 convertJsonValue x = error $ "convertJsonValue: unexpected " <> show x
 
