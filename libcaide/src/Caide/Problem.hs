@@ -8,7 +8,7 @@ module Caide.Problem(
 ) where
 
 import qualified Data.ByteString.Lazy as LBS
-import Data.Char (isUpper, toLower)
+import Data.Char (isUpper, toLower, toUpper)
 import Data.Function ((&))
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Text (Text)
@@ -90,19 +90,20 @@ encodeType TCLong = "long"
 encodeType TCDouble = "double"
 encodeType TCString = "string"
 encodeType TCBool = "bool"
+encodeType (TypeName s) = s
 
--- TODO: register snake-case/dash-separated/etc as functions in Jinja template?
+-- TODO: register snake-case/hyphen-separated/etc as functions in Jinja template?
 data IdentifierKind = VariableName | MethodName | ClassName | KeepAsWritten
 
 -- LeetCode uses different name convention for different languages.
 findIdentifier :: Text -> Text -> IdentifierKind -> Maybe Text -> Text
 findIdentifier origIdentifier lang identKind mbCode =
   let
-    dashSeparated = T.concatMap
+    hyphenSeparated = T.concatMap
         (\c -> (if isUpper c then "-" else "") <> T.singleton (toLower c))
         origIdentifier
-    snakeCase = T.replace "-" "_" dashSeparated
-    titleCase = T.toTitle origIdentifier
+    snakeCase = T.replace "-" "_" hyphenSeparated
+    pascalCase = T.singleton (toUpper $ T.head origIdentifier) <> T.tail origIdentifier
 
     isIdentOk ident = case mbCode of
         Nothing -> True
@@ -110,15 +111,15 @@ findIdentifier origIdentifier lang identKind mbCode =
 
     bestGuess = case identKind of
       KeepAsWritten -> origIdentifier
-      MethodName    | lang `elem` ["c", "csharp", "go"] -> titleCase
-      VariableName  | lang `elem` ["erlang"] -> titleCase
+      MethodName    | lang `elem` ["c", "csharp", "go"] -> pascalCase
+      VariableName  | lang `elem` ["erlang"] -> pascalCase
       _k            | lang `elem` ["erlang"] -> snakeCase
-                    | lang `elem` ["racket"] -> dashSeparated
+                    | lang `elem` ["racket"] -> hyphenSeparated
       ClassName     -> origIdentifier
       _k            | lang `elem` ["ruby", "rust", "elixir"] -> snakeCase
                     | otherwise -> origIdentifier
 
-    candidates = bestGuess : [ dashSeparated, snakeCase, titleCase ]
+    candidates = bestGuess : [ hyphenSeparated, snakeCase, pascalCase ]
   in candidates & filter isIdentOk & listToMaybe & fromMaybe origIdentifier
 
 encodeValue :: Map.Map Text Text -> IdentifierKind -> TopcoderValue -> Aeson.Value
