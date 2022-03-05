@@ -1,7 +1,11 @@
 #include "test_util.h"
+{{#type_is_leetcode}}
+#include "predefined/leetcode_predefined.h"
+{{/type_is_leetcode}}
 #include <istream>
 #include <ostream>
 #include <string>
+#include <queue>
 #include <vector>
 
 {{#solutionClass}}
@@ -10,14 +14,156 @@ class {{className}};
 
 namespace caide_tester {
 
+{{#type_is_leetcode}}
+template <>
+inline void deletePointer(ListNode*& p) {
+    while (p != 0) {
+        ListNode* n = p->next;
+        delete p;
+        p = n;
+    }
+}
+
+template <>
+struct Serializer<ListNode*> {
+    using VecSerializer = Serializer<std::vector<int> >;
+    static void writeStructured(std::ostream& out, ListNode* val) {
+        std::vector<int> vals;
+        while (val != 0) {
+            vals.push_back(val->val);
+            val = val->next;
+        }
+
+        VecSerializer::writeStructured(out, vals);
+    }
+
+    static ListNode* readPlain(std::istream& in) {
+        std::vector<int> vals = VecSerializer::readPlain(in);
+
+        ListNode* head = 0;
+        ListNode* tail = 0;
+
+        struct ScopeGuard {
+            ListNode** p;
+            ~ScopeGuard() { if (p) deletePointer(*p); }
+        } deleteOnException{&head};
+
+        for (std::size_t i = 0; i < vals.size(); ++i) {
+            if (i == 0) {
+                head = new ListNode();
+                tail = head;
+            } else {
+                tail->next = new ListNode();
+                tail = tail->next;
+            }
+
+            tail->val = vals[i];
+            tail->next = 0;
+        }
+
+        deleteOnException.p = 0;
+        return head;
+    }
+};
+
+template <>
+inline void deletePointer(TreeNode*& p) {
+    if (p != 0) {
+        deletePointer(p->left);
+        deletePointer(p->right);
+        delete p;
+        p = 0;
+    }
+}
+
+template <>
+struct Serializer<TreeNode*> {
+    static void writeStructured(std::ostream& out, TreeNode* val) {
+        out << '[';
+        if (val) {
+            std::vector<TreeNode*> layer{val};
+            for (;;) {
+                while (!layer.empty() && !layer.back())
+                    layer.pop_back();
+                if (layer.empty())
+                    break;
+
+                std::vector<TreeNode*> nextLayer;
+                for (TreeNode* node : layer) {
+                    if (node != val)
+                        out << ',';
+                    if (node) {
+                        out << node->val;
+                        nextLayer.push_back(node->left);
+                        nextLayer.push_back(node->right);
+                    } else
+                        out << "null";
+                }
+
+                std::swap(layer, nextLayer);
+            }
+        }
+
+        out << ']';
+    }
+
+    static int readInt(const std::string& s) {
+        std::istringstream in(s);
+        int res;
+        in >> res;
+        return res;
+    }
+
+    static TreeNode* readPlain(std::istream& in) {
+        int length = Serializer<int>::readPlain(in);
+        if (length == 0)
+            return nullptr;
+        TreeNode* root = new TreeNode();
+
+        struct ScopeGuard {
+            TreeNode** p;
+            ~ScopeGuard() { if (p) deletePointer(*p); }
+        } deleteOnException{&root};
+
+        root->val = Serializer<int>::readPlain(in);
+        std::queue<TreeNode*> q;
+        q.push(root);
+        --length;
+        std::string line;
+        while (length > 0) {
+            TreeNode* node = q.front();
+            q.pop();
+            std::getline(in, line);
+            --length;
+            if (line != "null") {
+                node->left = new TreeNode(readInt(line));
+                q.push(node->left);
+            }
+
+            if (length > 0) {
+                std::getline(in, line);
+                --length;
+                if (line != "null") {
+                    node->right = new TreeNode(readInt(line));
+                    q.push(node->right);
+                }
+            }
+        }
+
+        deleteOnException.p = 0;
+        return root;
+    }
+};
+{{/type_is_leetcode}}
+
 {{#solutionClass}}
 {{#methods}}
 struct Method_{{method.name}} {
 {{#parameters}}
-  {{>cpptype}} i_{{name}};
+    {{>cpptype}} i_{{name}};
 {{/parameters}}
 {{#method}}
-  {{>cpptype}} o_{{name}};
+    {{>cpptype}} o_{{name}};
 {{/method}}
 
     Method_{{method.name}}() {
@@ -130,4 +276,3 @@ struct Test_{{className}} {
 {{/solutionClass}}
 
 }
-

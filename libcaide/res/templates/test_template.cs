@@ -1,3 +1,29 @@
+#region Structures predefined in LeetCode
+
+// Definition for singly-linked list.
+public class ListNode {
+    public int val;
+    public ListNode next;
+    public ListNode(int val=0, ListNode next=null) {
+        this.val = val;
+        this.next = next;
+    }
+}
+
+// Definition for a binary tree node.
+public class TreeNode {
+    public int val;
+    public TreeNode left;
+    public TreeNode right;
+    public TreeNode(int val=0, TreeNode left=null, TreeNode right=null) {
+        this.val = val;
+        this.left = left;
+        this.right = right;
+    }
+}
+
+#endregion
+
 namespace CaideTester
 {
 
@@ -165,19 +191,24 @@ partial class TestRunner
         Environment.Exit(evalTestsProcess.ExitCode);
     }
 
-    public static TCSerializer<T[]> V<T>(TCSerializer<T> ser)
+    public static TestSerializer<T[]> A<T>(TestSerializer<T> ser)
     {
         return new ArraySerializer<T>(ser);
     }
+
+    public static TestSerializer<IList<T>> L<T>(TestSerializer<T> ser)
+    {
+        return new ListSerializer<T>(ser);
+    }
 }
 
-interface TCSerializer<T>
+interface TestSerializer<T>
 {
     T Deserialize(TextReader input);
     void Serialize(TextWriter output, T val);
 }
 
-class IntSerializer : TCSerializer<int>
+class intSerializer : TestSerializer<int>
 {
     public int Deserialize(TextReader input)
     {
@@ -190,7 +221,7 @@ class IntSerializer : TCSerializer<int>
     }
 }
 
-class LongSerializer : TCSerializer<long>
+class longSerializer : TestSerializer<long>
 {
     public long Deserialize(TextReader input)
     {
@@ -203,7 +234,7 @@ class LongSerializer : TCSerializer<long>
     }
 }
 
-class DoubleSerializer : TCSerializer<double>
+class doubleSerializer : TestSerializer<double>
 {
     public double Deserialize(TextReader input)
     {
@@ -216,7 +247,7 @@ class DoubleSerializer : TCSerializer<double>
     }
 }
 
-class NullSerializer : TCSerializer<object>
+class voidSerializer : TestSerializer<object>
 {
     public object Deserialize(TextReader input)
     {
@@ -231,7 +262,7 @@ class NullSerializer : TCSerializer<object>
     }
 }
 
-class BoolSerializer : TCSerializer<bool>
+class boolSerializer : TestSerializer<bool>
 {
     public bool Deserialize(TextReader input)
     {
@@ -250,7 +281,7 @@ class BoolSerializer : TCSerializer<bool>
     }
 }
 
-class StringSerializer : TCSerializer<string>
+class stringSerializer : TestSerializer<string>
 {
     public string Deserialize(TextReader input)
     {
@@ -265,31 +296,31 @@ class StringSerializer : TCSerializer<string>
     }
 }
 
-class ArraySerializer<T> : TCSerializer<T[]>
+class ListSerializer<T> : TestSerializer<IList<T>>
 {
-    private TCSerializer<T> elemSerializer;
+    private TestSerializer<T> elemSerializer;
 
-    public ArraySerializer(TCSerializer<T> elemSerializer)
+    public ListSerializer(TestSerializer<T> elemSerializer)
     {
         this.elemSerializer = elemSerializer;
     }
 
-    public T[] Deserialize(TextReader input)
+    public IList<T> Deserialize(TextReader input)
     {
         var len = int.Parse(input.ReadLine());
-        T[] res = new T[len];
+        var res = new List<T>(len);
         for (int i = 0; i < len; ++i)
         {
-            res[i] = elemSerializer.Deserialize(input);
+            res.Add(elemSerializer.Deserialize(input));
         }
 
         return res;
     }
 
-    public void Serialize(TextWriter output, T[] val)
+    public void Serialize(TextWriter output, IList<T> val)
     {
-        output.Write('{');
-        for (int i = 0; i < val.Length; ++i)
+        output.Write(TestRunner.IsTopcoder ? '{' : '[');
+        for (int i = 0; i < val.Count; ++i)
         {
             if (i > 0)
             {
@@ -299,7 +330,133 @@ class ArraySerializer<T> : TCSerializer<T[]>
             elemSerializer.Serialize(output, val[i]);
         }
 
-        output.Write('}');
+        output.Write(TestRunner.IsTopcoder ? '}' : ']');
+    }
+}
+
+class ArraySerializer<T> : TestSerializer<T[]>
+{
+    private ListSerializer<T> listSerializer;
+
+    public ArraySerializer(TestSerializer<T> elemSerializer)
+    {
+        this.listSerializer = new ListSerializer<T>(elemSerializer);
+    }
+
+    public T[] Deserialize(TextReader input)
+    {
+        return listSerializer.Deserialize(input).ToArray();
+    }
+
+    public void Serialize(TextWriter output, T[] val)
+    {
+        listSerializer.Serialize(output, new List<T>(val));
+    }
+}
+
+class ListNodeSerializer : TestSerializer<ListNode>
+{
+    public ListNode Deserialize(TextReader input)
+    {
+        int[] vals = new ArraySerializer<int>(new intSerializer()).Deserialize(input);
+        ListNode head = null, tail = null;
+        foreach (int i in vals)
+        {
+            if (head == null)
+            {
+                head = tail = new ListNode();
+            }
+            else
+            {
+                tail.next = new ListNode();
+                tail = tail.next;
+            }
+
+            tail.val = i;
+        }
+
+        return head;
+    }
+
+    public void Serialize(TextWriter output, ListNode val)
+    {
+        var vals = new List<int>();
+        while (val != null)
+        {
+            vals.Add(val.val);
+            val = val.next;
+        }
+
+        new ArraySerializer<int>(new intSerializer()).Serialize(output, vals.ToArray());
+    }
+}
+
+class TreeNodeSerializer : TestSerializer<TreeNode>
+{
+    public TreeNode Deserialize(TextReader input)
+    {
+        var intReader = new intSerializer();
+        int length = intReader.Deserialize(input);
+        if (length == 0)
+            return null;
+        var root = new TreeNode();
+
+        root.val = intReader.Deserialize(input);
+        var q = new Queue<TreeNode>();
+        q.Enqueue(root);
+        --length;
+        while (length > 0) {
+            TreeNode node = q.Dequeue();
+            var line = input.ReadLine();
+            --length;
+            if (line != "null") {
+                node.left = new TreeNode(int.Parse(line));
+                q.Enqueue(node.left);
+            }
+
+            if (length > 0) {
+                line = input.ReadLine();
+                --length;
+                if (line != "null") {
+                    node.right = new TreeNode(int.Parse(line));
+                    q.Enqueue(node.right);
+                }
+            }
+        }
+
+        return root;
+    }
+
+    public void Serialize(TextWriter output, TreeNode val)
+    {
+        output.Write('[');
+        var layer = new List<TreeNode>{val};
+        for (;;)
+        {
+            while (layer.Count > 0 && layer[layer.Count - 1] == null)
+                layer.RemoveAt(layer.Count - 1);
+            if (layer.Count == 0)
+                break;
+
+            var nextLayer = new List<TreeNode>();
+            foreach (var node in layer)
+            {
+                if (node != val)
+                    output.Write(',');
+                if (node == null)
+                    output.Write("null");
+                else
+                {
+                    output.Write(node.val);
+                    nextLayer.Add(node.left);
+                    nextLayer.Add(node.right);
+                }
+            }
+
+            layer = nextLayer;
+        }
+
+        output.Write(']');
     }
 }
 

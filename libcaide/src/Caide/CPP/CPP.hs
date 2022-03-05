@@ -52,7 +52,8 @@ inlineCPPCode probID = do
             Stream _ _ -> (solutionPath:mainFilePath:libraryCPPFiles, [])
             Topcoder _ -> (solutionPath:libraryCPPFiles, [])
             LeetCodeMethod _ -> (solutionPath:libraryCPPFiles,
-                                 ["-isystem", pathToText (probDir </> CPPSimple.predefinedHeadersDir)])
+                                 ["-isystem", pathToText (probDir </> CPPSimple.predefinedHeadersDir),
+                                  "-include", "leetcode_predefined.h"])
         identifiersToPreserve = getIdentifiersToPreserve (problemType problem)
         outputPath = probDir </> "submission.cpp"
 

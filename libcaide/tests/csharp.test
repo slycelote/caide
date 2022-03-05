@@ -31,3 +31,38 @@ run_csharp_executable ./prob.exe
 "$CSC" -target:library submission.cs
 cd ..
 
+"$CAIDE" problem prob4 --lang csharp --type leetcode,methodName:ListNode,l1:ListNode
+cd prob4
+"$CSC" -out:prob.exe prob*.cs
+run_csharp_executable ./prob.exe
+"$CAIDE" make
+
+leetcode_structures="
+// Definition for singly-linked list.
+public class ListNode {
+    public int val;
+    public ListNode next;
+    public ListNode(int val=0, ListNode next=null) {
+        this.val = val;
+        this.next = next;
+    }
+}
+
+// Definition for a binary tree node.
+public class TreeNode {
+    public int val;
+    public TreeNode left;
+    public TreeNode right;
+    public TreeNode(int val=0, TreeNode left=null, TreeNode right=null) {
+        this.val = val;
+        this.left = left;
+        this.right = right;
+    }
+}
+"
+
+echo "$leetcode_structures" >LeetCodeStructures.cs
+
+"$CSC" -target:library submission.cs LeetCodeStructures.cs
+cd ..
+

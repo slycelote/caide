@@ -106,6 +106,7 @@ data TopcoderValue = TopcoderValue
     } deriving (Show, Eq)
 
 data TopcoderType = TCInt | TCLong | TCDouble | TCString | TCBool
+                  | TypeName Text
     deriving (Show, Eq)
 
 data TopcoderMethod = TopcoderMethod
@@ -285,11 +286,12 @@ extend r conf = conf' { C.accessfunc = C.interpolatingAccess 10, C.usedefault = 
     where Right conf' = C.set conf "DEFAULT" "caideRoot" $ F.encodeString r
 
 instance Option TopcoderType where
-    optionToString TCInt    = "int"
-    optionToString TCLong   = "long"
-    optionToString TCDouble = "double"
-    optionToString TCString = "String"
-    optionToString TCBool = "bool"
+    optionToText TCInt    = "int"
+    optionToText TCLong   = "long"
+    optionToText TCDouble = "double"
+    optionToText TCString = "String"
+    optionToText TCBool   = "bool"
+    optionToText (TypeName s) = s
 
     optionFromString "int"    = Just TCInt
     optionFromString "long"   = Just TCLong
@@ -297,7 +299,7 @@ instance Option TopcoderType where
     optionFromString "String" = Just TCString
     optionFromString "string" = Just TCString
     optionFromString "bool"   = Just TCBool
-    optionFromString _        = Nothing
+    optionFromString s        = Just $ TypeName $ T.pack s
 
 -- name:vvType
 instance Option TopcoderValue where

@@ -132,28 +132,40 @@ problemParserTests = TestList
             (makeProblem "Longest Common Prefix" "longest-common-prefix")
             { problemType = mkProblemType "leetcode,longestCommonPrefix:String,strs:vString" }
             [ mkTestCase "[\"flower\",\"flow\",\"flight\"]" "\"fl\""
-            , mkTestCase "[\"dog\",\"racecar\",\"car\"]" "\"\"" ]
+            , mkTestCase "[\"dog\",\"racecar\",\"car\"]" "\"\""
+            ]
         , lc "https://leetcode.com/problems/median-of-two-sorted-arrays"
             (makeProblem "Median of Two Sorted Arrays" "median-of-two-sorted-arrays")
             { problemType = mkProblemType "leetcode,findMedianSortedArrays:double,nums1:vint,nums2:vint" }
             [ mkTestCase "[1,3]\n[2]" "2.00000"
-            , mkTestCase "[1,2]\n[3,4]" "2.50000" ]
+            , mkTestCase "[1,2]\n[3,4]" "2.50000"
+            ]
         , lc "https://leetcode.com/problems/sequential-digits"
             (makeProblem "Sequential Digits" "sequential-digits")
             { problemType = mkProblemType "leetcode,sequentialDigits:vint,low:int,high:int" }
             [ mkTestCase "100\n300" "[123,234]"
-            , mkTestCase "1000\n13000" "[1234,2345,3456,4567,5678,6789,12345]" ]
+            , mkTestCase "1000\n13000" "[1234,2345,3456,4567,5678,6789,12345]"
+            ]
         , lc "https://leetcode.com/problems/detect-capital"
             (makeProblem "Detect Capital" "detect-capital")
             { problemType = mkProblemType "leetcode,detectCapitalUse:bool,word:String" }
             [ mkTestCase "\"USA\"" "true"
-            , mkTestCase "\"FlaG\"" "false" ]
+            , mkTestCase "\"FlaG\"" "false"
+            ]
         , lc "https://leetcode.com/problems/k-highest-ranked-items-within-a-price-range"
             (makeProblem "K Highest Ranked Items Within a Price Range" "k-highest-ranked-items-within-a-price-range")
             { problemType = mkProblemType "leetcode,highestRankedKItems:vvint,grid:vvint,pricing:vint,start:vint,k:int" }
             [ mkTestCase "[[1,2,0,1],[1,3,0,1],[0,2,5,1]]\n[2,5]\n[0,0]\n3" "[[0,1],[1,1],[2,1]]"
             , mkTestCase "[[1,2,0,1],[1,3,3,1],[0,2,5,1]]\n[2,3]\n[2,3]\n2" "[[2,1],[1,2]]"
-            , mkTestCase "[[1,1,1],[0,0,1],[2,3,4]]\n[2,3]\n[0,0]\n3" "[[2,1],[2,0]]" ]
+            , mkTestCase "[[1,1,1],[0,0,1],[2,3,4]]\n[2,3]\n[0,0]\n3" "[[2,1],[2,0]]"
+            ]
+        , lc "https://leetcode.com/problems/add-two-numbers"
+            (makeProblem "Add Two Numbers" "add-two-numbers")
+            { problemType = mkProblemType "leetcode,addTwoNumbers:ListNode,l1:ListNode,l2:ListNode" }
+            [ mkTestCase "[2,4,3]\n[5,6,4]" "[7,0,8]"
+            , mkTestCase "[0]\n[0]" "[0]"
+            , mkTestCase "[9,9,9,9,9,9,9]\n[9,9,9,9]" "[8,9,9,9,0,0,0,1]"
+            ]
         ]
     ]
   where

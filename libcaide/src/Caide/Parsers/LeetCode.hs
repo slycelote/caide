@@ -28,7 +28,7 @@ import qualified Data.Aeson as Aeson
 import Data.Aeson (FromJSON, (.:))
 
 import Data.Attoparsec.ByteString.Char8 (letter_ascii, char, digit,
-    option, skipSpace, skipMany1, sepBy, parseOnly)
+    option, skipSpace, skipMany1, sepBy, (<?>), parseOnly)
 
 import Network.URI (parseURI, pathSegments, URI(uriPath, uriQuery, uriFragment))
 import Network.HTTP.Types.Header (hAcceptLanguage, hContentType, hReferer)
@@ -122,6 +122,7 @@ data ClassMetaData = ClassMetaData
                    { classname :: !Text
                    , constructor :: !(Maybe ConstructorMetaData)
                    , methods :: ![MethodMetaData]
+                   , systemdesign :: !(Maybe Bool)
                    } deriving (Show, Generic)
 instance FromJSON ClassMetaData
 
@@ -164,11 +165,21 @@ numTests tests = (length [t | t@(TestCase _ (Just _)) <- tests], length tests)
 
 typeParser :: Parsec.Parsec Text () (TopcoderType, Int)
 typeParser =
-    let (try, string, many, eof) = (Parsec.try, Parsec.string, Parsec.many, Parsec.eof)
+    let (try, string, many, eof, letter, alphaNum) =
+            (Parsec.try, Parsec.string, Parsec.many, Parsec.eof, Parsec.letter, Parsec.alphaNum)
+
+        identifierParser :: Parsec.Parsec Text () Text
+        identifierParser = do
+            first <- letter <|> Parsec.char '_'
+            rest <- many (alphaNum <|> Parsec.char '_')
+            return $ T.pack $ first:rest
+
         elementTypeParser = try (string "integer" $> TCInt)
             <|> try (string "string" $> TCString)
             <|> try (string "double" $> TCDouble)
             <|> try (string "boolean" $> TCBool)
+            -- identifier must always be last
+            <|> TypeName <$> identifierParser
 
         format1 = do
             _ <- try $ string "list<"
@@ -242,8 +253,10 @@ fromExamples (Just t) numLinesPerTestCase = let
 
 parseInput :: Text -> Either Text Text
 parseInput t = let
-    identParser = skipMany1 (digit <|> letter_ascii <|> char '_')
-    paramParser = skipSpace >> option () (identParser >> skipSpace >> char '=' >> skipSpace) >> Aeson.json
+    identParser = skipMany1 (digit <|> letter_ascii <|> char '_') <?> "identifier"
+    paramParser = (skipSpace >>
+                   option () (identParser >> skipSpace >> char '=' >> skipSpace) >>
+                   Aeson.json) <?> "parameter"
     parser = paramParser `sepBy` (skipSpace >> char ',' >> skipSpace)
     result = parseOnly parser (T.encodeUtf8 t)
 

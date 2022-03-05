@@ -1,6 +1,8 @@
 {{#type_is_leetcode}}
 #define CAIDE_LEETCODE 1
+namespace caide_tester { bool topcoderMode = false; }
 {{/type_is_leetcode}}
 {{#type_is_topcoder}}
 #define CAIDE_TOPCODER 1
+namespace caide_tester { bool topcoderMode = true; }
 {{/type_is_topcoder}}

@@ -105,6 +105,7 @@ jsonParser TopcoderValue{tcValueName, tcValueType, tcValueDimension} =
             TCDouble -> eval d
             TCString -> eval s
             TCBool   -> eval b
+            TypeName tn -> fail $ "Unsupported type " <> T.unpack tn
 
         1 -> case tcValueType of
             TCInt    -> eval $ v i
@@ -112,6 +113,7 @@ jsonParser TopcoderValue{tcValueName, tcValueType, tcValueDimension} =
             TCDouble -> eval $ v d
             TCString -> eval $ v s
             TCBool   -> eval $ v b
+            TypeName tn -> fail $ "Unsupported type " <> T.unpack tn
 
         2 -> case tcValueType of
             TCInt    -> eval $ v $ v i
@@ -119,6 +121,7 @@ jsonParser TopcoderValue{tcValueName, tcValueType, tcValueDimension} =
             TCDouble -> eval $ v $ v d
             TCString -> eval $ v $ v s
             TCBool   -> eval $ v $ v b
+            TypeName tn -> fail $ "Unsupported type " <> T.unpack tn
 
         3 -> case tcValueType of
             TCInt    -> eval $ v $ v $ v i
@@ -126,6 +129,7 @@ jsonParser TopcoderValue{tcValueName, tcValueType, tcValueDimension} =
             TCDouble -> eval $ v $ v $ v d
             TCString -> eval $ v $ v $ v s
             TCBool   -> eval $ v $ v $ v b
+            TypeName tn -> fail $ "Unsupported type " <> T.unpack tn
 
         _ -> fail $ T.unpack tcValueName <> ": dimension is too high"
   where

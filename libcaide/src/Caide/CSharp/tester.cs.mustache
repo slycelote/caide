@@ -5,6 +5,7 @@ namespace CaideTester
 {
 using System;
 using System.IO;
+using System.Collections.Generic;
 
 partial class TestRunner
 {
@@ -56,6 +57,7 @@ namespace CaideTester
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 
 {{#solutionClass}}
 {{#methods}}
@@ -78,7 +80,7 @@ class Method_{{method.name}}
     public void writeInputs(TextWriter output)
     {
 {{#parameters}}
-    {{>serializer}}.Serialize(output, i_{{name}});
+        {{>serializer}}.Serialize(output, i_{{name}});
 {{/parameters}}
     }
 
@@ -90,7 +92,7 @@ class Method_{{method.name}}
 
     public void writeOutput(TextWriter output)
     {
-    {{>serializer}}.Serialize(output, o_{{name}});
+        {{>serializer}}.Serialize(output, o_{{name}});
     }
 {{/method}}
 

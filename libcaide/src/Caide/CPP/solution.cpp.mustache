@@ -18,7 +18,7 @@ public:
     {{#methods}}
     {{#method}}{{>cpptype}} {{identifier.cpp}}({{/method}}{{#
     parameters}}{{>cpptype}} {{identifier.cpp}}{{^islast}}, {{/islast}}{{/parameters}}) {
-        {{#method}}{{>cpptype}} result{{#dimension_is_0}}{{^type_is_string}} = 0{{/type_is_string}}{{/dimension_is_0}};{{/method}}
+        {{#method}}{{>cpptype}} result{{#dimension_is_0}}{{^type_is_string}} = ({{>cpptype}})0{{/type_is_string}}{{/dimension_is_0}};{{/method}}
         return result;
     }
     {{/methods}}
