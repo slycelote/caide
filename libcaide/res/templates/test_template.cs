@@ -76,7 +76,7 @@ partial class TestRunner
                     Process p = Run(caideExe, "convert_test_input", origInputFile, inputFile);
                     if (p.ExitCode != 0) {
                         Console.Error.WriteLine("Test converter for test " + testName + " failed");
-                        report.WriteLine(testName + " error");
+                        report.WriteLine(testName + " error Test input converter failed");
                         continue;
                     }
                 }
@@ -94,7 +94,7 @@ partial class TestRunner
                 catch (Exception e)
                 {
                     Console.Error.WriteLine("Test " + testName + " threw an exception: " + e);
-                    report.WriteLine(testName + getDuration() + " failed");
+                    report.WriteLine(testName + getDuration() + " failed " + e.Message);
                     continue;
                 }
 
@@ -131,7 +131,7 @@ partial class TestRunner
                     catch (Exception e)
                     {
                         Console.Error.WriteLine("Checker for test " + testName + " threw an exception: " + e.Message);
-                        report.WriteLine(testName + getDuration() + " error");
+                        report.WriteLine(testName + getDuration() + " error Custom checker threw an exception: " + e.Message);
                     }
                 }
                 else

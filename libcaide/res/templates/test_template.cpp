@@ -101,7 +101,7 @@ int main() {
             ret = runCommand(false, caideExe, "convert_test_input", origInputFile, inputFile);
             if (ret != 0) {
                 cerr << "Test converter for test " << testName << " failed" << endl;
-                report << testName << " error" << endl;
+                report << testName << " error Test input converter failed" << endl;
                 continue;
             }
 #else
@@ -115,7 +115,7 @@ int main() {
                 solve(in, out);
             } catch (const exception& e) {
                 cerr << "Test " << testName << " threw an exception: " << e.what() << endl;
-                report << testName << stopwatch.GetDuration() << " failed" << endl;
+                report << testName << stopwatch.GetDuration() << " failed " << e.what() << endl;
                 continue;
             } catch (...) {
                 cerr << "Test " << testName << " threw an exception" << endl;
@@ -148,9 +148,13 @@ int main() {
                         cerr << "FAILED: " << message << endl;
                         report << testName << duration << " failed " << message << endl;
                     }
+                } catch (const exception& e) {
+                    cerr << "Checker for test " << testName << " threw an exception: " << e.what() << endl;
+                    report << testName << duration << " error Custom checker failed: " << e.what() << endl;
+                    continue;
                 } catch (...) {
                     cerr << "Checker for test " << testName << " threw an exception" << endl;
-                    report << testName << duration << " error" << endl;
+                    report << testName << duration << " error Custom checker failed" << endl;
                     continue;
                 }
             } else {
