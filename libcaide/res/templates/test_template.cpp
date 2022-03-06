@@ -25,16 +25,20 @@ static bool fileExists(const string& path) {
 
 static int runCommand(bool throwOnFailure, const vector<string>& cmdLine) {
     ostringstream os;
+
 #ifdef _WIN32
-    string quotes = "\"\"";
-#else
-    string quotes = "\"";
+    // std::system runs command as 'cmd /C'; see cmd.exe /? for details on quotes.
+    os << "\"";
 #endif
     for (size_t i = 0; i < cmdLine.size(); ++i) {
         if (i > 0)
             os << ' ';
-        os << quotes << cmdLine[i] << quotes;
+        os << "\"" << cmdLine[i] << "\"";
     }
+
+#ifdef _WIN32
+    os << "\"";
+#endif
 
     int res = system(os.str().c_str());
     if (throwOnFailure) {
