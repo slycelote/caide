@@ -18,24 +18,32 @@ cd ..
 
 "$CAIDE" problem prob2 --lang simplecpp --type topcoder,ClassName,methodName:long,i:int,d:double,s:String,vi:vint,vs:vString
 cd prob2
-cxx prob*.cpp -o prob2.exe
-./prob2.exe
+cxx prob*.cpp -o prob.exe
+./prob.exe
 "$CAIDE" make
 cxx -c submission.cpp
 cd ..
 
 "$CAIDE" problem prob3 --lang cpp --type leetcode,methodName:long,i:int,d:double,s:String,b:bool,vi:vint,vs:vvString
 cd prob3
-cxx prob*.cpp -o prob3.exe
-./prob3.exe
+cxx prob*.cpp -o prob.exe
+./prob.exe
 "$CAIDE" make
 cxx -c submission.cpp
 cd ..
 
 "$CAIDE" problem prob4 --lang cpp --type leetcode,methodName:ListNode,l1:ListNode
 cd prob4
-cxx prob*.cpp -o prob4.exe
-./prob4.exe
+cxx prob*.cpp -o prob.exe
+./prob.exe
+"$CAIDE" make
+cxx -c submission.cpp -include predefined/leetcode_predefined.h
+cd ..
+
+"$CAIDE" problem prob5 --lang cpp --type 'leetcode;ClassName,i:int,d:double;method1:String,b:bool,method2:void,vvi:vvint,vs:vString,method3:long'
+cd prob5
+cxx prob*.cpp -o prob.exe
+./prob.exe
 "$CAIDE" make
 cxx -c submission.cpp -include predefined/leetcode_predefined.h
 cd ..

@@ -97,6 +97,7 @@ evalTests = do
                 Topcoder descr -> Json $ TC.jsonParser (tcMethod . tcSingleMethod $ descr)
                 Stream _ _     -> PlainText
                 LeetCodeMethod _ -> Json Aeson.json
+                LeetCodeClass _ _ _ -> Json Aeson.json
             }
 
     beVerbose <- verboseTestReport <$> caideSettings

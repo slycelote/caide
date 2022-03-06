@@ -5,7 +5,6 @@ module Caide.Parsers.LeetCode(
 
 import Prelude hiding (lines)
 import Control.Applicative ((<|>))
-import Control.Monad.Except (throwError)
 import qualified Data.ByteString.Char8 as BS8
 import qualified Data.ByteString.Lazy.Char8 as LBS8
 import Data.Bifunctor (bimap)
@@ -22,6 +21,7 @@ import Data.Text.Encoding.Util (safeDecodeUtf8)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
+import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Map as Map
 
 import qualified Data.Aeson as Aeson
@@ -101,7 +101,7 @@ data MethodMetaData = MethodMetaData
                 } deriving (Show, Generic)
 
 instance FromJSON MethodMetaData where
-    parseJSON = Aeson.withEmbeddedJSON "metadata string" $ \mdJson -> flip (Aeson.withObject "metadata json") mdJson $ \md -> do
+    parseJSON = Aeson.withObject "metadata" $ \md -> do
         returnVal <- md .: "return"
         flip (Aeson.withObject "return") returnVal $ \ret -> do
             returnDesc <- Param <$> (md .: "name") <*> (ret .: "type")
@@ -132,7 +132,10 @@ data MetaData = CM ClassMetaData
               deriving (Show, Generic)
 
 instance FromJSON MetaData where
-    parseJSON = Aeson.genericParseJSON (Aeson.defaultOptions{Aeson.sumEncoding = Aeson.UntaggedValue})
+    parseJSON = Aeson.withEmbeddedJSON "metadata string" $ \mdJson -> flip (Aeson.withObject "metadata json") mdJson $ \o ->
+        if HashMap.member "classname" o
+            then CM <$> Aeson.parseJSON (Aeson.Object o)
+            else MM <$> Aeson.parseJSON (Aeson.Object o)
 
 
 data Question = Question
@@ -178,6 +181,7 @@ typeParser =
             <|> try (string "string" $> TCString)
             <|> try (string "double" $> TCDouble)
             <|> try (string "boolean" $> TCBool)
+            <|> try (string "void" $> TCVoid)
             -- identifier must always be last
             <|> TypeName <$> identifierParser
 
@@ -203,22 +207,35 @@ parseValue Param{name, type_} = do
     (typ, dim) <- mapLeft tshow $ Parsec.parse typeParser (T.unpack name) type_
     return TopcoderValue{tcValueName = name, tcValueType = typ, tcValueDimension = dim}
 
+parseConstructor :: Maybe ConstructorMetaData -> Either Text [TopcoderValue]
+parseConstructor Nothing = pure []
+parseConstructor (Just ConstructorMetaData{ctorParams}) = mapM parseValue ctorParams
+
 parseMethod :: MethodMetaData -> Either Text TopcoderMethod
 parseMethod MethodMetaData{params, desc} = TopcoderMethod <$> parseValue desc <*> mapM parseValue params
+
+parseClass :: ClassMetaData -> Either Text ProblemType
+parseClass ClassMetaData{classname, constructor, methods} =
+    LeetCodeClass <$> pure classname <*> parseConstructor constructor <*> mapM parseMethod methods
 
 parseFromGraphQL :: ProblemID -> LBS8.ByteString -> Either Text (Problem, [TestCase])
 parseFromGraphQL probId responseBody = do
     question <- mapLeft T.pack $ Aeson.eitherDecode responseBody
-    solutionMethod <- case (metaData question) of
-        CM _ -> throwError "Interactive problems are not yet supported"
-        MM method -> parseMethod method
+    probType <- case metaData question of
+        CM clazz  -> parseClass clazz
+        MM method -> LeetCodeMethod <$> parseMethod method
 
     let probName = fromMaybe probId $ translatedTitle question <|> title question
-        probType = LeetCodeMethod solutionMethod
+        snippets = codeSnippets question & map (\q -> (langSlug q, code q)) & Map.fromList
         problem = (makeProblem probName (fromMaybe probId (titleSlug question)) probType)
             { problemCodeSnippets = snippets}
-        snippets = codeSnippets question & map (\q -> (langSlug q, code q)) & Map.fromList
-        paramsPerTest = length $ tcParameters solutionMethod
+
+        paramsPerTest = case probType of
+            LeetCodeMethod singleMethod -> length $ tcParameters singleMethod
+            LeetCodeClass _ _ _ -> 2 -- list of method names, and list of lists of arguments
+            Topcoder _ -> error "Impossible happened"
+            Stream _ _ -> error "Impossible happened"
+
         testParsings = [ fromContent (content question)
                        , fromExamples (exampleTestcases question) paramsPerTest
                        , fromSample (sampleTestCase question)
@@ -257,7 +274,7 @@ parseInput t = let
     paramParser = (skipSpace >>
                    option () (identParser >> skipSpace >> char '=' >> skipSpace) >>
                    Aeson.json) <?> "parameter"
-    parser = paramParser `sepBy` (skipSpace >> char ',' >> skipSpace)
+    parser = paramParser `sepBy` (skipSpace >> option () (char ',' >> skipSpace))
     result = parseOnly parser (T.encodeUtf8 t)
 
     valuesToText :: [Aeson.Value] -> Text

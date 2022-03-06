@@ -7,7 +7,6 @@ module Caide.Commands.ConvertTestCase(
 
 import qualified Control.Exception.Extended as Exc
 import Control.Monad (void, when)
-import Control.Monad.Fail (fail)
 import Control.Monad.IO.Class (liftIO)
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -61,19 +60,17 @@ convertTestCase inputType inputFile outputFile mbProbId = do
                 Input -> readAndConvertTopcoderParameters (tcParameters tcSingleMethod) inputFile True
                 Output -> readAndConvertTopcoderParameters [tcMethod tcSingleMethod] inputFile False
             liftIO $ writeTextFile outputFile res
-        LeetCodeMethod _ -> do
-            res <- convertJson inputFile
-            liftIO $ writeTextFile outputFile res
+        LeetCodeMethod _ -> convertJson inputFile outputFile
+        LeetCodeClass _ _ _ -> convertJson inputFile outputFile
 
-
-convertJson :: FS.FilePath -> CaideIO Text
-convertJson inputFile = do
+convertJson :: FS.FilePath -> FS.FilePath -> CaideIO ()
+convertJson inputFile outputFile = do
     text <- liftIO $ readTextFile inputFile
     case text of
         Left err -> throw err
         Right r ->
             let res = convertJsonValues r
-            in either throw (return . T.unlines) res
+            in either throw (liftIO . writeTextFile outputFile . T.unlines) res
 
 convertJsonValues :: Text -> Either Text [Text]
 convertJsonValues text = do

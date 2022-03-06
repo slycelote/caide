@@ -54,6 +54,9 @@ inlineCPPCode probID = do
             LeetCodeMethod _ -> (solutionPath:libraryCPPFiles,
                                  ["-isystem", pathToText (probDir </> CPPSimple.predefinedHeadersDir),
                                   "-include", "leetcode_predefined.h"])
+            LeetCodeClass _ _ _ -> (solutionPath:libraryCPPFiles,
+                                    ["-isystem", pathToText (probDir </> CPPSimple.predefinedHeadersDir),
+                                     "-include", "leetcode_predefined.h"])
         identifiersToPreserve = getIdentifiersToPreserve (problemType problem)
         outputPath = probDir </> "submission.cpp"
 
@@ -76,6 +79,10 @@ getIdentifiersToPreserve (LeetCodeMethod method) =
     [ defaultLeetCodeClassName <> "::" <> defaultLeetCodeClassName -- constructor
     , defaultLeetCodeClassName <> "::" <> tcValueName (tcMethod method) -- main method
     ]
+
+getIdentifiersToPreserve (LeetCodeClass className _ methods) =
+    (className <> "::" <> className) -- constructor
+    : [className <> "::" <> tcValueName (tcMethod method) | method <- methods]
 
 listDirectoryRecursively :: FilePath -> IO [FilePath]
 listDirectoryRecursively dir = do

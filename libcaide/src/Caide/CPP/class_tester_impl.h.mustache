@@ -1,4 +1,5 @@
 #include "class_tester.h"
+#include <sstream>
 #include <stdexcept>
 
 {{#solutionClass}}
@@ -39,17 +40,26 @@ Test_{{className}}::~Test_{{className}}() {
 
 }
 
-{{#isMultiMethodInput}}
+{{#isMultiMethod}}
 void solve(std::istream& in, std::ostream& out) {
     caide_tester::Test_{{className}} tester;
     out << '[';
-    bool first = true;
-    std::string methodName;
-    while (in >> methodName) {
-        if (!first) {
+    std::vector<std::string> methodNames;
+    caide_tester::readPlain(in, methodNames);
+    int count;
+    caide_tester::readPlain(in, count);
+    if (count != (int)methodNames.size()) {
+        std::ostringstream os;
+        os << "Invalid test case: expected " << methodNames.size() << " inputs, got " << count;
+        throw std::runtime_error(os.str().c_str());
+    }
+
+    for (int i = 0; i < count; ++i) {
+        const std::string& methodName = methodNames[i];
+        if (i > 0)
             out << ", ";
-            first = false;
-        }
+        int argCount;
+        caide_tester::readPlain(in, argCount);
 {{#constructor}}
         if (methodName == "{{className}}") {
             caide_tester::Method_{{className}}& m = tester.method_{{className}};
@@ -73,8 +83,8 @@ void solve(std::istream& in, std::ostream& out) {
 
     out << ']';
 }
-{{/isMultiMethodInput}}
-{{^isMultiMethodInput}}
+{{/isMultiMethod}}
+{{^isMultiMethod}}
 void solve(std::istream& in, std::ostream& out) {
     caide_tester::Test_{{className}} tester;
 {{#methods}}{{! Must be a single method }}
@@ -84,5 +94,5 @@ void solve(std::istream& in, std::ostream& out) {
     m.writeOutput(out);
 {{/methods}}
 }
-{{/isMultiMethodInput}}
+{{/isMultiMethod}}
 {{/solutionClass}}

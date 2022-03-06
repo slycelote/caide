@@ -166,6 +166,12 @@ problemParserTests = TestList
             , mkTestCase "[0]\n[0]" "[0]"
             , mkTestCase "[9,9,9,9,9,9,9]\n[9,9,9,9]" "[8,9,9,9,0,0,0,1]"
             ]
+        , lc "https://leetcode.com/problems/lru-cache"
+            (makeProblem "LRU Cache" "lru-cache")
+            { problemType = mkProblemType "leetcode;LRUCache,capacity:int;get:int,key:int;put:void,key:int,value:int" }
+            [ mkTestCase "[\"LRUCache\",\"put\",\"put\",\"get\",\"put\",\"get\",\"put\",\"get\",\"get\",\"get\"]\n[[2],[1,1],[2,2],[1],[3,3],[2],[4,4],[1],[3],[4]]"
+                         "[null, null, null, 1, null, -1, null, -1, 3, 4]"
+            ]
         ]
     ]
   where

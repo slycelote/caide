@@ -66,3 +66,12 @@ echo "$leetcode_structures" >LeetCodeStructures.cs
 "$CSC" -target:library submission.cs LeetCodeStructures.cs
 cd ..
 
+
+"$CAIDE" problem prob5 --lang csharp --type 'leetcode;ClassName,i:int,d:double;method1:String,b:bool,method2:void,vvi:vvint,vs:vString,method3:long'
+cd prob5
+"$CSC" -out:prob.exe prob*.cs
+run_csharp_executable ./prob.exe
+"$CAIDE" make
+"$CSC" -target:library submission.cs
+cd ..
+

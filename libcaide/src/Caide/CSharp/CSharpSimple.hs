@@ -67,13 +67,14 @@ generateSolutionAndMain problem@Problem{problemType=Stream _ _} state = do
 
     copyTemplateUnlessExists "solution_template.cs" solutionPath
 
-
 generateSolutionAndMain problem@Problem{problemType=Topcoder _} state =
     generateSolutionAndMainForTopcoder problem state
 
 generateSolutionAndMain problem@Problem{problemType=LeetCodeMethod _} state =
     generateSolutionAndMainForTopcoder problem state
 
+generateSolutionAndMain problem@Problem{problemType=LeetCodeClass _ _ _} state =
+    generateSolutionAndMainForTopcoder problem state
 
 generateSolutionAndMainForTopcoder :: Problem -> ProblemState -> CaideIO ()
 generateSolutionAndMainForTopcoder problem state = do
@@ -92,9 +93,10 @@ renderTemplate primaryTemplateName problem state = do
     let json = jsonEncodeProblem problem state
     case compileAndRender allTemplates [primaryTemplateName] json of
         Left err -> throw err
-        Right (warnings, res) -> do
+        Right (warnings, [res]) -> do
             whenJust warnings logDebug
-            return $ head res
+            return res
+        _ -> error "Impossible happened"
 
 allTemplates :: NonEmpty.NonEmpty (Text, Text)
 allTemplates = NonEmpty.fromList
@@ -104,7 +106,6 @@ allTemplates = NonEmpty.fromList
              , ("cstype", $(embedStringFile "src/Caide/CSharp/cstype.mustache"))
              , ("serializer", $(embedStringFile "src/Caide/CSharp/serializer.mustache"))
              ]
-
 
 inlineCSharpCode :: ProblemID -> CaideIO ()
 inlineCSharpCode probID = do
@@ -122,7 +123,7 @@ inlineCSharpCode probID = do
             liftIO $ appendTextFile inlinedCodePath mainCode
         Topcoder _ -> return ()
         LeetCodeMethod _ -> return ()
-        -- LeetCodeClass _ _ _ -> return ()
+        LeetCodeClass _ _ _ -> return ()
 
     liftIO $ FS.copyFile inlinedCodePath $ root </> "submission.cs"
 

@@ -14,7 +14,7 @@ partial class TestRunner
     {
     {{#solutionClass}}
         Test_{{className}} sample = new Test_{{className}}(), userOutput = new Test_{{className}}();
-    {{#isMultiMethodInput}}
+    {{#isMultiMethod}}
         while (true) {
             string methodName = inputStream.ReadLine();
     {{#constructor}}
@@ -35,15 +35,15 @@ partial class TestRunner
                 throw new Exception(methodName + ": unknown method");
             }
         }
-    {{/isMultiMethodInput}}
+    {{/isMultiMethod}}
 
-    {{^isMultiMethodInput}}
+    {{^isMultiMethod}}
     {{#methods}} {{! Must be a single method. }}
         sample.method_{{method.name}}.readInputs(inputStream);
         sample.method_{{method.name}}.readOutput(judgeOutputStream);
         userOutput.method_{{method.name}}.readOutput(userOutputStream);
     {{/methods}}
-    {{/isMultiMethodInput}}
+    {{/isMultiMethod}}
     {{/solutionClass}}
 
         return null;
@@ -134,12 +134,12 @@ class Method_{{className}}
 
     public void readOutput(TextReader input)
     {
-        o_{{className}} = new NullSerializer().Deserialize(input);
+        o_{{className}} = new voidSerializer().Deserialize(input);
     }
 
     public void writeOutput(TextWriter output)
     {
-        new NullSerializer().Serialize(output, o_{{className}});
+        new voidSerializer().Serialize(output, o_{{className}});
     }
 
     public void call(ref {{className}} solution)
@@ -184,19 +184,24 @@ partial class TestRunner
 {{#solutionClass}}
         CaideTester.Test_{{className}} tester = new CaideTester.Test_{{className}}();
 
-{{#isMultiMethodInput}}
-        output.Write('{');
-        bool first = true;
-        while (true)
+{{#isMultiMethod}}
+        output.Write('[');
+        var methodNames = new ArraySerializer<string>(new stringSerializer()).Deserialize(input);
+        int count = new intSerializer().Deserialize(input);
+        if (count != methodNames.Length)
         {
-            string methodName = input.ReadLine();
-            if (methodName == null)
-                break;
-            if (!first)
+            throw new Exception("Invalid test case: expected " + methodNames.Length + "inputs, got " + count);
+        }
+
+        for (int i = 0; i < count; ++i)
+        {
+            var methodName = methodNames[i];
+            if (i > 0)
             {
                 output.Write(", ");
-                first = false;
             }
+
+            new intSerializer().Deserialize(input); // Read number of arguments
 {{#constructor}}
             if (methodName == "{{className}}")
             {
@@ -220,16 +225,16 @@ partial class TestRunner
             }
         }
 
-        output.Write('}');
-{{/isMultiMethodInput}}
-{{^isMultiMethodInput}}
+        output.Write(']');
+{{/isMultiMethod}}
+{{^isMultiMethod}}
 {{#methods}}{{! Must be a single method }}
         CaideTester.Method_{{method.name}} m = tester.method_{{method.name}};
         m.readInputs(input);
         m.call(ref tester.solution);
         m.writeOutput(output);
 {{/methods}}
-{{/isMultiMethodInput}}
+{{/isMultiMethod}}
 {{/solutionClass}}
     }
 }

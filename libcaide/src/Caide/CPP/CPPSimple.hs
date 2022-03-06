@@ -79,7 +79,15 @@ generateSolutionAndMain problem@Problem{problemType=Stream _ _} state = do
 generateSolutionAndMain problem@Problem{problemType=Topcoder _} state =
     generateSolutionAndMainForTopcoder problem state
 
-generateSolutionAndMain problem@Problem{problemType=LeetCodeMethod _} state = do
+generateSolutionAndMain problem@Problem{problemType=LeetCodeMethod _} state =
+    generateSolutionAndMainForLeetCode problem state
+
+generateSolutionAndMain problem@Problem{problemType=LeetCodeClass _ _ _} state =
+    generateSolutionAndMainForLeetCode problem state
+
+
+generateSolutionAndMainForLeetCode :: Problem -> ProblemState -> CaideIO ()
+generateSolutionAndMainForLeetCode problem state = do
     generateSolutionAndMainForTopcoder problem state
 
     (_, probDir) <- probIdAndDir problem
@@ -128,6 +136,7 @@ generateTesterCode problem state = do
                 Stream _ _ -> []
                 Topcoder _ -> ["class_tester.h", "class_tester_impl.h"]
                 LeetCodeMethod _ -> ["class_tester.h", "class_tester_impl.h"]
+                LeetCodeClass _ _ _ -> ["class_tester.h", "class_tester_impl.h"]
 
     rendered <- renderTemplates testerTemplates problem state
     let ((_, testerCode):rest) = rendered
@@ -168,7 +177,7 @@ inlineCPPCode probID = do
             liftIO $ appendTextFile inlinedCodePath mainCode
         Topcoder _ -> return ()
         LeetCodeMethod _ -> return ()
-        -- LeetCodeClass _ _ _ -> return ()
+        LeetCodeClass _ _ _ -> return ()
 
     liftIO $ FS.copyFile inlinedCodePath $ root </> "submission.cpp"
 
