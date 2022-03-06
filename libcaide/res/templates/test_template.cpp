@@ -186,5 +186,14 @@ int main() {
     }
 
     ret = runCommand(false, caideExe, "eval_tests");
+    if (ret % 256 == 0) {
+        // Return value of std::system is implementation-defined, but is often
+        // the return value of the command multiplied by 256.
+        // Bash, on the other hand, truncates exit code modulo 256 which can
+        // lead to confusion.
+        ret /= 256;
+    }
+
     return ret;
 }
+

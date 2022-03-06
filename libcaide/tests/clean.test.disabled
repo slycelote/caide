@@ -18,6 +18,6 @@ cd prob/.caideproblem/test
 
 cd ../../..
 
-#rm -rf .caide
-#"$CAIDE" checkout prob
+rm -rf .caide
+"$CAIDE" checkout prob
 
