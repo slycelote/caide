@@ -24,7 +24,7 @@ chelperId :: T.Text
 chelperId = "codeforces"
 
 isSupportedUrl :: URL -> Bool
-isSupportedUrl = isHostOneOf ["codeforces.com", "www.codeforces.com", "codeforces.ru", "www.codeforces.ru"]
+isSupportedUrl = isHostOneOf ["codeforces.com", "www.codeforces.com", "codeforces.ru", "www.codeforces.ru", "codeforces.ml", "www.codeforces.ml"]
 
 htmlParser :: T.Text -> IO (Either T.Text (Problem, [TestCase]))
 htmlParser cont = pure $

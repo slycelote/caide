@@ -25,7 +25,7 @@ codeforcesContestParser = ContestParser
     }
 
 isCodeForcesUrl :: URL -> Bool
-isCodeForcesUrl = isHostOneOf ["codeforces.com", "www.codeforces.com", "codeforces.ru", "www.codeforces.ru"]
+isCodeForcesUrl = isHostOneOf ["codeforces.com", "www.codeforces.com", "codeforces.ru", "www.codeforces.ru", "codeforces.ml", "www.codeforces.ml"]
 
 doParseContest :: URL -> CaideIO ()
 doParseContest url = do
