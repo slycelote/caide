@@ -95,10 +95,10 @@ partial class TestRunner
             else if (testState == "Run")
             {
                 Console.Error.WriteLine("Running test " + testName);
-                string origInputFile = Path.Combine(testDir, testName + ".in");
+                string origInputFile = Path.Combine(testDir, "..", "..", testName + ".in");
                 string inputFile = origInputFile;
                 if (IsTopcoder || IsLeetCode) {
-                    inputFile = Path.Combine(testDir, "..", "..", testName + ".in");
+                    inputFile = Path.Combine(testDir, testName + ".plain.in");
                     Process p = Run(caideExe, "convert_test_input", origInputFile, inputFile);
                     if (p.ExitCode != 0) {
                         Console.Error.WriteLine("Test converter for test " + testName + " failed");
