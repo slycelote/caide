@@ -212,7 +212,7 @@ namespace slycelote.VsCaide
             ThreadHelper.ThrowIfNotOnUIThread();
             if (e.IsRemoved && !SolutionUtilities.IgnoreSolutionEvents)
             {
-                GetMainWindowControl()?.OnBeforeCloseProject(
+                GetMainWindowControl()?.OnBeforeDeleteProject(
                     VsImplementation.Services.GetProjectFromHierarchy(e.Hierarchy));
             }
         });

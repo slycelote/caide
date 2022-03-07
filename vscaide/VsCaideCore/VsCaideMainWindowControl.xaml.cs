@@ -549,10 +549,20 @@ namespace slycelote.VsCaide.Core
             // UI update will be done in fsWatcher callback.
         }
 
-        public void OnBeforeCloseProject(IProject project)
+        public void OnBeforeDeleteProject(IProject project)
         {
             services.ThrowIfNotOnUIThread();
             LogMethod();
+            if (IsCaideProblem(project.Name))
+            {
+                // Try to mitigate a mysterious error 'Unsatisified (sic!) constraints: folder not empty'.
+                Thread.Sleep(TimeSpan.FromSeconds(0.5));
+                CaideExe.Run("archive", project.Name);
+                string projectDirectory = Path.Combine(SolutionUtilities.GetSolutionDir(), project.Name);
+                if (Directory.Exists(projectDirectory))
+                    Directory.Delete(projectDirectory, recursive: true);
+                SolutionUtilities.SaveSolution();
+            }
         }
 
         /************************
