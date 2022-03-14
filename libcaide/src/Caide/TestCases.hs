@@ -5,8 +5,7 @@ module Caide.TestCases(
 ) where
 
 import Prelude hiding (FilePath)
-import Control.Monad (forM_)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Extended (MonadIO, liftIO, forM_)
 import Data.List (sort, sortOn)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
@@ -15,7 +14,7 @@ import System.Environment (getExecutablePath)
 
 import Filesystem.Path.CurrentOS (FilePath, (</>), basename, hasExtension)
 import qualified Filesystem as FS
-import Filesystem.Util (copyFileToDir, pathToText)
+import Filesystem.Util (copyFileToDir, listDir, pathToText, )
 
 import qualified Caide.Paths as Paths
 import Caide.TestCases.Types (TestList, TestState(..), TestRunResult(testRunStatus),
@@ -28,12 +27,12 @@ updateTests problemDir = liftIO $ do
     FS.createTree tempTestDir
 
     -- Cleanup output from previous test run
-    filesToClear <- filter (`hasExtension` "out") <$> FS.listDirectory tempTestDir
+    filesToClear <- (filter (`hasExtension` "out") . fst) <$> listDir tempTestDir
     forM_ filesToClear FS.removeFile
 
     -- Copy input files.
     -- TODO: don't.
-    fileList <- FS.listDirectory problemDir
+    fileList <- fst <$> listDir problemDir
     let testInputs = filter (`hasExtension` "in") fileList
     forM_ testInputs $ \inFile -> copyFileToDir inFile tempTestDir
 
@@ -50,11 +49,10 @@ updateTests problemDir = liftIO $ do
 --    * makes sure previously failed tests (if any) come first
 updateTestList :: FilePath -> IO TestList
 updateTestList problemDir = do
-    let testDir = problemDir </> Paths.testsDir
-        previousRunFile = testDir </> Paths.testReportFile
+    let previousRunFile = problemDir </> Paths.testReportFile
     report <- readTestReport previousRunFile
     let testNameToStatus = Map.fromList [(name, testRunStatus res) | (name, res) <- report]
-    allFiles <- sort <$> FS.listDirectory problemDir
+    allFiles <- (sort . fst) <$> listDir problemDir
     let allTests    = map (pathToText . basename) . filter (`hasExtension` "in") $ allFiles
         testsToSkip = map (pathToText . basename) . filter (`hasExtension` "skip") $ allFiles
         testState testName = if testName `elem` testsToSkip then Skip else Run
@@ -63,6 +61,6 @@ updateTestList problemDir = do
             Just False -> (False, testName)
             _          -> (True,  testName)
         sortedTests = sortOn succeededAndName testList
-    writeTests sortedTests $ testDir </> Paths.testListFile
+    writeTests sortedTests $ problemDir </> Paths.testListFile
     return sortedTests
 

@@ -4,8 +4,7 @@ module Caide.Commands.RunTests(
     , evalTests
 ) where
 
-import Control.Monad (forM, unless)
-import Control.Monad.State (liftIO)
+import Control.Monad.Extended (liftIO, forM, unless)
 import Data.Either (isRight)
 import Data.Int (Int64)
 import Data.List (sortBy)
@@ -18,7 +17,7 @@ import Data.Word (Word64)
 
 import Prelude hiding (FilePath)
 import Filesystem (isFile, readTextFile, writeTextFile)
-import Filesystem.Path (FilePath, (</>), basename, filename, hasExtension, replaceExtension)
+import Filesystem.Path.CurrentOS (FilePath, (</>), basename, filename, hasExtension)
 import Filesystem.Util (listDir, pathToText)
 
 import qualified Data.Aeson as Aeson
@@ -89,8 +88,7 @@ evalTests = do
     root <- caideRoot
     problem <- readProblemInfo probId
     let problemDir = Paths.problemDir root probId
-        testsDir = problemDir </> Paths.testsDir
-        reportFile = testsDir </> Paths.testReportFile
+        reportFile = problemDir </> Paths.testReportFile
         cmpOptions = ComparisonOptions
             { doublePrecision = problemFloatTolerance problem
             , testFormat = case problemType problem of
@@ -116,14 +114,13 @@ evalTests = do
 
 generateReport :: ComparisonOptions -> FilePath -> IO TestReport
 generateReport cmpOptions problemDir = do
-    let testDir = problemDir </> Paths.testsDir
     testList <- (map filename . filter (`hasExtension` "in") . fst) <$> listDir problemDir
-    report   <- readTestReport $ testDir </> Paths.testReportFile
+    report   <- readTestReport $ problemDir </> Paths.testReportFile
     let testNames = map (pathToText . basename) testList
     results <- forM testList $ \testFile -> do
         let testName = pathToText $ basename testFile
-            outFile = problemDir </> Paths.testsDir </> replaceExtension testFile "out"
-            etalonFile = problemDir </> replaceExtension testFile "out"
+            outFile = problemDir </> Paths.userTestOutput testName
+            etalonFile = problemDir </> Paths.etalonTestOutput testName
         case lookup testName report of
             Nothing -> return $ makeTestRunResult $ Error "Test was not run"
             Just res@TestRunResult{testRunStatus = Ran} -> do

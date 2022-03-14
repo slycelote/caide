@@ -6,45 +6,39 @@ module Caide.Commands.Make(
 
 import Control.Monad.IO.Class (liftIO)
 
-import qualified Data.Text as T
-
 import Prelude hiding (FilePath)
 import Filesystem (isDirectory, )
-import Filesystem.Path.CurrentOS (FilePath, fromText, (</>))
+import Filesystem.Path.CurrentOS (FilePath, )
 
 import Caide.Configuration (getActiveProblem)
 import qualified Caide.Problem as Problem
+import qualified Caide.Paths as Paths
 import Caide.Registry (findLanguage)
 import Caide.Types
 import qualified Caide.TestCases as TestCases
 
 
-
-withProblem :: Maybe ProblemID -> (ProblemID -> FilePath -> CaideM IO a) -> CaideM IO a
+withProblem :: Maybe ProblemID -> (ProblemID -> FilePath -> CaideIO a) -> CaideIO a
 withProblem mbProbId processProblem = do
     probId <- case mbProbId of
         Just probId' -> return probId'
         Nothing -> getActiveProblem
     root <- caideRoot
-    let problemDir = root </> fromText probId
-    problemExists <- liftIO $ isDirectory problemDir
+    let probDir = Paths.problemDir root probId
+    problemExists <- liftIO $ isDirectory probDir
     if problemExists
-    then processProblem probId problemDir
-    else throw . T.concat $ ["Problem ", probId, " doesn't exist"]
+    then processProblem probId probDir
+    else throw $ "Problem " <> probId <> " doesn't exist"
 
 make :: Maybe ProblemID -> CaideIO ()
-make p = withProblem p $ \probId _ -> do
-    updateTests $ Just probId
-    prepareSubmission probId
-
-updateTests :: Maybe ProblemID -> CaideIO ()
-updateTests mbProbId = withProblem mbProbId $ \_ problemDir -> TestCases.updateTests problemDir
-
-prepareSubmission :: ProblemID -> CaideIO ()
-prepareSubmission probId = do
+make p = withProblem p $ \probId probDir -> do
+    TestCases.updateTests probDir
     problem <- Problem.readProblemState probId
     let lang = Problem.currentLanguage problem
     case findLanguage lang of
         Nothing            -> throw $ "Unsupported programming language " <> lang
         Just (_, language) -> inlineCode language probId
+
+updateTests :: Maybe ProblemID -> CaideIO ()
+updateTests mbProbId = withProblem mbProbId $ \_probId problemDir -> TestCases.updateTests problemDir
 

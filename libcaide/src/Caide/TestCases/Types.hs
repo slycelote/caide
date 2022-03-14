@@ -35,7 +35,7 @@ import qualified Text.Parsec as Parsec
 import Text.Read (readMaybe)
 
 import Data.Time.Clock (DiffTime, diffTimeToPicoseconds, picosecondsToDiffTime)
-import Filesystem.Path (FilePath)
+import Filesystem.Path.CurrentOS (FilePath)
 import Filesystem (isFile, readTextFile, writeTextFile)
 import Caide.Util (tshow)
 

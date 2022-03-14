@@ -22,9 +22,9 @@ import qualified Data.Aeson as Aeson
 import qualified Data.Map.Strict as Map
 
 import Filesystem (createDirectory, createTree, writeTextFile, isDirectory)
-import Filesystem.Path.CurrentOS (fromText, decodeString, (</>))
+import qualified Filesystem.Path.CurrentOS as FS
+import Filesystem.Path.CurrentOS (decodeString, (</>))
 import Filesystem.Util (pathToText)
-import qualified Filesystem.Path.CurrentOS as F
 
 import Caide.Types
 import Caide.Configuration (setActiveProblem, getProblemConfigFile,
@@ -33,9 +33,10 @@ import Caide.Configuration (setActiveProblem, getProblemConfigFile,
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
 import Caide.Parsers.Common (URL, ProblemParser(parseProblem), CHelperProblemParser(chelperParse))
+import qualified Caide.Paths as Paths
 import Caide.Registry (findCHelperProblemParserByURL, findProblemParser)
 import Caide.Settings (defaultLanguage)
-import Caide.Util (mapWithLimitedThreads, readTextFile', withLock)
+import Caide.Util (mapWithLimitedThreads, readTextFile', tshow, withLock)
 
 
 
@@ -44,7 +45,7 @@ createProblem url problemTypeStr maybeLangStr maybeFilePathStr maybeOverrideId =
     case (maybeFilePathStr, findProblemParser url, findCHelperProblemParserByURL url) of
         (_, Just parser, _)  -> parseExistingProblem url parser maybeOverrideId maybeFilePathStr
         (Just _, _, Nothing) -> throw $ "File parser for URL " <> url <> " not found"
-        (Just filePathStr, _, Just chelperParser) -> parseExistingProblemFromCHelper chelperParser (fromText filePathStr) maybeOverrideId
+        (Just filePathStr, _, Just chelperParser) -> parseExistingProblemFromCHelper chelperParser (FS.fromText filePathStr) maybeOverrideId
         (Nothing, Nothing,  _) -> case optionFromText problemTypeStr of
             Nothing    -> throw . T.concat $ ["Incorrect problem type: ", problemTypeStr]
             Just pType -> createNewProblem url pType
@@ -59,7 +60,7 @@ initializeProblem :: Problem -> CaideIO ()
 initializeProblem problem = withLock $ do
     root <- caideRoot
     let probId = problemId problem
-        testDir = root </> fromText probId </> ".caideproblem" </> "test"
+        testDir = Paths.problemDir root probId </> Paths.testsDir
 
     setActiveProblem probId
     problemConfPath  <- getProblemConfigFile probId
@@ -91,11 +92,11 @@ createNewProblem probId probType = do
             "To create an empty problem, input a valid problem ID (a string of alphanumeric characters)"]
 
     root <- caideRoot
-    let problemDir = root </> fromText probId
+    let probDir = Paths.problemDir root probId
         problem = makeProblem probId probId probType
 
     -- Prepare problem directory
-    liftIO $ createDirectory False problemDir
+    liftIO $ createDirectory False probDir
 
     initializeProblem problem
     liftIO $ T.putStrLn . T.concat $ ["Problem successfully created in folder ", probId]
@@ -106,25 +107,25 @@ saveProblem problem samples = do
     root <- caideRoot
 
     let probId = problemId problem
-        problemDir = root </> fromText probId
+        probDir = Paths.problemDir root probId
 
-    problemDirExists <- liftIO $ isDirectory problemDir
+    problemDirExists <- liftIO $ isDirectory probDir
     when problemDirExists $
-        throw . T.concat $ ["Problem directory already exists: ", pathToText problemDir]
+        throw . T.concat $ ["Problem directory already exists: ", pathToText probDir]
 
     liftIO $ do
         -- Prepare problem directory
-        createDirectory False problemDir
+        createDirectory False probDir
 
         -- Write test cases
         forM_ (zip samples [1::Int ..]) $ \(sample, i) -> do
-            let inFile  = problemDir </> decodeString ("case" ++ show i ++ ".in")
-                outFile = problemDir </> decodeString ("case" ++ show i ++ ".out")
+            let inFile  = probDir </> Paths.testInput ("case" <> tshow i)
+                outFile = probDir </> Paths.etalonTestOutput ("case" <> tshow i)
             writeTextFile inFile  $ testCaseInput sample
             whenJust (testCaseOutput sample) $ \o -> writeTextFile outFile $ o
 
     initializeProblem problem
-    liftIO $ T.putStrLn . T.concat $ ["Problem successfully parsed into folder ", probId]
+    liftIO $ T.putStrLn $ "Problem successfully parsed into folder " <> probId
 
 saveProblemWithScaffold :: Problem -> [TestCase] -> CaideIO ()
 saveProblemWithScaffold problem samples = do
@@ -136,7 +137,7 @@ overrideProblemId :: Maybe ProblemID -> Problem -> Problem
 overrideProblemId Nothing p = p
 overrideProblemId (Just probId) p = p { problemId = probId }
 
-parseExistingProblemFromCHelper :: CHelperProblemParser -> F.FilePath -> Maybe ProblemID -> CaideIO ()
+parseExistingProblemFromCHelper :: CHelperProblemParser -> FS.FilePath -> Maybe ProblemID -> CaideIO ()
 parseExistingProblemFromCHelper parser filePath mbId = do
     html <- readTextFile' filePath
     parseResult <- liftIO $ chelperParse parser html

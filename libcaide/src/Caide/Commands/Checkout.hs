@@ -12,11 +12,12 @@ import qualified Data.Text as T
 import qualified Data.Text.IO.Util as T
 
 import Filesystem (isFile)
-import Filesystem.Path.CurrentOS (fromText, (</>))
+import Filesystem.Path.CurrentOS ((</>))
 
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Configuration (getActiveProblem, setActiveProblem)
 import qualified Caide.GlobalTemplate as GlobalTemplate
+import qualified Caide.Paths as Paths
 import Caide.Registry (findFeature)
 import Caide.Settings (enabledFeatureNames)
 import Caide.Types
@@ -26,8 +27,8 @@ checkoutProblem :: ProblemID -> Maybe T.Text -> CaideIO ()
 checkoutProblem probId' maybeLangStr = unless (T.null probId') $ do
     root <- caideRoot
     let probId = T.dropAround (\c -> c == '/' || c == '\\') probId'
-        problemDir = root </> fromText probId
-    problemExists <- liftIO $ isFile $ problemDir </> "problem.ini"
+        probDir = Paths.problemDir root probId
+    problemExists <- liftIO $ isFile $ probDir </> "problem.ini"
 
     unless problemExists $ throw . T.concat $ ["Problem ", probId, " doesn't exist"]
 
