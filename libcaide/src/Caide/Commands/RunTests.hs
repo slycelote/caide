@@ -160,6 +160,9 @@ mapError _ Skipped = Skipped
 mapError f (Failed e) = Failed (f e)
 mapError f (Error e) = Error (f e)
 
+failedMessage :: Show a => a -> a -> Text
+failedMessage expected actual = "Expected " <> tshow expected <> ", got " <> tshow actual
+
 compareJsonValues :: Double -> Aeson.Value -> Aeson.Value -> ComparisonResult
 compareJsonValues eps etalon actual = case (etalon, actual) of
   (Aeson.Object _, _) -> Error "JSON object unexpected in etalon"
@@ -180,25 +183,26 @@ compareJsonValues eps etalon actual = case (etalon, actual) of
                       tshow etalonLen <> ", actual " <> tshow actualLen <> ")"
   (Aeson.Array _, _) -> Failed "Expected an array"
 
-  (Aeson.String e, Aeson.String a) -> if e == a then Success else Failed "Strings differ"
+  (Aeson.String e, Aeson.String a) -> if e == a then Success else Failed $ failedMessage e a
   (Aeson.String _, _) -> Failed "Expected a string"
 
   (Aeson.Null, Aeson.Null) -> Success
   (Aeson.Null, _) -> Failed "Expected null"
 
-  (Aeson.Bool e, Aeson.Bool a) -> if e == a then Success else Failed "Booleans differ"
+  (Aeson.Bool e, Aeson.Bool a) -> if e == a then Success else Failed $ failedMessage e a
   (Aeson.Bool _, _) -> Failed "Expected a boolean"
 
   (Aeson.Number e, Aeson.Number a) -> case (Sci.toBoundedInteger e, Sci.toBoundedInteger a) of
     (Just (ne :: Int64), Just (na :: Int64)) ->
-        if ne == na then Success else Failed "Integers differ"
+        if ne == na then Success else Failed $ "Integers differ: " <> failedMessage ne na
     _ -> case (Sci.toBoundedInteger e, Sci.toBoundedInteger a) of
       (Just (ne :: Word64), Just (na :: Word64)) ->
-          if ne == na then Success else Failed "Integers differ"
+          if ne == na then Success else Failed $ "Integers differ: " <> failedMessage ne na
       _ -> case (Sci.toBoundedRealFloat e, Sci.toBoundedRealFloat a) of
         (Right de, Right da) ->
-          if abs(de - da) <= eps then Success else Failed $ "Doubles difference is " <> tshow (abs (de - da))
-        _ -> Failed $ tshow e <> " != " <> tshow a
+          if abs(de - da) <= eps then Success else Failed $
+              "Doubles differ: " <> failedMessage de da <> ", difference " <> tshow (abs (de - da))
+        _ -> Failed $ "Numbers differ: " <> failedMessage e a
   (Aeson.Number _, _) -> Failed "Expected a number"
 
 
