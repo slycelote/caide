@@ -146,7 +146,7 @@ data Question = Question
                 , content :: !(Maybe Text)
                 -- note the spelling
                 , exampleTestcases :: !(Maybe Text)
-                , codeSnippets :: ![CodeSnippet]
+                , codeSnippets :: !(Maybe [CodeSnippet])
                 , sampleTestCase :: !(Maybe Text)
                 , metaData :: !MetaData
                 } deriving (Show, Generic)
@@ -226,7 +226,7 @@ parseFromGraphQL probId responseBody = do
         MM method -> LeetCodeMethod <$> parseMethod method
 
     let probName = fromMaybe probId $ translatedTitle question <|> title question
-        snippets = codeSnippets question & map (\q -> (langSlug q, code q)) & Map.fromList
+        snippets = codeSnippets question & fromMaybe [] & map (\q -> (langSlug q, code q)) & Map.fromList
         problem = (makeProblem probName (fromMaybe probId (titleSlug question)) probType)
             { problemCodeSnippets = snippets}
 
