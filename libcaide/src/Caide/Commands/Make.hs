@@ -4,7 +4,7 @@ module Caide.Commands.Make(
     , make
 ) where
 
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Extended (liftIO, void)
 
 import Prelude hiding (FilePath)
 import Filesystem (isDirectory, )
@@ -32,7 +32,7 @@ withProblem mbProbId processProblem = do
 
 make :: Maybe ProblemID -> CaideIO ()
 make p = withProblem p $ \probId probDir -> do
-    TestCases.updateTests probDir
+    _ <- TestCases.updateTests probDir
     problem <- Problem.readProblemState probId
     let lang = Problem.currentLanguage problem
     case findLanguage lang of
@@ -40,5 +40,5 @@ make p = withProblem p $ \probId probDir -> do
         Just (_, language) -> inlineCode language probId
 
 updateTests :: Maybe ProblemID -> CaideIO ()
-updateTests mbProbId = withProblem mbProbId $ \_probId problemDir -> TestCases.updateTests problemDir
+updateTests mbProbId = withProblem mbProbId $ \_probId problemDir -> void $ TestCases.updateTests problemDir
 

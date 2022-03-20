@@ -114,7 +114,7 @@ safeExecuteTestWithTimeout timeLimitMicroSecs dirPath runExe testName = liftIO $
 
 createBuilderFromRunExe :: MonadIO m => FilePath -> FilePath -> CreateBuilderOptions -> ProblemID -> m BuilderResult
 createBuilderFromRunExe dirPath runExe options _probId = liftIO $ do
-    testList <- TestCases.updateTestList dirPath
+    testList <- TestCases.updateTests dirPath
     let testNames = map fst testList
     results <- mapM (safeExecuteTestWithTimeout (runTimeout options) dirPath runExe) testNames
     let testReport = zip testNames results

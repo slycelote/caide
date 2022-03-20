@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Caide.TestCases(
       updateTests
-    , updateTestList
 ) where
 
 import Prelude hiding (FilePath)
@@ -21,7 +20,7 @@ import Caide.TestCases.Types (TestList, TestState(..), TestRunResult(testRunStat
     isSuccessful, readTestReport, writeTests)
 
 
-updateTests :: MonadIO m => FilePath -> m ()
+updateTests :: MonadIO m => FilePath -> m TestList
 updateTests problemDir = liftIO $ do
     let tempTestDir = problemDir </> Paths.testsDir
     FS.createTree tempTestDir
@@ -36,19 +35,10 @@ updateTests problemDir = liftIO $ do
     let testInputs = filter (`hasExtension` "in") fileList
     forM_ testInputs $ \inFile -> copyFileToDir inFile tempTestDir
 
-    _ <- updateTestList problemDir
-
-    -- TODO: Avoid caideExe.txt files?
-    caideExe <- getExecutablePath
-    FS.writeTextFile (problemDir </> Paths.testsDir </> "caideExe.txt") $ T.pack caideExe
-
-
--- | Updates testList.txt file:
---    * removes missing tests
---    * adds new tests
---    * makes sure previously failed tests (if any) come first
-updateTestList :: FilePath -> IO TestList
-updateTestList problemDir = do
+    -- Update testList.txt file:
+    -- * remove missing tests
+    -- * add new tests
+    -- * make sure previously failed tests (if any) come first
     let previousRunFile = problemDir </> Paths.testReportFile
     report <- readTestReport previousRunFile
     let testNameToStatus = Map.fromList [(name, testRunStatus res) | (name, res) <- report]
@@ -62,5 +52,10 @@ updateTestList problemDir = do
             _          -> (True,  testName)
         sortedTests = sortOn succeededAndName testList
     writeTests sortedTests $ problemDir </> Paths.testListFile
+
+    -- TODO: Avoid caideExe.txt files?
+    caideExe <- getExecutablePath
+    FS.writeTextFile (problemDir </> Paths.testsDir </> "caideExe.txt") $ T.pack caideExe
+
     return sortedTests
 
