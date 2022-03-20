@@ -25,7 +25,7 @@ import Filesystem.Util (isExecutableFile)
 import qualified Filesystem.Util as FS
 
 import Caide.Logger (logInfo, logWarn, logError)
-import Caide.Types (BuilderResult(BuildFailed, NoEvalTests), Builder, ProblemID)
+import Caide.Types (BuilderResult(BuildFailed, NoEvalTests), Problem)
 import Caide.TestCases.Types (ComparisonResult(Error, Failed, Ran), TestRunResult, makeTestRunResult,
     serializeTestReport)
 import qualified Caide.TestCases as TestCases
@@ -75,17 +75,18 @@ combine :: [CreateBuilderOption] -> CreateBuilderOptions
 combine = foldr applyModifier $
     CreateBuilderOptions{buildTimeout=10*seconds, runTimeout=5*seconds}
 
-createBuilderFromDirectory :: MonadIO m => FilePath -> [CreateBuilderOption] -> m (Either Text Builder)
-createBuilderFromDirectory dirPath optionModifiers = do
+createBuilderFromDirectory :: (MonadIO m1, MonadIO m2) =>
+    FilePath -> Problem -> [CreateBuilderOption] -> m1 (Either Text (m2 BuilderResult))
+createBuilderFromDirectory dirPath problem optionModifiers = do
     let options = combine optionModifiers
     mbBuildExe <- findExecutable dirPath "build"
     case mbBuildExe of
-        Just buildExe -> return . Right $ createBuilderFromBuildExe dirPath buildExe options
+        Just buildExe -> pure . Right $ liftIO $ buildAndRun dirPath buildExe problem options
         Nothing -> do
             mbRunExe <- findExecutable dirPath "run"
-            return $ case mbRunExe of
-                Just runExe -> Right $ createBuilderFromRunExe dirPath runExe options
-                Nothing -> Left $ "Neither `build' nor `run' executables found in " <> FS.pathToText dirPath
+            case mbRunExe of
+                Just runExe -> pure . Right $ liftIO $ run dirPath runExe problem options
+                Nothing -> pure . Left $ "Neither `build' nor `run' executables found in " <> FS.pathToText dirPath
 
 executeTest :: MonadIO m => FilePath -> FilePath -> Text -> m ComparisonResult
 executeTest dirPath runExe testName = liftIO $
@@ -112,9 +113,9 @@ safeExecuteTestWithTimeout timeLimitMicroSecs dirPath runExe testName = liftIO $
         Left e         -> Error $ "Error while executing the test: " <> T.pack (Exc.displayException (e :: Exc.SomeException))
         Right (Just r) -> r
 
-createBuilderFromRunExe :: MonadIO m => FilePath -> FilePath -> CreateBuilderOptions -> ProblemID -> m BuilderResult
-createBuilderFromRunExe dirPath runExe options _probId = liftIO $ do
-    testList <- TestCases.updateTests dirPath
+run :: FilePath -> FilePath -> Problem -> CreateBuilderOptions -> IO BuilderResult
+run dirPath runExe problem options = do
+    testList <- TestCases.updateTests dirPath problem
     let testNames = map fst testList
     results <- mapM (safeExecuteTestWithTimeout (runTimeout options) dirPath runExe) testNames
     let testReport = zip testNames results
@@ -122,8 +123,8 @@ createBuilderFromRunExe dirPath runExe options _probId = liftIO $ do
     writeTextFile (dirPath </> Paths.testReportFile) serializedReport
     return NoEvalTests
 
-createBuilderFromBuildExe :: MonadIO m => FilePath -> FilePath -> CreateBuilderOptions -> ProblemID -> m BuilderResult
-createBuilderFromBuildExe dirPath buildExe options probId = liftIO $ do
+buildAndRun :: FilePath -> FilePath -> Problem -> CreateBuilderOptions -> IO BuilderResult
+buildAndRun dirPath buildExe problem options = do
     logInfo $ "Building with " <> FS.pathToText buildExe <> "..."
     let cp = (proc (FS.pathToString $ dirPath </> buildExe) []) {
                  cwd = Just $ FS.pathToString dirPath
@@ -143,7 +144,7 @@ createBuilderFromBuildExe dirPath buildExe options probId = liftIO $ do
         Right (Just ExitSuccess) -> do
             mbRunExe <- findExecutable dirPath "run"
             case mbRunExe of
-                Just runExe -> createBuilderFromRunExe dirPath runExe options probId
+                Just runExe -> run dirPath runExe problem options
                 Nothing -> do
                     logError $ "`run' executable not found in " <> FS.pathToText dirPath
                     return BuildFailed

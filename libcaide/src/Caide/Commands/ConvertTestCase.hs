@@ -2,12 +2,14 @@
 module Caide.Commands.ConvertTestCase(
       convertTestCaseInput
     , convertTestCaseOutput
+    , convertTestCase
+    , TestCasePartType(..)
     , convertTopcoderParameters -- ^ for tests only
 ) where
 
 import qualified Control.Exception.Extended as Exc
-import Control.Monad (void, when)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Except (ExceptT, runExceptT, throwError)
+import Control.Monad.Extended (MonadIO, liftIO, void, when)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import qualified Data.List as List
@@ -36,19 +38,22 @@ import Caide.Types
 
 
 convertTestCaseInput :: FS.FilePath -> FS.FilePath -> Maybe ProblemID -> CaideIO ()
-convertTestCaseInput = convertTestCase Input
+convertTestCaseInput = convertTestCase_ TestCaseInput
 
 convertTestCaseOutput :: FS.FilePath -> FS.FilePath -> Maybe ProblemID -> CaideIO ()
-convertTestCaseOutput = convertTestCase Output
+convertTestCaseOutput = convertTestCase_ TestCaseOutput
 
-data TestCasePartType = Input | Output
+data TestCasePartType = TestCaseInput | TestCaseOutput
 
-convertTestCase :: TestCasePartType -> FS.FilePath -> FS.FilePath -> Maybe ProblemID -> CaideIO ()
-convertTestCase inputType inputFile outputFile mbProbId = do
-    probId <- case mbProbId of
-        Just p  -> pure p
-        Nothing -> getActiveProblem
+convertTestCase_ :: TestCasePartType -> FS.FilePath -> FS.FilePath -> Maybe ProblemID -> CaideIO ()
+convertTestCase_ inputType inputFile outputFile mbProbId = do
+    probId <- maybe getActiveProblem pure mbProbId
     problem <- readProblemInfo probId
+    res <- liftIO $ convertTestCase inputType problem inputFile outputFile
+    either throw pure res
+
+convertTestCase :: MonadIO m => TestCasePartType -> Problem -> FS.FilePath -> FS.FilePath -> m (Either Text ())
+convertTestCase inputType problem inputFile outputFile = liftIO $ runExceptT $ do
     inputTime <- liftIO $ FS.getModified inputFile
     needUpdate <- liftIO $ Exc.handleIf isDoesNotExistError (\_ -> return True) $ do
         outputTime <- FS.getModified outputFile
@@ -57,20 +62,20 @@ convertTestCase inputType inputFile outputFile mbProbId = do
         Stream _ _ -> liftIO $ FS.copyFile inputFile outputFile
         Topcoder TopcoderProblemDescription{tcSingleMethod} -> do
             res <- case inputType of
-                Input -> readAndConvertTopcoderParameters (tcParameters tcSingleMethod) inputFile True
-                Output -> readAndConvertTopcoderParameters [tcMethod tcSingleMethod] inputFile False
+                TestCaseInput -> readAndConvertTopcoderParameters (tcParameters tcSingleMethod) inputFile True
+                TestCaseOutput -> readAndConvertTopcoderParameters [tcMethod tcSingleMethod] inputFile False
             liftIO $ writeTextFile outputFile res
         LeetCodeMethod _ -> convertJson inputFile outputFile
         LeetCodeClass _ _ _ -> convertJson inputFile outputFile
 
-convertJson :: FS.FilePath -> FS.FilePath -> CaideIO ()
+convertJson :: FS.FilePath -> FS.FilePath -> ExceptT Text IO ()
 convertJson inputFile outputFile = do
     text <- liftIO $ readTextFile inputFile
     case text of
-        Left err -> throw err
+        Left err -> throwError err
         Right r ->
             let res = convertJsonValues r
-            in either throw (liftIO . writeTextFile outputFile . T.unlines) res
+            in either throwError (liftIO . writeTextFile outputFile . T.unlines) res
 
 convertJsonValues :: Text -> Either Text [Text]
 convertJsonValues text = do
@@ -78,14 +83,14 @@ convertJsonValues text = do
     jsonValues <- TC.runParser parser text
     pure $ concatMap convertJsonValue jsonValues
 
-readAndConvertTopcoderParameters :: [TopcoderValue] -> FS.FilePath -> Bool -> CaideIO Text
+readAndConvertTopcoderParameters :: [TopcoderValue] -> FS.FilePath -> Bool -> ExceptT Text IO Text
 readAndConvertTopcoderParameters values inputFile isTopcoderFormat = do
     text <- liftIO $ readTextFile inputFile
     case text of
-        Left err -> throw err
+        Left err -> throwError err
         Right r ->
             let res = convertTopcoderParameters values isTopcoderFormat r
-            in either throw (return . T.unlines) res
+            in either throwError (return . T.unlines) res
 
 listSepBy :: Monad m => [m a] -> m () -> m [a]
 listSepBy parsers sep = do

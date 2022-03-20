@@ -99,18 +99,7 @@ int main() {
             report << testName << " skipped" << endl;
         } else if (testState == "Run") {
             cerr << "Running test " << testName << endl;
-            string origInputFile = testDir + "../../" + testName + ".in";
-#if defined(CAIDE_TOPCODER) || defined(CAIDE_LEETCODE)
             string inputFile = testDir + testName + ".plain.in";
-            ret = runCommand(false, caideExe, "convert_test_input", origInputFile, inputFile);
-            if (ret != 0) {
-                cerr << "Test converter for test " << testName << " failed" << endl;
-                report << testName << " error Test input converter failed" << endl;
-                continue;
-            }
-#else
-            string inputFile = origInputFile;
-#endif
             string origOutputFile = testDir + testName + ".out";
             caide_tester::Stopwatch stopwatch;
             try {
@@ -131,14 +120,11 @@ int main() {
 
             if (USE_CUSTOM_CHECKER) {
                 try {
-                    string origEtalonFile = testDir + "../../" + testName + ".out";
-#if defined(CAIDE_TOPCODER) || defined(CAIDE_LEETCODE)
                     string etalonFile = testDir + testName + ".plain.etalon";
-                    runCommand(true, caideExe, "convert_test_output", origEtalonFile, etalonFile);
+#if defined(CAIDE_TOPCODER) || defined(CAIDE_LEETCODE)
                     string outputFile = testDir + testName + ".plain.out";
                     runCommand(true, caideExe, "convert_test_output", origOutputFile, outputFile);
 #else
-                    string etalonFile = testDir + "../../" + testName + ".out";
                     string outputFile = origOutputFile;
 #endif
                     ifstream output(outputFile.c_str());

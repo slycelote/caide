@@ -41,26 +41,24 @@ import qualified Caide.TestCases.TopcoderDeserializer as TC
 import Caide.Util (tshow)
 
 
-createBuilderFromProblemDirectory :: ProblemID -> CaideIO (Either Text Builder)
-createBuilderFromProblemDirectory probId = do
-    root <- caideRoot
-    createBuilderFromDirectory (Paths.problemDir root probId) []
-
 getBuilder :: Text -> ProblemID -> CaideIO Builder
 getBuilder language probId = do
+    root <- caideRoot
+    problem <- readProblemInfo probId
     h <- readCaideConf
     let builderExists langName = withDefault False $
             (getProp h langName "build_and_run_tests" :: CaideIO Text) >> return True
         languageNames = maybe [] fst $ findLanguage language
+        probDir = Paths.problemDir root probId
     buildersExist <- mapM (builderExists . T.unpack) languageNames
     let existingBuilderNames = [name | (name, True) <- zip languageNames buildersExist]
     case existingBuilderNames of
         (name:_) -> return $ Custom.builder name
         [] -> do
-            errOrBuilder <- createBuilderFromProblemDirectory probId
+            errOrBuilder <- createBuilderFromDirectory probDir problem []
             case errOrBuilder of
                 Left e -> logError e >> return None.builder
-                Right b -> return b
+                Right b -> return $ \_probId -> b
 
 -- TODO: pass optional problem ID
 runTests :: CaideIO ()

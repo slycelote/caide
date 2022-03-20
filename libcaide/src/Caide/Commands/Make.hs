@@ -18,7 +18,7 @@ import Caide.Types
 import qualified Caide.TestCases as TestCases
 
 
-withProblem :: Maybe ProblemID -> (ProblemID -> FilePath -> CaideIO a) -> CaideIO a
+withProblem :: Maybe ProblemID -> (Problem -> FilePath -> CaideIO a) -> CaideIO a
 withProblem mbProbId processProblem = do
     probId <- case mbProbId of
         Just probId' -> return probId'
@@ -27,18 +27,22 @@ withProblem mbProbId processProblem = do
     let probDir = Paths.problemDir root probId
     problemExists <- liftIO $ isDirectory probDir
     if problemExists
-    then processProblem probId probDir
+    then do
+        problem <- Problem.readProblemInfo probId
+        processProblem problem probDir
     else throw $ "Problem " <> probId <> " doesn't exist"
 
 make :: Maybe ProblemID -> CaideIO ()
-make p = withProblem p $ \probId probDir -> do
-    _ <- TestCases.updateTests probDir
-    problem <- Problem.readProblemState probId
-    let lang = Problem.currentLanguage problem
+make p = withProblem p $ \problem probDir -> do
+    -- TODO: don't update tests here
+    _ <- TestCases.updateTests probDir problem
+    problemState <- Problem.readProblemState (problemId problem)
+    let lang = Problem.currentLanguage problemState
     case findLanguage lang of
         Nothing            -> throw $ "Unsupported programming language " <> lang
-        Just (_, language) -> inlineCode language probId
+        Just (_, language) -> inlineCode language (problemId problem)
 
 updateTests :: Maybe ProblemID -> CaideIO ()
-updateTests mbProbId = withProblem mbProbId $ \_probId problemDir -> void $ TestCases.updateTests problemDir
+updateTests mbProbId = withProblem mbProbId $ \problem problemDir ->
+    void $ TestCases.updateTests problemDir problem
 

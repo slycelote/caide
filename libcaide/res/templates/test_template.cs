@@ -95,18 +95,7 @@ partial class TestRunner
             else if (testState == "Run")
             {
                 Console.Error.WriteLine("Running test " + testName);
-                string origInputFile = Path.Combine(testDir, "..", "..", testName + ".in");
-                string inputFile = origInputFile;
-                if (IsTopcoder || IsLeetCode) {
-                    inputFile = Path.Combine(testDir, testName + ".plain.in");
-                    Process p = Run(caideExe, "convert_test_input", origInputFile, inputFile);
-                    if (p.ExitCode != 0) {
-                        Console.Error.WriteLine("Test converter for test " + testName + " failed");
-                        report.WriteLine(testName + " error Test input converter failed");
-                        continue;
-                    }
-                }
-
+                string inputFile = Path.Combine(testDir, testName + ".plain.in");
                 string origOutputFile = Path.Combine(testDir, testName + ".out");
                 var start = DateTime.Now;
                 Func<string> getDuration = () => " #time:" +
@@ -128,12 +117,10 @@ partial class TestRunner
                 {
                     try
                     {
-                        string origEtalonFile = Path.Combine(testDir, "..", "..", testName + ".out");
-                        string etalonFile = origEtalonFile, outputFile = origOutputFile;
+                        string etalonFile = Path.Combine(testDir, testName + ".plain.etalon");
+                        string outputFile = origOutputFile;
                         if (IsTopcoder || IsLeetCode)
                         {
-                            etalonFile = Path.Combine(testDir, testName + ".plain.etalon");
-                            Run(caideExe, "convert_test_output", origEtalonFile, etalonFile);
                             outputFile = Path.Combine(testDir, testName + ".plain.out");
                             Run(caideExe, "convert_test_output", origOutputFile, outputFile);
                         }
