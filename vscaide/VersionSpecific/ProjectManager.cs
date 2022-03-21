@@ -111,14 +111,9 @@ namespace slycelote.VsCaide.VsSpecific
                 // Remove the old project
                 if (oldProject != null)
                 {
-                    SolutionUtilities.IgnoreSolutionEvents = true;
-                    try
+                    using (SolutionUtilities.IgnoringSolutionEvents())
                     {
                         solution.Remove(oldProject);
-                    }
-                    finally
-                    {
-                        SolutionUtilities.IgnoreSolutionEvents = false;
                     }
                 }
 

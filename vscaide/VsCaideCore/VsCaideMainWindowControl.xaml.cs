@@ -553,7 +553,7 @@ namespace slycelote.VsCaide.Core
         {
             services.ThrowIfNotOnUIThread();
             LogMethod();
-            if (IsCaideProblem(project.Name))
+            if (!SolutionUtilities.IgnoreSolutionEvents && IsCaideProblem(project.Name))
             {
                 // Try to mitigate a mysterious error 'Unsatisified (sic!) constraints: folder not empty'.
                 Thread.Sleep(TimeSpan.FromSeconds(0.5));
@@ -593,7 +593,11 @@ namespace slycelote.VsCaide.Core
 
             if (project != null)
             {
-                services.RemoveProject(project);
+                using (SolutionUtilities.IgnoringSolutionEvents())
+                {
+                    services.RemoveProject(project);
+                }
+
                 services.SaveSolution();
             }
 
