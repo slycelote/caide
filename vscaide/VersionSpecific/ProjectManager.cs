@@ -93,10 +93,7 @@ namespace slycelote.VsCaide.VsSpecific
                 if (needBackup)
                 {
                     tempDir = Path.Combine(Path.GetTempPath(), "vscaide", projectName);
-                    if (Directory.Exists(tempDir))
-                    {
-                        Directory.Delete(tempDir, recursive: true);
-                    }
+                    FileUtility.DirectoryDelete(tempDir, recursive: true);
 
                     // Don't keep VS files
                     var filesToDelete = new[] { ".vcproj", ".vcxproj", ".csproj", ".user", ".exe", ".pdb" };
@@ -142,7 +139,7 @@ namespace slycelote.VsCaide.VsSpecific
                 if (tempDir != null)
                 {
                     FileUtility.DirectoryCopy(tempDir, projectDir, copySubDirs: true, fileFilter: null);
-                    Directory.Delete(tempDir, recursive: true);
+                    FileUtility.DirectoryDelete(tempDir, recursive: true);
                 }
             }
 

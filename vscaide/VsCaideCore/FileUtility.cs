@@ -1,14 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace slycelote.VsCaide.Core
+﻿namespace slycelote.VsCaide.Core
 {
-    public class FileUtility
+    using System;
+    using System.IO;
+
+    public static class FileUtility
     {
+        public static void DirectoryDelete(string path, bool recursive)
+        {
+            try
+            {
+                Directory.Delete(path, recursive);
+            }
+            catch (DirectoryNotFoundException)
+            { }
+            catch (IOException)
+            { 
+                // Ignore exception caused by directory being used by another
+                // process (e.g. Windows Explorer or one of VS child processes).
+            }
+        }
+
         public static void DirectoryCopy(string sourceDirName, string destDirName,
             bool copySubDirs = true, Func<FileInfo, bool> fileFilter = null)
         {

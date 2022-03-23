@@ -559,8 +559,7 @@ namespace slycelote.VsCaide.Core
                 Thread.Sleep(TimeSpan.FromSeconds(0.5));
                 CaideExe.Run("archive", project.Name);
                 string projectDirectory = Path.Combine(SolutionUtilities.GetSolutionDir(), project.Name);
-                if (Directory.Exists(projectDirectory))
-                    Directory.Delete(projectDirectory, recursive: true);
+                FileUtility.DirectoryDelete(projectDirectory, recursive: true);
                 SolutionUtilities.SaveSolution();
             }
         }
@@ -604,7 +603,7 @@ namespace slycelote.VsCaide.Core
             if (remove)
             {
                 var problemDir = Path.Combine(services.GetSolutionDir(), problem.Name);
-                Directory.Delete(problemDir, recursive: true);
+                FileUtility.DirectoryDelete(problemDir, recursive: true);
             }
             else
             {
