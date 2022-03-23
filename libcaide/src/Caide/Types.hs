@@ -344,7 +344,7 @@ instance Option ProblemType where
 
     -- leetcode;className,ctorParam1:type1,ctorParam2:type2;method:retType,param1:type1,param2:type2;anotherMethod:retType,param1:type1,param2:type2
     optionToString (LeetCodeClass className ctorParams methods) =
-        "leetcode;" <> T.unpack className <> "," <> optionToString ctorParams
+        "leetcode;" <> T.unpack className <> concat [',' : optionToString p | p <- ctorParams]
             <> concat [';' : optionToString method | method <- methods]
 
     optionToString (Stream input output) =
