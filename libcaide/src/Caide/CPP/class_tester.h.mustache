@@ -17,6 +17,8 @@ namespace caide_tester {
 {{#type_is_leetcode}}
 template <>
 inline void deletePointer(ListNode*& p) {
+    // Getting a crash here? You might be reusing input nodes for output.
+    // Remove deletePointer() call in the destructor up the stack.
     while (p != 0) {
         ListNode* n = p->next;
         delete p;
@@ -68,6 +70,8 @@ struct Serializer<ListNode*> {
 
 template <>
 inline void deletePointer(TreeNode*& p) {
+    // Getting a crash here? You might be reusing input nodes for output.
+    // Remove deletePointer() call in the destructor up the stack.
     if (p != 0) {
         deletePointer(p->left);
         deletePointer(p->right);
@@ -79,29 +83,33 @@ inline void deletePointer(TreeNode*& p) {
 template <>
 struct Serializer<TreeNode*> {
     static void writeStructured(std::ostream& out, TreeNode* val) {
-        out << '[';
-        if (val) {
-            std::vector<TreeNode*> layer{val};
-            for (;;) {
-                while (!layer.empty() && !layer.back())
-                    layer.pop_back();
-                if (layer.empty())
-                    break;
-
-                std::vector<TreeNode*> nextLayer;
-                for (TreeNode* node : layer) {
-                    if (node != val)
-                        out << ',';
-                    if (node) {
-                        out << node->val;
-                        nextLayer.push_back(node->left);
-                        nextLayer.push_back(node->right);
-                    } else
-                        out << "null";
+        std::vector<TreeNode*> byLayer, currentLayer;
+        currentLayer.push_back(val);
+        while (!currentLayer.empty()) {
+            std::vector<TreeNode*> nextLayer;
+            for (TreeNode* node : currentLayer) {
+                byLayer.push_back(node);
+                if (node) {
+                    nextLayer.push_back(node->left);
+                    nextLayer.push_back(node->right);
                 }
-
-                std::swap(layer, nextLayer);
             }
+
+            currentLayer.swap(nextLayer);
+        }
+
+        while (!byLayer.empty() && !byLayer.back())
+            byLayer.pop_back();
+
+        out << '[';
+        for (std::size_t i = 0; i < byLayer.size(); ++i) {
+            if (i > 0)
+                out << ", ";
+
+            if (byLayer[i])
+                out << byLayer[i]->val;
+            else
+                out << "null";
         }
 
         out << ']';
