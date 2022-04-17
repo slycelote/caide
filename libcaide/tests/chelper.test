@@ -2,13 +2,13 @@
 (sleep 15; echo .) | "$CAIDE" httpServer &
 sleep 2
 
-curl --max-time 10 --data-binary @request-codeforces.txt -H "Content-Type: text/html" http://localhost:4243
+curl --max-time 10 --data-binary @request-codeforces.txt -H "Content-Type: text/html" http://localhost:10243
 
-curl --max-time 10 --data-binary @request-DEMTREE.txt -H "Content-Type: text/html" http://localhost:4243
-curl --max-time 10 --data-binary @request-MAXCIR.txt -H "Content-Type: text/html" http://localhost:4243
-curl --max-time 10 --data-binary @request-POWERMUL.txt -H "Content-Type: text/html" http://localhost:4243
-curl --max-time 10 --data-binary @request-MX.txt -H "Content-Type: text/html" http://localhost:4243
-curl --max-time 10 --data-binary @request-LIFTME.txt -H "Content-Type: text/html" http://localhost:4243
+curl --max-time 10 --data-binary @request-DEMTREE.txt -H "Content-Type: text/html" http://localhost:10243
+curl --max-time 10 --data-binary @request-MAXCIR.txt -H "Content-Type: text/html" http://localhost:10243
+curl --max-time 10 --data-binary @request-POWERMUL.txt -H "Content-Type: text/html" http://localhost:10243
+curl --max-time 10 --data-binary @request-MX.txt -H "Content-Type: text/html" http://localhost:10243
+curl --max-time 10 --data-binary @request-LIFTME.txt -H "Content-Type: text/html" http://localhost:10243
 
 
 compare_with after-parse {cf1333B,DEMTREE,MAXCIR,POWERMUL,MX,LIFTME}/{problem.ini,case1.in,case1.out}
