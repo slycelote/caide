@@ -116,7 +116,7 @@ namespace __detail
 
   template<typename _Source>
     struct __constructible_from<_Source, void>
-    : decltype(__is_path_src(std::declval<_Source>(), 0))
+    : decltype(__is_path_src(std::declval<const _Source&>(), 0))
     { };
 
   template<typename _Tp1, typename _Tp2 = void>
@@ -614,7 +614,7 @@ namespace __detail
       ~_List() = default;
 
       _Type type() const noexcept
-      { return _Type{reinterpret_cast<uintptr_t>(_M_impl.get()) & 0x3}; }
+      { return _Type(reinterpret_cast<uintptr_t>(_M_impl.get()) & 0x3); }
 
       void type(_Type) noexcept;
 
@@ -628,10 +628,10 @@ namespace __detail
       // All the member functions below here have a precondition !empty()
       // (and they should only be called from within the library).
 
-      iterator begin();
-      iterator end();
-      const_iterator begin() const;
-      const_iterator end() const;
+      iterator begin() noexcept;
+      iterator end() noexcept;
+      const_iterator begin() const noexcept;
+      const_iterator end() const noexcept;
 
       value_type& front() noexcept;
       value_type& back() noexcept;
@@ -1340,7 +1340,7 @@ namespace __detail
     return _M_at_end == __rhs._M_at_end;
   }
 
-  // @} group filesystem
+  /// @} group filesystem
 _GLIBCXX_END_NAMESPACE_CXX11
 } // namespace filesystem
 
@@ -1348,7 +1348,7 @@ inline ptrdiff_t
 distance(filesystem::path::iterator __first, filesystem::path::iterator __last)
 { return __path_iter_distance(__first, __last); }
 
-template<typename _InputIterator, typename _Distance>
+template<typename _Distance>
   void
   advance(filesystem::path::iterator& __i, _Distance __n)
   { __path_iter_advance(__i, static_cast<ptrdiff_t>(__n)); }

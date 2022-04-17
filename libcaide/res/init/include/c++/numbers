@@ -133,7 +133,7 @@ namespace numbers
   inline constexpr double egamma = egamma_v<double>;
   inline constexpr double phi = phi_v<double>;
 
-#if !defined(__STRICT_ANSI__) && defined(_GLIBCXX_USE_FLOAT128)
+#if !defined(__STRICT_ANSI__) && defined(_GLIBCXX_USE_FLOAT128) && !defined(__CUDACC__)
   template<>
     inline constexpr __float128 e_v<__float128>
       = 2.718281828459045235360287471352662498Q;

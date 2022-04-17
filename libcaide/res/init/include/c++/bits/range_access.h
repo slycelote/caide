@@ -35,7 +35,7 @@
 #if __cplusplus >= 201103L
 #include <initializer_list>
 #include <bits/iterator_concepts.h>
-#include <bits/int_limits.h>
+#include <ext/numeric_traits.h>
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
@@ -87,7 +87,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    */
   template<typename _Tp, size_t _Nm>
     inline _GLIBCXX14_CONSTEXPR _Tp*
-    begin(_Tp (&__arr)[_Nm])
+    begin(_Tp (&__arr)[_Nm]) noexcept
     { return __arr; }
 
   /**
@@ -97,7 +97,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    */
   template<typename _Tp, size_t _Nm>
     inline _GLIBCXX14_CONSTEXPR _Tp*
-    end(_Tp (&__arr)[_Nm])
+    end(_Tp (&__arr)[_Nm]) noexcept
     { return __arr + _Nm; }
 
 #if __cplusplus >= 201402L
@@ -178,7 +178,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    */
   template<typename _Tp, size_t _Nm>
     inline _GLIBCXX17_CONSTEXPR reverse_iterator<_Tp*>
-    rbegin(_Tp (&__arr)[_Nm])
+    rbegin(_Tp (&__arr)[_Nm]) noexcept
     { return reverse_iterator<_Tp*>(__arr + _Nm); }
 
   /**
@@ -188,7 +188,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    */
   template<typename _Tp, size_t _Nm>
     inline _GLIBCXX17_CONSTEXPR reverse_iterator<_Tp*>
-    rend(_Tp (&__arr)[_Nm])
+    rend(_Tp (&__arr)[_Nm]) noexcept
     { return reverse_iterator<_Tp*>(__arr); }
 
   /**
@@ -198,7 +198,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    */
   template<typename _Tp>
     inline _GLIBCXX17_CONSTEXPR reverse_iterator<const _Tp*>
-    rbegin(initializer_list<_Tp> __il)
+    rbegin(initializer_list<_Tp> __il) noexcept
     { return reverse_iterator<const _Tp*>(__il.end()); }
 
   /**
@@ -208,7 +208,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    */
   template<typename _Tp>
     inline _GLIBCXX17_CONSTEXPR reverse_iterator<const _Tp*>
-    rend(initializer_list<_Tp> __il)
+    rend(initializer_list<_Tp> __il) noexcept
     { return reverse_iterator<const _Tp*>(__il.begin()); }
 
   /**
@@ -353,13 +353,23 @@ namespace ranges
   namespace __detail
   {
     template<integral _Tp>
-      constexpr make_unsigned_t<_Tp>
+      constexpr auto
       __to_unsigned_like(_Tp __t) noexcept
-      { return __t; }
+      { return static_cast<make_unsigned_t<_Tp>>(__t); }
 
-    template<typename _Tp, bool _MaxDiff = same_as<_Tp, __max_diff_type>>
+#if defined __STRICT_ANSI__ && defined __SIZEOF_INT128__
+    constexpr unsigned __int128
+    __to_unsigned_like(__int128 __t) noexcept
+    { return __t; }
+
+    constexpr unsigned __int128
+    __to_unsigned_like(unsigned __int128 __t) noexcept
+    { return __t; }
+#endif
+
+    template<typename _Tp>
       using __make_unsigned_like_t
-	= conditional_t<_MaxDiff, __max_size_type, make_unsigned_t<_Tp>>;
+	= decltype(__detail::__to_unsigned_like(std::declval<_Tp>()));
 
     // Part of the constraints of ranges::borrowed_range
     template<typename _Tp>
@@ -727,12 +737,12 @@ namespace ranges
 	{
 	  using __iter_type = decltype(_Begin{}(std::forward<_Tp>(__e)));
 	  using __diff_type = iter_difference_t<__iter_type>;
-	  using std::__detail::__int_limits;
+	  using __gnu_cxx::__int_traits;
 	  auto __size = _Size{}(std::forward<_Tp>(__e));
 	  if constexpr (integral<__diff_type>)
 	    {
-	      if constexpr (__int_limits<__diff_type>::digits
-			    < __int_limits<ptrdiff_t>::digits)
+	      if constexpr (__int_traits<__diff_type>::__digits
+			    < __int_traits<ptrdiff_t>::__digits)
 		return static_cast<ptrdiff_t>(__size);
 	    }
 	  return static_cast<__diff_type>(__size);
@@ -939,203 +949,224 @@ namespace ranges
 
   // [range.iter.ops] range iterator operations
 
-  template<input_or_output_iterator _It>
-    constexpr void
-    advance(_It& __it, iter_difference_t<_It> __n)
-    {
-      if constexpr (random_access_iterator<_It>)
-	__it += __n;
-      else if constexpr (bidirectional_iterator<_It>)
-	{
-	  if (__n > 0)
-	    {
-	      do
-		{
-		  ++__it;
-		}
-	      while (--__n);
-	    }
-	  else if (__n < 0)
-	    {
-	      do
-		{
-		  --__it;
-		}
-	      while (++__n);
-	    }
-	}
-      else
-	{
+  struct __advance_fn
+  {
+    template<input_or_output_iterator _It>
+      constexpr void
+      operator()(_It& __it, iter_difference_t<_It> __n) const
+      {
+	if constexpr (random_access_iterator<_It>)
+	  __it += __n;
+	else if constexpr (bidirectional_iterator<_It>)
+	  {
+	    if (__n > 0)
+	      {
+		do
+		  {
+		    ++__it;
+		  }
+		while (--__n);
+	      }
+	    else if (__n < 0)
+	      {
+		do
+		  {
+		    --__it;
+		  }
+		while (++__n);
+	      }
+	  }
+	else
+	  {
 #ifdef __cpp_lib_is_constant_evaluated
-	  if (std::is_constant_evaluated() && __n < 0)
-	    throw "attempt to decrement a non-bidirectional iterator";
+	    if (std::is_constant_evaluated() && __n < 0)
+	      throw "attempt to decrement a non-bidirectional iterator";
 #endif
-	  __glibcxx_assert(__n >= 0);
-	  while (__n-- > 0)
-	    ++__it;
-	}
-    }
-
-  template<input_or_output_iterator _It, sentinel_for<_It> _Sent>
-    constexpr void
-    advance(_It& __it, _Sent __bound)
-    {
-      if constexpr (assignable_from<_It&, _Sent>)
-	__it = std::move(__bound);
-      else if constexpr (sized_sentinel_for<_Sent, _It>)
-	ranges::advance(__it, __bound - __it);
-      else
-	{
-	  while (__it != __bound)
-	    ++__it;
-	}
-    }
-
-  template<input_or_output_iterator _It, sentinel_for<_It> _Sent>
-    constexpr iter_difference_t<_It>
-    advance(_It& __it, iter_difference_t<_It> __n, _Sent __bound)
-    {
-      if constexpr (sized_sentinel_for<_Sent, _It>)
-	{
-	  const auto __diff = __bound - __it;
-#ifdef __cpp_lib_is_constant_evaluated
-	  if (std::is_constant_evaluated()
-	      && !(__n == 0 || __diff == 0 || (__n < 0 == __diff < 0)))
-	    throw "inconsistent directions for distance and bound";
-#endif
-	  // n and bound must not lead in opposite directions:
-	  __glibcxx_assert(__n == 0 || __diff == 0 || (__n < 0 == __diff < 0));
-	  const auto __absdiff = __diff < 0 ? -__diff : __diff;
-	  const auto __absn = __n < 0 ? -__n : __n;;
-	  if (__absn >= __absdiff)
-	    {
-	      ranges::advance(__it, __bound);
-	      return __n - __diff;
-	    }
-	  else
-	    {
-	      ranges::advance(__it, __n);
-	      return 0;
-	    }
-	}
-      else if (__it == __bound || __n == 0)
-	return iter_difference_t<_It>(0);
-      else if (__n > 0)
-	{
-	  iter_difference_t<_It> __m = 0;
-	  do
-	    {
+	    __glibcxx_assert(__n >= 0);
+	    while (__n-- > 0)
 	      ++__it;
-	      ++__m;
-	    }
-	  while (__m != __n && __it != __bound);
-	  return __n - __m;
-	}
-      else if constexpr (bidirectional_iterator<_It> && same_as<_It, _Sent>)
-	{
-	  iter_difference_t<_It> __m = 0;
-	  do
-	    {
-	      --__it;
-	      --__m;
-	    }
-	  while (__m != __n && __it != __bound);
-	  return __n - __m;
-	}
-      else
-	{
+	  }
+      }
+
+    template<input_or_output_iterator _It, sentinel_for<_It> _Sent>
+      constexpr void
+      operator()(_It& __it, _Sent __bound) const
+      {
+	if constexpr (assignable_from<_It&, _Sent>)
+	  __it = std::move(__bound);
+	else if constexpr (sized_sentinel_for<_Sent, _It>)
+	  (*this)(__it, __bound - __it);
+	else
+	  {
+	    while (__it != __bound)
+	      ++__it;
+	  }
+      }
+
+    template<input_or_output_iterator _It, sentinel_for<_It> _Sent>
+      constexpr iter_difference_t<_It>
+      operator()(_It& __it, iter_difference_t<_It> __n, _Sent __bound) const
+      {
+	if constexpr (sized_sentinel_for<_Sent, _It>)
+	  {
+	    const auto __diff = __bound - __it;
+
 #ifdef __cpp_lib_is_constant_evaluated
-	  if (std::is_constant_evaluated() && __n < 0)
-	    throw "attempt to decrement a non-bidirectional iterator";
+	    if (std::is_constant_evaluated()
+		&& !(__n == 0 || __diff == 0 || (__n < 0 == __diff < 0)))
+	      throw "inconsistent directions for distance and bound";
 #endif
-	  __glibcxx_assert(__n >= 0);
+	    // n and bound must not lead in opposite directions:
+	    __glibcxx_assert(__n == 0 || __diff == 0 || (__n < 0 == __diff < 0));
+	    const auto __absdiff = __diff < 0 ? -__diff : __diff;
+	    const auto __absn = __n < 0 ? -__n : __n;;
+	    if (__absn >= __absdiff)
+	      {
+		(*this)(__it, __bound);
+		return __n - __diff;
+	      }
+	    else
+	      {
+		(*this)(__it, __n);
+		return 0;
+	      }
+	  }
+	else if (__it == __bound || __n == 0)
 	  return __n;
-	}
-    }
+	else if (__n > 0)
+	  {
+	    iter_difference_t<_It> __m = 0;
+	    do
+	      {
+		++__it;
+		++__m;
+	      }
+	    while (__m != __n && __it != __bound);
+	    return __n - __m;
+	  }
+	else if constexpr (bidirectional_iterator<_It> && same_as<_It, _Sent>)
+	  {
+	    iter_difference_t<_It> __m = 0;
+	    do
+	      {
+		--__it;
+		--__m;
+	      }
+	    while (__m != __n && __it != __bound);
+	    return __n - __m;
+	  }
+	else
+	  {
+#ifdef __cpp_lib_is_constant_evaluated
+	    if (std::is_constant_evaluated() && __n < 0)
+	      throw "attempt to decrement a non-bidirectional iterator";
+#endif
+	    __glibcxx_assert(__n >= 0);
+	    return __n;
+	  }
+      }
+  };
 
-  template<input_or_output_iterator _It, sentinel_for<_It> _Sent>
-    constexpr iter_difference_t<_It>
-    distance(_It __first, _Sent __last)
-    {
-      if constexpr (sized_sentinel_for<_Sent, _It>)
-	return __last - __first;
-      else
-	{
-	  iter_difference_t<_It> __n = 0;
-	  while (__first != __last)
-	    {
-	      ++__first;
-	      ++__n;
-	    }
-	  return __n;
-	}
-    }
+  inline constexpr __advance_fn advance{};
 
-  template<range _Range>
-    constexpr range_difference_t<_Range>
-    distance(_Range&& __r)
-    {
-      if constexpr (sized_range<_Range>)
-	return static_cast<range_difference_t<_Range>>(ranges::size(__r));
-      else
-	return ranges::distance(ranges::begin(__r), ranges::end(__r));
-    }
+  struct __distance_fn
+  {
+    template<input_or_output_iterator _It, sentinel_for<_It> _Sent>
+      constexpr iter_difference_t<_It>
+      operator()(_It __first, _Sent __last) const
+      {
+	if constexpr (sized_sentinel_for<_Sent, _It>)
+	  return __last - __first;
+	else
+	  {
+	    iter_difference_t<_It> __n = 0;
+	    while (__first != __last)
+	      {
+		++__first;
+		++__n;
+	      }
+	    return __n;
+	  }
+      }
 
-  template<input_or_output_iterator _It>
-    constexpr _It
-    next(_It __x)
-    {
-      ++__x;
-      return __x;
-    }
+    template<range _Range>
+      constexpr range_difference_t<_Range>
+      operator()(_Range&& __r) const
+      {
+	if constexpr (sized_range<_Range>)
+	  return static_cast<range_difference_t<_Range>>(ranges::size(__r));
+	else
+	  return (*this)(ranges::begin(__r), ranges::end(__r));
+      }
+  };
 
-  template<input_or_output_iterator _It>
-    constexpr _It
-    next(_It __x, iter_difference_t<_It> __n)
-    {
-      ranges::advance(__x, __n);
-      return __x;
-    }
+  inline constexpr __distance_fn distance{};
 
-  template<input_or_output_iterator _It, sentinel_for<_It> _Sent>
-    constexpr _It
-    next(_It __x, _Sent __bound)
-    {
-      ranges::advance(__x, __bound);
-      return __x;
-    }
+  struct __next_fn
+  {
+    template<input_or_output_iterator _It>
+      constexpr _It
+      operator()(_It __x) const
+      {
+	++__x;
+	return __x;
+      }
 
-  template<input_or_output_iterator _It, sentinel_for<_It> _Sent>
-    constexpr _It
-    next(_It __x, iter_difference_t<_It> __n, _Sent __bound)
-    {
-      ranges::advance(__x, __n, __bound);
-      return __x;
-    }
+    template<input_or_output_iterator _It>
+      constexpr _It
+      operator()(_It __x, iter_difference_t<_It> __n) const
+      {
+	ranges::advance(__x, __n);
+	return __x;
+      }
 
-  template<bidirectional_iterator _It>
-    constexpr _It
-    prev(_It __x)
-    {
-      --__x;
-      return __x;
-    }
+    template<input_or_output_iterator _It, sentinel_for<_It> _Sent>
+      constexpr _It
+      operator()(_It __x, _Sent __bound) const
+      {
+	ranges::advance(__x, __bound);
+	return __x;
+      }
 
-  template<bidirectional_iterator _It>
-    constexpr _It
-    prev(_It __x, iter_difference_t<_It> __n)
-    {
-      ranges::advance(__x, -__n);
-      return __x;
-    }
+    template<input_or_output_iterator _It, sentinel_for<_It> _Sent>
+      constexpr _It
+      operator()(_It __x, iter_difference_t<_It> __n, _Sent __bound) const
+      {
+	ranges::advance(__x, __n, __bound);
+	return __x;
+      }
+  };
 
-  template<bidirectional_iterator _It>
-    constexpr _It
-    prev(_It __x, iter_difference_t<_It> __n, _It __bound)
-    {
-      ranges::advance(__x, -__n, __bound);
-      return __x;
-    }
+  inline constexpr __next_fn next{};
+
+  struct __prev_fn
+  {
+    template<bidirectional_iterator _It>
+      constexpr _It
+      operator()(_It __x) const
+      {
+	--__x;
+	return __x;
+      }
+
+    template<bidirectional_iterator _It>
+      constexpr _It
+      operator()(_It __x, iter_difference_t<_It> __n) const
+      {
+	ranges::advance(__x, -__n);
+	return __x;
+      }
+
+    template<bidirectional_iterator _It>
+      constexpr _It
+      operator()(_It __x, iter_difference_t<_It> __n, _It __bound) const
+      {
+	ranges::advance(__x, -__n, __bound);
+	return __x;
+      }
+  };
+
+  inline constexpr __prev_fn prev{};
 
 } // namespace ranges
 #endif // library concepts
