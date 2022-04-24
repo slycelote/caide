@@ -42,9 +42,7 @@ updateTests problemDir problem = liftIO $ do
     let testInputs = filter (`hasExtension` "in") allFiles
     forM_ testInputs $ \inFile -> copyFileToDir inFile tempTestDir
 
-    let allTests = allFiles &
-            filter (\f -> FS.extension f `elem` [Just "in", Just "skip"]) &
-            map (pathToText . FS.basename)
+    let allTests = map (pathToText . FS.basename) testInputs
 
     -- Update testList.txt file:
     -- * remove missing tests
