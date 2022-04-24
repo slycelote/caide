@@ -9,6 +9,7 @@ import Data.Either.Util (whenLeft)
 import Data.Function ((&))
 import Data.List (sort, sortOn)
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 import qualified Data.Text as T
 import System.Environment (getExecutablePath)
 
@@ -42,7 +43,8 @@ updateTests problemDir problem = liftIO $ do
     let testInputs = filter (`hasExtension` "in") allFiles
     forM_ testInputs $ \inFile -> copyFileToDir inFile tempTestDir
 
-    let allTests = map (pathToText . FS.basename) testInputs
+    let testNameFromPath = pathToText . FS.basename
+        allTests = map testNameFromPath testInputs
 
     -- Update testList.txt file:
     -- * remove missing tests
@@ -51,12 +53,14 @@ updateTests problemDir problem = liftIO $ do
     let previousRunFile = problemDir </> Paths.testReportFile
     report <- readTestReport previousRunFile
     let testNameToStatus = Map.fromList [(name, testRunStatus res) | (name, res) <- report]
-        testsToSkip = map (pathToText . FS.basename) . filter (`hasExtension` "skip") $ allFiles
-        testState testName = if testName `elem` testsToSkip then Skip else Run
+        testsToSkip = allFiles & filter (`hasExtension` "skip") & map testNameFromPath & Set.fromList
+        testState testName = if testName `Set.member` testsToSkip then Skip else Run
         testList = zip allTests (map testState allTests)
-        succeededAndName (testName, _) =
-            ((isSuccessful =<< Map.lookup testName testNameToStatus) /= Just False, testName)
-        sortedTests = sortOn succeededAndName testList
+        sortOrder (testName, _) = case Map.lookup testName testNameToStatus of
+            Nothing -> (0 :: Int, testName)
+            Just status | isSuccessful status == Just False -> (1, testName)
+            _ -> (2, testName)
+        sortedTests = sortOn sortOrder testList
     writeTests sortedTests $ problemDir </> Paths.testListFile
 
     -- TODO: Avoid caideExe.txt files?
