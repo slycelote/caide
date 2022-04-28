@@ -94,22 +94,44 @@ namespace slycelote.VsCaide.Core
             var visibleIfNotCaideSolution = new Binding(nameof(model.IsCaideSolution))
             {
                 Source = model,
-                Converter = new OneWayConverter<bool, Visibility>(isCaide => isCaide ? Visibility.Hidden : Visibility.Visible)
+                Mode = BindingMode.OneWay,
+                Converter = new OneWayConverter<bool, Visibility>(isCaide => isCaide ? Visibility.Hidden : Visibility.Visible),
             };
 
             var visibleIfCaideSolution = new Binding(nameof(model.IsCaideSolution))
             {
                 Source = model,
-                Converter = new BooleanToVisibilityConverter()
+                Mode = BindingMode.OneWay,
+                Converter = new BooleanToVisibilityConverter(),
             };
 
-            var isCaideSolution = new Binding(nameof(model.IsCaideSolution)) { Source = model };
+            var isCaideSolution = new Binding(nameof(model.IsCaideSolution)) 
+            {
+                Source = model,
+                Mode = BindingMode.OneWay,
+            };
 
             btnReload.SetBinding(UIElement.VisibilityProperty, visibleIfCaideSolution);
             btnCreateSolution.SetBinding(UIElement.VisibilityProperty, visibleIfNotCaideSolution);
             foreach (var control in new List<FrameworkElement> { btnAddProblem, btnParseContest, btnEditTests, btnRunTests, btnDebugTests, btnArchiveProblem, cbProblems, cbProgrammingLanguage, menuEditConfig, menuArchiveProblems })
             {
                 control.SetBinding(UIElement.IsEnabledProperty, isCaideSolution);
+            }
+
+            foreach (var control in new List<ContentControl> { btnReload, btnAddProblem,
+                btnParseContest, btnEditTests, btnRunTests, btnDebugTests, btnArchiveProblem,
+                btnAdvanced, lblSelectedLanguage, lblSelectedProblem })
+            {
+                control.ToolTip = control.Content;
+            }
+
+            foreach (var cb in new[] { cbProblems, cbProgrammingLanguage })
+            {
+                cb.SetBinding(ContentControl.ToolTipProperty, new Binding(nameof(ComboBox.Text))
+                {
+                    Source = cb,
+                    Mode = BindingMode.OneWay,
+                });
             }
 
             btnAddProblem.Click += BtnAdd_Click;
