@@ -175,13 +175,16 @@ namespace slycelote.VsCaide.VsSpecific
 
             dte.Solution.SolutionBuild.StartupProjects = project.UniqueName;
 
-            var allItems = project.ProjectItems.OfType<ProjectItem>();
+            if (SolutionUtilities.HasSolutionLoaded())
+            {
+                var allItems = project.ProjectItems.OfType<ProjectItem>();
 #pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
-            var solutionCs = allItems.Single(i => i.Name == solutionFile);
+                var solutionCs = allItems.Single(i => i.Name == solutionFile);
 #pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
-            var solutionCsWindow = solutionCs.Open(EnvDTE.Constants.vsViewKindCode);
-            solutionCsWindow.Visible = true;
-            solutionCsWindow.Activate();
+                var solutionCsWindow = solutionCs.Open(EnvDTE.Constants.vsViewKindCode);
+                solutionCsWindow.Visible = true;
+                solutionCsWindow.Activate();
+            }
 
             CreateSubmissionCsProject();
 
