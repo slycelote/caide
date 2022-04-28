@@ -16,9 +16,9 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <Button Grid.Row="0" Grid.Column="0" Content="Create caide solution" Name="btnCreateSolution" Margin="10,5" />
         <Button Grid.Row="0" Grid.Column="0" Content="Reload problem list" Name="btnReload" Margin="10,5" />
