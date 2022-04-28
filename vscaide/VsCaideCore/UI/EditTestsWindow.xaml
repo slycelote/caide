@@ -48,7 +48,7 @@
             </Grid.RowDefinitions>
             <TextBox x:Name="txtInput" Margin="5,5,5,0" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" AcceptsReturn="True" FontFamily="Lucida Console" />
             <StackPanel Orientation="Horizontal" Grid.Row="1">
-                <CheckBox x:Name="chkOutputKnown" Content="Output known" Margin="10,0" FlowDirection="RightToLeft" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                <CheckBox x:Name="chkOutputKnown" Content="Output known" Margin="10,0" VerticalAlignment="Center" HorizontalAlignment="Left" />
             </StackPanel>
             <TextBox x:Name="txtOutput" Margin="5,0,5,5" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Row="2" AcceptsReturn="True" FontFamily="Lucida Console"/>
         </Grid>
