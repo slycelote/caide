@@ -38,7 +38,6 @@ namespace slycelote.VsCaide
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [InstalledProductRegistration("#110", "#112", "2.4.2", IconResourceID = 400)] // Info on this package for Help/About
     [Guid(VsCaidePackage.PackageGuidString)]
-    [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string, PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExists_string, PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
@@ -49,6 +48,8 @@ namespace slycelote.VsCaide
         /// VsCaidePackage GUID string.
         /// </summary>
         public const string PackageGuidString = "8e97a36f-88cc-49ee-8e47-df660b4c7d83";
+        private IVsMonitorSelection monitorSelection;
+        private uint monitorSelectionCookie;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="VsCaidePackage"/> class.
@@ -148,9 +149,9 @@ namespace slycelote.VsCaide
             SolutionEvents.OnBeforeBackgroundSolutionLoadBegins += SolutionEvents_OnBeforeBackgroundSolutionLoadBegins;
             SolutionEvents.OnAfterBackgroundSolutionLoadComplete += SolutionEvents_OnAfterBackgroundSolutionLoadComplete;
             SolutionEvents.OnBeforeCloseProject += SolutionEvents_OnBeforeCloseProject;
-            var monitorSelection = (await GetServiceAsync(typeof(IVsMonitorSelection))) as IVsMonitorSelection;
+            monitorSelection = (await GetServiceAsync(typeof(IVsMonitorSelection))) as IVsMonitorSelection;
             _ = ErrorHandler.ThrowOnFailure(
-                monitorSelection.AdviseSelectionEvents(this, out uint monitorSelectionCookie));
+                monitorSelection.AdviseSelectionEvents(this, out monitorSelectionCookie));
 
             // https://github.com/madskristensen/SolutionLoadSample
             SolutionEvents.OnAfterOpenSolution += SolutionEvents_OnAfterLoadedSolution;
@@ -163,6 +164,23 @@ namespace slycelote.VsCaide
 
             progress.Report(new ServiceProgressData("Initializing VsCaide menu command."));
             await VsCaideMainWindowCommand.InitializeAsync(this);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            if (disposing)
+            {
+                SolutionEvents.OnAfterCloseSolution -= SolutionEvents_OnAfterCloseSolution;
+                SolutionEvents.OnBeforeOpenSolution -= SolutionEvents_OnBeforeOpenSolution;
+                SolutionEvents.OnBeforeBackgroundSolutionLoadBegins -= SolutionEvents_OnBeforeBackgroundSolutionLoadBegins;
+                SolutionEvents.OnAfterBackgroundSolutionLoadComplete -= SolutionEvents_OnAfterBackgroundSolutionLoadComplete;
+                SolutionEvents.OnBeforeCloseProject -= SolutionEvents_OnBeforeCloseProject;
+                SolutionEvents.OnAfterOpenSolution -= SolutionEvents_OnAfterLoadedSolution;
+                monitorSelection?.UnadviseSelectionEvents(monitorSelectionCookie);
+            }
+
+            base.Dispose(disposing);
         }
 
         #endregion

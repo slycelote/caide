@@ -37,6 +37,16 @@
             VSColorTheme.ThemeChanged += VSColorTheme_ThemeChanged;
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                VSColorTheme.ThemeChanged -= VSColorTheme_ThemeChanged;
+            }
+
+            base.Dispose(disposing);
+        }
+
         private void VSColorTheme_ThemeChanged(ThemeChangedEventArgs e)
             => ExceptionUtilities.CatchAll(() =>
         {
