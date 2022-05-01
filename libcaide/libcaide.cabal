@@ -169,6 +169,7 @@ library
         Caide.Parsers.GCJ
         Caide.Parsers.HackerRank
         Caide.Parsers.LeetCode
+        Caide.Parsers.LeetCodeContest
         Caide.Parsers.POJ
         Caide.Parsers.RCC
         Caide.Parsers.RccContest
