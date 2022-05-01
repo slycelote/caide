@@ -1,24 +1,31 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns, OverloadedStrings, TemplateHaskell #-}
 module Caide.CPP.CPPSimple(
       language
+
+      -- | Directory with headers containing things predefined at an online judge.
+      -- Relative to problem directory.
+    , predefinedHeadersDir
 ) where
 
-import Control.Monad (unless)
-import Control.Monad.State (liftIO)
+import Control.Monad.Extended (forM_, liftIO, unless, unlessM, whenJust)
 
-import Data.List (intersperse)
-import qualified Data.Text as T
+import qualified Data.List.NonEmpty as NonEmpty
+import Data.Text (Text)
 
-import Filesystem (copyFile, isFile)
-import Filesystem.Util (appendTextFile, writeTextFile, pathToText)
-import Filesystem.Path ((</>))
-import Filesystem.Path.CurrentOS (fromText)
-import qualified Filesystem.Path as F
+import Data.FileEmbed (embedStringFile)
 
-import Caide.Problem (readProblemInfo)
+import qualified Filesystem.Path.CurrentOS as FS
+import qualified Filesystem as FS
+import Filesystem.Path.CurrentOS ((</>))
+import Filesystem.Util (appendTextFile, writeTextFile)
+import Caide.Util (readTextFile')
+
+import Caide.Logger (logDebug)
+import Caide.MustacheUtil (compileAndRender)
+import Caide.Paths (problemDir)
+import Caide.Problem (ProblemState, jsonEncodeProblem, readProblemInfo, readProblemState)
 import Caide.Templates (copyTemplateUnlessExists, getTemplate)
 import Caide.Types
-import Caide.Util (readTextFile')
 
 
 language :: ProgrammingLanguage
@@ -30,141 +37,147 @@ language = ProgrammingLanguage
 generateCPPScaffold :: ProblemID -> CaideIO ()
 generateCPPScaffold probID = do
     root <- caideRoot
-    probType <- getProbType probID
-    generateSolutionFiles probType root probID
+    problem <- readProblemInfo probID
+    problemState <- readProblemState probID
 
-generateSolutionFiles :: ProblemType -> F.FilePath -> ProblemID -> CaideIO ()
-generateSolutionFiles (Stream input output) root probID = do
-    mainFileExists <- liftIO $ isFile mainProgramPath
-    unless mainFileExists $ do
-        mainTemplate <- getTemplate "main_template.cpp"
-        liftIO $ writeTextFile mainProgramPath $
-                T.unlines [inputPreamble, outputPreamble, mainTemplate]
-    copyTemplateUnlessExists "solution_template.cpp" scaffoldPath
-    copyTemplateUnlessExists "test_template.cpp" testProgramPath
-  where
-    inputPreamble = case input of
-        StdIn -> "#define CAIDE_STDIN 1"
-        InputFilePattern p -> "#define CAIDE_IN_PATTERN \"" <> p <> "\""
-        FileInput fileName -> "const char* CAIDE_IN_FILE = \"" <> pathToText fileName <> "\";"
+    generateSolutionAndMain problem problemState
 
-    outputPreamble = case output of
-        StdOut -> "#define CAIDE_STDOUT 1"
-        FileOutput fileName -> "const char* CAIDE_OUT_FILE = \"" <> pathToText fileName <> "\";"
+    let probDir = problemDir root probID
+        testProgramPath = probDir </> FS.fromText (probID <> "_test.cpp")
 
-    problemDir = root </> fromText probID
-    scaffoldPath    = problemDir </> fromText (T.append probID ".cpp")
-    testProgramPath = problemDir </> fromText (T.append probID "_test.cpp")
-    mainProgramPath = problemDir </> "main.cpp"
-
-generateSolutionFiles (Topcoder desc) root probID = do
-    solutionFileExists <- liftIO $ isFile solutionPath
-    unless solutionFileExists $ do
-        solutionTemplate <- getTemplate "topcoder_solution_template.cpp"
-        liftIO $ writeTextFile solutionPath $
-            T.unlines (solutionTemplate:tcSolution)
-
-    testFileExists <- liftIO $ isFile testProgramPath
+    testerCode <- generateTesterCode problem problemState
+    testFileExists <- liftIO $ FS.isFile testProgramPath
     unless testFileExists $ do
         testTemplate <- getTemplate "test_template.cpp"
-        liftIO $ writeTextFile testProgramPath $
-            T.unlines $ tcTestPreamble ++ [testTemplate]
+        liftIO $ writeTextFile testProgramPath $ testerCode <> "\n" <> testTemplate
 
-    copyTemplateUnlessExists "topcoder_serialize.h" (problemDir </> "topcoder_serialize.h")
-  where
-    problemDir = root </> fromText probID
-    solutionPath = problemDir </> fromText (T.append probID ".cpp")
-    testProgramPath = problemDir </> fromText (T.append probID "_test.cpp")
+predefinedHeadersDir :: FS.FilePath
+predefinedHeadersDir = "predefined"
 
-    tcTestPreamble = buildTopcoderTestPreamble (tcMethod desc) (tcMethodParameters desc)
-    tcSolution = buildTopcoderSolution desc
+probIdAndDir :: Problem -> CaideIO (ProblemID, FS.FilePath)
+probIdAndDir problem = do
+    root <- caideRoot
+    let probID = problemId problem
+    return (probID, problemDir root probID)
+
+generateSolutionAndMain :: Problem -> ProblemState -> CaideIO ()
+generateSolutionAndMain problem@Problem{problemType=Stream _ _} state = do
+    (probID, probDir) <- probIdAndDir problem
+    let solutionPath = probDir </> FS.fromText (probID <> ".cpp")
+        mainProgramPath = probDir </> "main.cpp"
+
+    unlessM (liftIO $ FS.isFile mainProgramPath) $ do
+        userMainTemplate <- getTemplate "main_template.cpp"
+        rendered <- renderTemplates ["main.cpp"] problem state
+        let [(_,mainTemplate)] = rendered
+        liftIO $ writeTextFile mainProgramPath $
+            mainTemplate <> "\n" <> userMainTemplate
+
+    copyTemplateUnlessExists "solution_template.cpp" solutionPath
 
 
+generateSolutionAndMain problem@Problem{problemType=Topcoder _} state =
+    generateSolutionAndMainForTopcoder problem state
 
--- Note: this will fail if Topcoder ever adds a multi-argument template types
--- (like map<K, V>) because of incorrect expansion of CAIDE_TC_PARAM macro.
--- See solution in the last section here: http://kaba.hilvi.org/pastel/techniques_deduction.htm
-buildTopcoderTestPreamble :: TopcoderValue -> [TopcoderValue] -> [T.Text]
-buildTopcoderTestPreamble methodDesc paramsDesc =
-    [ "#define CAIDE_TOPCODER 1"
-    , T.append "#define CAIDE_TC_RETURN_TYPE " (cppType methodDesc)
-    , "#define CAIDE_TC_PARAM_LIST \\"
-    ] ++
-    [T.concat ["    CAIDE_TC_PARAM(", cppType p, ", ", tcValueName p, ")\\"]
-         | p <- paramsDesc] ++
-    [""]
+generateSolutionAndMain problem@Problem{problemType=LeetCodeMethod _} state =
+    generateSolutionAndMainForLeetCode problem state
 
-cppType :: TopcoderValue -> T.Text
-cppType value = cppTypeImpl (tcValueDimension value) (tcValueType value)
-  where
-    cppTypeImpl 0 TCInt = "int"
-    cppTypeImpl 0 TCLong = "long long"
-    cppTypeImpl 0 TCDouble = "double"
-    cppTypeImpl 0 TCString = "string"
-    cppTypeImpl n _ | n == 0 = "unsupportedCaideType"
-    cppTypeImpl 1 baseType = T.concat ["vector<", cppTypeImpl 0     baseType, ">"]
-    cppTypeImpl n baseType = T.concat ["vector<", cppTypeImpl (n-1) baseType, " >"]
+generateSolutionAndMain problem@Problem{problemType=LeetCodeClass _ _ _} state =
+    generateSolutionAndMainForLeetCode problem state
 
-isNumberType :: TopcoderValue -> Bool
-isNumberType value = tcValueDimension value == 0 && isBaseNumberType (tcValueType value)
-  where
-    isBaseNumberType TCInt = True
-    isBaseNumberType TCLong = True
-    isBaseNumberType TCDouble = True
-    isBaseNumberType _ = False
 
-buildTopcoderSolution :: TopcoderProblemDescriptor -> [T.Text]
-buildTopcoderSolution desc =
-    [ T.concat ["class ", tcClassName desc, " {"]
-    , "public:"
-    -- TODO: pass the signatures of class constructor and main solution method to inliner
-    , "    /// caide keep"
-    , "    " <> tcClassName desc <> "() {"
-    , "    }"
-    , ""
-    , "    /// caide keep"
-    , T.concat ["    ", declareValue method, "(",
-              T.intercalate ", " (map declareValue params),
-              ") {"]
-    , T.concat $ ["        ", declareValue (method {tcValueName = "result"})] ++ [" = 0" | isNumberType method] ++ [";"]
-    , "        return result;"
-    , "    }"
-    , "};"
-    , ""
-    , ""
-    , T.concat [declareValue (method {tcValueName = "solve"}), "(",
-              T.intercalate ", " (map declareValue params),
-              ", int) {"]
-    , T.concat ["    ", tcClassName desc, " sol;"]
-    , T.concat $ "    return sol." : tcValueName method : "(" :
-                intersperse ", " (map tcValueName params) ++ [");"]
-    , "}"
-    ]
-  where
-    declareValue value = T.concat [cppType value, " ", tcValueName value]
-    method = tcMethod desc
-    params = tcMethodParameters desc
+generateSolutionAndMainForLeetCode :: Problem -> ProblemState -> CaideIO ()
+generateSolutionAndMainForLeetCode problem state = do
+    generateSolutionAndMainForTopcoder problem state
+
+    (_, probDir) <- probIdAndDir problem
+    let predefDir = probDir </> predefinedHeadersDir
+        leetcodePredef = predefDir </> "leetcode_predefined.h"
+    liftIO $ do
+        FS.createTree predefDir
+        unlessM (FS.isFile leetcodePredef) $
+            writeTextFile leetcodePredef leetcodePredefText
+
+leetcodePredefText :: Text
+leetcodePredefText = $(embedStringFile "src/Caide/CPP/leetcode_predefined.h")
+
+
+generateSolutionAndMainForTopcoder :: Problem -> ProblemState -> CaideIO ()
+generateSolutionAndMainForTopcoder problem state = do
+    (probID, probDir) <- probIdAndDir problem
+    let solutionPath = probDir </> FS.fromText (probID <> ".cpp")
+
+    solutionFileExists <- liftIO $ FS.isFile solutionPath
+    unless solutionFileExists $ do
+        userSolutionTemplate <- getTemplate "topcoder_solution_template.cpp"
+        rendered <- renderTemplates ["solution.cpp"] problem state
+        let [(_,solutionTemplate)] = rendered
+        liftIO $ writeTextFile solutionPath $
+            userSolutionTemplate <> "\n" <> solutionTemplate
+
+
+allTemplates :: NonEmpty.NonEmpty (Text, Text)
+allTemplates =
+    NonEmpty.fromList [ ("tester.cpp", $(embedStringFile "src/Caide/CPP/tester.cpp.mustache"))
+                      , ("main.cpp", $(embedStringFile "src/Caide/CPP/main.cpp.mustache"))
+                      , ("solution.cpp", $(embedStringFile "src/Caide/CPP/solution.cpp.mustache"))
+                      , ("custom_checker.h", $(embedStringFile "src/Caide/CPP/custom_checker.h.mustache"))
+                      , ("class_tester.h", $(embedStringFile "src/Caide/CPP/class_tester.h.mustache"))
+                      , ("class_tester_impl.h", $(embedStringFile "src/Caide/CPP/class_tester_impl.h.mustache"))
+                      , ("cpptype", $(embedStringFile "src/Caide/CPP/cpptype.mustache"))
+                      ]
+
+
+generateTesterCode :: Problem -> ProblemState -> CaideIO Text
+generateTesterCode problem state = do
+    (_, probDir) <- probIdAndDir problem
+    let testerTemplates = ["tester.cpp", "custom_checker.h"] ++
+            case problemType problem of
+                Stream _ _ -> []
+                Topcoder _ -> ["class_tester.h", "class_tester_impl.h"]
+                LeetCodeMethod _ -> ["class_tester.h", "class_tester_impl.h"]
+                LeetCodeClass _ _ _ -> ["class_tester.h", "class_tester_impl.h"]
+
+    rendered <- renderTemplates testerTemplates problem state
+    let ((_, testerCode):rest) = rendered
+    liftIO $ writeFiles probDir rest
+    copyTemplateUnlessExists "test_util.h" (probDir </> "test_util.h")
+    return testerCode
+
+
+writeFiles :: FS.FilePath -> [(Text, Text)] -> IO ()
+writeFiles dir renderedTemplates =
+    forM_ renderedTemplates $ \(name, renderedText) -> do
+        let path = dir </> FS.fromText name
+        unlessM (FS.isFile path) $ writeTextFile path renderedText
+
+renderTemplates :: [Text] -> Problem -> ProblemState -> CaideIO [(Text, Text)]
+renderTemplates primaryTemplateNames problem state = do
+    let json = jsonEncodeProblem problem state
+    case compileAndRender allTemplates primaryTemplateNames json of
+        Left err -> throw err
+        Right (warnings, res) -> do
+            whenJust warnings logDebug
+            return $ zip primaryTemplateNames res
 
 
 inlineCPPCode :: ProblemID -> CaideIO ()
 inlineCPPCode probID = do
     root <- caideRoot
-    probType <- getProbType probID
+    probType <- problemType <$> readProblemInfo probID
+    let probDir = problemDir root probID
+        solutionPath = probDir </> FS.fromText (probID <> ".cpp")
+        inlinedCodePath = probDir </> "submission.cpp"
+        mainProgramPath = probDir </> "main.cpp"
 
-    let problemDir = root </> fromText probID
-        solutionPath = problemDir </> fromText (T.append probID ".cpp")
-        inlinedCodePath = problemDir </> "submission.cpp"
-        mainProgramPath = problemDir </> "main.cpp"
-
-    liftIO $ copyFile solutionPath inlinedCodePath
+    liftIO $ FS.copyFile solutionPath inlinedCodePath
     case probType of
         Stream _ _ -> do
             mainCode <- readTextFile' mainProgramPath
             liftIO $ appendTextFile inlinedCodePath mainCode
         Topcoder _ -> return ()
+        LeetCodeMethod _ -> return ()
+        LeetCodeClass _ _ _ -> return ()
 
-    liftIO $ copyFile inlinedCodePath $ root </> "submission.cpp"
-
-getProbType :: ProblemID -> CaideIO ProblemType
-getProbType probID = problemType <$> readProblemInfo probID
+    liftIO $ FS.copyFile inlinedCodePath $ root </> "submission.cpp"
 

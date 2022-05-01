@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, NamedFieldPuns, OverloadedStrings, ScopedTypeVariables #-}
 
 module Caide.Types(
       Problem (..)
@@ -8,7 +8,9 @@ module Caide.Types(
     , OutputTarget (..)
     , TopcoderType (..)
     , TopcoderValue (..)
-    , TopcoderProblemDescriptor (..)
+    , TopcoderMethod (..)
+    , TopcoderProblemDescription (..)
+    , defaultLeetCodeClassName
     , makeProblem
 
     , Verbosity (..)
@@ -68,7 +70,7 @@ import Caide.Types.Option (Option(..))
 
 data TestCase = TestCase
     { testCaseInput  :: !Text
-    , testCaseOutput :: !Text
+    , testCaseOutput :: !(Maybe Text)
     } deriving (Show, Eq)
 
 type ProblemID = Text
@@ -78,29 +80,43 @@ data Problem = Problem
     , problemId   :: !ProblemID -- ^ ID used for folder names, code generation etc.
     , problemFloatTolerance :: !Double -- ^ Comparing floating-point values up to this tolerance
     , problemType :: !ProblemType
+    , problemCodeSnippets :: !(Map Text Text) -- maps language id to code snippet
     } deriving (Show)
 
-data ProblemType = Topcoder !TopcoderProblemDescriptor | Stream !InputSource !OutputTarget
-    deriving (Show)
+data ProblemType = Topcoder !TopcoderProblemDescription
+                 | LeetCodeMethod !TopcoderMethod -- ^ Class with a single method; class name is Solution
+                 | LeetCodeClass !Text ![TopcoderValue] ![TopcoderMethod] -- ^ Class name, ctor parameters and methods
+                 | Stream !InputSource !OutputTarget
+                 deriving (Show, Eq)
+
 data InputSource = StdIn | FileInput !F.FilePath | InputFilePattern !Text
-    deriving (Show)
-data OutputTarget = StdOut | FileOutput !F.FilePath
-    deriving (Show)
+    deriving (Show, Eq)
 
-data TopcoderProblemDescriptor = TopcoderProblemDescriptor
+data OutputTarget = StdOut | FileOutput !F.FilePath
+    deriving (Show, Eq)
+
+data TopcoderProblemDescription = TopcoderProblemDescription
     { tcClassName        :: !Text
-    , tcMethod           :: !TopcoderValue
-    , tcMethodParameters :: ![TopcoderValue]
-    } deriving (Show)
+    , tcSingleMethod     :: !TopcoderMethod
+    } deriving (Show, Eq)
 
 data TopcoderValue = TopcoderValue
     { tcValueName      :: !Text          -- ^ Parameter/method name
     , tcValueType      :: !TopcoderType  -- ^ Base type of the parameter, e.g. int for vector<vector<int>>
     , tcValueDimension :: !Int           -- ^ Dimension, e.g. 2 for vector<vector<int>>
-    } deriving (Show)
+    } deriving (Show, Eq)
 
-data TopcoderType = TCInt | TCLong | TCDouble | TCString
-    deriving (Show)
+data TopcoderType = TCInt | TCLong | TCDouble | TCString | TCBool | TCVoid
+                  | TypeName Text
+    deriving (Show, Eq)
+
+data TopcoderMethod = TopcoderMethod
+    { tcMethod     :: !TopcoderValue    -- ^ name and return type of the method
+    , tcParameters :: ![TopcoderValue]  -- ^ names and types of parameters
+    } deriving (Show, Eq)
+
+defaultLeetCodeClassName :: Text
+defaultLeetCodeClassName = "Solution"
 
 makeProblem :: Text -> ProblemID -> ProblemType -> Problem
 makeProblem name probId probType = Problem
@@ -108,6 +124,7 @@ makeProblem name probId probType = Problem
     , problemId = probId
     , problemType = probType
     , problemFloatTolerance = 0.000001
+    , problemCodeSnippets = M.empty
     }
 
 
@@ -257,7 +274,8 @@ setProp (FileHandle path) section key value = do
     case mf of
         Nothing -> throw $ T.append "Unknown file handle " $ toText path
         Just f  -> do
-            newConf <- convertToCaide $ C.set (configParser f) section key (optionToString value)
+            let escapedPercent = concatMap (\c -> if c == '%' then "%%" else [c]) (optionToString value)
+            newConf <- convertToCaide $ C.set (configParser f) section key escapedPercent
             let newFile = ConfigInMemory { configParser = newConf, modified = True}
             modifyWithFiles $ M.insert path newFile
 
@@ -269,49 +287,73 @@ extend r conf = conf' { C.accessfunc = C.interpolatingAccess 10, C.usedefault = 
     where Right conf' = C.set conf "DEFAULT" "caideRoot" $ F.encodeString r
 
 instance Option TopcoderType where
-    optionToString TCInt    = "int"
-    optionToString TCLong   = "long"
-    optionToString TCDouble = "double"
-    optionToString TCString = "String"
+    optionToText TCInt    = "int"
+    optionToText TCLong   = "long"
+    optionToText TCDouble = "double"
+    optionToText TCString = "String"
+    optionToText TCBool   = "bool"
+    optionToText TCVoid   = "void"
+    optionToText (TypeName s) = s
 
     optionFromString "int"    = Just TCInt
     optionFromString "long"   = Just TCLong
     optionFromString "double" = Just TCDouble
     optionFromString "String" = Just TCString
     optionFromString "string" = Just TCString
-    optionFromString _        = Nothing
+    optionFromString "bool"   = Just TCBool
+    optionFromString "void"   = Just TCVoid
+    optionFromString s        = Just $ TypeName $ T.pack s
 
 -- name:vvType
 instance Option TopcoderValue where
     optionToString p = concat [
         unpack (tcValueName p), ":", replicate (tcValueDimension p) 'v', optionToString (tcValueType p)]
 
-    optionFromText s = case T.splitOn ":" s of
-        [paramName, paramType] -> case maybeBaseType of
-            Just baseType -> Just TopcoderValue
-                { tcValueName = paramName
-                , tcValueType = baseType
-                , tcValueDimension = dim
-                }
-            Nothing       -> Nothing
-          where
-            dim = T.length . T.takeWhile (=='v') $ paramType
-            maybeBaseType = optionFromText . T.dropWhile (=='v') $ paramType
+    optionFromText s = do
+        [paramName, paramType] <- pure $ T.splitOn ":" s
+        (baseType, dimension) <-
+            if paramType == "void"
+                then pure (TCVoid, 0)
+                else do
+                    let dim = T.length . T.takeWhile (=='v') $ paramType
+                    typ <- optionFromText . T.dropWhile (=='v') $ paramType
+                    pure (typ, dim)
+        pure TopcoderValue
+            { tcValueName = paramName
+            , tcValueType = baseType
+            , tcValueDimension = dimension
+            }
+
+
+-- method:retType,param1:type1,param2:type2
+instance Option TopcoderMethod where
+    optionToString TopcoderMethod{tcMethod,tcParameters} = optionToString (tcMethod:tcParameters)
+
+    optionFromString s = case optionFromString s of
+        Just (method:params) -> Just $ TopcoderMethod method params
         _ -> Nothing
+
 
 instance Option ProblemType where
     -- topcoder,class,method:retType,param1:type1,param2:type2
     optionToString (Topcoder desc) =
-        optionToString ("topcoder" : tcClassName desc :
-                        map optionToText (tcMethod desc : tcMethodParameters desc))
-    optionToString (Stream input output) = concat [
-        "file,", inputSourceToString input, ",", outputTargetToString output]
+        "topcoder," <> (T.unpack $ tcClassName desc) <> "," <> optionToString (tcSingleMethod desc)
+
+    -- leetcode,method:retType,param1:type1,param2:type2
+    optionToString (LeetCodeMethod m) = "leetcode," <> optionToString m
+
+    -- leetcode;className,ctorParam1:type1,ctorParam2:type2;method:retType,param1:type1,param2:type2;anotherMethod:retType,param1:type1,param2:type2
+    optionToString (LeetCodeClass className ctorParams methods) =
+        "leetcode;" <> T.unpack className <> concat [',' : optionToString p | p <- ctorParams]
+            <> concat [';' : optionToString method | method <- methods]
+
+    optionToString (Stream input output) =
+        "file," <> inputSourceToString input <> "," <> outputTargetToString output
 
     optionFromText s | "topcoder," `T.isPrefixOf` s = case maybeParams of
-        Just (method:params) -> Just $ Topcoder TopcoderProblemDescriptor
+        Just (method:params) -> Just $ Topcoder TopcoderProblemDescription
             { tcClassName = className
-            , tcMethod = method
-            , tcMethodParameters = params
+            , tcSingleMethod = TopcoderMethod { tcMethod = method, tcParameters = params }
             }
         _ -> Nothing
       where
@@ -321,24 +363,39 @@ instance Option ProblemType where
             then mapM optionFromText paramsStr
             else Nothing
 
+    optionFromText s | "leetcode," `T.isPrefixOf` s = let
+        components = tail $ T.splitOn "," s
+        mbValues = mapM optionFromText components
+        in case mbValues of
+            Just (method:params) -> Just $ LeetCodeMethod $ TopcoderMethod method params
+            _ -> Nothing
+
+    optionFromText s | "leetcode;" `T.isPrefixOf` s = do
+        (_:ctorToken:methodTokens) <- pure $ T.splitOn ";" s
+        (className:ctorParamsTokens) <- pure $ T.splitOn "," ctorToken
+        ctorParams <- mapM optionFromText ctorParamsTokens
+        methods <- mapM optionFromText methodTokens
+        pure $ LeetCodeClass className ctorParams methods
+
+
     optionFromText s = case optionFromText s of
         Just [probType, inputSource, outputSource]
             | probType == "file" -> Just $ Stream (parseInput inputSource) (parseOutput outputSource)
         _ -> Nothing
 
 data ConfigInMemory = ConfigInMemory
-    { configParser :: C.ConfigParser
-    , modified     :: Bool
+    { configParser :: !C.ConfigParser
+    , modified     :: !Bool
     }
 
 data CaideEnv = CaideEnv
-    { root      :: F.FilePath
-    , verbosity :: Verbosity
-    , settings  :: Settings
+    { root      :: !F.FilePath
+    , verbosity :: !Verbosity
+    , settings  :: !Settings
     } deriving (Show)
 
 data CaideState = CaideState
-    { files :: Map F.FilePath ConfigInMemory
+    { files :: !(Map F.FilePath ConfigInMemory)
     }
 
 

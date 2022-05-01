@@ -9,6 +9,9 @@ void inlineCppCode(
     const char** macrosToKeep,
     int numMacrosToKeep,
 
+    const char** identifiersToKeep,
+    int numIdentifiersToKeep,
+
     int maxConsequentEmptyLines,
 
     const char** cppFilePaths,

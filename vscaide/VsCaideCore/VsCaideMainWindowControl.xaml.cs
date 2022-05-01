@@ -94,22 +94,44 @@ namespace slycelote.VsCaide.Core
             var visibleIfNotCaideSolution = new Binding(nameof(model.IsCaideSolution))
             {
                 Source = model,
-                Converter = new OneWayConverter<bool, Visibility>(isCaide => isCaide ? Visibility.Hidden : Visibility.Visible)
+                Mode = BindingMode.OneWay,
+                Converter = new OneWayConverter<bool, Visibility>(isCaide => isCaide ? Visibility.Hidden : Visibility.Visible),
             };
 
             var visibleIfCaideSolution = new Binding(nameof(model.IsCaideSolution))
             {
                 Source = model,
-                Converter = new BooleanToVisibilityConverter()
+                Mode = BindingMode.OneWay,
+                Converter = new BooleanToVisibilityConverter(),
             };
 
-            var isCaideSolution = new Binding(nameof(model.IsCaideSolution)) { Source = model };
+            var isCaideSolution = new Binding(nameof(model.IsCaideSolution)) 
+            {
+                Source = model,
+                Mode = BindingMode.OneWay,
+            };
 
             btnReload.SetBinding(UIElement.VisibilityProperty, visibleIfCaideSolution);
             btnCreateSolution.SetBinding(UIElement.VisibilityProperty, visibleIfNotCaideSolution);
             foreach (var control in new List<FrameworkElement> { btnAddProblem, btnParseContest, btnEditTests, btnRunTests, btnDebugTests, btnArchiveProblem, cbProblems, cbProgrammingLanguage, menuEditConfig, menuArchiveProblems })
             {
                 control.SetBinding(UIElement.IsEnabledProperty, isCaideSolution);
+            }
+
+            foreach (var control in new List<ContentControl> { btnReload, btnAddProblem,
+                btnParseContest, btnEditTests, btnRunTests, btnDebugTests, btnArchiveProblem,
+                btnAdvanced, lblSelectedLanguage, lblSelectedProblem })
+            {
+                control.ToolTip = control.Content;
+            }
+
+            foreach (var cb in new[] { cbProblems, cbProgrammingLanguage })
+            {
+                cb.SetBinding(ContentControl.ToolTipProperty, new Binding(nameof(ComboBox.Text))
+                {
+                    Source = cb,
+                    Mode = BindingMode.OneWay,
+                });
             }
 
             btnAddProblem.Click += BtnAdd_Click;
@@ -549,10 +571,19 @@ namespace slycelote.VsCaide.Core
             // UI update will be done in fsWatcher callback.
         }
 
-        public void OnBeforeCloseProject(IProject project)
+        public void OnBeforeDeleteProject(IProject project)
         {
             services.ThrowIfNotOnUIThread();
             LogMethod();
+            if (!SolutionUtilities.IgnoreSolutionEvents && IsCaideProblem(project.Name))
+            {
+                // Try to mitigate a mysterious error 'Unsatisified (sic!) constraints: folder not empty'.
+                Thread.Sleep(TimeSpan.FromSeconds(0.5));
+                CaideExe.Run("archive", project.Name);
+                string projectDirectory = Path.Combine(SolutionUtilities.GetSolutionDir(), project.Name);
+                FileUtility.DirectoryDelete(projectDirectory, recursive: true);
+                SolutionUtilities.SaveSolution();
+            }
         }
 
         /************************
@@ -583,14 +614,18 @@ namespace slycelote.VsCaide.Core
 
             if (project != null)
             {
-                services.RemoveProject(project);
+                using (SolutionUtilities.IgnoringSolutionEvents())
+                {
+                    services.RemoveProject(project);
+                }
+
                 services.SaveSolution();
             }
 
             if (remove)
             {
                 var problemDir = Path.Combine(services.GetSolutionDir(), problem.Name);
-                Directory.Delete(problemDir, recursive: true);
+                FileUtility.DirectoryDelete(problemDir, recursive: true);
             }
             else
             {

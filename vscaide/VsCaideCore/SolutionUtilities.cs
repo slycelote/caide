@@ -4,11 +4,24 @@
     using System.IO;
     using VsInterface;
 
-    public abstract class SolutionUtilities
+    public static class SolutionUtilities
     {
-        public static volatile bool IgnoreSolutionEvents = false;
+        private static volatile bool ignoreSolutionEvents = false;
         public static DateTime SolutionLoadStart = DateTime.MinValue;
         public static bool HasSolutionLoadCompleted = false;
+
+        private sealed class IgnoreResetter : IDisposable
+        {
+            public void Dispose() => ignoreSolutionEvents = false;
+        }
+
+        public static bool IgnoreSolutionEvents { get => ignoreSolutionEvents; }
+
+        public static IDisposable IgnoringSolutionEvents()
+        {
+            ignoreSolutionEvents = true;
+            return new IgnoreResetter();
+        }
 
         public static bool HasSolutionLoaded()
         {

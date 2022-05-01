@@ -1,0 +1,22 @@
+#pragma warning disable 162,429
+
+class CaideConstants
+{
+{{#input}}
+    {{#stdin}}
+    public const string InputFile = null;
+    public const string InputFilePattern = null;
+    {{/stdin}}
+    {{#file}}
+    public const string InputFile = "{{&.}}";
+    public const string InputFilePattern = null;
+    {{/file}}
+    {{#regex}}
+    public const string InputFile = null;
+    public const string InputFilePattern = "{{&.}}";
+    {{/regex}}
+{{/input}}
+{{#output}}
+    public const string OutputFile = {{#stdout}}null{{/stdout}}{{#file}}"{{&.}}"{{/file}};
+{{/output}}
+}

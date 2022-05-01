@@ -78,7 +78,7 @@
 
 
 
-  <property name="compiler.args.tccaide" value="-source 1.6 ${compiler.args}"/>
+  <property name="compiler.args.tccaide" value="--release 7 ${compiler.args}"/>
 
   <property name="tccaide.output.dir" value="${module.tccaide.basedir}/out/production/tccaide"/>
   <property name="tccaide.testoutput.dir" value="${module.tccaide.basedir}/out/test/tccaide"/>
@@ -127,7 +127,7 @@
 
   <target name="compile.module.tccaide.production" description="Compile module tccaide; production classes">
     <mkdir dir="${tccaide.output.dir}"/>
-    <javac destdir="${tccaide.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true">
+    <javac destdir="${tccaide.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" includeantruntime="false">
       <compilerarg line="${compiler.args.tccaide}"/>
       <bootclasspath refid="tccaide.module.bootclasspath"/>
       <classpath refid="tccaide.module.production.classpath"/>

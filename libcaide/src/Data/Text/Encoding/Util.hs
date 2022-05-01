@@ -8,8 +8,8 @@ module Data.Text.Encoding.Util(
 ) where
 
 import Data.ByteString (ByteString)
-import Data.Text.Encoding (decodeUtf8')
-import Data.Text.Encoding.Error (UnicodeException(..))
+import Data.Text.Encoding (decodeUtf8', decodeUtf8With)
+import Data.Text.Encoding.Error (UnicodeException, lenientDecode)
 import qualified Data.Text as T
 
 import System.IO (nativeNewline, Newline(CRLF))
@@ -20,11 +20,9 @@ describeUnicodeException = T.pack . show
 tryDecodeUtf8 :: ByteString -> Either T.Text T.Text
 tryDecodeUtf8 = either (Left . describeUnicodeException) Right . decodeUtf8'
 
--- | If the ByteString is not a valid UTF8, its Show instance is used
+-- | Replaces invalid input bytes with the Unicode replacement character U+FFFD (question mark in a rhombus)
 safeDecodeUtf8 :: ByteString -> T.Text
-safeDecodeUtf8 s = case tryDecodeUtf8 s of
-    Left _ -> T.pack $ show s
-    Right t -> t
+safeDecodeUtf8 = decodeUtf8With lenientDecode
 
 
 nativeCallsForConversion :: Bool

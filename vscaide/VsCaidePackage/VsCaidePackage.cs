@@ -1,18 +1,16 @@
 ﻿using System;
-using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft;
 using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Events;
 using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.Win32;
 using slycelote.VsCaide.Core;
 using slycelote.VsCaide.VsInterface;
 using SolutionEvents = Microsoft.VisualStudio.Shell.Events.SolutionEvents;
@@ -38,19 +36,20 @@ namespace slycelote.VsCaide
     /// </para>
     /// </remarks>
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
-    [InstalledProductRegistration("#110", "#112", "2.4.2", IconResourceID = 400)] // Info on this package for Help/About
+    [InstalledProductRegistration("#110", "#112", "2.10.0", IconResourceID = 400)] // Info on this package for Help/About
     [Guid(VsCaidePackage.PackageGuidString)]
-    [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string, PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExists_string, PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [ProvideToolWindow(typeof(VsCaideMainWindow), Style = VsDockStyle.Tabbed, Window = ToolWindowGuids.SolutionExplorer)]
-    public sealed class VsCaidePackage : AsyncPackage, IVsSelectionEvents
+    public sealed class VsCaidePackage : AsyncPackage, IVsSelectionEvents, VsInterface.IAsyncServiceProvider
     {
         /// <summary>
         /// VsCaidePackage GUID string.
         /// </summary>
         public const string PackageGuidString = "8e97a36f-88cc-49ee-8e47-df660b4c7d83";
+        private IVsMonitorSelection monitorSelection;
+        private uint monitorSelectionCookie;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="VsCaidePackage"/> class.
@@ -61,6 +60,71 @@ namespace slycelote.VsCaide
             // any Visual Studio service because at this point the package object is created but
             // not sited yet inside Visual Studio environment. The place to do all the other
             // initialization is the Initialize method.
+        }
+
+        private async Task<IVsServices> LoadVersionSpecificDLLAsync()
+        {
+            await JoinableTaskFactory.SwitchToMainThreadAsync(DisposalToken);
+            var shell = await this.GetServiceAsync(typeof(SVsShell)) as IVsShell;
+            Assumes.Present(shell);
+            shell.GetProperty((int)__VSSPROPID5.VSSPROPID_ReleaseVersion, out object ver);
+            var version = ver.ToString();
+
+            if (string.IsNullOrEmpty(version))
+            {
+                version = "2015";
+            }
+            else
+            {
+                var parts = version.Split('.');
+                if (parts.Length > 0 && parts[0] == "17")
+                {
+                    version = "2022";
+                }
+                else if (parts.Length > 0 && parts[0] == "16")
+                {
+                    version = "2019";
+                }
+                else if (parts.Length > 0 && parts[0] == "15")
+                {
+                    version = "2017";
+                }
+                else
+                {
+                    version = "2015";
+                }
+            }
+
+            string packageInstallationDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+            string versionSpecificDLL = Path.Combine(packageInstallationDir, "Vs" + version + ".dll");
+
+            Assembly assembly = Assembly.LoadFrom(versionSpecificDLL);
+            if (assembly == null)
+            {
+                throw new CaideException("Couldn't load assembly " + versionSpecificDLL);
+            }
+
+            string typeName = "slycelote.VsCaide.VsSpecific.VsServices";
+            Type pmType = assembly.GetType(typeName);
+            if (pmType == null)
+            {
+                throw new CaideException($"Couldn't find type {typeName}");
+            }
+
+            ConstructorInfo constructor = pmType.GetConstructor(new Type[] { typeof(VsInterface.IAsyncServiceProvider) });
+            if (constructor == null)
+            {
+                throw new CaideException($"Couldn't find constructor for type {typeName}");
+            }
+
+            object obj = constructor.Invoke(new object[] { this });
+            if (!(obj is IVsServices))
+            {
+                throw new CaideException($"Couldn't create an instance of type {typeName}");
+            }
+
+            return obj as IVsServices;
         }
 
         #region Package Members
@@ -76,15 +140,18 @@ namespace slycelote.VsCaide
         {
             await JoinableTaskFactory.SwitchToMainThreadAsync();
             progress.Report(new ServiceProgressData("Initializing VsCaide extension"));
-            VsImplementation.Services = await VsPre2022Services.ConstructAsync(this);
+
+            var services = await LoadVersionSpecificDLLAsync();
+            await services.InitializeAsync();
+            VsImplementation.Services = services;
             SolutionEvents.OnAfterCloseSolution += SolutionEvents_OnAfterCloseSolution;
             SolutionEvents.OnBeforeOpenSolution += SolutionEvents_OnBeforeOpenSolution;
             SolutionEvents.OnBeforeBackgroundSolutionLoadBegins += SolutionEvents_OnBeforeBackgroundSolutionLoadBegins;
             SolutionEvents.OnAfterBackgroundSolutionLoadComplete += SolutionEvents_OnAfterBackgroundSolutionLoadComplete;
             SolutionEvents.OnBeforeCloseProject += SolutionEvents_OnBeforeCloseProject;
-            var monitorSelection = (await GetServiceAsync(typeof(IVsMonitorSelection))) as IVsMonitorSelection;
+            monitorSelection = (await GetServiceAsync(typeof(IVsMonitorSelection))) as IVsMonitorSelection;
             _ = ErrorHandler.ThrowOnFailure(
-                monitorSelection.AdviseSelectionEvents(this, out uint monitorSelectionCookie));
+                monitorSelection.AdviseSelectionEvents(this, out monitorSelectionCookie));
 
             // https://github.com/madskristensen/SolutionLoadSample
             SolutionEvents.OnAfterOpenSolution += SolutionEvents_OnAfterLoadedSolution;
@@ -95,7 +162,25 @@ namespace slycelote.VsCaide
                 SolutionEvents_OnAfterLoadedSolution();
             }
 
+            progress.Report(new ServiceProgressData("Initializing VsCaide menu command."));
             await VsCaideMainWindowCommand.InitializeAsync(this);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            if (disposing)
+            {
+                SolutionEvents.OnAfterCloseSolution -= SolutionEvents_OnAfterCloseSolution;
+                SolutionEvents.OnBeforeOpenSolution -= SolutionEvents_OnBeforeOpenSolution;
+                SolutionEvents.OnBeforeBackgroundSolutionLoadBegins -= SolutionEvents_OnBeforeBackgroundSolutionLoadBegins;
+                SolutionEvents.OnAfterBackgroundSolutionLoadComplete -= SolutionEvents_OnAfterBackgroundSolutionLoadComplete;
+                SolutionEvents.OnBeforeCloseProject -= SolutionEvents_OnBeforeCloseProject;
+                SolutionEvents.OnAfterOpenSolution -= SolutionEvents_OnAfterLoadedSolution;
+                monitorSelection?.UnadviseSelectionEvents(monitorSelectionCookie);
+            }
+
+            base.Dispose(disposing);
         }
 
         #endregion
@@ -139,18 +224,18 @@ namespace slycelote.VsCaide
             GetMainWindowControl()?.OnBeforeBackgroundSolutionLoadBegins();
         });
 
-        private void SolutionEvents_OnBeforeCloseProject(object sender, Microsoft.VisualStudio.Shell.Events.CloseProjectEventArgs e)
+        private void SolutionEvents_OnBeforeCloseProject(object sender, CloseProjectEventArgs e)
             => ExceptionUtilities.CatchAll(() =>
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             if (e.IsRemoved && !SolutionUtilities.IgnoreSolutionEvents)
             {
-                GetMainWindowControl()?.OnBeforeCloseProject(
+                GetMainWindowControl()?.OnBeforeDeleteProject(
                     VsImplementation.Services.GetProjectFromHierarchy(e.Hierarchy));
             }
         });
 
-        private void SolutionEvents_OnBeforeOpenSolution(object sender, Microsoft.VisualStudio.Shell.Events.BeforeOpenSolutionEventArgs e)
+        private void SolutionEvents_OnBeforeOpenSolution(object sender, BeforeOpenSolutionEventArgs e)
             => ExceptionUtilities.CatchAll(() =>
         {
             GetMainWindowControl()?.OnBeforeOpenSolution();

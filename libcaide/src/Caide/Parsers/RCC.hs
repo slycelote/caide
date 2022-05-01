@@ -42,7 +42,7 @@ parseProblemFromTags tags =
     texts = mapMaybe (maybeTagText . (!!1)) .
             sections (~~== "<pre class=colorBlue>") $
             tags
-    testCases = normalizeTestCases [TestCase (texts!!i) (texts!!(i+1)) | i <- [0, 2 .. length texts-2]]
+    testCases = normalizeTestCases [TestCase (texts!!i) (Just $ texts!!(i+1)) | i <- [0, 2 .. length texts-2]]
 
     probType = Stream StdIn StdOut
     problem = (makeProblem title probId probType, testCases)

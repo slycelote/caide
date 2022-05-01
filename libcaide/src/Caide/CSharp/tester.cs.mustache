@@ -1,0 +1,242 @@
+// Disable 'unreachable code' warning
+#pragma warning disable 162,429
+
+namespace CaideTester
+{
+using System;
+using System.IO;
+using System.Collections.Generic;
+
+partial class TestRunner
+{
+    public static bool USE_CUSTOM_CHECKER = false;
+    public static string CustomCheck(TextReader inputStream, TextReader userOutputStream, TextReader judgeOutputStream)
+    {
+    {{#solutionClass}}
+        Test_{{className}} sample = new Test_{{className}}(), userOutput = new Test_{{className}}();
+    {{#isMultiMethod}}
+        while (true) {
+            string methodName = inputStream.ReadLine();
+    {{#constructor}}
+            if (methodName == "{{className}}") {
+                sample.method_{{className}}.readInputs(inputStream);
+                sample.method_{{className}}.readOutput(judgeOutputStream);
+                userOutput.method_{{className}}.readOutput(userOutputStream);
+            } else
+    {{/constructor}}
+    {{#methods}}
+            if (methodName == "{{method.name}}") {
+                sample.method_{{method.name}}.readInputs(inputStream);
+                sample.method_{{method.name}}.readOutput(judgeOutputStream);
+                userOutput.method_{{method.name}}.readOutput(userOutputStream);
+            } else
+    {{/methods}}
+            {
+                throw new Exception(methodName + ": unknown method");
+            }
+        }
+    {{/isMultiMethod}}
+
+    {{^isMultiMethod}}
+    {{#methods}} {{! Must be a single method. }}
+        sample.method_{{method.name}}.readInputs(inputStream);
+        sample.method_{{method.name}}.readOutput(judgeOutputStream);
+        userOutput.method_{{method.name}}.readOutput(userOutputStream);
+    {{/methods}}
+    {{/isMultiMethod}}
+    {{/solutionClass}}
+
+        return null;
+    }
+}
+
+}
+
+namespace CaideTester
+{
+
+using System;
+using System.IO;
+using System.Collections.Generic;
+
+{{#solutionClass}}
+{{#methods}}
+class Method_{{method.name}}
+{
+{{#parameters}}
+    public {{>cstype}} i_{{name}};
+{{/parameters}}
+{{#method}}
+    public {{>cstype}} o_{{name}};
+{{/method}}
+
+    public void readInputs(TextReader input)
+    {
+{{#parameters}}
+        i_{{name}} = {{>serializer}}.Deserialize(input);
+{{/parameters}}
+    }
+
+    public void writeInputs(TextWriter output)
+    {
+{{#parameters}}
+        {{>serializer}}.Serialize(output, i_{{name}});
+{{/parameters}}
+    }
+
+{{#method}}
+    public void readOutput(TextReader input)
+    {
+        o_{{name}} = {{>serializer}}.Deserialize(input);
+    }
+
+    public void writeOutput(TextWriter output)
+    {
+        {{>serializer}}.Serialize(output, o_{{name}});
+    }
+{{/method}}
+
+    public void call(ref {{className}} solution)
+    {
+{{^method.type_is_void}}
+        o_{{method.name}} =
+{{/method.type_is_void}}
+        solution.{{method.identifier.csharp}}(
+{{#parameters}}
+            i_{{identifier.csharp}}{{^islast}}, {{/islast}}
+{{/parameters}}
+        );
+    }
+}
+
+{{/methods}}
+{{#constructor}}
+class Method_{{className}}
+{
+{{#parameters}}
+    public {{>cstype}} i_{{name}};
+{{/parameters}}
+    public object o_{{className}};
+
+    public void readInputs(TextReader input)
+    {
+{{#parameters}}
+        i_{{name}} = {{>serializer}}.Deserialize(input);
+{{/parameters}}
+    }
+
+    public void writeInputs(TextWriter output)
+    {
+{{#parameters}}
+    {{>serializer}}.Serialize(output, i_{{name}});
+{{/parameters}}
+    }
+
+    public void readOutput(TextReader input)
+    {
+        o_{{className}} = new voidSerializer().Deserialize(input);
+    }
+
+    public void writeOutput(TextWriter output)
+    {
+        new voidSerializer().Serialize(output, o_{{className}});
+    }
+
+    public void call(ref {{className}} solution)
+    {
+        solution = new {{className}}(
+{{#parameters}}
+            i_{{name}}{{^islast}}, {{/islast}}
+{{/parameters}}
+        );
+    }
+}
+{{/constructor}}
+
+class Test_{{className}}
+{
+    public {{className}} solution{{^constructor}} = new {{className}}(){{/constructor}};
+
+{{#methods}}
+    public Method_{{method.name}} method_{{method.name}} = new Method_{{method.name}}();
+{{/methods}}
+{{#constructor}}
+    public Method_{{className}} method_{{className}} = new Method_{{className}}();
+{{/constructor}}
+}
+
+{{/solutionClass}}
+
+partial class TestRunner
+{
+    public const bool IsLeetCode =
+        {{#type_is_leetcode}}true{{/type_is_leetcode}}
+        {{^type_is_leetcode}}false{{/type_is_leetcode}};
+    public const bool IsTopcoder =
+        {{#type_is_topcoder}}true{{/type_is_topcoder}}
+        {{^type_is_topcoder}}false{{/type_is_topcoder}};
+
+    public static void Solve(TextReader input, TextWriter output)
+    {
+{{^solutionClass}}
+        new Solution().solve(input, output);
+{{/solutionClass}}
+{{#solutionClass}}
+        CaideTester.Test_{{className}} tester = new CaideTester.Test_{{className}}();
+
+{{#isMultiMethod}}
+        output.Write('[');
+        var methodNames = new ArraySerializer<string>(new stringSerializer()).Deserialize(input);
+        int count = new intSerializer().Deserialize(input);
+        if (count != methodNames.Length)
+        {
+            throw new Exception("Invalid test case: expected " + methodNames.Length + "inputs, got " + count);
+        }
+
+        for (int i = 0; i < count; ++i)
+        {
+            var methodName = methodNames[i];
+            if (i > 0)
+            {
+                output.Write(", ");
+            }
+
+            new intSerializer().Deserialize(input); // Read number of arguments
+{{#constructor}}
+            if (methodName == "{{className}}")
+            {
+                CaideTester.Method_{{className}} m = tester.method_{{className}};
+                m.readInputs(input);
+                m.call(ref tester.solution);
+                m.writeOutput(output);
+            } else
+{{/constructor}}
+{{#methods}}
+            if (methodName == "{{method.name}}")
+            {
+                CaideTester.Method_{{method.name}} m = tester.method_{{method.name}};
+                m.readInputs(input);
+                m.call(ref tester.solution);
+                m.writeOutput(output);
+            } else
+{{/methods}}
+            {
+                throw new Exception(methodName + ": unknown method");
+            }
+        }
+
+        output.Write(']');
+{{/isMultiMethod}}
+{{^isMultiMethod}}
+{{#methods}}{{! Must be a single method }}
+        CaideTester.Method_{{method.name}} m = tester.method_{{method.name}};
+        m.readInputs(input);
+        m.call(ref tester.solution);
+        m.writeOutput(output);
+{{/methods}}
+{{/isMultiMethod}}
+{{/solutionClass}}
+    }
+}
+
+}

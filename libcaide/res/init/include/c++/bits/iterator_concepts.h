@@ -173,6 +173,17 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	= make_signed_t<decltype(std::declval<_Tp>() - std::declval<_Tp>())>;
     };
 
+#if defined __STRICT_ANSI__ && defined __SIZEOF_INT128__
+  // __int128 is incrementable even if !integral<__int128>
+  template<>
+    struct incrementable_traits<__int128>
+    { using difference_type = __int128; };
+
+  template<>
+    struct incrementable_traits<unsigned __int128>
+    { using difference_type = __int128; };
+#endif
+
   namespace __detail
   {
     // An iterator such that iterator_traits<_Iter> names a specialization
@@ -209,6 +220,15 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     template<typename _Tp> requires is_object_v<_Tp>
       struct __cond_value_type<_Tp>
       { using value_type = remove_cv_t<_Tp>; };
+
+    template<typename _Tp>
+      concept __has_member_value_type
+	= requires { typename _Tp::value_type; };
+
+    template<typename _Tp>
+      concept __has_member_element_type
+	= requires { typename _Tp::element_type; };
+
   } // namespace __detail
 
   template<typename> struct indirectly_readable_traits { };
@@ -227,14 +247,31 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     : indirectly_readable_traits<_Iter>
     { };
 
-  template<typename _Tp> requires requires { typename _Tp::value_type; }
+  template<__detail::__has_member_value_type _Tp>
     struct indirectly_readable_traits<_Tp>
     : __detail::__cond_value_type<typename _Tp::value_type>
     { };
 
-  template<typename _Tp> requires requires { typename _Tp::element_type; }
+  template<__detail::__has_member_element_type _Tp>
     struct indirectly_readable_traits<_Tp>
     : __detail::__cond_value_type<typename _Tp::element_type>
+    { };
+
+  // _GLIBCXX_RESOLVE_LIB_DEFECTS
+  // 3446. indirectly_readable_traits ambiguity for types with both [...]
+  template<__detail::__has_member_value_type _Tp>
+    requires __detail::__has_member_element_type<_Tp>
+    && same_as<remove_cv_t<typename _Tp::element_type>,
+	       remove_cv_t<typename _Tp::value_type>>
+    struct indirectly_readable_traits<_Tp>
+    : __detail::__cond_value_type<typename _Tp::value_type>
+    { };
+
+  // LWG 3446 doesn't add this, but it's needed for the case where
+  // value_type and element_type are both present, but not the same type.
+  template<__detail::__has_member_value_type _Tp>
+    requires __detail::__has_member_element_type<_Tp>
+    struct indirectly_readable_traits<_Tp>
     { };
 
   namespace __detail
@@ -321,72 +358,9 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     template<typename _Iter>
       concept __iter_without_nested_types = !__iter_with_nested_types<_Iter>;
 
-    // FIXME: These have to be at namespace-scope because of PR 92103.
-    template<typename _Iter, bool __use_arrow = false>
-      struct __ptr
-      { using type = void; };
-
-    template<typename _Iter> requires requires { typename _Iter::pointer; }
-      struct __ptr<_Iter, true>
-      { using type = typename _Iter::pointer; };
-
-    template<typename _Iter> requires requires { typename _Iter::pointer; }
-      struct __ptr<_Iter, false>
-      { using type = typename _Iter::pointer; };
-
     template<typename _Iter>
-      requires (!requires { typename _Iter::pointer; }
-	  && requires(_Iter& __it) { __it.operator->(); })
-      struct __ptr<_Iter, true>
-      { using type = decltype(std::declval<_Iter&>().operator->()); };
-
-    template<typename _Iter>
-      struct __ref
-      { using type = iter_reference_t<_Iter>; };
-
-    template<typename _Iter> requires requires { typename _Iter::reference; }
-      struct __ref<_Iter>
-      { using type = typename _Iter::reference; };
-
-    template<typename _Iter>
-      struct __cat
-      { using type = input_iterator_tag; };
-
-    template<typename _Iter>
-      requires requires { typename _Iter::iterator_category; }
-      struct __cat<_Iter>
-      { using type = typename _Iter::iterator_category; };
-
-    template<typename _Iter>
-      requires (!requires { typename _Iter::iterator_category; }
-		&& __detail::__cpp17_randacc_iterator<_Iter>)
-      struct __cat<_Iter>
-      { using type = random_access_iterator_tag; };
-
-    template<typename _Iter>
-      requires (!requires { typename _Iter::iterator_category; }
-		&& __detail::__cpp17_bidi_iterator<_Iter>)
-      struct __cat<_Iter>
-      { using type = bidirectional_iterator_tag; };
-
-    template<typename _Iter>
-      requires (!requires { typename _Iter::iterator_category; }
-		&& __detail::__cpp17_fwd_iterator<_Iter>)
-      struct __cat<_Iter>
-      { using type = forward_iterator_tag; };
-
-    template<typename _Iter>
-      struct __diff
-      { using type = void; };
-
-    template<typename _Iter>
-      requires requires {
-	typename incrementable_traits<_Iter>::difference_type;
-      }
-      struct __diff<_Iter>
-      {
-	using type = typename incrementable_traits<_Iter>::difference_type;
-      };
+      concept __iter_without_category
+	= !requires { typename _Iter::iterator_category; };
 
   } // namespace __detail
 
@@ -394,10 +368,20 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     requires __detail::__iter_with_nested_types<_Iterator>
     struct __iterator_traits<_Iterator, void>
     {
+    private:
+      template<typename _Iter>
+	struct __ptr
+	{ using type = void; };
+
+      template<typename _Iter> requires requires { typename _Iter::pointer; }
+	struct __ptr<_Iter>
+	{ using type = typename _Iter::pointer; };
+
+    public:
       using iterator_category = typename _Iterator::iterator_category;
       using value_type	      = typename _Iterator::value_type;
       using difference_type   = typename _Iterator::difference_type;
-      using pointer	      = typename __detail::__ptr<_Iterator>::type;
+      using pointer	      = typename __ptr<_Iterator>::type;
       using reference	      = typename _Iterator::reference;
     };
 
@@ -406,13 +390,64 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	      && __detail::__cpp17_input_iterator<_Iterator>
     struct __iterator_traits<_Iterator, void>
     {
-      using iterator_category = typename __detail::__cat<_Iterator>::type;
+    private:
+      template<typename _Iter>
+	struct __cat
+	{ using type = input_iterator_tag; };
+
+      template<typename _Iter>
+	requires requires { typename _Iter::iterator_category; }
+	struct __cat<_Iter>
+	{ using type = typename _Iter::iterator_category; };
+
+      template<typename _Iter>
+	requires __detail::__iter_without_category<_Iter>
+		  && __detail::__cpp17_randacc_iterator<_Iter>
+	struct __cat<_Iter>
+	{ using type = random_access_iterator_tag; };
+
+      template<typename _Iter>
+	requires __detail::__iter_without_category<_Iter>
+		  && __detail::__cpp17_bidi_iterator<_Iter>
+	struct __cat<_Iter>
+	{ using type = bidirectional_iterator_tag; };
+
+      template<typename _Iter>
+	requires __detail::__iter_without_category<_Iter>
+		  && __detail::__cpp17_fwd_iterator<_Iter>
+	struct __cat<_Iter>
+	{ using type = forward_iterator_tag; };
+
+      template<typename _Iter>
+	struct __ptr
+	{ using type = void; };
+
+      template<typename _Iter> requires requires { typename _Iter::pointer; }
+	struct __ptr<_Iter>
+	{ using type = typename _Iter::pointer; };
+
+      template<typename _Iter>
+	requires (!requires { typename _Iter::pointer; }
+	    && requires(_Iter& __it) { __it.operator->(); })
+	struct __ptr<_Iter>
+	{ using type = decltype(std::declval<_Iter&>().operator->()); };
+
+      template<typename _Iter>
+	struct __ref
+	{ using type = iter_reference_t<_Iter>; };
+
+      template<typename _Iter> requires requires { typename _Iter::reference; }
+	struct __ref<_Iter>
+	{ using type = typename _Iter::reference; };
+
+    public:
+      using iterator_category = typename __cat<_Iterator>::type;
       using value_type
 	= typename indirectly_readable_traits<_Iterator>::value_type;
       using difference_type
 	= typename incrementable_traits<_Iterator>::difference_type;
-      using pointer	      = typename __detail::__ptr<_Iterator, true>::type;
-      using reference	      = typename __detail::__ref<_Iterator>::type;
+      using pointer	      = typename __ptr<_Iterator>::type;
+      using reference	      = typename __ref<_Iterator>::type;
     };
 
   template<typename _Iterator>
@@ -420,9 +455,23 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	      && __detail::__cpp17_iterator<_Iterator>
     struct __iterator_traits<_Iterator, void>
     {
+    private:
+      template<typename _Iter>
+	struct __diff
+	{ using type = void; };
+
+      template<typename _Iter>
+	requires requires
+	{ typename incrementable_traits<_Iter>::difference_type; }
+	struct __diff<_Iter>
+	{
+	  using type = typename incrementable_traits<_Iter>::difference_type;
+	};
+
+    public:
       using iterator_category = output_iterator_tag;
       using value_type	      = void;
-      using difference_type   = typename __detail::__diff<_Iterator>::type;
+      using difference_type   = typename __diff<_Iterator>::type;
       using pointer	      = void;
       using reference	      = void;
     };

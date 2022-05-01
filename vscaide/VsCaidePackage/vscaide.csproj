@@ -21,7 +21,7 @@
     <IncludeDebugSymbolsInVSIXContainer>false</IncludeDebugSymbolsInVSIXContainer>
     <IncludeDebugSymbolsInLocalVSIXDeployment>true</IncludeDebugSymbolsInLocalVSIXDeployment>
     <CopyBuildOutputToOutputDirectory>true</CopyBuildOutputToOutputDirectory>
-    <CopyOutputSymbolsToOutputDirectory>false</CopyOutputSymbolsToOutputDirectory>
+    <CopyOutputSymbolsToOutputDirectory>true</CopyOutputSymbolsToOutputDirectory>
     <StartAction>Program</StartAction>
     <StartProgram Condition="'$(DevEnvDir)' != ''">$(DevEnvDir)devenv.exe</StartProgram>
     <StartArguments>/rootsuffix Exp</StartArguments>
@@ -44,12 +44,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Project.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VsCaideMainWindow.cs" />
     <Compile Include="VsCaideMainWindowCommand.cs" />
     <Compile Include="VsCaidePackage.cs" />
-    <Compile Include="VsPre2022Services.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\vscaide_cpp_template.vcxproj">
@@ -110,6 +108,11 @@
     <ProjectReference Include="..\VersionSpecific\Vs2019\Vs2019.csproj">
       <Project>{29a54bb9-5e03-4b41-b0f2-2e5f10480922}</Project>
       <Name>Vs2019</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\VersionSpecific\Vs2022\Vs2022.csproj">
+      <Project>{c74eb6c5-a4b1-47a3-8d93-1a633f08723c}</Project>
+      <Name>Vs2022</Name>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\VsCaideCore\VsCaideCore.csproj">

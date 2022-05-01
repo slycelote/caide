@@ -1,3 +1,5 @@
+#include "custom_checker.h"
+#include "test_util.h"
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
@@ -6,96 +8,58 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#if __cplusplus >= 201103L
-# include <chrono>
-#endif
 
 using namespace std;
 
-namespace {
-
-struct Stopwatch {
-#if __cplusplus >= 201103L
-    using Clock = chrono::steady_clock;
-    Clock::time_point start;
-    Stopwatch(): start(Clock::now()) {}
-    string GetDuration() const {
-        return " #time:" +
-            to_string(chrono::duration_cast<chrono::milliseconds>(Clock::now() - start).count()) +
-            "ms";
-    }
-#else
-    string GetDuration() const { return ""; }
-#endif
-};
-
-}
-
-#ifdef CAIDE_TOPCODER
-#include "topcoder_serialize.h"
-template<typename T>
-void tcread(istream& in, T& val) {
-    val = caide_tc::Serializer<T>::deserialize(in);
-}
-template<typename T>
-void tcwrite(ostream& out, const T& val) {
-    caide_tc::Serializer<T>::serialize(out, val);
-}
-#endif
-
-
-
-/** Custom checker **/
-static const bool USE_CUSTOM_CHECKER = false;
-
-bool customChecker(istream& input, istream& userOutput, istream& judgeOutput,
-                   string& errorMessage)
-{
-#ifdef CAIDE_TOPCODER
-    // Declare and read return value
-    CAIDE_TC_RETURN_TYPE result; tcread(userOutput, result);
-    // Declare and read judge return value
-    CAIDE_TC_RETURN_TYPE judgeResult; tcread(judgeOutput, judgeResult);
-    // Declare and read input parameters
-    char caide_char;
-#define CAIDE_TC_PARAM(type, name) type name; input >> caide_char; tcread(input, name);
-    CAIDE_TC_PARAM_LIST
-#undef CAIDE_TC_PARAM
-#endif
-
-    errorMessage = "";
-
-    return true;
-}
-
-/** Test generator **/
-/*
-static void generator() {
-}
-*/
-
-static void runTest(const char* inFile, const char* outFile, string& result);
-
-#ifndef CAIDE_TOPCODER
-// The function that must be defined in solution CPP file
 void solve(istream& in, ostream& out);
 
-// Test method calling the solution function. Must write result to the output
-// file and into the string.
-static void runTest(const char* inFile, const char* outFile, string& result) {
-    ostringstream out;
-    ifstream in(inFile);
-    solve(in, out);
-    result = out.str();
-    ofstream resFile(outFile);
-    resFile << result;
-}
-#endif
+static const bool USE_CUSTOM_CHECKER = false;
 
 
 /** ======================================================================= **/
 
-static bool fileExists(const string& path);
+static bool fileExists(const string& path) {
+    ifstream f(path.c_str());
+    return f.good();
+}
+
+static int runCommand(bool throwOnFailure, const vector<string>& cmdLine) {
+    ostringstream os;
+
+#ifdef _WIN32
+    // std::system runs command as 'cmd /C'; see cmd.exe /? for details on quotes.
+    os << "\"";
+#endif
+    for (size_t i = 0; i < cmdLine.size(); ++i) {
+        if (i > 0)
+            os << ' ';
+        os << "\"" << cmdLine[i] << "\"";
+    }
+
+#ifdef _WIN32
+    os << "\"";
+#endif
+
+    int res = system(os.str().c_str());
+    if (throwOnFailure) {
+        ostringstream err;
+        err << "Command returned non-zero exit code " << res << ": " << err.str();
+        throw runtime_error(err.str());
+    }
+
+    return res;
+}
+
+static int runCommand(bool throwOnFailure, const string& exe, const string& arg1,
+    const string& arg2 = "", const string& arg3 = "")
+{
+    vector<string> cmdLine;
+    cmdLine.push_back(exe);
+    cmdLine.push_back(arg1);
+    if (!arg2.empty()) cmdLine.push_back(arg2);
+    if (!arg3.empty()) cmdLine.push_back(arg3);
+    return runCommand(throwOnFailure, cmdLine);
+}
 
 int main() {
     // Find test directory
@@ -116,16 +80,10 @@ int main() {
     {
         ifstream caidePath(caideExeFile.c_str());
         getline(caidePath, caideExe);
-#ifdef _WIN32
-        string quotes = "\"\"";
-#else
-        string quotes = "\"";
-#endif
-        caideExe = quotes + caideExe + quotes;
     }
 
     // Prepare the list of test cases in correct order; add recently created test cases too.
-    int ret = std::system((caideExe + " update_tests").c_str());
+    int ret = runCommand(false, caideExe, "update_tests");
     if (ret != 0) {
         cerr << "caide update_tests returned non-zero error code " << ret << endl;
     }
@@ -141,45 +99,68 @@ int main() {
             report << testName << " skipped" << endl;
         } else if (testState == "Run") {
             cerr << "Running test " << testName << endl;
-            Stopwatch stopwatch;
-            string result;
+            string inputFile = testDir + testName + ".plain.in";
+            string origOutputFile = testDir + testName + ".out";
+            caide_tester::Stopwatch stopwatch;
             try {
-                runTest((testDir + testName + ".in").c_str(),
-                        (testDir + testName + ".out").c_str(),
-                        result);
+                ifstream in(inputFile.c_str());
+                ofstream out(origOutputFile.c_str());
+                solve(in, out);
+            } catch (const exception& e) {
+                cerr << "Test " << testName << " threw an exception: " << e.what() << endl;
+                report << testName << stopwatch.GetDuration() << " failed " << e.what() << endl;
+                continue;
             } catch (...) {
                 cerr << "Test " << testName << " threw an exception" << endl;
                 report << testName << stopwatch.GetDuration() << " failed" << endl;
                 continue;
             }
+
             string duration = stopwatch.GetDuration();
 
             if (USE_CUSTOM_CHECKER) {
                 try {
-                    istringstream output(result);
-                    ifstream input((testDir + testName + ".in").c_str());
-                    ifstream judgeOutput((testDir + "../../" + testName + ".out").c_str());
+                    string etalonFile = testDir + testName + ".plain.etalon";
+#if defined(CAIDE_TOPCODER) || defined(CAIDE_LEETCODE)
+                    string outputFile = testDir + testName + ".plain.out";
+                    runCommand(true, caideExe, "convert_test_output", origOutputFile, outputFile);
+#else
+                    string outputFile = origOutputFile;
+#endif
+                    ifstream output(outputFile.c_str());
+                    ifstream input(inputFile.c_str());
+                    ifstream judgeOutput(etalonFile.c_str());
                     string message;
-                    bool ok = customChecker(input, output, judgeOutput, message);
+                    bool ok = caide_tester::customChecker(input, output, judgeOutput, message);
                     if (ok) {
                         report << testName << duration << " OK" << endl;
                     } else {
                         cerr << "FAILED: " << message << endl;
                         report << testName << duration << " failed " << message << endl;
                     }
+                } catch (const exception& e) {
+                    cerr << "Checker for test " << testName << " threw an exception: " << e.what() << endl;
+                    report << testName << duration << " error Custom checker failed: " << e.what() << endl;
+                    continue;
                 } catch (...) {
                     cerr << "Checker for test " << testName << " threw an exception" << endl;
-                    report << testName << duration << " error" << endl;
+                    report << testName << duration << " error Custom checker failed" << endl;
                     continue;
                 }
             } else {
                 report << testName << duration << " ran" << endl;
             }
 
-            // print program output to stderr
-            if (result.size() > 200)
-                result = result.substr(0, 200) + "[...] (output truncated)\n";
-            cerr << result << endl;
+            {
+                // print program output to stderr
+                vector<char> buf(200);
+                ifstream is(origOutputFile.c_str());
+                is.read(buf.data(), buf.size());
+                cerr << string(buf.begin(), buf.end());
+                if ((size_t)is.gcount() == buf.size())
+                    cerr << "[...] (output truncated)\n";
+                cerr << endl;
+            }
         } else {
             report << testName << " error unknown test status" << endl;
         }
@@ -190,70 +171,15 @@ int main() {
         reportFile << report.str();
     }
 
-    ret = std::system((caideExe + " eval_tests").c_str());
+    ret = runCommand(false, caideExe, "eval_tests");
+    if (ret % 256 == 0) {
+        // Return value of std::system is implementation-defined, but is often
+        // the return value of the command multiplied by 256.
+        // Bash, on the other hand, truncates exit code modulo 256 which can
+        // lead to confusion.
+        ret /= 256;
+    }
+
     return ret;
 }
 
-
-static bool fileExists(const string& path) {
-    ifstream f(path.c_str());
-    return f.good();
-}
-
-#ifdef CAIDE_TOPCODER
-
-// Code generator for Topcoder problem will define the following macros:
-// - CAIDE_TC_RETURN_TYPE is the return value of the main method.
-// - CAIDE_TC_PARAM_LIST calls CAIDE_TC_PARAM macro for each parameter of the main method.
-//
-// For example, the main method in the problem InfiniteString
-//    (https://community.topcoder.com/stat?c=problem_statement&pm=13783)
-//    has the following signature:
-//
-// string equal(string s, string t);
-//
-// Then, the following macros will be defined:
-// #define CAIDE_TC_RETURN_TYPE string
-// #define CAIDE_TC_PARAM_LIST  CAIDE_TC_PARAM(string, s) CAIDE_TC_PARAM(string, t)
-
-
-// Note: we cannot forward declare the actual class defined by Topcoder
-// because we don't know what methods/members it will contain after it's implemented.
-// So we declare a wrapper function around the solution class.
-// Its definition is in solution file and must not be modified! It will be removed before submission.
-#define CAIDE_TC_PARAM(type, name) type name,
-CAIDE_TC_RETURN_TYPE solve(
-    CAIDE_TC_PARAM_LIST
-    int);
-#undef CAIDE_TC_PARAM
-
-void solve(istream& caide_in, ostream& caide_out) {
-    caide_out << std::setprecision(12);
-
-    // Declare and read parameters
-    char caide_char;
-#define CAIDE_TC_PARAM(type, name) type name; caide_in >> caide_char; tcread(caide_in, name);
-    CAIDE_TC_PARAM_LIST
-#undef CAIDE_TC_PARAM
-
-    // Run solution
-#define CAIDE_TC_PARAM(type, name) name,
-    CAIDE_TC_RETURN_TYPE caide_result = solve(
-            CAIDE_TC_PARAM_LIST
-            0);
-#undef CAIDE_TC_PARAM
-
-    // Write the result
-    tcwrite(caide_out, caide_result);
-}
-
-
-static void runTest(const char* inFile, const char* outFile, string& result) {
-    ostringstream out;
-    ifstream in(inFile);
-    solve(in, out);
-    result = out.str();
-    ofstream resFile(outFile);
-    resFile << result;
-}
-#endif

@@ -2,6 +2,8 @@
 
 module Caide.TestCases.Types (
       ComparisonResult (..)
+    , isError
+    , isFailure
     , isSuccessful
 
     , TestRunResult(..)
@@ -33,7 +35,7 @@ import qualified Text.Parsec as Parsec
 import Text.Read (readMaybe)
 
 import Data.Time.Clock (DiffTime, diffTimeToPicoseconds, picosecondsToDiffTime)
-import Filesystem.Path (FilePath)
+import Filesystem.Path.CurrentOS (FilePath)
 import Filesystem (isFile, readTextFile, writeTextFile)
 import Caide.Util (tshow)
 
@@ -50,6 +52,14 @@ getErrorMessage :: ComparisonResult -> Maybe Text
 getErrorMessage (Failed e) = Just e
 getErrorMessage (Error e) = Just e
 getErrorMessage _ = Nothing
+
+isError :: ComparisonResult -> Bool
+isError (Error _) = True
+isError _ = False
+
+isFailure :: ComparisonResult -> Bool
+isFailure (Failed _) = True
+isFailure _ = False
 
 isSuccessful :: ComparisonResult -> Maybe Bool
 isSuccessful (Failed _) = Just False

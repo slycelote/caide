@@ -43,8 +43,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="..\ProjectImpl.cs">
+      <Link>ProjectImpl.cs</Link>
+    </Compile>
     <Compile Include="..\ProjectManager.cs">
       <Link>ProjectManager.cs</Link>
+    </Compile>
+    <Compile Include="..\VsServices.cs">
+      <Link>VsServices.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

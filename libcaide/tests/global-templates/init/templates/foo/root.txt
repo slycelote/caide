@@ -1,4 +1,4 @@
 {{#problems}}
-  name: {{&name}}, id: {{&id}}, language: {{&language.name}}, input: {{&input}}, output: {{&output}}
+  name: {{&name}}, id: {{&id}}, language: {{&language}}, input: {{&input}}, output: {{&output}}
 {{/problems}}
 

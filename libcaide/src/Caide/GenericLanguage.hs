@@ -9,6 +9,7 @@ import Filesystem.Path.CurrentOS ((</>))
 import qualified Filesystem.Path.CurrentOS as FS
 
 import Caide.MustacheUtil (renderTemplates, RenderTemplatesOption(AllowOverwrite))
+import qualified Caide.Paths as Paths
 import Caide.Types (CaideIO, ProblemID, ProgrammingLanguage(..), caideRoot, throw)
 import Caide.Problem (jsonEncodeProblem, readProblemInfo, readProblemState)
 
@@ -22,11 +23,11 @@ language languageName = ProgrammingLanguage
 genericScaffold :: Text -> ProblemID -> CaideIO ()
 genericScaffold languageName probId = do
     root <- caideRoot
-    let problemDir = root </> FS.fromText probId
+    let probDir = Paths.problemDir root probId
         templatesDir = root </> FS.fromText "templates" </> FS.fromText languageName
     problem <- readProblemInfo probId
     problemState <- readProblemState probId
-    numTemplates <- renderTemplates templatesDir problemDir (jsonEncodeProblem problem problemState) [AllowOverwrite False]
+    numTemplates <- renderTemplates templatesDir probDir (jsonEncodeProblem problem problemState) [AllowOverwrite False]
     when (numTemplates == 0) $
         throw $ "No templates found for " <> languageName
 

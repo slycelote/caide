@@ -1,0 +1,24 @@
+{{#codeSnippets.csharp}}{{&.}}{{/codeSnippets.csharp}}
+{{#solutionClass}}
+{{^codeSnippets.csharp}}
+class {{className}}
+{
+    {{#constructor}}
+    public {{className}}(
+        {{#parameters}}{{>cstype}} {{identifier.csharp}}{{^islast}}, {{/islast}}{{/parameters}})
+    {
+    }
+    {{/constructor}}
+
+    {{#methods}}
+    public {{#method}}{{>cstype}} {{identifier.csharp}}({{/method}}
+    {{#parameters}}{{>cstype}} {{identifier.csharp}}{{^islast}}, {{/islast}}{{/parameters}})
+    {
+        {{#method}}{{>cstype}} result = default({{>cstype}});{{/method}}
+        return result;
+    }
+
+    {{/methods}}
+}
+{{/codeSnippets.csharp}}
+{{/solutionClass}}

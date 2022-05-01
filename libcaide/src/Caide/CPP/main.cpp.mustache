@@ -1,0 +1,10 @@
+{{#input}}
+{{#stdin}}#define CAIDE_STDIN 1{{/stdin}}
+{{#file}}const char* CAIDE_IN_FILE = "{{&.}}";{{/file}}
+{{#regex}}#define CAIDE_IN_PATTERN "{{&.}}"{{/regex}}
+{{/input}}
+
+{{#output}}
+{{#stdout}}#define CAIDE_STDOUT 1{{/stdout}}
+{{#file}}const char* CAIDE_OUT_FILE = "{{&.}}";{{/file}}
+{{/output}}

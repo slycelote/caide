@@ -43,6 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CaideException.cs" />
+    <Compile Include="IAsyncServiceProvider.cs" />
     <Compile Include="IProject.cs" />
     <Compile Include="IProjectManager.cs" />
     <Compile Include="IVsServices.cs" />

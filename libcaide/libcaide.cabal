@@ -1,6 +1,6 @@
 cabal-version:  3.0
 name:           libcaide
-version:        2.8.0
+version:        2.10.0
 build-type:     Custom
 license:        GPL-3.0-or-later
 license-file:   LICENSE
@@ -66,12 +66,12 @@ executable caide
 test-suite caide-tests
   import: exe-flags
   type: exitcode-stdio-1.0
-  build-depends: base, libcaide, HUnit, text
+  build-depends: base, libcaide, aeson, HUnit, text
   default-language: Haskell2010
   hs-source-dirs: test
   main-is: Main.hs
   other-modules: ProblemParsers
-  other-extensions: OverloadedStrings, RecordWildCards
+  other-extensions: OverloadedLists, OverloadedStrings, RecordWildCards
 
 library
   build-depends:
@@ -79,6 +79,7 @@ library
                    aeson < 2.0.0.0,
                    array,
                    async >= 2.0.1,
+                   attoparsec,
                    bytestring,
                    ConfigFile,
                    containers >= 0.5.0.0,
@@ -96,6 +97,7 @@ library
                    optparse-applicative >= 0.15,
                    parsec,
                    process,
+                   scientific,
                    system-fileio >= 0.3.16,
                    system-filepath,
                    tagsoup >= 0.13,
@@ -144,6 +146,7 @@ library
         Caide.Commands.BuildScaffold
         Caide.Commands.CHelperHttpServer
         Caide.Commands.Checkout
+        Caide.Commands.ConvertTestCase
         Caide.Commands.GetOpt
         Caide.Commands.Init
         Caide.Commands.Make
@@ -165,6 +168,8 @@ library
         Caide.Parsers.Common
         Caide.Parsers.GCJ
         Caide.Parsers.HackerRank
+        Caide.Parsers.LeetCode
+        Caide.Parsers.LeetCodeContest
         Caide.Parsers.POJ
         Caide.Parsers.RCC
         Caide.Parsers.RccContest
@@ -176,13 +181,16 @@ library
         Caide.Settings
         Caide.Templates
         Caide.TestCases
-        Caide.TestCases.TopcoderComparator
         Caide.TestCases.TopcoderDeserializer
         Caide.TestCases.Types
         Caide.Types
         Caide.Types.Option
         Caide.Util
         Caide.Xml
+        Control.Exception.Extended
+        Control.Monad.Extended
+        Data.Either.Util
+        Data.List.Util
         Data.Text.Encoding.Util
         Data.Text.IO.Util
         Filesystem.Util

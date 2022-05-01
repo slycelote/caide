@@ -51,7 +51,7 @@ htmlParser cont = pure $
             sections (~~== "<pre class=io-content>") .
             dropWhile (~~/== "<div class=problem-io-wrapper>") $
             activeTab
-    testCases = normalizeTestCases [TestCase (texts!!0) (texts!!1) | length texts >= 2]
+    testCases = normalizeTestCases [TestCase (texts!!0) (Just $ texts!!1) | length texts >= 2]
 
     -- TODO: a special problem type for GCJ-like judges
     probType = Stream StdIn StdOut

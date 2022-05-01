@@ -1,4 +1,4 @@
-﻿namespace slycelote.VsCaide
+﻿namespace slycelote.VsCaide.VsSpecific
 {
     using EnvDTE;
     using slycelote.VsCaide.VsInterface;

@@ -24,7 +24,7 @@ chelperId :: T.Text
 chelperId = "codeforces"
 
 isSupportedUrl :: URL -> Bool
-isSupportedUrl = isHostOneOf ["codeforces.com", "www.codeforces.com", "codeforces.ru", "www.codeforces.ru"]
+isSupportedUrl = isHostOneOf ["codeforces.com", "www.codeforces.com", "codeforces.ru", "www.codeforces.ru", "codeforces.ml", "www.codeforces.ml"]
 
 htmlParser :: T.Text -> IO (Either T.Text (Problem, [TestCase]))
 htmlParser cont = pure $
@@ -42,7 +42,7 @@ htmlParser cont = pure $
     extractText = T.dropWhile (`elem` ['\r', '\n']) . innerText . replaceBr . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>")
     inputs = map extractText inputDivs
     outputs = map extractText outputDivs
-    testCases = zipWith TestCase inputs outputs
+    testCases = zipWith TestCase inputs (map Just outputs)
 
     -- Contest
     sidebar = dropWhile (~/= "<div id=sidebar>") tags

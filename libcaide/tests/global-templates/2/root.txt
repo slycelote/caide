@@ -1,2 +1,2 @@
-  name: a, id: a, language: c#, input: {}, output: {}
-  name: b, id: b, language: c#, input: {}, output: {"file":"output.txt"}
+  name: a, id: a, language: csharp, input: {"stdin":true}, output: {"stdout":true}
+  name: b, id: b, language: csharp, input: {"stdin":true}, output: {"file":"output.txt"}

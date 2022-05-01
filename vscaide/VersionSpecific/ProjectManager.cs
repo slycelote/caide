@@ -15,11 +15,7 @@ using Microsoft.VisualStudio.Shell;
 
 namespace slycelote.VsCaide.VsSpecific
 {
-    /// <summary>
-    /// This is a common implementation for all Visual Studio versions.
-    /// The only difference is which version of VCProjectEngine assembly the DLL references.
-    /// </summary>
-    public class ProjectManager : IProjectManager
+    internal class ProjectManager : IProjectManager
     {
         private readonly DTE dte;
 
@@ -97,10 +93,7 @@ namespace slycelote.VsCaide.VsSpecific
                 if (needBackup)
                 {
                     tempDir = Path.Combine(Path.GetTempPath(), "vscaide", projectName);
-                    if (Directory.Exists(tempDir))
-                    {
-                        Directory.Delete(tempDir, recursive: true);
-                    }
+                    FileUtility.DirectoryDelete(tempDir, recursive: true);
 
                     // Don't keep VS files
                     var filesToDelete = new[] { ".vcproj", ".vcxproj", ".csproj", ".user", ".exe", ".pdb" };
@@ -115,14 +108,9 @@ namespace slycelote.VsCaide.VsSpecific
                 // Remove the old project
                 if (oldProject != null)
                 {
-                    SolutionUtilities.IgnoreSolutionEvents = true;
-                    try
+                    using (SolutionUtilities.IgnoringSolutionEvents())
                     {
                         solution.Remove(oldProject);
-                    }
-                    finally
-                    {
-                        SolutionUtilities.IgnoreSolutionEvents = false;
                     }
                 }
 
@@ -151,7 +139,7 @@ namespace slycelote.VsCaide.VsSpecific
                 if (tempDir != null)
                 {
                     FileUtility.DirectoryCopy(tempDir, projectDir, copySubDirs: true, fileFilter: null);
-                    Directory.Delete(tempDir, recursive: true);
+                    FileUtility.DirectoryDelete(tempDir, recursive: true);
                 }
             }
 
@@ -187,13 +175,16 @@ namespace slycelote.VsCaide.VsSpecific
 
             dte.Solution.SolutionBuild.StartupProjects = project.UniqueName;
 
-            var allItems = project.ProjectItems.OfType<ProjectItem>();
+            if (SolutionUtilities.HasSolutionLoaded())
+            {
+                var allItems = project.ProjectItems.OfType<ProjectItem>();
 #pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
-            var solutionCs = allItems.Single(i => i.Name == solutionFile);
+                var solutionCs = allItems.Single(i => i.Name == solutionFile);
 #pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
-            var solutionCsWindow = solutionCs.Open(EnvDTE.Constants.vsViewKindCode);
-            solutionCsWindow.Visible = true;
-            solutionCsWindow.Activate();
+                var solutionCsWindow = solutionCs.Open(EnvDTE.Constants.vsViewKindCode);
+                solutionCsWindow.Visible = true;
+                solutionCsWindow.Activate();
+            }
 
             CreateSubmissionCsProject();
 

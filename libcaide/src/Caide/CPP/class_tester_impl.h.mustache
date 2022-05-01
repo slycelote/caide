@@ -1,0 +1,98 @@
+#include "class_tester.h"
+#include <sstream>
+#include <stdexcept>
+
+{{#solutionClass}}
+
+namespace caide_tester {
+
+{{#methods}}
+void Method_{{method.name}}::call({{className}}*& solution) {
+{{^method.type_is_void}}
+    o_{{method.name}} =
+{{/method.type_is_void}}
+        solution->{{method.identifier.cpp}}(
+{{#parameters}}
+        i_{{name}}{{^islast}}, {{/islast}}
+{{/parameters}}
+    );
+}
+{{/methods}}
+
+{{#constructor}}
+void Method_{{className}}::call({{className}}*& solution) {
+    solution = new {{className}}(
+{{#parameters}}
+        i_{{name}}{{^islast}}, {{/islast}}
+{{/parameters}}
+    );
+}
+{{/constructor}}
+
+Test_{{className}}::Test_{{className}}() {
+    {{#constructor}}solution = 0;{{/constructor}}
+    {{^constructor}}solution = new {{className}}();{{/constructor}}
+}
+
+Test_{{className}}::~Test_{{className}}() {
+    delete solution;
+}
+
+}
+
+{{#isMultiMethod}}
+void solve(std::istream& in, std::ostream& out) {
+    caide_tester::Test_{{className}} tester;
+    out << '[';
+    std::vector<std::string> methodNames;
+    caide_tester::readPlain(in, methodNames);
+    int count;
+    caide_tester::readPlain(in, count);
+    if (count != (int)methodNames.size()) {
+        std::ostringstream os;
+        os << "Invalid test case: expected " << methodNames.size() << " inputs, got " << count;
+        throw std::runtime_error(os.str().c_str());
+    }
+
+    for (int i = 0; i < count; ++i) {
+        const std::string& methodName = methodNames[i];
+        if (i > 0)
+            out << ", ";
+        int argCount;
+        caide_tester::readPlain(in, argCount);
+{{#constructor}}
+        if (methodName == "{{className}}") {
+            caide_tester::Method_{{className}}& m = tester.method_{{className}};
+            m.readInputs(in);
+            m.call(tester.solution);
+            m.writeOutput(out);
+        } else
+{{/constructor}}
+{{#methods}}
+        if (methodName == "{{method.name}}") {
+            caide_tester::Method_{{method.name}}& m = tester.method_{{method.name}};
+            m.readInputs(in);
+            m.call(tester.solution);
+            m.writeOutput(out);
+        } else
+{{/methods}}
+        {
+            throw std::runtime_error(methodName + ": unknown method");
+        }
+    }
+
+    out << ']';
+}
+{{/isMultiMethod}}
+{{^isMultiMethod}}
+void solve(std::istream& in, std::ostream& out) {
+    caide_tester::Test_{{className}} tester;
+{{#methods}}{{! Must be a single method }}
+    caide_tester::Method_{{method.name}}& m = tester.method_{{method.name}};
+    m.readInputs(in);
+    m.call(tester.solution);
+    m.writeOutput(out);
+{{/methods}}
+}
+{{/isMultiMethod}}
+{{/solutionClass}}

@@ -5,6 +5,8 @@ module Caide.Parsers.POJ(
     , isSupportedUrl
 ) where
 
+import Data.Function ((&))
+import Data.List.Util (chunksOf)
 import Data.Char (isDigit)
 import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import qualified Data.Text as T
@@ -42,7 +44,7 @@ htmlParser cont = pure $
     texts = mapMaybe (maybeTagText . (!!1)) .
             sections (~~== "<pre class=sio>") $
             tags
-    testCases = normalizeTestCases [TestCase (texts!!i) (texts!!(i+1)) | i <- [0, 2 .. length texts-2]]
+    testCases = texts & chunksOf 2 & map (\[i, o] -> TestCase i (Just o)) & normalizeTestCases
 
     probType = Stream StdIn StdOut
     problem = (makeProblem title probId probType, testCases)

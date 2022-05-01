@@ -264,7 +264,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       constexpr reference
       front() const noexcept
       {
-	static_assert(extent != 0);
 	__glibcxx_assert(!empty());
 	return *this->_M_ptr;
       }
@@ -272,7 +271,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       constexpr reference
       back() const noexcept
       {
-	static_assert(extent != 0);
 	__glibcxx_assert(!empty());
 	return *(this->_M_ptr + (size() - 1));
       }
@@ -280,7 +278,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       constexpr reference
       operator[](size_type __idx) const noexcept
       {
-	static_assert(extent != 0);
 	__glibcxx_assert(__idx < size());
 	return *(this->_M_ptr + __idx);
       }
@@ -415,7 +412,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     span(_Iter, _End)
       -> span<remove_reference_t<iter_reference_t<_Iter>>>;
 
-  template<typename _Range>
+  template<ranges::contiguous_range _Range>
     span(_Range &&)
       -> span<remove_reference_t<ranges::range_reference_t<_Range&>>>;
 
@@ -433,6 +430,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     }
 
   template<typename _Type, size_t _Extent>
+    requires (!is_const_v<_Type>)
     inline
     span<byte, _Extent == dynamic_extent
        ? dynamic_extent : _Extent * sizeof(_Type)>
