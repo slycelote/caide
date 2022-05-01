@@ -60,7 +60,7 @@ downloadDocument url
 
 getAdditionalHeaders :: BS.ByteString -> RequestHeaders
 getAdditionalHeaders requestHost =
-    [(hCookie, "RCPC=4f698e716ffeabe9943d7f1e60e50a0b") |
+    [(hCookie, "RCPC=6b9ade1a791972f03788f4fe51b5b8e8") |
         requestHost `elem` ["codeforces.com", "www.codeforces.com"]]
 
 httpPost :: URI -> LBS.ByteString -> [Header] -> IO (Either Text LBS.ByteString)
