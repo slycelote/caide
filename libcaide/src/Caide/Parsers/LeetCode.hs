@@ -57,8 +57,9 @@ problemParser = ProblemParser
 
 doParse :: URL -> Maybe T.Text -> IO (Either Text (Problem, [TestCase]))
 doParse url _ = case (mbUri, mbPathSegments) of
-    (Just uri, Just ["problems", probId]) -> do
-        let apiUri = uri{uriPath = "/graphql", uriQuery="", uriFragment=""}
+    (Just uri, Just seg) | length seg >= 2 && seg !! (length seg - 2) == "problems" -> do
+        let probId = last seg
+            apiUri = uri{uriPath = "/graphql", uriQuery="", uriFragment=""}
             apiQuery = "{\"operationName\":\"questionData\",\"variables\":{\"titleSlug\":\"" <> LBS8.pack probId <> "\"}, " <>
                        "\"query\":\"query questionData($titleSlug: String!) {  question(titleSlug: $titleSlug) { " <>
                        "title    titleSlug    content    exampleTestcases " <>

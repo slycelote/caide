@@ -172,6 +172,12 @@ problemParserTests = TestList
             [ mkTestCase "[\"LRUCache\",\"put\",\"put\",\"get\",\"put\",\"get\",\"put\",\"get\",\"get\",\"get\"]\n[[2],[1,1],[2,2],[1],[3,3],[2],[4,4],[1],[3],[4]]"
                          "[null, null, null, 1, null, -1, null, -1, 3, 4]"
             ]
+        , lc "https://leetcode.com/contest/weekly-contest-291/problems/total-appeal-of-a-string"
+            (makeProblem "Total Appeal of A String" "total-appeal-of-a-string")
+            { problemType = mkProblemType "leetcode,appealSum:long,s:string" }
+            [ mkTestCase "\"abbca\"" "28"
+            , mkTestCase "\"code\"" "20"
+            ]
         ]
     ]
   where
