@@ -83,6 +83,7 @@ library
                    bytestring,
                    ConfigFile,
                    containers >= 0.5.0.0,
+                   cryptonite,
                    directory,
                    file-embed,
                    filelock,
@@ -98,6 +99,7 @@ library
                    parsec,
                    process,
                    scientific,
+                   stringsearch,
                    system-fileio >= 0.3.16,
                    system-filepath,
                    tagsoup >= 0.13,
@@ -137,6 +139,7 @@ library
         Caide.Builders.Custom
         Caide.Builders.None
         Caide.CheckUpdates
+        Caide.CodeforcesCookie
         Caide.CPP.CBinding
         Caide.CPP.CPP
         Caide.CPP.CPPSimple

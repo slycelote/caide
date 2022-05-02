@@ -8,6 +8,7 @@ import qualified Data.Aeson as Aeson
 
 import ProblemParsers (problemParserTests)
 
+import Caide.CodeforcesCookie (getCookie)
 import Caide.Commands.ConvertTestCase (convertTopcoderParameters)
 import Caide.MustacheUtil (enrich)
 import Caide.TestCases.TopcoderDeserializer (readMany, readQuotedString, readToken, runParser)
@@ -99,12 +100,19 @@ enrichTests = TestLabel "enrich" $ TestList
   s = Aeson.String
 
 
+codeforcesCookieTests :: Test
+codeforcesCookieTests = TestLabel "cfcookie" $ TestList
+  [ getCookie "<html><body>Redirecting... Please, wait.<script type=\"text/javascript\" src=\"/aes.min.js\" ></script><script>function toNumbers(d){var e=[];d.replace(/(..)/g,function(d){e.push(parseInt(d,16))});return e}function toHex(){for(var d=[],d=1==arguments.length&&arguments[0].constructor==Array?arguments[0]:arguments,e=\"\",f=0;f<d.length;f++)e+=(16>d[f]?\"0\":\"\")+d[f].toString(16);return e.toLowerCase()}var a=toNumbers(\"e9ee4b03c1d0822987185d27bca23378\"),b=toNumbers(\"188fafdbe0f87ef0fc2810d5b3e34705\"),c=toNumbers(\"be8ee4dad93897f51910e64ea8615599\");document.cookie=\"RCPC=\"+toHex(slowAES.decrypt(c,2,a,b))+\"; expires=Thu, 31-Dec-37 23:55:55 GMT; path=/\";document.location.href=\"https://codeforces.com/?f0a28=1\";</script></body></html>"
+      ~?= Right "RCPC=99b48543a1235bb6ae7d0c3a3d3c027a"
+  ]
+
 allTests :: Test
 allTests = TestList
   [ topcoderDeserializerTests
   , testCaseSerializationTests
   , convertTestCaseInputTests
   , enrichTests
+  , codeforcesCookieTests
   , TestLabel "live-parsers" problemParserTests
   ]
 
