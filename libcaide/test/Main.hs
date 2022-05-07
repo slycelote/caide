@@ -10,12 +10,14 @@ import ProblemParsers (problemParserTests)
 
 import Caide.CodeforcesCookie (getCookie)
 import Caide.Commands.ConvertTestCase (convertTopcoderParameters)
+import qualified Caide.HttpClient as Http
 import Caide.MustacheUtil (enrich)
 import Caide.TestCases.TopcoderDeserializer (readMany, readQuotedString, readToken, runParser)
 import Caide.TestCases.Types (deserializeTestReport, humanReadableReport,
     TestRunResult(testRunTime), makeTestRunResult,
     ComparisonResult(Error, EtalonUnknown, Failed, Success))
 import Caide.Types (TopcoderValue(TopcoderValue), TopcoderType(TCInt, TCString))
+import Caide.Util (newDefaultHttpClient)
 
 
 topcoderDeserializerTests :: Test
@@ -106,14 +108,14 @@ codeforcesCookieTests = TestLabel "cfcookie" $ TestList
       ~?= Right "RCPC=99b48543a1235bb6ae7d0c3a3d3c027a"
   ]
 
-allTests :: Test
-allTests = TestList
+allTests :: Http.Client -> Test
+allTests client = TestList
   [ topcoderDeserializerTests
   , testCaseSerializationTests
   , convertTestCaseInputTests
   , enrichTests
   , codeforcesCookieTests
-  , TestLabel "live-parsers" problemParserTests
+  , TestLabel "live-parsers" $ problemParserTests client
   ]
 
 filterTests :: [String] -> Test -> Test
@@ -127,6 +129,8 @@ filterTests _ _ = TestList []
 main :: IO ()
 main = do
     labels <- getArgs
-    let tests = if null labels then allTests else filterTests labels allTests
+    client <- newDefaultHttpClient
+    let testList = allTests client
+        tests = if null labels then testList else filterTests labels testList
     runTestTTAndExit tests
 

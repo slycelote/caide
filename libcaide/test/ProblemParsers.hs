@@ -9,6 +9,7 @@ import Data.Maybe (fromJust)
 import qualified Data.Text as T
 import Data.Text (Text)
 
+import qualified Caide.HttpClient as Http
 import Caide.Parsers.Common (URL, ProblemParser(..), makeProblemParser)
 import qualified Caide.Parsers.CodeChef as CodeChef
 import qualified Caide.Parsers.Codeforces as Codeforces
@@ -22,11 +23,11 @@ import Caide.Types (Problem(problemName, problemId, problemType), ProblemType(St
 import qualified Caide.Types as Caide
 
 
-assertParses :: ProblemParser -> URL -> Problem -> [Caide.TestCase] -> Test
-assertParses parser url expectedProblem expectedTestCases = HUnit.TestCase $ do
+assertParses :: Http.Client -> ProblemParser -> URL -> Problem -> [Caide.TestCase] -> Test
+assertParses client parser url expectedProblem expectedTestCases = HUnit.TestCase $ do
     let ProblemParser{..} = parser
     assertBool "The parser must be able to handle the URL" $ problemUrlMatches url
-    parseResult <- parseProblem url Nothing
+    parseResult <- parseProblem client url Nothing
     case parseResult of
         Left err -> assertFailure $ T.unpack $ url <> ": " <> err
         Right (problem, testCases) -> do
@@ -46,8 +47,8 @@ mkProblemType = fromJust . optionFromString
 mkTestList :: String -> [Test] -> Test
 mkTestList label tests = TestLabel label $ TestList tests
 
-problemParserTests :: Test
-problemParserTests = TestList
+problemParserTests :: Http.Client -> Test
+problemParserTests client = TestList
     [ hr "https://hackerrank.com/contests/hourrank-18/challenges/wheres-the-marble"
         (makeProblem "Where's the Marble?" "wheres-the-marble")
         [ mkTestCase "5 3\n2 5\n7 10\n2 9" "9" ]
@@ -175,11 +176,11 @@ problemParserTests = TestList
         ]
     ]
   where
-    hr = assertParses $ makeProblemParser HackerRank.isSupportedUrl HackerRank.htmlParser
+    hr = assertParses client $ makeProblemParser HackerRank.isSupportedUrl HackerRank.htmlParser
     makeProblem name probId = Caide.makeProblem name probId (Stream StdIn StdOut)
-    chef = assertParses CodeChef.problemParser
-    cf = assertParses $ makeProblemParser Codeforces.isSupportedUrl Codeforces.htmlParser
-    poj = assertParses $ makeProblemParser POJ.isSupportedUrl POJ.htmlParser
-    timus = assertParses $ makeProblemParser Timus.isSupportedUrl Timus.htmlParser
-    lc = assertParses $ LeetCode.problemParser
+    chef = assertParses client CodeChef.problemParser
+    cf = assertParses client $ makeProblemParser Codeforces.isSupportedUrl Codeforces.htmlParser
+    poj = assertParses client $ makeProblemParser POJ.isSupportedUrl POJ.htmlParser
+    timus = assertParses client $ makeProblemParser Timus.isSupportedUrl Timus.htmlParser
+    lc = assertParses client $ LeetCode.problemParser
 

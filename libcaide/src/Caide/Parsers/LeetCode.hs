@@ -33,13 +33,12 @@ import Data.Attoparsec.ByteString.Char8 (letter_ascii, char, digit,
 import Network.URI (parseURI, pathSegments, URI(uriPath, uriQuery, uriFragment))
 import Network.HTTP.Types.Header (hAcceptLanguage, hContentType, hReferer)
 
-import Network.HTTP.Util (httpPost)
-
 import Text.HTML.TagSoup (Tag(..), innerText, parseTags,
                          isTagCloseName, isTagOpenName, partitions, sections, )
 
 import qualified Text.Parsec as Parsec
 
+import qualified Caide.HttpClient as Http
 import Caide.Parsers.Common (URL, ProblemParser(..), isHostOneOf, normalizeTestCases)
 import Caide.Types
 import Caide.Util (tshow)
@@ -55,8 +54,8 @@ problemParser = ProblemParser
     }
 
 
-doParse :: URL -> Maybe T.Text -> IO (Either Text (Problem, [TestCase]))
-doParse url _ = case (mbUri, mbPathSegments) of
+doParse :: Http.Client -> URL -> Maybe T.Text -> IO (Either Text (Problem, [TestCase]))
+doParse client url _ = case (mbUri, mbPathSegments) of
     (Just uri, Just seg) | length seg >= 2 && seg !! (length seg - 2) == "problems" -> do
         let probId = last seg
             apiUri = uri{uriPath = "/graphql", uriQuery="", uriFragment=""}
@@ -66,7 +65,7 @@ doParse url _ = case (mbUri, mbPathSegments) of
                        "codeSnippets {      lang      langSlug      code      } " <>
                        "sampleTestCase    metaData    } " <>
                        "}\"}"
-        mbJson <- httpPost apiUri apiQuery [
+        mbJson <- Http.post client apiUri apiQuery [
             (hContentType, "application/json"),
             (hReferer, BS8.pack (show uri)),
             (hAcceptLanguage, "en-US,en;q=0.5")]

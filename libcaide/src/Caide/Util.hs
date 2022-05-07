@@ -53,7 +53,7 @@ newDefaultHttpClient = do
             , (hAccept, "*/*")
             ]
     return $
-        Http.setTimeoutMs 5.0 $
+        Http.setTimeout 5.0 $
         Http.addHeaders defaultHeaders $
         cfMiddleware $
         client

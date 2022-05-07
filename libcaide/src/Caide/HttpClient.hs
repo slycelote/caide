@@ -9,12 +9,13 @@ module Caide.HttpClient(
     , Middleware
     , middleware
     , addHeaders
-    , setTimeoutMs
+    , setTimeout
     , setRedirectCount
     , module Network.HTTP.Client
 ) where
 
 import qualified Control.Exception.Extended as Exc
+import Control.Monad.Extended (MonadIO, liftIO)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Function ((&))
 import Data.Functor ((<&>))
@@ -62,12 +63,12 @@ sendRequest Client{send} request = catchExceptions (getUri request) $
     request & setRequestCheckStatus & send <&> responseBody <&> Right
 
 
-get :: Client -> URI -> IO (Either Text LBS.ByteString)
-get client uri = catchExceptions uri $
+get :: MonadIO m => Client -> URI -> m (Either Text LBS.ByteString)
+get client uri = liftIO $ catchExceptions uri $
     sendRequest client =<< requestFromURI uri
 
-post :: Client -> URI -> LBS.ByteString -> RequestHeaders -> IO (Either Text LBS.ByteString)
-post client uri body headers = catchExceptions uri $ do
+post :: MonadIO m => Client -> URI -> LBS.ByteString -> RequestHeaders -> m (Either Text LBS.ByteString)
+post client uri body headers = liftIO $ catchExceptions uri $ do
     request <- requestFromURI uri
     sendRequest client $ request
         { method = "POST"
@@ -76,8 +77,8 @@ post client uri body headers = catchExceptions uri $ do
         }
 
 
-newClient :: IO Client
-newClient = do
+newClient :: MonadIO m => m Client
+newClient = liftIO $ do
 #ifdef VERSION_http_client_openssl
     manager <- withOpenSSL newOpenSSLManager
 #else
@@ -93,8 +94,8 @@ wrap modify Client{send} = Client $ send . modify
 addHeaders :: RequestHeaders -> Middleware
 addHeaders headers = wrap $ \request -> request{requestHeaders = requestHeaders request ++ headers}
 
-setTimeoutMs :: DiffTime -> Middleware
-setTimeoutMs timeout = wrap $ \request ->
+setTimeout :: DiffTime -> Middleware
+setTimeout timeout = wrap $ \request ->
     request{responseTimeout = responseTimeoutMicro (fromInteger $ diffTimeToPicoseconds timeout `div` 1000000)}
 
 setRedirectCount :: Int -> Middleware

@@ -1,22 +1,18 @@
 {-# LANGUAGE CPP, OverloadedStrings #-}
 module Network.HTTP.Util(
       downloadDocument
-    , httpPost
 ) where
 
 import Control.Exception (catch)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BS8
 import qualified Data.ByteString.Lazy as LBS
-import qualified Data.ByteString.Lazy.Char8 as LBS8
 import Data.Maybe (isNothing)
 import qualified Data.Text as T
 import Data.Text (Text)
 import Network.HTTP.Client (HttpException(..), HttpExceptionContent(..), Request,
-    defaultRequest,
     httpLbs, newManager, parseUrlThrow,
-    host, method, path, port, queryString, requestHeaders, requestBody, secure,
-    RequestBody(RequestBodyLBS),
+    host, path, port, queryString, requestHeaders, secure,
     Response, responseStatus, responseBody, responseTimeout, responseTimeoutMicro, )
 
 #ifdef VERSION_http_client_openssl
@@ -25,9 +21,9 @@ import Network.HTTP.Client.OpenSSL (newOpenSSLManager, withOpenSSL)
 import Network.Connection (TLSSettings(TLSSettingsSimple))
 import Network.HTTP.Client.TLS (mkManagerSettings)
 #endif
-import Network.HTTP.Types.Header (Header, RequestHeaders, hAccept, hAcceptEncoding, hCookie, hOrigin, hUserAgent)
+import Network.HTTP.Types.Header (RequestHeaders, hAccept, hAcceptEncoding, hCookie, hUserAgent)
 import Network.HTTP.Types.Status (ok200, statusCode, statusMessage)
-import Network.URI(URI(uriPath, uriQuery, uriFragment))
+
 import System.IO.Error (catchIOError, ioeGetErrorString)
 
 import Data.Text.Encoding.Util (safeDecodeUtf8, tryDecodeUtf8)
@@ -63,23 +59,7 @@ getAdditionalHeaders requestHost =
     [(hCookie, "RCPC=6b9ade1a791972f03788f4fe51b5b8e8") |
         requestHost `elem` ["codeforces.com", "www.codeforces.com"]]
 
-httpPost :: URI -> LBS.ByteString -> [Header] -> IO (Either Text LBS.ByteString)
-httpPost uri body headers
-    | isNothing mbRequest       = return . Left $ "URL not supported"
-    | otherwise                 = getResponseBody request'
-  where
-    mbRequest = parseUrlThrow $ show uri
-    Just request = mbRequest
-    request' = request
-            { requestBody = RequestBodyLBS body
-            , method = "POST"
-            , responseTimeout = responseTimeoutMicro $ 5*seconds
-            , requestHeaders = headers <>
-                [ (hUserAgent, "Mozilla/5.0 (Windows NT 10.0; x86_64; rv:91.0) Gecko/20100101 Firefox/91.0")
-                , (hAccept, "*/*")
-                , (hOrigin, BS8.pack . show $ uri{uriPath="", uriQuery="", uriFragment=""})
-                ]
-            }
+
 
 describeHttpException :: HttpException -> Text
 describeHttpException (InvalidUrlException url reason) = "URL '" <> T.pack url <> "' is invalid: " <> T.pack reason

@@ -22,14 +22,14 @@ import qualified Data.Aeson as Aeson
 import qualified Text.Parsec as Parsec
 import Text.Parsec.Text (Parser)
 
-import Network.HTTP.Util (downloadDocument)
 import Network.URI (parseURI, uriPath)
 
 import Text.HTML.TagSoup (Tag(..), innerText, fromTagText, parseTags,
                          isTagClose, isTagCloseName, sections, )
 
+import qualified Caide.HttpClient as Http
 import Caide.Parsers.Common (URL, ProblemParser(..), CHelperProblemParser(..),
-    isHostOneOf, mergeTextTags, normalizeTestCases, replaceBr)
+    isHostOneOf, downloadDocument, mergeTextTags, normalizeTestCases, replaceBr)
 import Caide.Types
 import Caide.Util (tshow)
 import Text.HTML.TagSoup.Utils ((~==), (~/=), matching)
@@ -201,14 +201,14 @@ doParseFromHtml cont = pure $ do
     testCases <- parseTestCasesFromHtml tags
     return (makeProblem title probId probType, normalizeTestCases testCases)
 
-doParse :: URL -> Maybe T.Text -> IO (Either Text (Problem, [TestCase]))
-doParse url _ = case urlPath of
-    Nothing -> return $ Left $ T.append "Unsupported URL: " url
+doParse :: Http.Client -> URL -> Maybe T.Text -> IO (Either Text (Problem, [TestCase]))
+doParse client url _ = case urlPath of
+    Nothing -> return $ Left $ "Unsupported URL: " <> url
     Just path -> case Parsec.parse problemUrlParser "" path of
         Left err -> return $ Left $ tshow err
         Right (contestId, probId) -> do
-            let apiUrl = T.concat ["https://www.codechef.com/api/contests/", contestId, "/problems/", probId]
-            mbDoc <- downloadDocument apiUrl
+            let apiUrl = "https://www.codechef.com/api/contests/" <> contestId <> "/problems/" <> probId
+            mbDoc <- downloadDocument client apiUrl
             return (mbDoc >>= parseFromJson probId)
   where
     urlPath = T.pack . uriPath <$> parseURI (T.unpack url)
