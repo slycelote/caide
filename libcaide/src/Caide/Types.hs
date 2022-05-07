@@ -16,6 +16,8 @@ module Caide.Types(
     , Verbosity (..)
     , CaideIO
     , CaideM
+    , CaideEnv(verbosity)
+    , makeCaideEnv
     , runInDirectory
 
     , throw
@@ -33,6 +35,7 @@ module Caide.Types(
     , caideRoot
     , caideVerbosity
     , caideSettings
+    , caideHttpClient
 
     , ProgrammingLanguage (..)
     , TestCase (..)
@@ -65,6 +68,7 @@ import Filesystem.Path.CurrentOS ((</>))
 
 import Filesystem.Util (readTextFile, writeTextFile)
 
+import qualified Caide.HttpClient as Http
 import Caide.Settings (Settings, readSettings)
 import Caide.Types.Option (Option(..))
 
@@ -180,22 +184,33 @@ data Temporary
 -- | File handle through which it's possible to access options. See 'setProp', 'getProp'
 newtype ConfigFileHandle configType = FileHandle F.FilePath
 
+
+data CaideEnv = CaideEnv
+    { root       :: !F.FilePath
+    , verbosity  :: !Verbosity
+    , settings   :: Settings
+    , httpClient :: !Http.Client
+    }
+
+makeCaideEnv :: F.FilePath -> Verbosity -> Http.Client -> CaideEnv
+-- Being hacky here; undefined is overwritten in runInDirectory
+makeCaideEnv root verbosity httpClient = CaideEnv
+    { root, verbosity, settings=undefined, httpClient }
+
 runCaideM :: Monad m => CaideM m a -> CaideEnv -> CaideState -> m (Either C.CPError (a, CaideState, ()))
 runCaideM caideAction env state = runExceptT $ runRWST (unCaideM caideAction) env state
 
-runInDirectory :: Verbosity -> F.FilePath -> CaideIO a -> IO (Either C.CPError a)
-runInDirectory v dir caideAction = do
+runInDirectory :: CaideEnv -> CaideIO a -> IO (Either C.CPError a)
+runInDirectory env caideAction = do
     let initialState = CaideState { files = M.empty }
         logEx e = do
-            when (v >= Debug) $ print e
+            when (verbosity env >= Debug) $ print e
             return (Left e)
     ret <- tryIOError $ do
-        iniSettings <- readSettings (dir </> "caide.ini")
+        iniSettings <- readSettings (root env </> "caide.ini")
         case iniSettings of
             Left e  -> pure $ Left (C.OtherProblem (T.unpack e), "")
-            Right s -> do
-                let env = CaideEnv { root = dir, verbosity = v, settings = s }
-                runCaideM caideAction env initialState
+            Right s -> runCaideM caideAction env{settings=s} initialState
     case ret of
         Left e -> logEx (C.OtherProblem $ displayException e, "")
         Right (Left e) -> logEx e
@@ -217,6 +232,9 @@ caideVerbosity = reader verbosity
 
 caideSettings :: Monad m => CaideM m Settings
 caideSettings = reader settings
+
+caideHttpClient :: CaideIO Http.Client
+caideHttpClient = reader httpClient
 
 -- | Creates a new config file. Throws if it already exists.
 createConf :: Monad m => F.FilePath -> C.ConfigParser -> CaideM m (ConfigFileHandle Persistent)
@@ -387,12 +405,6 @@ data ConfigInMemory = ConfigInMemory
     { configParser :: !C.ConfigParser
     , modified     :: !Bool
     }
-
-data CaideEnv = CaideEnv
-    { root      :: !F.FilePath
-    , verbosity :: !Verbosity
-    , settings  :: !Settings
-    } deriving (Show)
 
 data CaideState = CaideState
     { files :: !(Map F.FilePath ConfigInMemory)
