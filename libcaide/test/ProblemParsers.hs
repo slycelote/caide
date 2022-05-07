@@ -14,7 +14,6 @@ import qualified Caide.Parsers.CodeChef as CodeChef
 import qualified Caide.Parsers.Codeforces as Codeforces
 import qualified Caide.Parsers.HackerRank as HackerRank
 import qualified Caide.Parsers.POJ as POJ
--- import qualified Caide.Parsers.RCC as RCC
 import qualified Caide.Parsers.Timus as Timus
 import qualified Caide.Parsers.LeetCode as LeetCode
 
@@ -115,11 +114,6 @@ problemParserTests = TestList
         (makeProblem "取石子游戏" "poj1067")
         [ mkTestCase "2 1\n8 4\n4 7" "0\n1\n0" ]
 
-    -- The site is unavailable
-    -- , rcc "http://www.russiancodecup.ru/tasks/round/22/A/"
-    --     (makeProblem "\"A\" Игра" "rccA")
-    --     [ mkTestCase "3\n3\n1 2 3\n3 1 2\n0 2 1\n3\n1 2 3\n4 5 6\n7 8 9\n3\n1 2 3\n4 5 6\n7 5 9" "YES\nNO\nYES" ]
-
     , timus "http://acm.timus.ru/problem.aspx?space=1&num=2032"
         (makeProblem "2032. Conspiracy Theory and Rebranding" "timus2032")
         [ mkTestCase "4 3 5" "0 0\n3 4\n3 0"
@@ -186,7 +180,6 @@ problemParserTests = TestList
     chef = assertParses CodeChef.problemParser
     cf = assertParses $ makeProblemParser Codeforces.isSupportedUrl Codeforces.htmlParser
     poj = assertParses $ makeProblemParser POJ.isSupportedUrl POJ.htmlParser
-    -- rcc = assertParses $ makeProblemParser RCC.isSupportedUrl RCC.htmlParser
     timus = assertParses $ makeProblemParser Timus.isSupportedUrl Timus.htmlParser
     lc = assertParses $ LeetCode.problemParser
 

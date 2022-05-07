@@ -33,7 +33,6 @@ import qualified Caide.Parsers.GCJ as GCJ
 import qualified Caide.Parsers.HackerRank as HackerRank
 import qualified Caide.Parsers.LeetCode as LeetCode
 import qualified Caide.Parsers.POJ as POJ
-import qualified Caide.Parsers.RCC as RCC
 import qualified Caide.Parsers.Timus as Timus
 import qualified Caide.Parsers.Yandex as Yandex
 import qualified Caide.GenericLanguage as GenericLanguage
@@ -45,7 +44,6 @@ chelperParsers = [ CHelperProblemParser Codeforces.chelperId Codeforces.isSuppor
                  , CHelperProblemParser GCJ.chelperId GCJ.isSupportedUrl GCJ.htmlParser
                  , CHelperProblemParser HackerRank.chelperId HackerRank.isSupportedUrl HackerRank.htmlParser
                  , CHelperProblemParser POJ.chelperId POJ.isSupportedUrl POJ.htmlParser
-                 , CHelperProblemParser RCC.chelperId RCC.isSupportedUrl RCC.htmlParser
                  , CHelperProblemParser Timus.chelperId Timus.isSupportedUrl Timus.htmlParser
                  , CHelperProblemParser Yandex.chelperId Yandex.isSupportedUrl Yandex.htmlParser
                  ]
@@ -56,7 +54,6 @@ problemParsers = [ makeProblemParser Codeforces.isSupportedUrl Codeforces.htmlPa
                  , makeProblemParser HackerRank.isSupportedUrl HackerRank.htmlParser
                  , LeetCode.problemParser
                  , makeProblemParser POJ.isSupportedUrl POJ.htmlParser
-                 , makeProblemParser RCC.isSupportedUrl RCC.htmlParser
                  , makeProblemParser Timus.isSupportedUrl Timus.htmlParser
                  ]
 

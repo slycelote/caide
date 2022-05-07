@@ -13,7 +13,6 @@ Companion](https://github.com/slycelote/caide/tree/release/libcaide#chelper-and-
 | Google Code Jam         | - | - | + |
 | HackerRank              | - | - | + |
 | POJ                     | http://poj.org/problem?id=1000 | - | - |
-| Russian Code Cup        | http://www.russiancodecup.ru/tasks/round/25/B/ | - | + |
 | Timus                   | http://acm.timus.ru/problem.aspx?space=1&num=1032 | - | + |
 | Topcoder                | requires tccaide plugin for Topcoder Arena |||
 | Yandex.Algorithm        | - | - | + |

@@ -11,7 +11,6 @@ import Caide.Parsers.Common (URL, ContestParser(..))
 import Caide.Parsers.CodeforcesContest
 import Caide.Parsers.CodeChefContest
 import qualified Caide.Parsers.LeetCodeContest as LeetCode
-import Caide.Parsers.RccContest
 
 createContest :: URL -> CaideIO ()
 createContest contestUrl = case findContestParser contestUrl of
@@ -19,7 +18,7 @@ createContest contestUrl = case findContestParser contestUrl of
     Just contestParser -> contestParser `parseContest` contestUrl
 
 contestParsers :: [ContestParser]
-contestParsers = [codeforcesContestParser, codeChefContestParser, LeetCode.contestParser, rccContestParser]
+contestParsers = [codeforcesContestParser, codeChefContestParser, LeetCode.contestParser]
 
 findContestParser :: URL -> Maybe ContestParser
 findContestParser url = find (`contestUrlMatches` url) contestParsers

@@ -175,8 +175,6 @@ library
         Caide.Parsers.LeetCode
         Caide.Parsers.LeetCodeContest
         Caide.Parsers.POJ
-        Caide.Parsers.RCC
-        Caide.Parsers.RccContest
         Caide.Parsers.Timus
         Caide.Parsers.Yandex
         Caide.Paths
