@@ -196,7 +196,6 @@ library
         Data.Text.Encoding.Util
         Data.Text.IO.Util
         Filesystem.Util
-        Network.HTTP.Util
         Paths_CaideExt
         Paths_libcaide
         System.IO.Util

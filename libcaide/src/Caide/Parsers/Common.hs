@@ -8,12 +8,13 @@ module Caide.Parsers.Common(
     , ProblemParser(..)
     , CHelperProblemParser(..)
     , HtmlProblemParser
+    , ContestParserResult(..)
     , ContestParser(..)
     , makeProblemParser
     , isHostOneOf
 ) where
 
-import Control.Monad.Extended (liftEither, orThrow, runExceptT)
+import Control.Monad.Extended (MonadIO, liftEither, liftIO, orThrow, runExceptT)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Function ((&))
 import Data.Functor ((<&>))
@@ -29,7 +30,7 @@ import Text.HTML.TagSoup.Utils (isTagName)
 import Text.StringLike (StringLike, strConcat)
 
 import qualified Caide.HttpClient as Http
-import Caide.Types (Problem, TestCase(TestCase), CaideIO)
+import Caide.Types (Problem, TestCase(TestCase))
 
 
 type URL = T.Text
@@ -47,9 +48,13 @@ data CHelperProblemParser = CHelperProblemParser
 
 type HtmlProblemParser = T.Text -> IO (Either T.Text (Problem, [TestCase]))
 
+-- | Contest parser can return either a list of problem URLs or a list of parsed problems.
+data ContestParserResult = Urls [URL]
+                         | Problems [(Problem, [TestCase])]
+
 data ContestParser = ContestParser
     { contestUrlMatches :: URL -> Bool
-    , parseContest      :: URL -> CaideIO ()
+    , parseContest      :: Http.Client -> URL -> IO (Either T.Text ContestParserResult)
     }
 
 makeProblemParser :: (URL -> Bool) -> HtmlProblemParser -> ProblemParser
@@ -64,8 +69,8 @@ makeProblemParser matchPredicate htmlParser = ProblemParser matchPredicate parse
 isHostOneOf :: [String] -> URL -> Bool
 isHostOneOf hosts url = (url & T.unpack & parseURI >>= uriAuthority <&> uriRegName) `elem` (map Just hosts)
 
-downloadDocument :: Http.Client -> URL -> IO (Either T.Text T.Text)
-downloadDocument client url = runExceptT $ do
+downloadDocument :: MonadIO m => Http.Client -> URL -> m (Either T.Text T.Text)
+downloadDocument client url = liftIO $ runExceptT $ do
     uri <- parseURI (T.unpack url) `orThrow` "Invalid URL"
     lbsBody <- Http.get client uri >>= liftEither
     pure $ T.safeDecodeUtf8 $ LBS.toStrict $ lbsBody

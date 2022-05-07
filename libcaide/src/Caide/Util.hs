@@ -2,8 +2,7 @@
 {- | Common utilities
 -}
 module Caide.Util(
-      downloadDocument
-    , newDefaultHttpClient
+      newDefaultHttpClient
     , mapWithLimitedThreads
     , tshow
     , readTextFile'
@@ -23,7 +22,6 @@ import System.FileLock (SharedExclusive(Exclusive), tryLockFile, unlockFile)
 import Network.HTTP.Types.Header (hAccept, hAcceptEncoding, hUserAgent)
 
 import Filesystem.Util (pathToText, readTextFile)
-import Network.HTTP.Util (downloadDocument)
 import qualified Caide.CodeforcesCookie as CodeforcesCookie
 import Caide.Configuration (orDefault)
 import qualified Caide.HttpClient as Http

@@ -3,11 +3,8 @@ module Caide.Parsers.LeetCodeContest(
       contestParser
 ) where
 
-import Control.Monad.Extended (liftIO)
-import qualified Data.ByteString.Lazy as LBS
 import Data.Either.Util (mapLeft)
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
 import Data.Text (Text)
 
 import GHC.Generics (Generic)
@@ -15,10 +12,9 @@ import Network.URI (parseURI, pathSegments, URI(uriPath, uriQuery, uriFragment))
 
 import qualified Data.Aeson as Aeson
 
-import Caide.Commands.ParseProblem (parseProblems)
-import Caide.Parsers.Common (URL, ContestParser(..), isHostOneOf)
-import Caide.Types
-import Caide.Util (downloadDocument, tshow)
+import qualified Caide.HttpClient as Http
+import Caide.Parsers.Common (URL, ContestParser(..), ContestParserResult(Urls), isHostOneOf)
+import Caide.Util (tshow)
 
 
 isLeetCodeUrl :: URL -> Bool
@@ -40,22 +36,19 @@ newtype Contest = Contest { questions :: [ProblemInContest] }
 instance Aeson.FromJSON Contest
 
 
-eitherDecodeText' :: Aeson.FromJSON a => Text -> Either Text a
-eitherDecodeText' = mapLeft T.pack . Aeson.eitherDecode' . LBS.fromStrict . T.encodeUtf8
-
-doParseContest :: URL -> CaideIO ()
-doParseContest url = case (mbUri, mbPathSegments) of
+doParseContest :: Http.Client -> URL -> IO (Either Text ContestParserResult)
+doParseContest client url = case (mbUri, mbPathSegments) of
     (Just uri, Just seg) | length seg >= 2 && seg !! (length seg - 2) == "contest" -> do
         let contestId = last seg
             apiUri = uri{uriPath = "/contest/api/info/" <> contestId <> "/", uriQuery="", uriFragment=""}
             probUrlPrefix = tshow $ apiUri{uriPath="/problems/"}
-        mbDoc <- liftIO $ downloadDocument $ tshow apiUri
-        case mbDoc >>= eitherDecodeText' of
-            Left err -> throw err
-            Right (Contest{questions}) -> parseProblems 3 $
+        mbDoc <- Http.get client apiUri
+        case mbDoc >>= (mapLeft T.pack . Aeson.eitherDecode') of
+            Left err -> pure $ Left err
+            Right (Contest{questions}) -> pure . Right . Urls $
                 [ probUrlPrefix <> (title_slug prob) | prob <- questions ]
 
-    _ -> throw "Invalid contest url"
+    _ -> pure $ Left "Invalid contest url"
   where
     mbUri = parseURI (T.unpack url)
     mbPathSegments = pathSegments <$> mbUri
