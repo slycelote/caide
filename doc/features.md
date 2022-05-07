@@ -12,6 +12,7 @@ Companion](https://github.com/slycelote/caide/tree/release/libcaide#chelper-and-
 | Codeforces              | http://codeforces.com/contest/1/problem/A, http://codeforces.com/gym/100681/problem/B | http://codeforces.com/contest/1 | + |
 | Google Code Jam         | - | - | + |
 | HackerRank              | - | - | + |
+| LeetCode                | https://leetcode.com/problems/detect-capital | https://leetcode.com/contest/weekly-contest-291 | - |
 | POJ                     | http://poj.org/problem?id=1000 | - | - |
 | Timus                   | http://acm.timus.ru/problem.aspx?space=1&num=1032 | - | + |
 | Topcoder                | requires tccaide plugin for Topcoder Arena |||
