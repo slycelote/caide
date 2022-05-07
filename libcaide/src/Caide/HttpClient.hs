@@ -34,8 +34,7 @@ import Network.HTTP.Client (HttpException(..), HttpExceptionContent(..), Request
 #ifdef VERSION_http_client_openssl
 import Network.HTTP.Client.OpenSSL (newOpenSSLManager, withOpenSSL)
 #else
-import Network.Connection (TLSSettings(TLSSettingsSimple))
-import Network.HTTP.Client.TLS (mkManagerSettings, newManager)
+import Network.HTTP.Client.TLS (newTlsManager)
 #endif
 import Network.HTTP.Types.Header (RequestHeaders)
 import Network.HTTP.Types.Status (statusCode, statusMessage)
@@ -82,8 +81,7 @@ newClient = liftIO $ do
 #ifdef VERSION_http_client_openssl
     manager <- withOpenSSL newOpenSSLManager
 #else
-    let tlsManagerSettings = mkManagerSettings (TLSSettingsSimple True False False) Nothing
-    manager <- newManager tlsManagerSettings
+    manager <- newTlsManager
 #endif
     return $ Client $ \request -> httpLbs request manager
 
