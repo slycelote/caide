@@ -3,6 +3,7 @@
 -}
 module Caide.Util(
       downloadDocument
+    , newDefaultHttpClient
     , mapWithLimitedThreads
     , tshow
     , readTextFile'
@@ -19,9 +20,13 @@ import Filesystem.Path.CurrentOS (encodeString)
 
 import System.FileLock (SharedExclusive(Exclusive), tryLockFile, unlockFile)
 
+import Network.HTTP.Types.Header (hAccept, hAcceptEncoding, hUserAgent)
+
 import Filesystem.Util (pathToText, readTextFile)
 import Network.HTTP.Util (downloadDocument)
+import qualified Caide.CodeforcesCookie as CodeforcesCookie
 import Caide.Configuration (orDefault)
+import qualified Caide.HttpClient as Http
 import Caide.Settings (useFileLock)
 import Caide.Types
 
@@ -37,6 +42,21 @@ mapWithLimitedThreads numThreads f tasks = do
 
 tshow :: Show a => a -> T.Text
 tshow = T.pack . show
+
+newDefaultHttpClient :: IO Http.Client
+newDefaultHttpClient = do
+    client <- Http.newClient
+    cfMiddleware <- CodeforcesCookie.newHttpMiddleware
+    let defaultHeaders =
+            [ (hAcceptEncoding, "") -- omit this header
+            , (hUserAgent, "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0")
+            , (hAccept, "*/*")
+            ]
+    return $
+        Http.setTimeoutMs 5.0 $
+        Http.addHeaders defaultHeaders $
+        cfMiddleware $
+        client
 
 readTextFile' :: F.FilePath -> CaideIO T.Text
 readTextFile' filePath = do

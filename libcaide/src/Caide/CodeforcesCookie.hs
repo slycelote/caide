@@ -1,9 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Caide.CodeforcesCookie(
       getCookie
+    , newHttpMiddleware
 ) where
 
 import Control.Monad.Extended (forM, orThrow, throwError, when)
+import Control.Concurrent.MVar (MVar, newMVar, modifyMVar, swapMVar)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BS8
 import qualified Data.ByteString.Lazy.Char8 as LBS8
@@ -19,6 +21,10 @@ import qualified Crypto.Cipher.Types as Crypto
 import Crypto.Error (CryptoFailable(CryptoPassed, CryptoFailed))
 
 import qualified Data.ByteString.Lazy.Search as BSSearch
+
+import Network.HTTP.Types.Header (hCookie)
+import Network.HTTP.Types.Status (statusIsSuccessful)
+import qualified Caide.HttpClient as Http
 
 
 hexEncode :: BS.ByteString -> BS8.ByteString
@@ -65,4 +71,58 @@ getCookie html = do
 
     let plainText = Crypto.cbcDecrypt cipher iv input
     return $ "RCPC=" <> hexEncode plainText
+
+
+data CookieStatus = Unknown
+                  | NotRequired
+                  | Required !BS8.ByteString
+
+newHttpMiddleware :: IO Http.Middleware
+newHttpMiddleware = do
+    -- TODO: Cache the cookie in settings and get rid of Unknown status.
+    status <- newMVar Unknown
+    return $ Http.middleware $ \send request ->
+        if Http.host request `elem` ["codeforces.com", "www.codeforces.com",
+            "codeforces.ru", "www.codeforces.ru", "codeforces.ml", "www.codeforces.ml"]
+        then cfsend send status request
+        else send request
+
+cfsend :: (Http.Request -> IO Http.ResponseLBS) -> MVar CookieStatus -> Http.Request -> IO Http.ResponseLBS
+cfsend send statusMVar request = do
+    let sendWith :: Maybe BS8.ByteString -> IO Http.ResponseLBS
+        sendWith Nothing = send request
+        sendWith (Just cookie) = send $
+            request{Http.requestHeaders = (hCookie, cookie) : Http.requestHeaders request}
+
+    (cookieOrResponse, ranFirstRequest) <- modifyMVar statusMVar $ \s -> case s of
+        NotRequired     -> pure $ (s, (Left Nothing,       False))
+        Required cookie -> pure $ (s, (Left (Just cookie), False))
+        Unknown -> do
+            -- This is the first request to Codeforces. Block all other requests
+            -- while we're executing.
+            response <- sendWith Nothing
+            let failed = not $ statusIsSuccessful $ Http.responseStatus response
+            case getCookie (Http.responseBody response) of
+                Right cookie       -> pure (Required cookie, (Left (Just cookie), True))
+                Left _err | failed -> pure (Unknown,         (Right response,     True))
+                Left _err          -> pure (NotRequired,     (Right response,     True))
+
+    case cookieOrResponse of
+        Right response -> pure response -- Our first request succeeded.
+        Left cookie -> do
+            -- Either we or another thread found the cookie.
+            response <- sendWith cookie
+            case getCookie (Http.responseBody response) of
+                Left _err ->
+                    -- Succeeded.
+                    pure response
+
+                Right newCookie | ranFirstRequest || Just newCookie == cookie ->
+                    -- Failed despite setting the correct cookie.
+                    pure response
+
+                Right newCookie -> do
+                    -- New cookie is required.
+                    _ <- swapMVar statusMVar $ Required newCookie
+                    sendWith (Just newCookie)
 

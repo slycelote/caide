@@ -162,6 +162,7 @@ library
         Caide.GenericLanguage
         Caide.GlobalState
         Caide.GlobalTemplate
+        Caide.HttpClient
         Caide.Logger
         Caide.MustacheUtil
         Caide.Parsers.CodeChef
