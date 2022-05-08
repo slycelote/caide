@@ -30,7 +30,7 @@ jobs:
 
     - name: Detect version
       run: |
-        grep -i '^version:' "$git_root/libcaide/libcaide.cabal" | \
+        grep -i '^version:' "libcaide/libcaide.cabal" | \
         awk '{ print "CAIDE_EXE_RELATIVE_PATH=dist-newstyle/build/x86_64-linux/ghc-${{ matrix.ghc }}/libcaide-"$2"/build/caide/caide" }' \
         >> $GITHUB_ENV
 
