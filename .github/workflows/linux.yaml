@@ -2,9 +2,9 @@ name: Linux CI
 
 on:
   push:
-    branches: [ master, release, gh-actions ]
+    branches: [ master, gh-actions ]
   pull_request:
-    branches: [ master, release ]
+    branches: [ master ]
   schedule:
     - cron: '13 9 * * *'
 
@@ -15,11 +15,11 @@ jobs:
     strategy:
       matrix:
         cabal: ["3.4"]
-        ghc: ["8.10.7"]
+        ghc: ["8.10"]
         os: [ubuntu-latest]
 
     env:
-      CAIDE_EXE_RELATIVE_PATH: dist-newstyle/build/x86_64-linux/ghc-${{ matrix.ghc }}/libcaide-2.10.0/build/caide/caide
+      # CAIDE_EXE_RELATIVE_PATH: dist-newstyle/build/x86_64-linux/ghc-${{ matrix.ghc }}/libcaide-2.10.0/build/caide/caide
       CAIDE_CMAKE_CONFIGURE_ARGS: "-GNinja,-DCMAKE_CXX_COMPILER_LAUNCHER=ccache,-DCMAKE_C_COMPILER_LAUNCHER=ccache"
       # TODO: --enable-coverage (https://github.com/haskell/cabal/issues/6440)
       CONFIG: "--enable-tests --enable-benchmarks"
@@ -27,6 +27,13 @@ jobs:
     steps:
     - name: Debug
       run: ghcup list
+
+    - name: Detect version
+      run: |
+        grep -i '^version:' "$git_root/libcaide/libcaide.cabal" | \
+        awk '{ print "CAIDE_EXE_RELATIVE_PATH=dist-newstyle/build/x86_64-linux/ghc-${{ matrix.ghc }}/libcaide-"$2"/build/caide/caide" }' \
+        >> $GITHUB_ENV
+
     - name: Install prerequisites
       env:
         runner_os: ${{ runner.os }}
@@ -47,7 +54,7 @@ jobs:
       with:
         submodules: 'recursive'
 
-    - uses: haskell/actions/setup@v1
+    - uses: haskell/actions/setup@v2
       id: setup-haskell-cabal
       with:
         ghc-version: ${{ matrix.ghc }}
@@ -128,11 +135,20 @@ jobs:
         name: caide
         path: libcaide/${{ env.CAIDE_EXE_RELATIVE_PATH }}
 
-    - name: HLint
-      shell: bash
-      run: |
-        cd libcaide
-        curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s . || true
+    # - name: HLint
+    #   shell: bash
+    #   run: |
+    #     cd libcaide
+    #     curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s . || true
+
+    - name: Set up HLint
+      uses: haskell/actions/hlint-setup@v2
+
+    - name: Run HLint
+      uses: haskell/actions/hlint-run@v2
+      with:
+        path: libcaide/
+        fail-on: never
 
     - name: Run tests
       shell: bash
