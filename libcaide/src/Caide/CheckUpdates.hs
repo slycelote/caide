@@ -21,10 +21,10 @@ import qualified Data.Aeson as Aeson
 import Paths_libcaide (version)
 import Caide.GlobalState (GlobalState(latestVersion, lastUpdateCheck), readGlobalState, modifyGlobalState, flushGlobalState)
 import Caide.Logger (logInfo, logWarn)
+import Caide.Parsers.Common (downloadDocument)
 import Caide.Settings (autoCheckUpdates)
-import Caide.Types (CaideIO, caideSettings, throw)
+import Caide.Types (CaideIO, caideHttpClient, caideSettings, throw)
 import Caide.Util (withLock)
-import Network.HTTP.Util (downloadDocument)
 
 
 data Release = Release
@@ -50,7 +50,8 @@ parseLatestVersion s = do
 
 checkUpdatesImpl :: CaideIO ()
 checkUpdatesImpl = do
-    releases <- liftIO $ downloadDocument "https://api.github.com/repos/slycelote/caide/releases"
+    client <- caideHttpClient
+    releases <- downloadDocument client "https://api.github.com/repos/slycelote/caide/releases"
     case releases of
         Left e -> throw e
         Right contents -> do

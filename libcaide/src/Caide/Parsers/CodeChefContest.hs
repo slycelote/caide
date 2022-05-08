@@ -3,22 +3,20 @@ module Caide.Parsers.CodeChefContest(
       codeChefContestParser
 ) where
 
-import Control.Monad.Except (throwError)
-import Control.Monad.IO.Class (liftIO)
-import qualified Data.ByteString.Lazy as LBS
+import Control.Monad.Extended (liftEither, orThrow, runExceptT)
+import Data.Either.Util (mapLeft)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import Network.URI (parseURI, uriPath)
 
 import qualified Data.Aeson as Aeson
 
-import Caide.Commands.ParseProblem (parseProblems)
-import Caide.Parsers.Common (URL, ContestParser(..), isHostOneOf)
-import Caide.Types
-import Caide.Util (downloadDocument)
+import qualified Caide.HttpClient as Http
+import Caide.Parsers.Common (URL, ContestParser(..), ContestParserResult(Urls),
+    isHostOneOf)
+
 
 codeChefContestParser :: ContestParser
 codeChefContestParser = ContestParser
@@ -35,25 +33,23 @@ data JsonProblem = JsonProblem
                  } deriving (Generic, Show)
 
 data JsonContest = JsonContest
-                 { problems :: Map.Map ProblemID JsonProblem
+                 { problems :: Map.Map Text JsonProblem
                  } deriving (Generic, Show)
 
 instance Aeson.FromJSON JsonProblem
 instance Aeson.FromJSON JsonContest
 
-parseFromJson :: Text -> Either Text [ProblemID]
-parseFromJson jsonText = case Aeson.eitherDecode' . LBS.fromStrict . encodeUtf8 $ jsonText of
-    Left err -> throwError $ T.pack err
-    Right contest -> return $ Map.keys $ problems $ contest
 
-doParseContest :: URL -> CaideIO ()
-doParseContest url = case uriPath <$> parseURI (T.unpack url) of
-    Just (_:contestId) -> do
-        let apiUrl = "https://www.codechef.com/api/contests/" <> T.pack contestId
+doParseContest :: Http.Client -> URL -> IO (Either Text ContestParserResult)
+doParseContest client url = case uriPath <$> parseURI (T.unpack url) of
+    Just (_:contestId) -> runExceptT $ do
+        let apiUrl = "https://www.codechef.com/api/contests/" <> contestId
             probUrlPrefix = "https://www.codechef.com/" <> T.pack contestId <> "/problems/"
-        mbDoc <- liftIO $ downloadDocument apiUrl
-        case mbDoc >>= parseFromJson of
-            Left err      -> throw err
-            Right probIds -> parseProblems 1 $ map (probUrlPrefix <> ) probIds
-    _ -> throw "Invalid contest url"
+        apiUri <- parseURI apiUrl `orThrow` "Invalid API URL"
+        doc <- Http.get client apiUri >>= liftEither
+        contest <- liftEither $ mapLeft T.pack $ Aeson.eitherDecode' doc
+        let probIds = Map.keys $ problems contest
+        pure $ Urls $ map (probUrlPrefix <> ) probIds
+
+    _ -> pure $ Left "Invalid contest url"
 

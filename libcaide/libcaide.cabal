@@ -83,6 +83,7 @@ library
                    bytestring,
                    ConfigFile,
                    containers >= 0.5.0.0,
+                   cryptonite,
                    directory,
                    file-embed,
                    filelock,
@@ -98,6 +99,7 @@ library
                    parsec,
                    process,
                    scientific,
+                   stringsearch,
                    system-fileio >= 0.3.16,
                    system-filepath,
                    tagsoup >= 0.13,
@@ -137,6 +139,7 @@ library
         Caide.Builders.Custom
         Caide.Builders.None
         Caide.CheckUpdates
+        Caide.CodeforcesCookie
         Caide.CPP.CBinding
         Caide.CPP.CPP
         Caide.CPP.CPPSimple
@@ -159,6 +162,7 @@ library
         Caide.GenericLanguage
         Caide.GlobalState
         Caide.GlobalTemplate
+        Caide.HttpClient
         Caide.Logger
         Caide.MustacheUtil
         Caide.Parsers.CodeChef
@@ -171,8 +175,6 @@ library
         Caide.Parsers.LeetCode
         Caide.Parsers.LeetCodeContest
         Caide.Parsers.POJ
-        Caide.Parsers.RCC
-        Caide.Parsers.RccContest
         Caide.Parsers.Timus
         Caide.Parsers.Yandex
         Caide.Paths
@@ -194,7 +196,6 @@ library
         Data.Text.Encoding.Util
         Data.Text.IO.Util
         Filesystem.Util
-        Network.HTTP.Util
         Paths_CaideExt
         Paths_libcaide
         System.IO.Util

@@ -9,12 +9,12 @@ import Data.Maybe (fromJust)
 import qualified Data.Text as T
 import Data.Text (Text)
 
+import qualified Caide.HttpClient as Http
 import Caide.Parsers.Common (URL, ProblemParser(..), makeProblemParser)
 import qualified Caide.Parsers.CodeChef as CodeChef
 import qualified Caide.Parsers.Codeforces as Codeforces
 import qualified Caide.Parsers.HackerRank as HackerRank
 import qualified Caide.Parsers.POJ as POJ
--- import qualified Caide.Parsers.RCC as RCC
 import qualified Caide.Parsers.Timus as Timus
 import qualified Caide.Parsers.LeetCode as LeetCode
 
@@ -23,11 +23,11 @@ import Caide.Types (Problem(problemName, problemId, problemType), ProblemType(St
 import qualified Caide.Types as Caide
 
 
-assertParses :: ProblemParser -> URL -> Problem -> [Caide.TestCase] -> Test
-assertParses parser url expectedProblem expectedTestCases = HUnit.TestCase $ do
+assertParses :: Http.Client -> ProblemParser -> URL -> Problem -> [Caide.TestCase] -> Test
+assertParses client parser url expectedProblem expectedTestCases = HUnit.TestCase $ do
     let ProblemParser{..} = parser
     assertBool "The parser must be able to handle the URL" $ problemUrlMatches url
-    parseResult <- parseProblem url Nothing
+    parseResult <- parseProblem client url Nothing
     case parseResult of
         Left err -> assertFailure $ T.unpack $ url <> ": " <> err
         Right (problem, testCases) -> do
@@ -47,8 +47,8 @@ mkProblemType = fromJust . optionFromString
 mkTestList :: String -> [Test] -> Test
 mkTestList label tests = TestLabel label $ TestList tests
 
-problemParserTests :: Test
-problemParserTests = TestList
+problemParserTests :: Http.Client -> Test
+problemParserTests client = TestList
     [ hr "https://hackerrank.com/contests/hourrank-18/challenges/wheres-the-marble"
         (makeProblem "Where's the Marble?" "wheres-the-marble")
         [ mkTestCase "5 3\n2 5\n7 10\n2 9" "9" ]
@@ -115,11 +115,6 @@ problemParserTests = TestList
         (makeProblem "取石子游戏" "poj1067")
         [ mkTestCase "2 1\n8 4\n4 7" "0\n1\n0" ]
 
-    -- The site is unavailable
-    -- , rcc "http://www.russiancodecup.ru/tasks/round/22/A/"
-    --     (makeProblem "\"A\" Игра" "rccA")
-    --     [ mkTestCase "3\n3\n1 2 3\n3 1 2\n0 2 1\n3\n1 2 3\n4 5 6\n7 8 9\n3\n1 2 3\n4 5 6\n7 5 9" "YES\nNO\nYES" ]
-
     , timus "http://acm.timus.ru/problem.aspx?space=1&num=2032"
         (makeProblem "2032. Conspiracy Theory and Rebranding" "timus2032")
         [ mkTestCase "4 3 5" "0 0\n3 4\n3 0"
@@ -181,12 +176,11 @@ problemParserTests = TestList
         ]
     ]
   where
-    hr = assertParses $ makeProblemParser HackerRank.isSupportedUrl HackerRank.htmlParser
+    hr = assertParses client $ makeProblemParser HackerRank.isSupportedUrl HackerRank.htmlParser
     makeProblem name probId = Caide.makeProblem name probId (Stream StdIn StdOut)
-    chef = assertParses CodeChef.problemParser
-    cf = assertParses $ makeProblemParser Codeforces.isSupportedUrl Codeforces.htmlParser
-    poj = assertParses $ makeProblemParser POJ.isSupportedUrl POJ.htmlParser
-    -- rcc = assertParses $ makeProblemParser RCC.isSupportedUrl RCC.htmlParser
-    timus = assertParses $ makeProblemParser Timus.isSupportedUrl Timus.htmlParser
-    lc = assertParses $ LeetCode.problemParser
+    chef = assertParses client CodeChef.problemParser
+    cf = assertParses client $ makeProblemParser Codeforces.isSupportedUrl Codeforces.htmlParser
+    poj = assertParses client $ makeProblemParser POJ.isSupportedUrl POJ.htmlParser
+    timus = assertParses client $ makeProblemParser Timus.isSupportedUrl Timus.htmlParser
+    lc = assertParses client $ LeetCode.problemParser
 

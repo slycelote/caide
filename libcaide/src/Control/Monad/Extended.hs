@@ -1,14 +1,16 @@
 module Control.Monad.Extended(
-      module Control.Monad
-    , MonadIO
-    , liftIO
-    , whenJust
+      whenJust
     , whenM
     , unlessM
+    , orThrow
+    , module Control.Monad
+    , module Control.Monad.Except
+    , module Control.Monad.IO.Class
 ) where
 
 import Control.Monad
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Except
+import Control.Monad.IO.Class
 
 whenJust :: Monad m => Maybe a -> (a -> m ()) -> m ()
 whenJust Nothing _ = pure ()
@@ -23,4 +25,8 @@ unlessM :: Monad m => m Bool -> m () -> m ()
 unlessM condM action = do
     cond <- condM
     unless cond action
+
+orThrow :: MonadError e m => Maybe a -> e -> m a
+orThrow Nothing  e = throwError e
+orThrow (Just a) _ = pure a
 

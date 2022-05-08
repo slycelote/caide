@@ -3,19 +3,18 @@ module Caide.Parsers.CodeforcesContest(
       codeforcesContestParser
 ) where
 
-import Control.Monad.Except (liftIO)
 import Data.Maybe (mapMaybe)
 
 import qualified Data.Text as T
+import Data.Text (Text)
 
 import Text.HTML.TagSoup (partitions, parseTags, fromAttrib, Tag)
 import Text.HTML.TagSoup.Utils
 
 
-import Caide.Commands.ParseProblem (parseProblems)
-import Caide.Parsers.Common (URL, ContestParser(..), isHostOneOf)
-import Caide.Types
-import Caide.Util (downloadDocument)
+import qualified Caide.HttpClient as Http
+import Caide.Parsers.Common (URL, ContestParser(..), ContestParserResult(Urls),
+    downloadDocument, isHostOneOf)
 
 
 codeforcesContestParser :: ContestParser
@@ -27,12 +26,12 @@ codeforcesContestParser = ContestParser
 isCodeForcesUrl :: URL -> Bool
 isCodeForcesUrl = isHostOneOf ["codeforces.com", "www.codeforces.com", "codeforces.ru", "www.codeforces.ru", "codeforces.ml", "www.codeforces.ml"]
 
-doParseContest :: URL -> CaideIO ()
-doParseContest url = do
-    maybeUrls <- liftIO $ parseCfContest <$> downloadDocument url
+doParseContest :: Http.Client -> URL -> IO (Either Text ContestParserResult)
+doParseContest client url = do
+    maybeUrls <- parseCfContest <$> downloadDocument client url
     case maybeUrls of
-        Left err   -> throw err
-        Right urls -> parseProblems 3  urls
+        Left err   -> return $ Left err
+        Right urls -> return $ Right $ Urls urls
 
 parseCfContest :: Either T.Text URL -> Either T.Text [T.Text]
 parseCfContest (Left err)   = Left err

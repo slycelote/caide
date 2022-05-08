@@ -20,7 +20,7 @@ import Options.Applicative.Types (Backtracking(..))
 import System.IO.Util (writeFileAtomic)
 
 import Caide.CheckUpdates (checkUpdates, checkUpdatesCommand, logIfUpdateAvailable)
-import Caide.Types (CaideIO, Verbosity(..), runInDirectory)
+import Caide.Types (CaideIO, Verbosity(..), makeCaideEnv, runInDirectory)
 import qualified Caide.Commands.Init as Init
 import Caide.Configuration (describeError)
 import Caide.Commands.Archive
@@ -33,6 +33,7 @@ import Caide.Commands.Make
 import Caide.Commands.ParseProblem (createProblem)
 import Caide.Commands.ParseContest
 import Caide.Commands.RunTests
+import Caide.Util (newDefaultHttpClient)
 import Paths_libcaide (version)
 
 
@@ -64,7 +65,9 @@ extendCommand cmd ReportNewVersion = cmd >> (logIfUpdateAvailable `catchError` c
 
 caideIoToIo :: [CommandExtension] -> CaideIO () -> CaideAction
 caideIoToIo extensions cmd globalOptions root = do
-    ret <- runInDirectory (verbosity globalOptions) root $ foldl' extendCommand cmd extensions
+    client <- newDefaultHttpClient
+    let env = makeCaideEnv root (verbosity globalOptions) client
+    ret <- runInDirectory env $ foldl' extendCommand cmd extensions
 
     -- Save path to caide executable
     let fileNameStr = FS.encodeString (root </> ".caide" </> "caideExe.txt")

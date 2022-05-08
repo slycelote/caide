@@ -32,6 +32,7 @@ import Caide.Configuration (setActiveProblem, getProblemConfigFile,
                             describeError)
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
+import qualified Caide.HttpClient as Http
 import Caide.Parsers.Common (URL, ProblemParser(parseProblem), CHelperProblemParser(chelperParse))
 import qualified Caide.Paths as Paths
 import Caide.Registry (findCHelperProblemParserByURL, findProblemParser)
@@ -150,7 +151,8 @@ parseExistingProblem url parser mbId mbFilePath = do
     mbHtml <- case mbFilePath of
         Nothing -> pure Nothing
         Just path -> Just <$> readTextFile' (decodeString $ T.unpack path)
-    parseResult <- liftIO $ parseProblem parser url mbHtml
+    client <- caideHttpClient
+    parseResult <- liftIO $ parseProblem parser client url mbHtml
     case parseResult of
         Left err -> throw . T.unlines $ ["Encountered a problem while parsing:", err]
         Right (problem, samples) -> saveProblem (overrideProblemId mbId problem) samples
@@ -171,14 +173,15 @@ trySaveProblemWithScaffold (url, Right (problem, tests)) =
 
 parseProblems :: Int -> [URL] -> CaideIO ()
 parseProblems numThreads urls = do
-    parseResults <- liftIO $ mapWithLimitedThreads numThreads tryParseProblem urls
+    client <- caideHttpClient
+    parseResults <- liftIO $ mapWithLimitedThreads numThreads (tryParseProblem client) urls
     results <- mapM trySaveProblemWithScaffold $ reverse $ zip urls parseResults
     let errors = lefts results
     unless (null errors) $
         throw $ T.unlines ("Some problems failed to parse.": errors)
 
-tryParseProblem :: URL -> IO (Either T.Text (Problem, [TestCase]))
-tryParseProblem url = case findProblemParser url of
+tryParseProblem :: Http.Client -> URL -> IO (Either T.Text (Problem, [TestCase]))
+tryParseProblem client url = case findProblemParser url of
     Nothing -> return . Left . T.concat $ ["Couldn't find problem parser for URL: ", url]
-    Just parser -> parseProblem parser url Nothing
+    Just parser -> parseProblem parser client url Nothing
 
