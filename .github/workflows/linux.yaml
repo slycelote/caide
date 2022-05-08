@@ -48,17 +48,22 @@ jobs:
       with:
         submodules: 'recursive'
 
-    - name: Detect version
-      run: |
-        grep -i '^version:' "libcaide/libcaide.cabal" | \
-        awk '{ print "CAIDE_EXE_RELATIVE_PATH=dist-newstyle/build/x86_64-linux/ghc-${{ matrix.ghc }}/libcaide-"$2"/build/caide/caide" }' \
-        >> $GITHUB_ENV
-
     - uses: haskell/actions/setup@v2
       id: setup-haskell-cabal
       with:
         ghc-version: ${{ matrix.ghc }}
         cabal-version: ${{ matrix.cabal }}
+
+    - name: Set environment variables
+      run: |
+        ghc --version | grep -E --only-matching '[0-9\.]+' \
+        | awk '{ print "GHCVER="$0 }' >> $GITHUB_ENV
+
+    - name: Set environment variables
+      run: |
+        grep -i '^version:' "libcaide/libcaide.cabal" \
+        | awk '{ print "CAIDE_EXE_RELATIVE_PATH=dist-newstyle/build/x86_64-linux/ghc-${{ env.GHCVER }}/libcaide-"$2"/build/caide/caide" }' \
+        >> $GITHUB_ENV
 
     - name: Create key for ccache
       shell: bash
@@ -108,9 +113,9 @@ jobs:
         path: |
           ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
           libcaide/dist-newstyle
-        key: ${{ runner.os }}-${{ env.cache-name }}${{ env.cache-version }}-${{ matrix.ghc }}-${{ hashFiles('libcaide/cabal.project.freeze') }}
+        key: ${{ runner.os }}-${{ env.cache-name }}${{ env.cache-version }}-${{ env.GHCVER }}-${{ hashFiles('libcaide/cabal.project.freeze') }}
         restore-keys: |
-          ${{ runner.os }}-${{ env.cache-name }}${{ env.cache-version }}-${{ matrix.ghc }}-
+          ${{ runner.os }}-${{ env.cache-name }}${{ env.cache-version }}-${{ env.GHCVER }}-
 
     - name: Install dependencies
       shell: bash
