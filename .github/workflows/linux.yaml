@@ -140,14 +140,11 @@ jobs:
         name: caide
         path: libcaide/${{ env.CAIDE_EXE_RELATIVE_PATH }}
 
-    # - name: HLint
-    #   shell: bash
-    #   run: |
-    #     cd libcaide
-    #     curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s . || true
-
     - name: Set up HLint
       uses: haskell/actions/hlint-setup@v2
+
+    - name: Copy HLint config
+      run: cp libcaide/.hlint.yaml .
 
     - name: Run HLint
       uses: haskell/actions/hlint-run@v2
