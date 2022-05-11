@@ -73,7 +73,7 @@ downloadDocument :: MonadIO m => Http.Client -> URL -> m (Either T.Text T.Text)
 downloadDocument client url = liftIO $ runExceptT $ do
     uri <- parseURI (T.unpack url) `orThrow` "Invalid URL"
     lbsBody <- Http.get client uri >>= liftEither
-    pure $ T.safeDecodeUtf8 $ LBS.toStrict $ lbsBody
+    pure $ T.safeDecodeUtf8 $ LBS.toStrict lbsBody
 
 -- | Replace \r\n with \n, strip all lines
 normalizeText :: T.Text -> T.Text

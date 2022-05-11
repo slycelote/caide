@@ -41,6 +41,7 @@ import qualified Caide.TestCases.TopcoderDeserializer as TC
 import Caide.Util (tshow)
 
 
+{-# ANN getBuilder ("HLint: ignore Use const" :: String) #-}
 getBuilder :: Text -> ProblemID -> CaideIO Builder
 getBuilder language probId = do
     root <- caideRoot
@@ -91,9 +92,9 @@ evalTests = do
             { doublePrecision = problemFloatTolerance problem
             , testFormat = case problemType problem of
                 Topcoder descr -> Json $ TC.jsonParser (tcMethod . tcSingleMethod $ descr)
-                Stream _ _     -> PlainText
+                Stream {}      -> PlainText
                 LeetCodeMethod _ -> Json Aeson.json
-                LeetCodeClass _ _ _ -> Json Aeson.json
+                LeetCodeClass {} -> Json Aeson.json
             }
 
     beVerbose <- verboseTestReport <$> caideSettings
@@ -208,9 +209,9 @@ compareJsonValues eps etalon actual = case (etalon, actual) of
 
 compareLines :: Double -> Text -> Text -> ComparisonResult
 compareLines eps expectedLine actualLine = case () of
-    _ | not (null errors) -> Failed $ T.concat ["Token ", tshow numToken, ": ", err]
+    _ | not (null errors) -> Failed $ "Token " <> tshow numToken <> ": " <> err
       | length actual == length expected -> Success
-      | otherwise   ->  Failed $ T.concat ["Expected ", tshow (length expected), " token(s)"]
+      | otherwise   ->  Failed $ "Expected " <> tshow (length expected) <> " token(s)"
   where
     expected = T.words expectedLine
     actual = T.words actualLine
@@ -222,7 +223,7 @@ compareTokens :: Double -> Text -> Text -> ComparisonResult
 compareTokens eps expected actual = case () of
     _ | expected == actual -> Success
       | areEqualDoubles eps expected actual -> Success
-      | otherwise -> Failed $ T.concat ["Expected ", expected, ", found ", actual]
+      | otherwise -> Failed $ "Expected " <> expected <> ", found " <> actual
 
 areEqualDoubles :: Double -> Text -> Text -> Bool
 areEqualDoubles eps expected actual = isRight expectedParsed && isRight actualParsed &&

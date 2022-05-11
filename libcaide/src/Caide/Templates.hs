@@ -54,13 +54,14 @@ getTemplate path = do
                 (True, True)   -> return builtin -- No modification
                 (True, False)  -> overwrite      -- Only upstream modified
                 (False, True)  -> return current -- Only user modified
-                (False, False) -> case current == builtin of
-                    True -> overwrite -- user and upstream modified in consistent way
-                    False -> do
-                        logWarn $ "Builtin template " <> pathToText path <>
-                                  " was updated both upstream and locally. Compilation error is possible." <>
-                                  " (Rename or delete local copy to accept upstream changes.)"
-                        return current
+                (False, False) ->
+                    if current == builtin
+                        then overwrite -- user and upstream modified in consistent way
+                        else do
+                            logWarn $ "Builtin template " <> pathToText path <>
+                                      " was updated both upstream and locally. Compilation error is possible." <>
+                                      " (Rename or delete local copy to accept upstream changes.)"
+                            return current
 
 mbReadFile :: F.FilePath -> IO (Either Text Text)
 mbReadFile path = do

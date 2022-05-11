@@ -120,9 +120,7 @@ goToChild (x:xs) = maybeDo (findChild (isTag x))
 -- | Go to the root of the first tree of the cursor's forest
 goToDocRoot :: MonadState Cursor m => m ()
 goToDocRoot = modify (go . root) where
-    go c = case left c of
-               Nothing -> c
-               Just c' -> go c'
+    go c = maybe c go (left c)
 
 showXml :: Cursor -> String
 showXml = dropWhile (/= '<') . unlines . map showContent . toForest

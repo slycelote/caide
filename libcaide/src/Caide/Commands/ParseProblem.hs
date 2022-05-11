@@ -123,7 +123,7 @@ saveProblem problem samples = do
             let inFile  = probDir </> Paths.testInput ("case" <> tshow i)
                 outFile = probDir </> Paths.etalonTestOutput ("case" <> tshow i)
             writeTextFile inFile  $ testCaseInput sample
-            whenJust (testCaseOutput sample) $ \o -> writeTextFile outFile $ o
+            whenJust (testCaseOutput sample) (writeTextFile outFile)
 
     initializeProblem problem
     liftIO $ T.putStrLn $ "Problem successfully parsed into folder " <> probId
@@ -162,13 +162,13 @@ type ParseResult = (URL, Either Text (Problem, [TestCase]))
 
 errorMessage :: ParseResult -> Maybe Text
 errorMessage (_, Right _) = Nothing
-errorMessage (url, Left err) = Just $ T.concat [url, ": ", err]
+errorMessage (url, Left err) = Just $ url <> ": " <> err
 
 trySaveProblemWithScaffold :: ParseResult -> CaideIO (Either Text ())
 trySaveProblemWithScaffold pr@(_, Left _) = return $ Left $ fromJust $ errorMessage pr
 trySaveProblemWithScaffold (url, Right (problem, tests)) =
     (saveProblemWithScaffold problem tests >> return (Right ())) `catchError` \err ->
-        return $ Left $ T.concat [url, ": ", T.pack $ describeError err]
+        return $ Left $ url <> ": " <> (T.pack $ describeError err)
 
 
 parseProblems :: Int -> [URL] -> CaideIO ()
@@ -182,6 +182,6 @@ parseProblems numThreads urls = do
 
 tryParseProblem :: Http.Client -> URL -> IO (Either T.Text (Problem, [TestCase]))
 tryParseProblem client url = case findProblemParser url of
-    Nothing -> return . Left . T.concat $ ["Couldn't find problem parser for URL: ", url]
+    Nothing -> return . Left $ "Couldn't find problem parser for URL: " <> url
     Just parser -> parseProblem parser client url Nothing
 

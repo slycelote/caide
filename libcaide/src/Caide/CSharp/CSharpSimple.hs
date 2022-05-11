@@ -54,7 +54,7 @@ probIdAndDir problem = do
     return (probID, problemDir root probID)
 
 generateSolutionAndMain :: Problem -> ProblemState -> CaideIO ()
-generateSolutionAndMain problem@Problem{problemType=Stream _ _} state = do
+generateSolutionAndMain problem@Problem{problemType=Stream{}} state = do
     (probID, probDir) <- probIdAndDir problem
     let solutionPath = probDir </> FS.fromText (probID <> ".cs")
         mainProgramPath = probDir </> "main.cs"
@@ -73,7 +73,7 @@ generateSolutionAndMain problem@Problem{problemType=Topcoder _} state =
 generateSolutionAndMain problem@Problem{problemType=LeetCodeMethod _} state =
     generateSolutionAndMainForTopcoder problem state
 
-generateSolutionAndMain problem@Problem{problemType=LeetCodeClass _ _ _} state =
+generateSolutionAndMain problem@Problem{problemType=LeetCodeClass{}} state =
     generateSolutionAndMainForTopcoder problem state
 
 generateSolutionAndMainForTopcoder :: Problem -> ProblemState -> CaideIO ()
@@ -118,12 +118,12 @@ inlineCSharpCode probID = do
 
     liftIO $ FS.copyFile solutionPath inlinedCodePath
     case probType of
-        Stream _ _ -> do
+        Stream{} -> do
             mainCode <- readTextFile' mainProgramPath
             liftIO $ appendTextFile inlinedCodePath mainCode
         Topcoder _ -> return ()
         LeetCodeMethod _ -> return ()
-        LeetCodeClass _ _ _ -> return ()
+        LeetCodeClass{} -> return ()
 
     liftIO $ FS.copyFile inlinedCodePath $ root </> "submission.cs"
 

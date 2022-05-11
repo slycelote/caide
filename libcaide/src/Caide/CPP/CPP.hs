@@ -49,14 +49,14 @@ inlineCPPCode probID = do
                        else return []
 
     let (allCppFiles, additionalCmdLineOptions) = case problemType problem of
-            Stream _ _ -> (solutionPath:mainFilePath:libraryCPPFiles, [])
+            Stream{} -> (solutionPath:mainFilePath:libraryCPPFiles, [])
             Topcoder _ -> (solutionPath:libraryCPPFiles, [])
             LeetCodeMethod _ -> (solutionPath:libraryCPPFiles,
                                  ["-isystem", pathToText (probDir </> CPPSimple.predefinedHeadersDir),
                                   "-include", "leetcode_predefined.h"])
-            LeetCodeClass _ _ _ -> (solutionPath:libraryCPPFiles,
-                                    ["-isystem", pathToText (probDir </> CPPSimple.predefinedHeadersDir),
-                                     "-include", "leetcode_predefined.h"])
+            LeetCodeClass{} -> (solutionPath:libraryCPPFiles,
+                                ["-isystem", pathToText (probDir </> CPPSimple.predefinedHeadersDir),
+                                 "-include", "leetcode_predefined.h"])
         identifiersToPreserve = getIdentifiersToPreserve (problemType problem)
         outputPath = probDir </> "submission.cpp"
 

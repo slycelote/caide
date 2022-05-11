@@ -182,5 +182,5 @@ problemParserTests client = TestList
     cf = assertParses client $ makeProblemParser Codeforces.isSupportedUrl Codeforces.htmlParser
     poj = assertParses client $ makeProblemParser POJ.isSupportedUrl POJ.htmlParser
     timus = assertParses client $ makeProblemParser Timus.isSupportedUrl Timus.htmlParser
-    lc = assertParses client $ LeetCode.problemParser
+    lc = assertParses client LeetCode.problemParser
 

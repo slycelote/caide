@@ -46,7 +46,7 @@ parseSettings rootDir cp = do
         noOptionHandler _ e = throwError e
 
         getOpt :: Option a => String -> String -> a -> Either CPError a
-        getOpt section key def = flip catchError (\e -> noOptionHandler def e) $ do
+        getOpt section key def = flip catchError (noOptionHandler def) $ do
             r <- get conf section key
             case optionFromString r of
                 Just res -> pure res

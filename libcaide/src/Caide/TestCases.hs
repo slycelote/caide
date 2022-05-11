@@ -74,14 +74,14 @@ updateTests problemDir problem = liftIO $ do
             err <- convertTestCase TestCaseInput problem
                 input
                 (problemDir </> Paths.convertedTestInput testName)
-            whenLeft err $ logError
+            whenLeft err logError
 
         let etalonOutput = problemDir </> Paths.etalonTestOutput testName
         whenM (FS.isFile etalonOutput) $ do
             err <- convertTestCase TestCaseOutput problem
                 etalonOutput
                 (problemDir </> Paths.convertedEtalonTestOutput testName)
-            whenLeft err $ logError
+            whenLeft err logError
 
     return sortedTests
 

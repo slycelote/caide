@@ -20,9 +20,7 @@ import qualified Caide.TestCases as TestCases
 
 withProblem :: Maybe ProblemID -> (Problem -> FilePath -> CaideIO a) -> CaideIO a
 withProblem mbProbId processProblem = do
-    probId <- case mbProbId of
-        Just probId' -> return probId'
-        Nothing -> getActiveProblem
+    probId <- maybe getActiveProblem return mbProbId
     root <- caideRoot
     let probDir = Paths.problemDir root probId
     problemExists <- liftIO $ isDirectory probDir
