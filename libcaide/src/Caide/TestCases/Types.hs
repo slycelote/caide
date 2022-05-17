@@ -107,7 +107,7 @@ humanReadableReport = T.intercalate "\n" .
             map (\(testName, res) -> testName <> " " <>
                     humanReadable (testRunStatus res) <>
                     humanReadableTime (testRunTime res) <>
-                    fromMaybe "" (T.append ": " <$> getErrorMessage (testRunStatus res)))
+                    maybe "" (T.append ": ") (getErrorMessage (testRunStatus res)))
 
 humanReadableSummary :: TestReport -> Text
 humanReadableSummary = T.unlines . map toText . group . sort . map (fromComparisonResult . testRunStatus . snd)

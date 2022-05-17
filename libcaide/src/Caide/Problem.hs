@@ -10,7 +10,8 @@ module Caide.Problem(
 import qualified Data.ByteString.Lazy as LBS
 import Data.Char (isUpper, toLower, toUpper)
 import Data.Function ((&))
-import Data.Maybe (fromMaybe, listToMaybe)
+import qualified Data.List as List
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -121,15 +122,15 @@ findIdentifier origIdentifier lang identKind mbCode =
     bestGuess = case identKind of
       KeepAsWritten -> origIdentifier
       MethodName    | lang `elem` ["c", "csharp", "go"] -> pascalCase
-      VariableName  | lang `elem` ["erlang"] -> pascalCase
-      _k            | lang `elem` ["erlang"] -> snakeCase
-                    | lang `elem` ["racket"] -> hyphenSeparated
+      VariableName  | lang == "erlang" -> pascalCase
+      _k            | lang == "erlang" -> snakeCase
+                    | lang == "racket" -> hyphenSeparated
       ClassName     -> origIdentifier
       _k            | lang `elem` ["ruby", "rust", "elixir"] -> snakeCase
                     | otherwise -> origIdentifier
 
     candidates = bestGuess : [ hyphenSeparated, snakeCase, pascalCase ]
-  in candidates & filter isIdentOk & listToMaybe & fromMaybe origIdentifier
+  in candidates & List.find isIdentOk & fromMaybe origIdentifier
 
 encodeSolutionClass :: Text -> Maybe [TopcoderValue] -> [TopcoderMethod] -> Map.Map Text Text -> Bool -> Aeson.Value
 encodeSolutionClass className mbConstructorParams methods codeSnippets isTopcoder = Aeson.object $
@@ -149,7 +150,7 @@ encodeSolutionClass className mbConstructorParams methods codeSnippets isTopcode
             map (encodeValue (if isTopcoder then KeepAsWritten else VariableName)) params))
 
     encodeValue :: IdentifierKind -> TopcoderValue -> Aeson.Value
-    encodeValue identKind TopcoderValue{..} = Aeson.object $
+    encodeValue identKind TopcoderValue{..} = Aeson.object
         [ "name" .= tcValueName
         , "identifier" .= Aeson.object [ lang .= findIdent lang | lang <- languages ]
         , "dimension" .= tcValueDimension
@@ -159,7 +160,7 @@ encodeSolutionClass className mbConstructorParams methods codeSnippets isTopcode
         findIdent lang = findIdentifier tcValueName lang identKind (Map.lookup lang codeSnippets)
 
     encodeMethod :: TopcoderMethod -> Aeson.Value
-    encodeMethod TopcoderMethod{tcMethod, tcParameters} = Aeson.object $
+    encodeMethod TopcoderMethod{tcMethod, tcParameters} = Aeson.object
         [ "method" .= encodeValue (if isTopcoder then KeepAsWritten else MethodName) tcMethod
         , "parameters" .= encodeParameters tcParameters
         ]

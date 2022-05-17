@@ -355,7 +355,7 @@ instance Option TopcoderMethod where
 instance Option ProblemType where
     -- topcoder,class,method:retType,param1:type1,param2:type2
     optionToString (Topcoder desc) =
-        "topcoder," <> (T.unpack $ tcClassName desc) <> "," <> optionToString (tcSingleMethod desc)
+        "topcoder," <> T.unpack (tcClassName desc) <> "," <> optionToString (tcSingleMethod desc)
 
     -- leetcode,method:retType,param1:type1,param2:type2
     optionToString (LeetCodeMethod m) = "leetcode," <> optionToString m

@@ -82,7 +82,7 @@ generateSolutionAndMain problem@Problem{problemType=Topcoder _} state =
 generateSolutionAndMain problem@Problem{problemType=LeetCodeMethod _} state =
     generateSolutionAndMainForLeetCode problem state
 
-generateSolutionAndMain problem@Problem{problemType=LeetCodeClass _ _ _} state =
+generateSolutionAndMain problem@Problem{problemType=LeetCodeClass{}} state =
     generateSolutionAndMainForLeetCode problem state
 
 
@@ -133,10 +133,10 @@ generateTesterCode problem state = do
     (_, probDir) <- probIdAndDir problem
     let testerTemplates = ["tester.cpp", "custom_checker.h"] ++
             case problemType problem of
-                Stream _ _ -> []
-                Topcoder _ -> ["class_tester.h", "class_tester_impl.h"]
+                Stream{}         -> []
+                Topcoder _       -> ["class_tester.h", "class_tester_impl.h"]
                 LeetCodeMethod _ -> ["class_tester.h", "class_tester_impl.h"]
-                LeetCodeClass _ _ _ -> ["class_tester.h", "class_tester_impl.h"]
+                LeetCodeClass{}  -> ["class_tester.h", "class_tester_impl.h"]
 
     rendered <- renderTemplates testerTemplates problem state
     let ((_, testerCode):rest) = rendered

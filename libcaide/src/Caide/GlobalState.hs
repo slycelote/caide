@@ -33,7 +33,7 @@ readGlobalState = do
     h <- readCaideState
     mbActiveProblem <- getProp h "core" "problem" `orDefault` ""
     mbLatestVersion <- getProp h "core" "latest_version" `orDefault` []
-    lastUpdateCheck <- ((Aeson.decode . AsciiLBS.pack . T.unpack) <$> getProp h "core" "last_update") `catchError` (const $ pure Nothing)
+    lastUpdateCheck <- ((Aeson.decode . AsciiLBS.pack . T.unpack) <$> getProp h "core" "last_update") `catchError` const (pure Nothing)
     let activeProblem = if T.null mbActiveProblem then Nothing else Just mbActiveProblem
         latestVersion = case mbLatestVersion of
             [] -> Nothing

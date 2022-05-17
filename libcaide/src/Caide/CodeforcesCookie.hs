@@ -9,6 +9,7 @@ import Control.Concurrent.MVar (MVar, newMVar, modifyMVar, swapMVar)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BS8
 import qualified Data.ByteString.Lazy.Char8 as LBS8
+import Data.Char (isDigit)
 import Data.Function ((&))
 import Data.Functor ((<&>))
 import Data.Int (Int64)
@@ -31,7 +32,7 @@ hexEncode :: BS.ByteString -> BS8.ByteString
 hexEncode = BS8.concatMap (\byte -> byte & printf "%02x" & BS8.pack)
 
 hexDecode :: LBS8.ByteString -> Either Text BS.ByteString
-hexDecode t | LBS8.length t `mod` 2 /= 0  = throwError "hex-encoded string must have even length"
+hexDecode t | odd (LBS8.length t)  = throwError "hex-encoded string must have even length"
 hexDecode t = [0, 2 .. LBS8.length t - 1] & mapM parse <&> BS.concat
   where
     parse :: Int64 -> Either Text BS.ByteString
@@ -42,7 +43,7 @@ hexDecode t = [0, 2 .. LBS8.length t - 1] & mapM parse <&> BS.concat
 
     parseChar :: Char -> Either Text Int
     parseChar c
-        | c >= '0' && c <= '9' = pure $ fromEnum c - fromEnum '0'
+        | isDigit c            = pure $ fromEnum c - fromEnum '0'
         | c >= 'a' && c <= 'f' = pure $ fromEnum c - fromEnum 'a' + 10
         | c >= 'A' && c <= 'F' = pure $ fromEnum c - fromEnum 'A' + 10
         | otherwise = throwError $ T.singleton c <> " is not a valid hex character"
@@ -95,8 +96,8 @@ cfsend send statusMVar request = do
             request{Http.requestHeaders = (hCookie, cookie) : Http.requestHeaders request}
 
     (cookieOrResponse, ranFirstRequest) <- modifyMVar statusMVar $ \s -> case s of
-        NotRequired     -> pure $ (s, (Left Nothing,       False))
-        Required cookie -> pure $ (s, (Left (Just cookie), False))
+        NotRequired     -> pure (s, (Left Nothing,       False))
+        Required cookie -> pure (s, (Left (Just cookie), False))
         Unknown -> do
             -- This is the first request to Codeforces. Block all other requests
             -- while we're executing.

@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, NamedFieldPuns, OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns, OverloadedStrings #-}
 module Caide.TestCases.TopcoderDeserializer(
       -- Reexport from Attoparsec
       Parser
@@ -12,7 +12,6 @@ module Caide.TestCases.TopcoderDeserializer(
     , readMany
 ) where
 
-import Control.Monad.Fail (fail)
 import qualified Data.ByteString as BS
 import Data.Char (isSpace)
 import Data.Functor ((<&>))
@@ -105,7 +104,7 @@ jsonParser TopcoderValue{tcValueName, tcValueType, tcValueDimension} =
             TCDouble -> eval d
             TCString -> eval s
             TCBool   -> eval b
-            TCVoid   -> fail $ "Unsupported type void"
+            TCVoid   -> fail "Unsupported type void"
             TypeName tn -> fail $ "Unsupported type " <> T.unpack tn
 
         1 -> case tcValueType of
@@ -114,7 +113,7 @@ jsonParser TopcoderValue{tcValueName, tcValueType, tcValueDimension} =
             TCDouble -> eval $ v d
             TCString -> eval $ v s
             TCBool   -> eval $ v b
-            TCVoid   -> fail $ "Unsupported type void"
+            TCVoid   -> fail "Unsupported type void"
             TypeName tn -> fail $ "Unsupported type " <> T.unpack tn
 
         2 -> case tcValueType of
@@ -123,7 +122,7 @@ jsonParser TopcoderValue{tcValueName, tcValueType, tcValueDimension} =
             TCDouble -> eval $ v $ v d
             TCString -> eval $ v $ v s
             TCBool   -> eval $ v $ v b
-            TCVoid   -> fail $ "Unsupported type void"
+            TCVoid   -> fail "Unsupported type void"
             TypeName tn -> fail $ "Unsupported type " <> T.unpack tn
 
         3 -> case tcValueType of
@@ -132,7 +131,7 @@ jsonParser TopcoderValue{tcValueName, tcValueType, tcValueDimension} =
             TCDouble -> eval $ v $ v $ v d
             TCString -> eval $ v $ v $ v s
             TCBool   -> eval $ v $ v $ v b
-            TCVoid   -> fail $ "Unsupported type void"
+            TCVoid   -> fail "Unsupported type void"
             TypeName tn -> fail $ "Unsupported type " <> T.unpack tn
 
         _ -> fail $ T.unpack tcValueName <> ": dimension is too high"

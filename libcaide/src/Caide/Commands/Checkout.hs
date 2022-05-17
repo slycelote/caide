@@ -3,9 +3,7 @@ module Caide.Commands.Checkout (
       checkoutProblem
 ) where
 
-import Control.Monad (forM_, unless)
-import Control.Monad.Except (catchError)
-import Control.Monad.State (liftIO)
+import Control.Monad.Extended (catchError, forM_, liftIO, unless, whenJust)
 import Data.Maybe (mapMaybe)
 
 import qualified Data.Text as T
@@ -30,19 +28,17 @@ checkoutProblem probId' maybeLangStr = unless (T.null probId') $ do
         probDir = Paths.problemDir root probId
     problemExists <- liftIO $ isFile $ probDir </> "problem.ini"
 
-    unless problemExists $ throw . T.concat $ ["Problem ", probId, " doesn't exist"]
+    unless problemExists $ throw $ "Problem " <> probId <> " doesn't exist"
 
     currentProbId <- getActiveProblem `catchError` (\_ -> return "")
 
     if currentProbId == probId
-        then liftIO $ T.putStrLn . T.concat $ [probId, ": already checked out"]
+        then liftIO $ T.putStrLn $ probId <> ": already checked out"
         else withLock $ do
             setActiveProblem probId
-            liftIO $ T.putStrLn . T.concat $ ["Checked out problem ", probId]
+            liftIO $ T.putStrLn $ "Checked out problem " <> probId
             features <- mapMaybe findFeature . enabledFeatureNames <$> caideSettings
             forM_ (GlobalTemplate.hook : features) (`onProblemCheckedOut` probId)
 
-    case maybeLangStr of
-        Just langStr -> generateScaffoldSolution langStr
-        Nothing      -> return ()
+    whenJust maybeLangStr generateScaffoldSolution
 

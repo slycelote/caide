@@ -59,14 +59,14 @@ convertTestCase inputType problem inputFile outputFile = liftIO $ runExceptT $ d
         outputTime <- FS.getModified outputFile
         return $ outputTime < inputTime
     when needUpdate $ case problemType problem of
-        Stream _ _ -> liftIO $ FS.copyFile inputFile outputFile
+        Stream {} -> liftIO $ FS.copyFile inputFile outputFile
         Topcoder TopcoderProblemDescription{tcSingleMethod} -> do
             res <- case inputType of
                 TestCaseInput -> readAndConvertTopcoderParameters (tcParameters tcSingleMethod) inputFile True
                 TestCaseOutput -> readAndConvertTopcoderParameters [tcMethod tcSingleMethod] inputFile False
             liftIO $ writeTextFile outputFile res
         LeetCodeMethod _ -> convertJson inputFile outputFile
-        LeetCodeClass _ _ _ -> convertJson inputFile outputFile
+        LeetCodeClass {} -> convertJson inputFile outputFile
 
 convertJson :: FS.FilePath -> FS.FilePath -> ExceptT Text IO ()
 convertJson inputFile outputFile = do

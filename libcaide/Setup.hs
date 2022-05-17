@@ -11,14 +11,13 @@ import Distribution.Simple.Utils (createDirectoryIfMissingVerbose,
 
 import Distribution.System (OS(Windows), Platform(Platform), buildOS, )
 import Distribution.Types.BuildInfo (BuildInfo, extraLibDirs, extraLibs, )
-import Distribution.Types.Executable (Executable(buildInfo))
 import Distribution.Types.Flag (mkFlagName, lookupFlagAssignment)
 import Distribution.Types.GenericPackageDescription (GenericPackageDescription, packageDescription)
 import Distribution.Types.HookedBuildInfo (HookedBuildInfo)
 import Distribution.Types.LocalBuildInfo (LocalBuildInfo(hostPlatform),
     localPkgDescr, withAllTargetsInBuildOrder', )
 import Distribution.Types.Library (Library(libBuildInfo))
-import Distribution.Types.PackageDescription (PackageDescription(executables, library, subLibraries))
+import Distribution.Types.PackageDescription (PackageDescription(library, subLibraries))
 import Distribution.Types.TargetInfo (targetCLBI)
 import Distribution.Verbosity (Verbosity)
 
@@ -215,12 +214,6 @@ type Lifter a b = (a -> a) -> b -> b
 
 onLocalPkgDescr :: Lifter PackageDescription LocalBuildInfo
 onLocalPkgDescr f lbi = lbi { localPkgDescr = f (localPkgDescr lbi) }
-
-onExecutables :: Lifter Executable PackageDescription
-onExecutables f pd = pd { executables = map f (executables pd) }
-
-onExeBuildInfo :: Lifter BuildInfo Executable
-onExeBuildInfo f exe = exe { buildInfo = f (buildInfo exe) }
 
 onLibraries :: Lifter Library PackageDescription
 onLibraries f pd = case library pd' of

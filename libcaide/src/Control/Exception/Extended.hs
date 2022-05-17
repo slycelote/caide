@@ -8,12 +8,10 @@ module Control.Exception.Extended(
 import Control.Exception
 
 catchIf :: Exception e => (e -> Bool) -> IO a -> (e -> IO a) -> IO a
-catchIf predicate action handler =
-    catchJust (\e -> if predicate e then Just e else Nothing) action handler
+catchIf predicate = catchJust (\e -> if predicate e then Just e else Nothing)
 
 handleIf :: Exception e => (e -> Bool) -> (e -> IO a) -> IO a -> IO a
-handleIf predicate handler action =
-    handleJust (\e -> if predicate e then Just e else Nothing) handler action
+handleIf predicate = handleJust (\e -> if predicate e then Just e else Nothing)
 
 ignoring :: Exception e => IO () -> (e -> Bool) -> IO ()
 action `ignoring` predicate = catchIf predicate action (const $ pure ())

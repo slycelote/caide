@@ -36,7 +36,7 @@ isSupportedUrl = isHostOneOf ["hackerrank.com", "www.hackerrank.com"]
 data JsonProblem = JsonProblem
     { name        :: !T.Text
     , problemSlug :: !T.Text
-    , contestSlug :: !T.Text
+    -- , contestSlug :: !T.Text
     , htmlBody    :: !T.Text
     }
 
@@ -52,7 +52,7 @@ instance Aeson.FromJSON JsonProblem where
                 let Aeson.Object prob = singleton
                 Aeson.Object detail <- prob .: "detail"
                 JsonProblem <$> detail .: "name" <*> detail .: "slug"
-                            <*> detail .: "contest_slug" <*> detail .: "body_html"
+                            <*> detail .: "body_html"
             [] -> fail "no problems found"
             _  -> fail "multiple problems found"
 
