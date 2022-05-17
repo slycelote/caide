@@ -24,9 +24,6 @@ jobs:
       CONFIG: "--enable-tests --enable-benchmarks"
 
     steps:
-    - name: Debug
-      run: ghcup list
-
     - name: Install prerequisites
       env:
         runner_os: ${{ runner.os }}
@@ -35,7 +32,7 @@ jobs:
         import os, subprocess
         runner_os = os.environ['runner_os']
         if runner_os == 'Linux':
-          commands = ['sudo apt-get install ccache ninja-build', 'which ccache', 'which ninja']
+          commands = ['sudo apt-get install ccache coreutils ninja-build', 'which ccache', 'which ninja']
         elif runner_os == 'macOS':
           commands = ['brew install ccache ninja', 'which ccache', 'which ninja']
         else:
@@ -156,6 +153,8 @@ jobs:
       run: |
         cd libcaide
         export CAIDE=$(pwd)/$CAIDE_EXE_RELATIVE_PATH
-        MONO=mono CSC=csc tests/run-tests.sh || true
-        cabal test $CONFIG || true
+        echo '```' > $GITHUB_STEP_SUMMARY
+        MONO=mono CSC=csc tests/run-tests.sh | tee --append $GITHUB_STEP_SUMMARY || true
+        cabal test $CONFIG | tee --append $GITHUB_STEP_SUMMARY || true
+        echo '```' >> $GITHUB_STEP_SUMMARY
 
