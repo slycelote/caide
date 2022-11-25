@@ -136,17 +136,18 @@ jobs:
         name: caide
         path: libcaide/${{ env.CAIDE_EXE_RELATIVE_PATH }}
 
-    - name: Set up HLint
-      uses: haskell/actions/hlint-setup@v2
+    # Disable until https://github.com/haskell/actions/issues/128 is fixed.
+    # - name: Set up HLint
+    #   uses: haskell/actions/hlint-setup@v2
 
-    - name: Copy HLint config
-      run: cp libcaide/.hlint.yaml .
+    # - name: Copy HLint config
+    #   run: cp libcaide/.hlint.yaml .
 
-    - name: Run HLint
-      uses: haskell/actions/hlint-run@v2
-      with:
-        path: libcaide/
-        fail-on: never
+    # - name: Run HLint
+    #   uses: haskell/actions/hlint-run@v2
+    #   with:
+    #     path: libcaide/
+    #     fail-on: never
 
     - name: Run tests
       shell: bash
