@@ -87,7 +87,9 @@ jobs:
         cache-name: ccache
         cache-version: 4
       with:
-        path: ~/.ccache
+        path: |
+          ${{ env.XDG_CACHE_HOME }}/ccache
+          ~/.ccache
         key: ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-${{ hashFiles('llvm-submodule.txt') }}-${{ hashFiles('submodules.txt') }}
         restore-keys: |
           ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-${{ hashFiles('llvm-submodule.txt') }}-
