@@ -82,10 +82,10 @@ jobs:
         cat llvm-submodule.txt submodules.txt
 
     - name: ccache cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       env:
         cache-name: ccache
-        cache-version: 3
+        cache-version: 4
       with:
         path: ~/.ccache
         key: ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-${{ hashFiles('llvm-submodule.txt') }}-${{ hashFiles('submodules.txt') }}
@@ -101,10 +101,10 @@ jobs:
         cat cabal.project.freeze
 
     - name: Cabal cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       env:
         cache-name: cabal
-        cache-version: 2
+        cache-version: 3
       with:
         path: |
           ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
