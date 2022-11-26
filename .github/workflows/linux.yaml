@@ -87,9 +87,7 @@ jobs:
         cache-name: ccache
         cache-version: 4
       with:
-        path: |
-          ${{ env.XDG_CACHE_HOME }}/ccache
-          ~/.ccache
+        path: ${{ env.XDG_CACHE_HOME }}/ccache
         key: ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-${{ hashFiles('llvm-submodule.txt') }}-${{ hashFiles('submodules.txt') }}
         restore-keys: |
           ${{ runner.os }}-build-${{ env.cache-name }}${{ env.cache-version }}-${{ hashFiles('llvm-submodule.txt') }}-
@@ -124,6 +122,7 @@ jobs:
     - name: Build
       shell: bash
       run: |
+        ccache --show-config
         ccache --show-stats
         cd libcaide
         # Force recompilation due to https://github.com/haskell/cabal/issues/4746
