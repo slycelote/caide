@@ -1,8 +1,12 @@
 caide is a command line application which is the core of caide software suite.
 
 # Installation
- Simply unpack caide executable to your hard drive. Optionally, put it into a
-directory in your PATH for easier access.
+If you use Linux or Windows, simply unpack caide executable to your hard
+drive. Optionally, put it into a directory in your PATH for easier access.
+
+If you use Mac OS, we don't currently publish the binaries, but you could use
+docker. See (unofficial) instructions here:
+https://github.com/mfornet/caide-docker.
 
 
 # Quick start
