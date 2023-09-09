@@ -10,6 +10,11 @@ parsing, running and debugging problem tests, inlining library code.
 
 caide is designed to support multiple programming languages and IDEs/editors.
 
+This project is available at the following mirrors:
+
+* [GitLab](https://gitlab.com/slycelote/caide)
+* [GitHub](https://github.com/slycelote/caide)
+
 ## Screenshots
 Codelite and command line caide in Linux: ([full size](http://i.imgur.com/cZsP6Z0.png))
 
