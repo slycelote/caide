@@ -16,7 +16,6 @@ import Control.Monad.IO.Class (liftIO)
 import qualified Data.Char as Char
 import Data.Either.Util (mapLeft)
 import Data.Function ((&))
-import qualified Data.HashMap.Strict as Map
 import Data.List.NonEmpty (NonEmpty)
 import Data.Semigroup (sconcat)
 import qualified Data.Text as T
@@ -32,6 +31,8 @@ import qualified Filesystem.Path.CurrentOS as FS
 import qualified Filesystem.Util as FS
 
 import qualified Data.Aeson as Aeson
+import Data.Aeson.Key (fromText, toText)
+import qualified Data.Aeson.KeyMap as AesonMap
 import qualified Text.Parsec as Parsec
 import qualified Text.Parsec.Error as Parsec
 
@@ -116,17 +117,17 @@ renderTemplate templateFile template targetDir enrichedContext (Options{allowOve
 enrich :: Aeson.Value -> Aeson.Value
 enrich (Aeson.Object hashMap) = Aeson.Object $ transformedMap <> nonEmptyIndicators <> equalsIndicators
   where
-    transformedMap = Map.map enrich hashMap
+    transformedMap = AesonMap.map enrich hashMap
     keysWithNonEmptyArrayValues =
-        [k | (k, Aeson.Array v) <- Map.toList transformedMap, not (Vector.null v)]
-    nonEmptyIndicators = Map.fromList
-        [(k <> "_nonempty", Aeson.Bool True) | k <- keysWithNonEmptyArrayValues]
+        [toText k | (k, Aeson.Array v) <- AesonMap.toList transformedMap, not (Vector.null v)]
+    nonEmptyIndicators = AesonMap.fromList
+        [(fromText k <> "_nonempty", Aeson.Bool True) | k <- keysWithNonEmptyArrayValues]
     keysForEqualsIndicators =
-        [(k <> "_is_" <> t) | (k, Aeson.String t) <- Map.toList transformedMap] <>
-        [(k <> "_is_" <> tshow (i :: Int)) |
-            (k, Aeson.Number n) <- Map.toList transformedMap, let Just i = Scientific.toBoundedInteger n]
-    equalsIndicators = Map.fromList
-        [(k, Aeson.Bool True) | k <- keysForEqualsIndicators, T.all isIdentifier k]
+        [(toText k <> "_is_" <> t) | (k, Aeson.String t) <- AesonMap.toList transformedMap] <>
+        [(toText k <> "_is_" <> tshow (i :: Int)) |
+            (k, Aeson.Number n) <- AesonMap.toList transformedMap, let Just i = Scientific.toBoundedInteger n]
+    equalsIndicators = AesonMap.fromList
+        [(fromText k, Aeson.Bool True) | k <- keysForEqualsIndicators, T.all isIdentifier k]
     isIdentifier c = Char.isAlphaNum c || c == '_'
 
 
@@ -137,7 +138,7 @@ enrich (Aeson.Array vector) = Aeson.Array $ Vector.imap addFirstLast transformed
     addFirstLast :: Int -> Aeson.Value -> Aeson.Value
     addFirstLast idx (Aeson.Object hashMap) = Aeson.Object $ hashMap <> firstLastIndicators
       where
-        firstLastIndicators = Map.fromList
+        firstLastIndicators = AesonMap.fromList
             [ ("isfirst", Aeson.Bool (idx == 0))
             , ("islast",  Aeson.Bool (idx == Vector.length vector - 1))
             ]

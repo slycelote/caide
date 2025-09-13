@@ -9,7 +9,6 @@ import Control.Applicative ((<|>))
 import qualified Data.ByteString.Lazy as LBS
 import Data.Char (isAlphaNum, isSpace)
 import Data.Function ((&))
-import qualified Data.HashMap.Strict as HashMap
 import Data.List (find)
 import Data.List.Util (chunksOf)
 import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
@@ -18,6 +17,7 @@ import qualified Data.Text.Encoding as T
 
 import qualified Data.Aeson as Aeson
 import Data.Aeson (withObject, (.:))
+import qualified Data.Aeson.KeyMap as AesonMap
 import Network.HTTP.Types (urlDecode)
 import Text.HTML.TagSoup (fromAttrib, maybeTagText, parseTags, partitions, sections,
     Tag(TagText))
@@ -46,7 +46,7 @@ instance Aeson.FromJSON JsonProblem where
         Aeson.Object community <- v .: "community"
         Aeson.Object challenges <- community .: "challenges"
         Aeson.Object challenge <- challenges .: "challenge"
-        let values = HashMap.elems challenge
+        let values = AesonMap.elems challenge
         case values of
             [singleton] -> do
                 let Aeson.Object prob = singleton

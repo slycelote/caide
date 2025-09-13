@@ -19,6 +19,7 @@ import qualified Data.Text.Encoding as T
 
 import qualified Data.Aeson as Aeson
 import Data.Aeson ((.=))
+import Data.Aeson.Key (fromText)
 import qualified Data.Map.Strict as Map
 import qualified Data.Vector as Vector
 
@@ -135,7 +136,7 @@ findIdentifier origIdentifier lang identKind mbCode =
 encodeSolutionClass :: Text -> Maybe [TopcoderValue] -> [TopcoderMethod] -> Map.Map Text Text -> Bool -> Aeson.Value
 encodeSolutionClass className mbConstructorParams methods codeSnippets isTopcoder = Aeson.object $
     [ "className" .= className
-    , "identifier" .= Aeson.object [ lang .= findClassNameIdentifier lang | lang <- languages ]
+    , "identifier" .= Aeson.object [ fromText lang .= findClassNameIdentifier lang | lang <- languages ]
     , "methods" .= Aeson.Array (Vector.fromList (map encodeMethod methods))
     ]
     ++ [ "constructor" .= Aeson.object [ "parameters" .= encodeParameters ctorParams ] | Just ctorParams <- [mbConstructorParams] ]
@@ -152,7 +153,7 @@ encodeSolutionClass className mbConstructorParams methods codeSnippets isTopcode
     encodeValue :: IdentifierKind -> TopcoderValue -> Aeson.Value
     encodeValue identKind TopcoderValue{..} = Aeson.object
         [ "name" .= tcValueName
-        , "identifier" .= Aeson.object [ lang .= findIdent lang | lang <- languages ]
+        , "identifier" .= Aeson.object [ fromText lang .= findIdent lang | lang <- languages ]
         , "dimension" .= tcValueDimension
         , "type" .= Aeson.String (encodeType tcValueType)
         ]

@@ -21,6 +21,7 @@ import Data.Word (Word64)
 import System.IO.Error (isDoesNotExistError)
 
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Parser as AttoAeson
 import qualified Data.Attoparsec.ByteString.Char8 as Atto
 import Data.Attoparsec.ByteString.Char8 ((<?>))
 
@@ -79,7 +80,7 @@ convertJson inputFile outputFile = do
 
 convertJsonValues :: Text -> Either Text [Text]
 convertJsonValues text = do
-    let parser = Aeson.json `Atto.sepBy` Atto.skipSpace
+    let parser = AttoAeson.json `Atto.sepBy` Atto.skipSpace
     jsonValues <- TC.runParser parser text
     pure $ concatMap convertJsonValue jsonValues
 

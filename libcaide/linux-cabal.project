@@ -1,2 +1,10 @@
 packages: ./*.cabal
 
+source-repository-package
+    type: git
+    location: https://github.com/jgoerzen/configfile.git
+    tag: 38ae3579dc1f2de70f9967247befe0e94deba269
+
+package libcaide
+  flags: +openssl
+

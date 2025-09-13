@@ -21,6 +21,7 @@ import Filesystem.Path.CurrentOS (FilePath, (</>), basename, filename, hasExtens
 import Filesystem.Util (listDir, pathToText)
 
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Parser as AttoAeson
 import qualified Data.Scientific as Sci
 import qualified Data.Vector as Vec
 
@@ -93,8 +94,8 @@ evalTests = do
             , testFormat = case problemType problem of
                 Topcoder descr -> Json $ TC.jsonParser (tcMethod . tcSingleMethod $ descr)
                 Stream {}      -> PlainText
-                LeetCodeMethod _ -> Json Aeson.json
-                LeetCodeClass {} -> Json Aeson.json
+                LeetCodeMethod _ -> Json AttoAeson.json
+                LeetCodeClass {} -> Json AttoAeson.json
             }
 
     beVerbose <- verboseTestReport <$> caideSettings

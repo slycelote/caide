@@ -1,6 +1,6 @@
-cabal-version:  3.0
+cabal-version:  3.14
 name:           libcaide
-version:        2.10.1
+version:        2.11
 build-type:     Custom
 license:        GPL-3.0-or-later
 license-file:   LICENSE
@@ -13,7 +13,7 @@ bug-reports:    https://github.com/slycelote/caide/issues
 description:
     Automates certain common tasks that you do during programming competitions:
     parsing, running and debugging problem tests, inlining library code.
-tested-with:    GHC == 8.10.3
+tested-with:    GHC == 9.12.2
 
 source-repository head
   type:         git
@@ -35,13 +35,17 @@ Flag debug
 custom-setup
   setup-depends: base >= 4.7,
                  bytestring,
-                 Cabal >= 3.2,
+                 Cabal >= 3.14,
                  directory >= 1.2.3,
                  filepath,
                  zip-archive
 
 common exe-flags
-  ghc-options:     -Wall -static -pgml g++ -rtsopts=all
+  ghc-options:     -Wall -static -rtsopts=all
+
+  if flag(cppinliner) {
+    ghc-options:   -pgml g++
+  }
 
   if os(windows) {
     -- -threaded runtime on Windows causes native calls in Network.Socket to be uninterruptible:
@@ -76,10 +80,11 @@ test-suite caide-tests
 library
   build-depends:
                    base >= 4.8,
-                   aeson < 2.0.0.0,
+                   aeson >= 2,
                    array,
                    async >= 2.0.1,
                    attoparsec,
+                   attoparsec-aeson,
                    bytestring,
                    ConfigFile,
                    containers >= 0.5.0.0,

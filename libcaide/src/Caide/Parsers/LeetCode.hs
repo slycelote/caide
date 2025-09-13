@@ -21,12 +21,13 @@ import Data.Text.Encoding.Util (safeDecodeUtf8)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
-import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Map as Map
 
 import qualified Data.Aeson as Aeson
 import Data.Aeson (FromJSON, (.:))
+import qualified Data.Aeson.KeyMap as AesonMap
 
+import qualified Data.Aeson.Parser as AttoAeson
 import Data.Attoparsec.ByteString.Char8 (letter_ascii, char, digit,
     option, skipSpace, skipMany1, sepBy, (<?>), parseOnly)
 
@@ -133,7 +134,7 @@ data MetaData = CM ClassMetaData
 
 instance FromJSON MetaData where
     parseJSON = Aeson.withEmbeddedJSON "metadata string" $ \mdJson -> flip (Aeson.withObject "metadata json") mdJson $ \o ->
-        if HashMap.member "classname" o
+        if AesonMap.member "classname" o
             then CM <$> Aeson.parseJSON (Aeson.Object o)
             else MM <$> Aeson.parseJSON (Aeson.Object o)
 
@@ -275,7 +276,7 @@ parseInput t = let
     identParser = skipMany1 (digit <|> letter_ascii <|> char '_') <?> "identifier"
     paramParser = (skipSpace >>
                    option () (identParser >> skipSpace >> char '=' >> skipSpace) >>
-                   Aeson.json) <?> "parameter"
+                   AttoAeson.json) <?> "parameter"
     parser = paramParser `sepBy` (skipSpace >> option () (char ',' >> skipSpace))
     result = parseOnly parser (T.encodeUtf8 t)
 

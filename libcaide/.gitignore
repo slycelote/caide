@@ -3,6 +3,9 @@
 /tests/tmp
 /res/*.zip
 
+### Local settings
+linux-cabal.project.local
+
 ### IntelliJ ###
 *.iml
 

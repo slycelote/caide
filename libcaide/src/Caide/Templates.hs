@@ -5,8 +5,8 @@ module Caide.Templates(
     , templates
 ) where
 
-import Control.Monad.Except (liftIO)
 import Control.Monad (unless, when)
+import Control.Monad.IO.Class (liftIO)
 import Data.ByteString (ByteString)
 import Data.Maybe (isNothing)
 import Data.Text (Text)
