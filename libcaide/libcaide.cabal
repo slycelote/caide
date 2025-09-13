@@ -51,7 +51,8 @@ common exe-flags
     -- -threaded runtime on Windows causes native calls in Network.Socket to be uninterruptible:
     -- https://stackoverflow.com/questions/10608602
     ghc-options:   -optl-static
-  } else {
+  }
+  else {
     -- Don't use -static linker option in Linux, since we don't want to statically link glibc
     ghc-options:   -optl-pthread -threaded -with-rtsopts=-N
   }
@@ -116,7 +117,8 @@ library
                    zip-archive
   if flag(openssl) {
     build-depends: http-client-openssl
-  } else {
+  }
+  else {
     build-depends: http-client-tls, connection
   }
 
