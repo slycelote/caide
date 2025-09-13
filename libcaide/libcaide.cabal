@@ -44,7 +44,7 @@ common exe-flags
   ghc-options:     -Wall -static -rtsopts=all
 
   if flag(cppinliner) {
-    ghc-options:   -pgml g++
+    ghc-options:   -pgml g++ -optl-no-pie
   }
 
   if os(windows) {
