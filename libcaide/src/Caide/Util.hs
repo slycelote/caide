@@ -48,13 +48,15 @@ newDefaultHttpClient = do
     cfMiddleware <- CodeforcesCookie.newHttpMiddleware
     let defaultHeaders =
             [ (hAcceptEncoding, "") -- omit this header
-            , (hUserAgent, "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0")
+            , (hUserAgent, "Mozilla/5.0 (Windows NT 10.0; rv:142.0) Gecko/20100101 Firefox/142.0")
             , (hAccept, "*/*")
             ]
     return $
+        Http.throwOnHttpErrors $
         Http.setTimeout 5.0 $
         Http.addHeaders defaultHeaders $
         cfMiddleware $
+        -- Http.logToFile "/tmp/requests.log" $
         client
 
 readTextFile' :: F.FilePath -> CaideIO T.Text

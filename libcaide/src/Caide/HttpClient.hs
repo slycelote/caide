@@ -11,6 +11,8 @@ module Caide.HttpClient(
     , addHeaders
     , setTimeout
     , setRedirectCount
+    , logToFile
+    , throwOnHttpErrors
     , module Network.HTTP.Client
 ) where
 
@@ -59,7 +61,7 @@ middleware impl Client{send} = Client $ impl send
 -- | Send the request, catch IO exceptions and return them as Left.
 sendRequest :: Client -> Request -> IO (Either Text LBS.ByteString)
 sendRequest Client{send} request = catchExceptions (getUri request) $
-    request & setRequestCheckStatus & send <&> responseBody <&> Right
+    request & send <&> responseBody <&> Right
 
 
 get :: MonadIO m => Client -> URI -> m (Either Text LBS.ByteString)
@@ -87,7 +89,7 @@ newClient = liftIO $ do
 
 
 wrap :: (Request -> Request) -> (Client -> Client)
-wrap modify Client{send} = Client $ send . modify
+wrap modify = middleware $ \send request -> send (modify request)
 
 addHeaders :: RequestHeaders -> Middleware
 addHeaders headers = wrap $ \request -> request{requestHeaders = requestHeaders request ++ headers}
@@ -99,6 +101,17 @@ setTimeout timeout = wrap $ \request ->
 setRedirectCount :: Int -> Middleware
 setRedirectCount n = wrap $ \request -> request{redirectCount = n}
 
+throwOnHttpErrors :: Middleware
+throwOnHttpErrors = wrap setRequestCheckStatus
+
+logToFile :: FilePath -> Middleware
+logToFile filePath = middleware $ \send request -> do
+    appendFile filePath $ show request ++ "\n"
+    res <- Exc.tryWithContext $ send request
+    appendFile filePath $ show res ++ "\n"
+    case res of
+        Left e -> Exc.rethrowIO (e :: Exc.ExceptionWithContext HttpException)
+        Right resp -> pure resp
 
 
 catchExceptions :: URI -> IO (Either Text a) -> IO (Either Text a)
