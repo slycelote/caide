@@ -11,7 +11,7 @@ import Data.Either (fromRight, rights, )
 import Data.Either.Util (maybeToEither, mapLeft, orElse)
 import Data.Function ((&))
 import qualified Data.List as List
-import Data.List.Util (chunksOf)
+import Data.List.Util (chunked)
 import Data.Maybe (fromMaybe, )
 import qualified Data.Text as T
 import Data.Text (Text)
@@ -77,8 +77,8 @@ parseMarkdown2 body' = do
 
 parseTestCasesFromMarkdown :: Text -> Either Text [TestCase]
 parseTestCasesFromMarkdown body' = do
-    let testCases1 = T.splitOn "```" body' & map T.strip & chunksOf 4 &
-            map (\[_, i, _, o] -> TestCase i (Just o))
+    let testCases1 = T.splitOn "```" body' & map T.strip & chunked &
+            map (\(_, i, _, o) -> TestCase i (Just o))
         testCases2 = fromRight [] $ parseMarkdown2 body'
 
     case List.find (not . null) [testCases1, testCases2] of
@@ -122,7 +122,7 @@ parseTestCasesFromHtml tags = do
         inputsAndOutputs = filter (not . T.null) . map (T.strip . fromTagText) $ rootTextNodes
         testCases3 = if null pres
             then []
-            else inputsAndOutputs & chunksOf 2 & map (\[i, o] -> TestCase i (Just o))
+            else inputsAndOutputs & chunked & map (\(i, o) -> TestCase i (Just o))
 
     case List.find (not . null) [testCases1, testCases2, testCases3] of
         Just testCases -> return testCases

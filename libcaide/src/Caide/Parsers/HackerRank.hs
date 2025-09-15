@@ -10,7 +10,7 @@ import qualified Data.ByteString.Lazy as LBS
 import Data.Char (isAlphaNum, isSpace)
 import Data.Function ((&))
 import Data.List (find)
-import Data.List.Util (chunksOf)
+import Data.List.Util (chunked)
 import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -67,7 +67,7 @@ testsFromHtml tags = testCases where
 
     pres = map (drop 1 . takeWhile (~/= "</pre>") . dropWhile (~/= "<pre>") ) samples
     texts = map extractText pres
-    testCases = texts & chunksOf 2 & map (\[i, o] -> TestCase (cleanupInput i) (Just $ cleanupOutput o))
+    testCases = texts & chunked & map (\(i, o) -> TestCase (cleanupInput i) (Just $ cleanupOutput o))
 
 hrProblemType :: ProblemType
 hrProblemType = Stream StdIn StdOut

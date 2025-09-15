@@ -5,7 +5,7 @@ module Caide.Parsers.Yandex(
     , chelperId
 ) where
 
-import Data.List.Util (chunksOf)
+import Data.List.Util (chunked)
 import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import qualified Data.Text as T
 
@@ -53,5 +53,5 @@ extractTestCase tags = testCases
             sections (~~== "<pre>") $
             tags
 
-    testCases = normalizeTestCases [TestCase i (Just o) | [i, o] <- chunksOf 2 texts]
+    testCases = normalizeTestCases [TestCase i (Just o) | (i, o) <- chunked texts]
 

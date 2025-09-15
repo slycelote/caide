@@ -17,6 +17,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Text.Printf (printf)
 
+import qualified Data.VecN as VecN
+
 import qualified Crypto.Cipher.AES as Crypto
 import qualified Crypto.Cipher.Types as Crypto
 import Crypto.Error (CryptoFailable(CryptoPassed, CryptoFailed))
@@ -54,7 +56,7 @@ hexDecode t = [0, 2 .. LBS8.length t - 1] & mapM parse <&> BS.concat
 -- Output is either the cookie or an error message.
 getCookie :: LBS8.ByteString -> Either Text BS8.ByteString
 getCookie html = do
-    params <- forM "abc" $ \c -> do
+    params <- forM (VecN.pack ('a', 'b', 'c')) $ \c -> do
         let needle = c : "=toNumbers(\""
             (_, suffix) = BSSearch.breakAfter (BS8.pack needle) html
         when (LBS8.null suffix) $ throwError ("HTML doesn't contain " <> T.pack needle)
@@ -63,7 +65,7 @@ getCookie html = do
         hexDecode $ LBS8.take closingQuoteIndex suffix
 
     -- echo -n input | xxd -r -ps | openssl aes-128-cbc -d -K key -iv iv -nopad | xxd -ps
-    let [key, ivBS, input] = params
+    let (key, ivBS, input) = VecN.unpack params
 
     iv <- Crypto.makeIV ivBS `orThrow` "Couldn't create IV"
     cipher <- case Crypto.cipherInit key :: CryptoFailable Crypto.AES128 of

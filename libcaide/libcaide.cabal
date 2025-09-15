@@ -202,6 +202,8 @@ library
         Data.List.Util
         Data.Text.Encoding.Util
         Data.Text.IO.Util
+        Data.TypeNat
+        Data.VecN
         Filesystem.Util
         Paths_CaideExt
         Paths_libcaide
