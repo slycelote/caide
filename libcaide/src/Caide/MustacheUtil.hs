@@ -16,7 +16,9 @@ import Control.Monad.IO.Class (liftIO)
 import qualified Data.Char as Char
 import Data.Either.Util (mapLeft)
 import Data.Function ((&))
-import Data.List.NonEmpty (NonEmpty)
+import Data.Functor ((<&>))
+import qualified Data.List.NonEmpty as NE
+import Data.Maybe (maybeToList)
 import Data.Semigroup (sconcat)
 import qualified Data.Text as T
 import Data.Text (Text)
@@ -125,7 +127,8 @@ enrich (Aeson.Object hashMap) = Aeson.Object $ transformedMap <> nonEmptyIndicat
     keysForEqualsIndicators =
         [(toText k <> "_is_" <> t) | (k, Aeson.String t) <- AesonMap.toList transformedMap] <>
         [(toText k <> "_is_" <> tshow (i :: Int)) |
-            (k, Aeson.Number n) <- AesonMap.toList transformedMap, let Just i = Scientific.toBoundedInteger n]
+            (k, Aeson.Number n) <- AesonMap.toList transformedMap,
+            i <- maybeToList (Scientific.toBoundedInteger n)]
     equalsIndicators = AesonMap.fromList
         [(fromText k, Aeson.Bool True) | k <- keysForEqualsIndicators, T.all isIdentifier k]
     isIdentifier c = Char.isAlphaNum c || c == '_'
@@ -152,14 +155,14 @@ compileMustacheText' name templateText = templateText & LazyText.fromStrict &
     compileMustacheText (PName name) & mapLeft (\err -> tshow $
         Parsec.setErrorPos (Parsec.setSourceName (Parsec.errorPos err) (T.unpack name)) err)
 
-compileAndRender :: NonEmpty (Text, Text) -> [Text] -> Aeson.Value -> Either Text (Maybe Text, [Text])
+compileAndRender :: NE.NonEmpty (Text, Text) -> NE.NonEmpty Text -> Aeson.Value -> Either Text (Maybe Text, NE.NonEmpty Text)
 compileAndRender templatesWithNames primaryTemplateNames json = do
     compiledTemplates <- forM templatesWithNames $ \(name, text) -> compileMustacheText' name text
     let template = sconcat compiledTemplates
         enrichedValue = enrich json
-        results = [renderMustacheW template{templateActual = PName name} enrichedValue
-                     | name <- primaryTemplateNames]
-        renderedTexts = map (LazyText.toStrict . snd) results
+        results = primaryTemplateNames <&> \name ->
+            renderMustacheW template{templateActual = PName name} enrichedValue
+        renderedTexts = NE.map (LazyText.toStrict . snd) results
         warnings = concatMap fst results
         warningTexts = case warnings of
             [] -> Nothing

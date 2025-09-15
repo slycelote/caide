@@ -11,6 +11,7 @@ import qualified Control.Concurrent.Async as Async
 import Control.Monad (forM_, void, when)
 import Control.Monad.Except (catchError)
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import qualified Filesystem.Path as F
@@ -69,13 +70,12 @@ getPorts = (companionPort &&& chelperPort) <$> caideSettings
 
 data ParsedProblem = Parsed Problem [TestCase]
 
-createProblems :: CaideEnv -> [ParsedProblem] -> IO ()
-createProblems _ [] = logError "The contest is empty"
+createProblems :: CaideEnv -> NE.NonEmpty ParsedProblem -> IO ()
 createProblems env parsedProblems = do
     ret <- runInDirectory env $ do
         forM_ parsedProblems $ \(Parsed problem testCases) ->
             saveProblemWithScaffold problem testCases
-        let Parsed problem _ = head parsedProblems
+        let Parsed problem _ = NE.head parsedProblems
         setActiveProblem $ problemId problem
 
     case ret of
@@ -133,7 +133,7 @@ processCompanionRequest env request = do
             logError $ "Could not parse input JSON: " <> T.pack err
             return $ makeResponse badRequest err
         Right p -> do
-            createProblems env [p]
+            createProblems env $ NE.fromList [p]
             return $ makeResponse ok "OK"
 
 
@@ -141,15 +141,14 @@ processCHelperRequest :: CaideEnv -> Request -> IO Response
 processCHelperRequest env request = do
     let body = T.pack $ reqBody request
         bodyLines = T.lines body
-        chid = T.strip $ head bodyLines
-        page = T.unlines $ drop 1 bodyLines
-
-    case () of
-      _ | null bodyLines -> do
+    case bodyLines of
+        [] -> do
             logError "Invalid request!"
             return $ makeResponse badRequest "Invalid request!"
-        | chid == "json"   -> return $ makeResponse ok "" -- Processed by Companion server instead
-        | otherwise        -> do
+        (first:_) | T.strip first == "json" -> return $ makeResponse ok "" -- Processed by Companion server instead
+        (first:rest) -> do
+            let chid = T.strip first
+                page = T.unlines rest
             err <- process chid page env
             case err of
                 Nothing -> return $ makeResponse ok "OK"
@@ -166,6 +165,6 @@ process chid page env = case findCHelperProblemParser chid of
         case res of
             Left err -> return . Just $ "Error while parsing the problem: " <> err
             Right (problem, testCases) -> do
-                createProblems env [Parsed problem testCases]
+                createProblems env $ NE.fromList [Parsed problem testCases]
                 return Nothing
 

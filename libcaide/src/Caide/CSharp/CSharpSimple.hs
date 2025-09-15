@@ -6,6 +6,7 @@ module Caide.CSharp.CSharpSimple(
 import Control.Monad.Extended (liftIO, unlessM, whenJust)
 
 import qualified Data.List.NonEmpty as NonEmpty
+import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Text (Text)
 
 import Data.FileEmbed (embedStringFile)
@@ -91,12 +92,11 @@ generateSolutionAndMainForTopcoder problem state = do
 renderTemplate :: Text -> Problem -> ProblemState -> CaideIO Text
 renderTemplate primaryTemplateName problem state = do
     let json = jsonEncodeProblem problem state
-    case compileAndRender allTemplates [primaryTemplateName] json of
+    case compileAndRender allTemplates (NonEmpty.fromList [primaryTemplateName]) json of
         Left err -> throw err
-        Right (warnings, [res]) -> do
+        Right (warnings, (res :| _)) -> do
             whenJust warnings logDebug
             return res
-        _ -> error "Impossible happened"
 
 allTemplates :: NonEmpty.NonEmpty (Text, Text)
 allTemplates = NonEmpty.fromList

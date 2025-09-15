@@ -55,7 +55,7 @@ parseGccOutput :: String -> [String]
 parseGccOutput output = map trim $ filter isDirectory $ takeWhile (not . endOfSearchListLine) $ dropWhile (not . searchStartsHereLine) $ lines output
   where
     trim = dropWhileEnd isSpace . dropWhile isSpace
-    isDirectory s = not (null s) && head s == ' '
+    isDirectory s = take 1 s == " "
     endOfSearchListLine s = "End of search list." `isInfixOf` s
     searchStartsHereLine s = "search starts here:" `isInfixOf` s
 

@@ -10,6 +10,7 @@ module Caide.CPP.CPPSimple(
 import Control.Monad.Extended (forM_, liftIO, unless, unlessM, whenJust)
 
 import qualified Data.List.NonEmpty as NonEmpty
+import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Text (Text)
 
 import Data.FileEmbed (embedStringFile)
@@ -68,8 +69,8 @@ generateSolutionAndMain problem@Problem{problemType=Stream _ _} state = do
 
     unlessM (liftIO $ FS.isFile mainProgramPath) $ do
         userMainTemplate <- getTemplate "main_template.cpp"
-        rendered <- renderTemplates ["main.cpp"] problem state
-        let [(_,mainTemplate)] = rendered
+        rendered <- renderTemplates (NonEmpty.fromList ["main.cpp"]) problem state
+        let (_,mainTemplate) = NonEmpty.head rendered
         liftIO $ writeTextFile mainProgramPath $
             mainTemplate <> "\n" <> userMainTemplate
 
@@ -110,8 +111,8 @@ generateSolutionAndMainForTopcoder problem state = do
     solutionFileExists <- liftIO $ FS.isFile solutionPath
     unless solutionFileExists $ do
         userSolutionTemplate <- getTemplate "topcoder_solution_template.cpp"
-        rendered <- renderTemplates ["solution.cpp"] problem state
-        let [(_,solutionTemplate)] = rendered
+        rendered <- renderTemplates (NonEmpty.fromList ["solution.cpp"]) problem state
+        let (_,solutionTemplate) = NonEmpty.head rendered
         liftIO $ writeTextFile solutionPath $
             userSolutionTemplate <> "\n" <> solutionTemplate
 
@@ -138,8 +139,8 @@ generateTesterCode problem state = do
                 LeetCodeMethod _ -> ["class_tester.h", "class_tester_impl.h"]
                 LeetCodeClass{}  -> ["class_tester.h", "class_tester_impl.h"]
 
-    rendered <- renderTemplates testerTemplates problem state
-    let ((_, testerCode):rest) = rendered
+    rendered <- renderTemplates (NonEmpty.fromList testerTemplates) problem state
+    let ((_, testerCode) :| rest) = rendered
     liftIO $ writeFiles probDir rest
     copyTemplateUnlessExists "test_util.h" (probDir </> "test_util.h")
     return testerCode
@@ -151,14 +152,14 @@ writeFiles dir renderedTemplates =
         let path = dir </> FS.fromText name
         unlessM (FS.isFile path) $ writeTextFile path renderedText
 
-renderTemplates :: [Text] -> Problem -> ProblemState -> CaideIO [(Text, Text)]
+renderTemplates :: NonEmpty Text -> Problem -> ProblemState -> CaideIO (NonEmpty (Text, Text))
 renderTemplates primaryTemplateNames problem state = do
     let json = jsonEncodeProblem problem state
     case compileAndRender allTemplates primaryTemplateNames json of
         Left err -> throw err
         Right (warnings, res) -> do
             whenJust warnings logDebug
-            return $ zip primaryTemplateNames res
+            return $ NonEmpty.zip primaryTemplateNames res
 
 
 inlineCPPCode :: ProblemID -> CaideIO ()

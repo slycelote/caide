@@ -6,7 +6,6 @@ module Caide.Commands(
 import Control.Exception.Base (catch, SomeException)
 import Control.Monad (void)
 import Control.Monad.Except (catchError)
-import Data.List (foldl')
 import qualified Data.Text as T
 import Data.Version (showVersion)
 import System.Exit (exitWith, ExitCode(ExitFailure))

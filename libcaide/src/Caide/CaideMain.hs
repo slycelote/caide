@@ -27,13 +27,15 @@ findRootCaideDir curDir = do
 caideMain :: IO ()
 caideMain = do
     args <- getArgs
-    let (cmd:_) = args
-        mainAction = runMain args
+    let mainAction = runMain args
     case mainAction of
         Left ioAction -> ioAction
         Right caideCmd -> do
             workDir  <- getWorkingDirectory
             caideDir <- findRootCaideDir workDir
+            cmd <- case args of
+                (cmd:_) -> pure cmd
+                _       -> error "Impossible happened"
             case () of
               _ | cmd /= "init" && isNothing caideDir -> do
                     putStrLn $ encodeString workDir ++ " is not a valid caide directory"
@@ -41,10 +43,10 @@ caideMain = do
                 | cmd == "init" && isJust caideDir    -> do
                     putStrLn "Caide directory already initialized"
                     halt
-                -- special case for init command: pass working directory as the first parameter
-                | otherwise -> caideCmd $ fromMaybe workDir caideDir
+                | otherwise -> caideCmd $
+                    -- special case for init command: pass working directory as the first parameter
+                    fromMaybe workDir caideDir
 
 halt :: IO ()
 halt = exitWith $ ExitFailure 0xCA1DE
-
 

@@ -301,8 +301,9 @@ setProp (FileHandle path) section key value = do
 {------------------ Internals ---------------------}
 
 extend :: F.FilePath -> C.ConfigParser -> C.ConfigParser
-extend r conf = conf' { C.accessfunc = C.interpolatingAccess 10, C.usedefault = True }
-    where Right conf' = C.set conf "DEFAULT" "caideRoot" $ F.encodeString r
+extend r conf = case C.set conf "DEFAULT" "caideRoot" $ F.encodeString r of
+    Right conf' -> conf'{ C.accessfunc = C.interpolatingAccess 10, C.usedefault = True }
+    _ -> error "Impossible happened: DEFAULT section doesn't exist"
 
 instance Option TopcoderType where
     optionToText TCInt    = "int"
@@ -369,20 +370,21 @@ instance Option ProblemType where
         "file," <> inputSourceToString input <> "," <> outputTargetToString output
 
     optionFromText s | "topcoder," `T.isPrefixOf` s = case maybeParams of
-        Just (method:params) -> Just $ Topcoder TopcoderProblemDescription
+        Just (className, (method:params)) -> Just $ Topcoder TopcoderProblemDescription
             { tcClassName = className
             , tcSingleMethod = TopcoderMethod { tcMethod = method, tcParameters = params }
             }
         _ -> Nothing
       where
         components = T.splitOn "," s
-        _:className:paramsStr = components
-        maybeParams = if length components >= 3
-            then mapM optionFromText paramsStr
-            else Nothing
+        maybeParams = case components of
+            (_:className:paramsStr) -> do
+                valueDefs <- mapM optionFromText paramsStr
+                pure (className, valueDefs)
+            _ -> Nothing
 
     optionFromText s | "leetcode," `T.isPrefixOf` s = let
-        components = tail $ T.splitOn "," s
+        components = drop 1 $ T.splitOn "," s
         mbValues = mapM optionFromText components
         in case mbValues of
             Just (method:params) -> Just $ LeetCodeMethod $ TopcoderMethod method params

@@ -48,8 +48,7 @@ instance Aeson.FromJSON JsonProblem where
         Aeson.Object challenge <- challenges .: "challenge"
         let values = AesonMap.elems challenge
         case values of
-            [singleton] -> do
-                let Aeson.Object prob = singleton
+            [Aeson.Object prob] -> do
                 Aeson.Object detail <- prob .: "detail"
                 JsonProblem <$> detail .: "name" <*> detail .: "slug"
                             <*> detail .: "body_html"

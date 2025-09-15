@@ -51,9 +51,9 @@ htmlParser cont = pure $
     links = map (fromAttrib "href" . head) anchors
     contestIds = rights . map (parse contestUrlLink "link") $ links
 
-    probIdPrefix = if length contestIds == 1
-                   then T.append "cf" (head contestIds)
-                   else "cfproblem"
+    probIdPrefix = case contestIds of
+        [cid] -> T.append "cf" cid
+        _     -> "cfproblem"
     probId = T.append probIdPrefix (T.takeWhile (/= '.') title)
 
     inputFileDiv = dropWhile (~~/== "<div class=input-file") statement

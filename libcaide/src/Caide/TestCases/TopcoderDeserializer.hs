@@ -14,6 +14,7 @@ module Caide.TestCases.TopcoderDeserializer(
 
 import qualified Data.ByteString as BS
 import Data.Char (isSpace)
+import Data.Either (fromLeft)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
 import Data.Maybe (isJust)
@@ -39,8 +40,8 @@ runParserBS parser bs =
     let processResult :: Result a -> Either Text (BS.ByteString, a)
         processResult result = case result of
             Done i r -> Right (i, r)
-            Fail bsRest _ _ ->
-                let Left err = eitherResult result
+            Fail bsRest _ e ->
+                let err = fromLeft e $ eitherResult result
                     offset = BS.length bs - BS.length bsRest
                 in Left $ "Offset " <> T.pack (show offset <> ": " <> err)
             Partial _ -> processResult $ feed result BS.empty

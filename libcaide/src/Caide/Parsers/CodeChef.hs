@@ -66,10 +66,9 @@ parseMarkdown2 body' = do
         parseSuffix :: Text -> Either Text TestCase
         parseSuffix suffix = do
             let chunks = take 2 $ T.splitOn "###" suffix
-            when (length chunks /= 2) $
-                throwError "Couldn't parse test output"
-            let [input', output'] = map parseChunk chunks
-            makeTestCase input' output'
+            case chunks of
+                [input, output] -> makeTestCase (parseChunk input) (parseChunk output)
+                _ -> throwError "Couldn't parse test output"
 
         parsedSuffixes = map parseSuffix suffixes
         testCases = rights parsedSuffixes
@@ -91,21 +90,22 @@ parseHtml1 :: [Tag Text] -> Either Text TestCase
 parseHtml1 [] = Left ""
 parseHtml1 tags = do
     let pres = take 2 $ sections (~== "<pre>") tags
-    when (length pres /= 2) $ throwError "Can't find <pre> tags"
-    let pres' = map (takeWhile (~/= "</pre>")) pres
-        [input', output'] = map (T.strip . innerText) pres'
-    makeTestCase input' output'
+        pres' = map (takeWhile (~/= "</pre>")) pres
+        io = map (T.strip . innerText) pres'
+    case io of
+        [input', output'] -> makeTestCase input' output'
+        _ ->  throwError "Can't find <pre> tags"
 
 
 parseHtml2 :: [Tag Text] -> Either Text TestCase
 parseHtml2 [] = Left ""
 parseHtml2 tags = do
     let ps = take 2 $ sections (~== "<p>") tags
-    when (length ps /= 2) $ throwError "Can't find <p> tags"
-    let ps' = map (takeWhile (~/= "</p>")) ps
-        [input', output'] = map (T.strip . innerText) ps'
-    makeTestCase input' output'
-
+        ps' = map (takeWhile (~/= "</p>")) ps
+        io = map (T.strip . innerText) ps'
+    case io of
+        [input', output'] -> makeTestCase input' output'
+        _ -> throwError "Can't find <p> tags"
 
 parseTestCasesFromHtml :: [Tag Text] -> Either Text [TestCase]
 parseTestCasesFromHtml tags = do

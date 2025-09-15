@@ -26,7 +26,8 @@ module Caide.TestCases.Types (
 
 import Prelude hiding (FilePath)
 import Data.Char (isSpace)
-import Data.List (group, sort)
+import Data.List (sort)
+import qualified Data.List.NonEmpty as NE
 import Data.Maybe (fromMaybe)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
@@ -110,8 +111,8 @@ humanReadableReport = T.intercalate "\n" .
                     maybe "" (T.append ": ") (getErrorMessage (testRunStatus res)))
 
 humanReadableSummary :: TestReport -> Text
-humanReadableSummary = T.unlines . map toText . group . sort . map (fromComparisonResult . testRunStatus . snd)
-    where toText list = T.concat [head list, "\t", tshow (length list)]
+humanReadableSummary = T.unlines . map toText . NE.group . sort . map (fromComparisonResult . testRunStatus . snd)
+    where toText list = T.concat [NE.head list, "\t", tshow (NE.length list)]
           fromComparisonResult (Error _) = "Error"
           fromComparisonResult (Failed _) = "Failed"
           fromComparisonResult r = tshow r

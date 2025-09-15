@@ -40,9 +40,8 @@ parseLatestVersion s = do
     releases :: [Release] <- Aeson.decode s
     let nonBetaReleases = [r | r <- releases, not (draft r || prerelease r)]
     latestRelease <- listToMaybe nonBetaReleases
-    let tagName = tag_name latestRelease
-    when (head tagName /= 'v') Nothing
-    let parseResults = readP_to_S parseVersion $ tail tagName
+    ('v':releaseVersion) <- Just $ tag_name latestRelease
+    let parseResults = readP_to_S parseVersion releaseVersion
         fullParseResults = [v | (v, "") <- parseResults]
     case fullParseResults of
         [v] -> Just v

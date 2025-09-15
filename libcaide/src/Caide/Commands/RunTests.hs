@@ -5,7 +5,6 @@ module Caide.Commands.RunTests(
 ) where
 
 import Control.Monad.Extended (liftIO, forM, unless)
-import Data.Either (isRight)
 import Data.Int (Int64)
 import Data.List (sortBy)
 import Data.Ord (comparing)
@@ -143,16 +142,16 @@ compareFiles ComparisonOptions{doublePrecision, testFormat=Json parser} etalon a
         (Right _, Left err) -> Failed $ "Invalid JSON output: " <> err
         (Left err, _) -> Error $ "Invalid JSON in etalon: " <> err
 
-compareFiles ComparisonOptions{doublePrecision, testFormat=PlainText} etalon actual
-  | not (null errors) = Failed $ "Line " <> tshow line <> ": " <> err
-  | length actualLines == length etalonLines = Success
-  | otherwise = Failed $ "Expected " <> tshow (length etalonLines) <> " line(s)"
+compareFiles ComparisonOptions{doublePrecision, testFormat=PlainText} etalon actual =
+  case errors of
+    ((line, err):_) -> Failed $ "Line " <> tshow line <> ": " <> err
+    [] | length actualLines == length etalonLines -> Success
+    [] -> Failed $ "Expected " <> tshow (length etalonLines) <> " line(s)"
   where
     etalonLines = T.lines . T.strip $ etalon
     actualLines = T.lines . T.strip $ actual
     lineComparison = zipWith (compareLines doublePrecision) etalonLines actualLines
-    errors = [e | e@(_, Failed _) <- zip [1::Int ..] lineComparison]
-    (line, Failed err) = head errors
+    errors = [(line, e) | (line, Failed e) <- zip [1::Int ..] lineComparison]
 
 mapError :: (Text -> Text) -> ComparisonResult -> ComparisonResult
 mapError _ Success = Success
@@ -209,16 +208,15 @@ compareJsonValues eps etalon actual = case (etalon, actual) of
 
 
 compareLines :: Double -> Text -> Text -> ComparisonResult
-compareLines eps expectedLine actualLine = case () of
-    _ | not (null errors) -> Failed $ "Token " <> tshow numToken <> ": " <> err
-      | length actual == length expected -> Success
-      | otherwise   ->  Failed $ "Expected " <> tshow (length expected) <> " token(s)"
+compareLines eps expectedLine actualLine = case errors of
+    ((numToken, err):_) -> Failed $ "Token " <> tshow numToken <> ": " <> err
+    [] | length actual == length expected -> Success
+    [] ->  Failed $ "Expected " <> tshow (length expected) <> " token(s)"
   where
     expected = T.words expectedLine
     actual = T.words actualLine
     tokenComparison = zipWith (compareTokens eps) expected actual
-    errors = [e | e@(_, Failed _) <- zip [1::Int ..] tokenComparison]
-    (numToken, Failed err) = head errors
+    errors = [(nToken, e) | (nToken, Failed e) <- zip [1::Int ..] tokenComparison]
 
 compareTokens :: Double -> Text -> Text -> ComparisonResult
 compareTokens eps expected actual = case () of
@@ -227,12 +225,12 @@ compareTokens eps expected actual = case () of
       | otherwise -> Failed $ "Expected " <> expected <> ", found " <> actual
 
 areEqualDoubles :: Double -> Text -> Text -> Bool
-areEqualDoubles eps expected actual = isRight expectedParsed && isRight actualParsed &&
-    T.null expectedRest && T.null actualRest && abs (expectedDouble - actualDouble) <= eps
+areEqualDoubles eps expected actual = case (expectedParsed, actualParsed) of
+    (Right (expectedDouble, expectedRest), Right (actualDouble, actualRest)) ->
+        T.null expectedRest && T.null actualRest && abs (expectedDouble - actualDouble) <= eps
+    _ -> False
   where
     expectedParsed :: Either String (Double, Text)
     expectedParsed = TextRead.double expected
-    Right (expectedDouble, expectedRest) = expectedParsed
     actualParsed = TextRead.double actual
-    Right (actualDouble, actualRest) = actualParsed
 
