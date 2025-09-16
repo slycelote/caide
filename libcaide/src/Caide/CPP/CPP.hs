@@ -15,9 +15,9 @@ import Filesystem.Util (listDir, pathToText)
 
 import qualified Caide.CPP.CPPSimple as CPPSimple
 
-import Caide.Configuration (readCaideConf, withDefault)
 import Caide.CPP.CBinding (inlineLibraryCode)
 import Caide.Paths (problemDir)
+import qualified Caide.Settings as Settings
 import qualified Caide.Problem as Problem
 import Caide.Types
 import Caide.Util (tshow)
@@ -37,11 +37,10 @@ inlineCPPCode probID = do
         tempDir = probDir </> ".caideproblem"
         libraryDirectory = root </> "cpplib"
 
-    hConf <- readCaideConf
-    cmdLineOptions <- getProp hConf "cpp" "clang_options"
-    macrosToKeep <- withDefault ["ONLINE_JUDGE"] $ getProp hConf "cpp" "keep_macros"
-    maxConsequentEmptyLines <- withDefault 2 $ getProp hConf "cpp" "max_consequent_empty_lines"
-
+    settings <- Settings.cppSettings <$> caideSettings
+    let cmdLineOptions = Settings.clangOptions settings
+        macrosToKeep = Settings.keepMacros settings
+        maxConsecutiveEmptyLines = Settings.maxConsecutiveEmptyLines settings
 
     libExists <- liftIO $ isDirectory libraryDirectory
     libraryCPPFiles <- if libExists
@@ -62,7 +61,7 @@ inlineCPPCode probID = do
 
 
     ret <- liftIO $
-        inlineLibraryCode tempDir (cmdLineOptions <> additionalCmdLineOptions) macrosToKeep identifiersToPreserve maxConsequentEmptyLines allCppFiles outputPath
+        inlineLibraryCode tempDir (cmdLineOptions <> additionalCmdLineOptions) macrosToKeep identifiersToPreserve maxConsecutiveEmptyLines allCppFiles outputPath
 
     when (ret /= 0) $
         throw $ "C++ inliner failed with error code " <> tshow ret

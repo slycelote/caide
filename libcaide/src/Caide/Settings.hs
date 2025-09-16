@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards #-}
 module Caide.Settings (
       Settings(..)
+    , CppSettings(..)
     , readSettings
 ) where
 
@@ -23,9 +24,16 @@ data Settings = Settings
               , defaultLanguage :: !Text
               , verboseTestReport :: !Bool
               , enabledTemplateNames :: ![Text]
+              , cppSettings :: !CppSettings
               , useFileLock :: !Bool
               , enabledFeatureNames :: ![Text] -- legacy 'features'
               } deriving (Show)
+
+data CppSettings = CppSettings
+    { clangOptions :: ![Text]
+    , keepMacros :: ![Text]
+    , maxConsecutiveEmptyLines :: !Int
+    } deriving (Show)
 
 readSettings :: F.FilePath -> IO (Either Text Settings)
 readSettings filePath = do
@@ -62,6 +70,11 @@ parseSettings rootDir cp = do
     enabledTemplateNames <- getOpt "core" "templates" []
     useFileLock <- getOpt "core" "use_lock" True
     enabledFeatureNames <- getOpt "core" "features" []
+
+    clangOptions <- getOpt "cpp" "clang_options" []
+    keepMacros <- getOpt "cpp" "keep_macros" ["ONLINE_JUDGE"]
+    maxConsecutiveEmptyLines <- getOpt "cpp" "max_consequent_empty_lines" 2
+    let cppSettings = CppSettings{..}
 
     pure $ Settings{..}
 

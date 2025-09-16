@@ -27,7 +27,7 @@ import qualified Data.Vector as Vec
 import qualified Caide.Builders.None as None
 import qualified Caide.Builders.Custom as Custom
 import Caide.CustomBuilder (createBuilderFromDirectory)
-import Caide.Configuration (getActiveProblem, readCaideConf, withDefault)
+import Caide.Configuration (getActiveProblem)
 import Caide.Logger (logError)
 import qualified Caide.Paths as Paths
 import Caide.Problem (currentLanguage, readProblemInfo, readProblemState)
@@ -44,18 +44,14 @@ import Caide.Util (tshow)
 {-# ANN getBuilder ("HLint: ignore Use const" :: String) #-}
 getBuilder :: Text -> ProblemID -> CaideIO Builder
 getBuilder language probId = do
-    root <- caideRoot
-    problem <- readProblemInfo probId
-    h <- readCaideConf
-    let builderExists langName = withDefault False $
-            (getProp h langName "build_and_run_tests" :: CaideIO Text) >> return True
-        languageNames = maybe [] fst $ findLanguage language
-        probDir = Paths.problemDir root probId
-    buildersExist <- mapM (builderExists . T.unpack) languageNames
-    let existingBuilderNames = [name | (name, True) <- zip languageNames buildersExist]
-    case existingBuilderNames of
-        (name:_) -> return $ Custom.builder name
-        [] -> do
+    let languageNames = maybe [] fst $ findLanguage language
+    mbBuilderName <- Custom.getLegacyCustomBuilderName languageNames
+    case mbBuilderName of
+        Just name -> pure $ Custom.builder name
+        Nothing -> do
+            root <- caideRoot
+            let probDir = Paths.problemDir root probId
+            problem <- readProblemInfo probId
             errOrBuilder <- createBuilderFromDirectory probDir problem []
             case errOrBuilder of
                 Left e -> logError e >> return None.builder
