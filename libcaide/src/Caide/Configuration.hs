@@ -13,10 +13,6 @@ module Caide.Configuration(
     , defaultCaideConf
     , defaultCaideState
 
-      -- * Caide options and state
-    , getActiveProblem
-    , setActiveProblem
-
       -- * Problem configuration
     , getProblemConfigFile
     , readProblemConfig
@@ -29,12 +25,10 @@ module Caide.Configuration(
 
 import Prelude hiding (readFile, FilePath)
 
-import Control.Monad.Except (catchError, throwError)
-import Control.Monad.Trans (liftIO)
+import Control.Monad.Extended (catchError, throwError, liftIO)
 import Data.ConfigFile (ConfigParser, CPError, CPErrorData(OtherProblem, NoOption, NoSection),
                         SectionSpec, OptionSpec, set, emptyCP, add_section)
 import Data.List (intercalate, isPrefixOf)
-import qualified Data.Text as T
 import Filesystem (isDirectory)
 import Filesystem.Path.CurrentOS (encodeString, fromText)
 import Filesystem.Path (FilePath, (</>))
@@ -97,19 +91,6 @@ readCaideConf = caideRoot >>= readConf . Paths.caideConfFile
 
 readCaideState :: CaideIO (ConfigFileHandle Persistent)
 readCaideState = caideRoot >>= readConf . Paths.caideStateFile
-
-getActiveProblem :: CaideIO ProblemID
-getActiveProblem = do
-    h <- readCaideState
-    res <- getProp h "core" "problem" `orDefault` ""
-    if T.null res
-    then throw "No active problem. Switch to an existing problem with `caide checkout <problemID>`"
-    else return res
-
-setActiveProblem :: ProblemID -> CaideIO ()
-setActiveProblem probId = do
-    h <- readCaideState
-    setProp h "core" "problem" probId
 
 {--------------------------- Internals -----------------------------}
 

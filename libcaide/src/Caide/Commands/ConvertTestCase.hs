@@ -32,7 +32,7 @@ import qualified Filesystem as FS
 
 import Filesystem.Util (readTextFile, writeTextFile)
 
-import Caide.Configuration (getActiveProblem)
+import Caide.GlobalState (readGlobalState, activeProblem, noActiveProblemError)
 import Caide.Problem (readProblemInfo)
 import qualified Caide.TestCases.TopcoderDeserializer as TC
 import Caide.Types
@@ -48,7 +48,8 @@ data TestCasePartType = TestCaseInput | TestCaseOutput
 
 convertTestCase_ :: TestCasePartType -> FS.FilePath -> FS.FilePath -> Maybe ProblemID -> CaideIO ()
 convertTestCase_ inputType inputFile outputFile mbProbId = do
-    probId <- maybe getActiveProblem pure mbProbId
+    mbProbId' <- maybe (activeProblem <$> readGlobalState) (pure.Just) mbProbId
+    probId <- maybe (throw noActiveProblemError) pure mbProbId'
     problem <- readProblemInfo probId
     res <- liftIO $ convertTestCase inputType problem inputFile outputFile
     either throw pure res

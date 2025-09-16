@@ -4,8 +4,7 @@ module Caide.Commands.Archive(
 ) where
 
 import Prelude hiding (FilePath)
-import Control.Monad (unless, when, forM_, forM)
-import Control.Monad.State (liftIO)
+import Control.Monad.Extended (unless, when, forM_, forM, liftIO)
 import Data.List (sort)
 import Data.Maybe (mapMaybe)
 import qualified Data.Text as T
@@ -20,7 +19,7 @@ import Filesystem.Util (copyTreeToDir, copyFileToDir, listDir, pathToText)
 import System.IO.Error (catchIOError, ioeGetErrorString, isPermissionError)
 
 import Caide.Commands.Checkout (checkoutProblem)
-import Caide.Configuration (getActiveProblem, setActiveProblem)
+import Caide.GlobalState (readGlobalState, writeGlobalState, activeProblem)
 import qualified Caide.GlobalTemplate as GlobalTemplate
 import qualified Caide.Paths as Paths
 import Caide.Registry (findFeature)
@@ -58,12 +57,12 @@ archiveProblem probId' = withLock $ do
             if isPermissionError e then putStrLn $ ioeGetErrorString e else ioError e)
 
     -- Change active problem, if necessary
-    activeProblem <- getActiveProblem
-    when (activeProblem == probId) $ do
+    globalState <- readGlobalState
+    when (activeProblem globalState == Just probId) $ do
         allProblems <- liftIO $ caideProblems root
         case allProblems of
             (p:_) -> checkoutProblem p Nothing
-            []    -> setActiveProblem ""
+            []    -> writeGlobalState $ globalState{activeProblem=Nothing}
 
     featureNames <- enabledFeatureNames <$> caideSettings
     let features = mapMaybe findFeature featureNames

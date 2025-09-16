@@ -9,7 +9,8 @@ import qualified Data.Text as T
 
 import Caide.Types
 import Caide.Registry (findLanguage, findFeature)
-import Caide.Configuration (getActiveProblem, readProblemState)
+import Caide.Configuration (readProblemState)
+import Caide.GlobalState (readGlobalState, activeProblem, noActiveProblemError)
 import qualified Caide.GlobalTemplate as GlobalTemplate
 import Caide.Settings (enabledFeatureNames)
 import Caide.Util (withLock)
@@ -20,7 +21,8 @@ generateScaffoldSolution lang = case findLanguage lang of
     Nothing      -> throw . T.concat $ ["Unknown or unsupported language: ", lang]
     Just ([], _) -> throw "Unexpected language"
     Just (canonicalLanguageName:_, language) -> withLock $ do
-        problem <- getActiveProblem
+        mbProblem <- activeProblem <$> readGlobalState
+        problem <- maybe (throw noActiveProblemError) pure mbProblem
 
         generateScaffold language problem
 

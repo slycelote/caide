@@ -27,11 +27,12 @@ import Filesystem.Path.CurrentOS (decodeString, (</>))
 import Filesystem.Util (pathToText)
 
 import Caide.Types
-import Caide.Configuration (setActiveProblem, getProblemConfigFile,
+import Caide.Configuration (getProblemConfigFile,
                             getProblemStateFile, defaultProblemConfig, defaultProblemState,
                             describeError)
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
+import Caide.GlobalState (activeProblem, modifyGlobalState)
 import qualified Caide.HttpClient as Http
 import Caide.Parsers.Common (URL, ProblemParser(parseProblem), CHelperProblemParser(chelperParse))
 import qualified Caide.Paths as Paths
@@ -63,7 +64,7 @@ initializeProblem problem = withLock $ do
     let probId = problemId problem
         testDir = Paths.problemDir root probId </> Paths.testsDir
 
-    setActiveProblem probId
+    modifyGlobalState $ \s -> s{activeProblem = Just probId}
     problemConfPath  <- getProblemConfigFile probId
     problemStatePath <- getProblemStateFile probId
 

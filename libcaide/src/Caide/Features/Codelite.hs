@@ -26,11 +26,11 @@ import System.Environment (getExecutablePath)
 import Text.XML.Light (parseXML, Content(..))
 import Text.XML.Light.Cursor
 
+import Caide.GlobalState (activeProblem, readGlobalState)
 import qualified Caide.Problem as Problem
 import Caide.Templates (getTemplate)
 import Caide.Types
 import Caide.Xml
-import Caide.Configuration (getActiveProblem)
 
 feature :: Feature
 feature =  noOpFeature
@@ -256,7 +256,7 @@ generateWorkspace :: CaideIO ()
 generateWorkspace = do
     croot <- caideRoot
     projects <- getCodeliteProjects
-    activeProblem <- getActiveProblem
+    activeProblemId <- activeProblem <$> readGlobalState
     let workspaceFile = croot </> "caide.workspace"
 
     workspaceExists <- liftIO $ isFile workspaceFile
@@ -265,7 +265,7 @@ generateWorkspace = do
         else T.unpack <$> getTemplate "codelite_workspace_template.workspace"
     let doc = length xmlString `seq` parseXML xmlString
         Just cursor = fromForest doc
-        transformed = runXmlTransformation (generateWorkspaceXml projects activeProblem) cursor
+        transformed = runXmlTransformation (generateWorkspaceXml projects activeProblemId) cursor
     liftIO $ case transformed of
         Left errorMessage -> T.putStrLn . T.concat $ ["Couldn't generate Codelite workspace: ", errorMessage]
         Right (_, xml)    -> writeTextFile workspaceFile . T.pack . showXml $ xml
@@ -288,11 +288,11 @@ goToWorkspaceTag = do
     modifyFromJust "Couldn't find Codelite_Workspace" $ findRight (isTag "Codelite_Workspace")
 
 
-generateWorkspaceXml :: [T.Text] -> T.Text -> XmlState ()
-generateWorkspaceXml projects activeProblem = do
+generateWorkspaceXml :: [T.Text] -> Maybe (T.Text) -> XmlState ()
+generateWorkspaceXml projects activeProblemId = do
     let makeProjectElem projectName = mkElem "Project" (makeAttribs $ T.unpack projectName)
         makeAttribs projectName = [("Name", projectName),("Path", projectName ++ "/" ++ projectName ++ ".project")]
-                             ++ [("Active", "Yes") | projectName == T.unpack activeProblem]
+                             ++ [("Active", "Yes") | Just (T.pack projectName) == activeProblemId]
 
     goToWorkspaceTag
     removeChildren (isTag "project")

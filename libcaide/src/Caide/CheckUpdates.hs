@@ -19,7 +19,7 @@ import Text.ParserCombinators.ReadP (readP_to_S)
 import qualified Data.Aeson as Aeson
 
 import Paths_libcaide (version)
-import Caide.GlobalState (GlobalState(latestVersion, lastUpdateCheck), readGlobalState, modifyGlobalState, flushGlobalState)
+import Caide.GlobalState (GlobalState(latestVersion, lastUpdateCheck), readGlobalState, modifyGlobalState)
 import Caide.Logger (logInfo, logWarn)
 import Caide.Parsers.Common (downloadDocument)
 import Caide.Settings (autoCheckUpdates)
@@ -59,9 +59,8 @@ checkUpdatesImpl = do
                 Nothing -> throw "Couldn't parse latest version"
                 ver -> do
                     t <- liftIO getCurrentTime
-                    withLock $ do
+                    withLock $
                         modifyGlobalState $ \s -> s {latestVersion = ver, lastUpdateCheck = Just t}
-                        flushGlobalState
 
 checkUpdates :: CaideIO ()
 checkUpdates = do

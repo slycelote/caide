@@ -4,11 +4,12 @@ module Caide.GlobalState (
     , readGlobalState
     , writeGlobalState
     , modifyGlobalState
-    , flushGlobalState
+    , noActiveProblemError
 ) where
 
 import Control.Monad.Except (catchError)
 import qualified Data.ByteString.Lazy.Char8 as AsciiLBS
+import Data.Maybe (fromMaybe)
 import Data.Version (Version, makeVersion, versionBranch)
 import GHC.Generics (Generic)
 import qualified Data.Text as T
@@ -43,23 +44,19 @@ readGlobalState = do
 writeGlobalState :: GlobalState -> CaideIO ()
 writeGlobalState GlobalState{..} = do
     h <- readCaideState
-    case activeProblem of
-        Just probId -> setProp h "core" "problem" probId
-        _ -> pure ()
+    setProp h "core" "problem" $ fromMaybe "" activeProblem
     case latestVersion of
         Just v -> setProp h "core" "latest_version" (versionBranch v)
         _ -> pure ()
     case lastUpdateCheck of
         Just t -> setProp h "core" "last_update" $ T.pack . AsciiLBS.unpack . Aeson.encode $ t
         _ -> pure ()
+    flushConf h
 
 modifyGlobalState :: (GlobalState -> GlobalState) -> CaideIO ()
 modifyGlobalState f = do
     s <- readGlobalState
     writeGlobalState $ f s
 
-flushGlobalState :: CaideIO ()
-flushGlobalState = do
-    h <- readCaideState
-    flushConf h
-
+noActiveProblemError :: T.Text
+noActiveProblemError = "No active problem. Switch to an existing problem with `caide checkout <problemID>`"

@@ -27,7 +27,7 @@ import qualified Data.Vector as Vec
 import qualified Caide.Builders.None as None
 import qualified Caide.Builders.Custom as Custom
 import Caide.CustomBuilder (createBuilderFromDirectory)
-import Caide.Configuration (getActiveProblem)
+import Caide.GlobalState (readGlobalState, activeProblem, noActiveProblemError)
 import Caide.Logger (logError)
 import qualified Caide.Paths as Paths
 import Caide.Problem (currentLanguage, readProblemInfo, readProblemState)
@@ -60,7 +60,8 @@ getBuilder language probId = do
 -- TODO: pass optional problem ID
 runTests :: CaideIO ()
 runTests = do
-    probId <- getActiveProblem
+    mbProbId <- activeProblem <$> readGlobalState
+    probId <- maybe (throw noActiveProblemError) pure mbProbId
     probState <- readProblemState probId
     builder <- getBuilder (currentLanguage probState) probId
     buildResult <- builder probId
@@ -79,7 +80,8 @@ data ComparisonOptions = ComparisonOptions
 
 evalTests :: CaideIO ()
 evalTests = do
-    probId <- getActiveProblem
+    mbProbId <- activeProblem <$> readGlobalState
+    probId <- maybe (throw noActiveProblemError) pure mbProbId
     root <- caideRoot
     problem <- readProblemInfo probId
     let problemDir = Paths.problemDir root probId

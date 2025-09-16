@@ -23,8 +23,9 @@ import Data.Aeson (FromJSON(parseJSON), eitherDecode', withObject, (.:))
 import Network.Shed.Httpd (initServerBind, Request(reqBody), Response(Response))
 
 import Caide.CheckUpdates (checkUpdates)
-import Caide.Configuration (describeError, setActiveProblem)
+import Caide.Configuration (describeError)
 import Caide.Commands.ParseProblem (saveProblemWithScaffold)
+import Caide.GlobalState (activeProblem, modifyGlobalState)
 import Caide.Logger (logInfo, logError)
 import Caide.Parsers.Common (CHelperProblemParser(chelperParse))
 import Caide.Registry (findCHelperProblemParser)
@@ -76,7 +77,7 @@ createProblems env parsedProblems = do
         forM_ parsedProblems $ \(Parsed problem testCases) ->
             saveProblemWithScaffold problem testCases
         let Parsed problem _ = NE.head parsedProblems
-        setActiveProblem $ problemId problem
+        modifyGlobalState $ \s -> s{activeProblem = Just (problemId problem)}
 
     case ret of
         Left err -> logError $ T.pack $ describeError err

@@ -10,7 +10,7 @@ import Prelude hiding (FilePath)
 import Filesystem (isDirectory, )
 import Filesystem.Path.CurrentOS (FilePath, )
 
-import Caide.Configuration (getActiveProblem)
+import Caide.GlobalState (readGlobalState, activeProblem, noActiveProblemError)
 import qualified Caide.Problem as Problem
 import qualified Caide.Paths as Paths
 import Caide.Registry (findLanguage)
@@ -20,7 +20,8 @@ import qualified Caide.TestCases as TestCases
 
 withProblem :: Maybe ProblemID -> (Problem -> FilePath -> CaideIO a) -> CaideIO a
 withProblem mbProbId processProblem = do
-    probId <- maybe getActiveProblem return mbProbId
+    mbProbId' <- maybe (activeProblem <$> readGlobalState) (pure.Just) mbProbId
+    probId <- maybe (throw noActiveProblemError) pure mbProbId'
     root <- caideRoot
     let probDir = Paths.problemDir root probId
     problemExists <- liftIO $ isDirectory probDir
