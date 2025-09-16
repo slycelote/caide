@@ -104,6 +104,7 @@ setRedirectCount n = wrap $ \request -> request{redirectCount = n}
 throwOnHttpErrors :: Middleware
 throwOnHttpErrors = wrap setRequestCheckStatus
 
+{-# WARNING logToFile "'logToFile' remains in code" #-}
 logToFile :: FilePath -> Middleware
 logToFile filePath = middleware $ \send request -> do
     appendFile filePath $ show request ++ "\n"
