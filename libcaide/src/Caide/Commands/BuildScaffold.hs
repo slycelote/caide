@@ -9,9 +9,9 @@ import qualified Data.Text as T
 
 import Caide.Types
 import Caide.Registry (findLanguage, findFeature)
-import Caide.Configuration (readProblemState)
 import Caide.GlobalState (readGlobalState, activeProblem, noActiveProblemError)
 import qualified Caide.GlobalTemplate as GlobalTemplate
+import qualified Caide.Problem as Problem
 import Caide.Settings (enabledFeatureNames)
 import Caide.Util (withLock)
 
@@ -26,8 +26,7 @@ generateScaffoldSolution lang = case findLanguage lang of
 
         generateScaffold language problem
 
-        hProblem <- readProblemState problem
-        setProp hProblem "problem" "language" canonicalLanguageName
+        Problem.modifyProblemState problem $ \s -> s{Problem.currentLanguage=canonicalLanguageName}
 
         features <- mapMaybe findFeature . enabledFeatureNames <$> caideSettings
         forM_ (GlobalTemplate.hook : features) (`onProblemCodeCreated` problem)

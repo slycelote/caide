@@ -5,6 +5,8 @@ module Caide.Problem(
     , jsonEncodeProblem
     , readProblemInfo
     , readProblemState
+    , writeProblemState
+    , modifyProblemState
 ) where
 
 import qualified Data.ByteString.Lazy as LBS
@@ -15,7 +17,6 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-
 
 import qualified Data.Aeson as Aeson
 import Data.Aeson ((.=))
@@ -38,6 +39,7 @@ readProblemInfo probId = do
     -- We keep snippets in the state file to avoid huge chunk of text in problem.ini.
     -- Users won't need to modify per-problem snippets anyway (if they do they'll modify
     -- generated code).
+    -- TODO: move snippets to a separate file?
     hProblemState <- Conf.readProblemState probId
     snippets <- (LBS.fromStrict . T.encodeUtf8) <$>
         getProp hProblemState "problem" "snippets" `Conf.orDefault` "{}"
@@ -58,6 +60,17 @@ readProblemState probId = do
     hProblemState <- Conf.readProblemState probId
     currentLanguage <- getProp hProblemState "problem" "language"
     return $ ProblemState{..}
+
+writeProblemState :: ProblemID -> ProblemState -> CaideIO ()
+writeProblemState probId ProblemState{..} = do
+    hProblemState <- Conf.readProblemState probId
+    setProp hProblemState "problem" "language" currentLanguage
+    flushConf hProblemState
+
+modifyProblemState :: ProblemID -> (ProblemState -> ProblemState) -> CaideIO ()
+modifyProblemState probId modify = do
+    s <- readProblemState probId
+    writeProblemState probId $ modify s
 
 jsonEncodeProblem :: Problem -> ProblemState -> Aeson.Value
 jsonEncodeProblem Problem{..} ProblemState{..} = Aeson.object $
