@@ -6,44 +6,28 @@ module Caide.Configuration(
     , putProp
     , readConfigFile
     , writeConfigFile
-
-    , SystemCompilerInfo(..)
-    , defaultCaideConf
-    , defaultCaideState
-    , defaultProblemConfig
-    , defaultProblemState
 ) where
 
 import Prelude hiding (readFile, FilePath)
 
-import Control.Monad.Extended (MonadError, liftEither)
+import Control.Monad.Extended (MonadError, liftEither, throwError)
 import qualified Control.Monad.State as State
 import Data.Char (toLower)
 import Data.Either.Util (mapLeft, maybeToEither)
-import Data.List (intercalate, isPrefixOf)
 import qualified Data.Text as T
 import Filesystem.Util (readTextFile, writeTextFile)
-import System.Info (arch, os)
 
 import qualified Filesystem as FS
 import qualified Filesystem.Path.CurrentOS as FS
-import Filesystem.Path (FilePath)
-import Filesystem.Path.CurrentOS (encodeString, (</>))
+import Filesystem.Path.CurrentOS ((</>))
 
 import Data.ConfigFile as CF
 
 import Caide.Types.Option
 
 
--- Aliases with a different argument order, for convenience.
-addSection :: SectionSpec -> ConfigParser -> Either CPError ConfigParser
-addSection section conf = add_section conf section
-
-setValue :: SectionSpec -> OptionSpec -> String -> ConfigParser -> Either CPError ConfigParser
-setValue section key value conf = set conf section key value
-
 extend :: FS.FilePath -> CF.ConfigParser -> CF.ConfigParser
-extend caideRoot conf = case CF.set conf "DEFAULT" "caideRoot" $ encodeString caideRoot of
+extend caideRoot conf = case CF.set conf "DEFAULT" "caideRoot" $ FS.encodeString caideRoot of
     Right conf' -> conf'{ CF.accessfunc = CF.interpolatingAccess 10, CF.usedefault = True }
     _ -> error "Impossible happened: DEFAULT section doesn't exist"
 
@@ -86,9 +70,13 @@ putProp ::
     (Option a, State.MonadState CF.ConfigParser m, MonadError T.Text m) =>
     String -> String -> a -> m ()
 putProp section key value = do
-    s <- State.get
-    s' <- liftEither $ setProp section key value s
-    State.put s'
+    cp <- State.get
+    cp' <- case CF.add_section cp section of
+        Left (SectionAlreadyExists _, _) -> pure cp
+        Left e -> throwError $ describeError e
+        Right c -> pure c
+    cp'' <- liftEither $ setProp section key value cp'
+    State.put cp''
 
 readConfigFile :: FS.FilePath -> FS.FilePath -> IO (Either T.Text CF.ConfigParser)
 readConfigFile caideRoot relPath = do
@@ -103,96 +91,4 @@ writeConfigFile :: CF.ConfigParser -> FS.FilePath -> IO ()
 writeConfigFile cp filePath = do
     FS.createTree $ FS.directory filePath
     writeTextFile filePath $ T.pack $ CF.to_string $ undoExtend cp
-
-data SystemCompilerInfo = SystemCompilerInfo
-    { mscver :: Int
-    , gccIncludeDirectories :: [String]
-    }
-
-defaultCaideConf :: FilePath -> Bool -> SystemCompilerInfo -> ConfigParser
-defaultCaideConf root useSystemHeaders compiler = forceEither $
-    addSection "core" emptyCP >>=
-    setValue "core" "language" defaultLanguage >>=
-    setValue "core" "features" "" >>=
-    addSection "cpp" >>=
-    setValue "cpp" "keep_macros" "_WIN32,_WIN64,_MSC_VER,__GNUC__,__clang__,__cplusplus,__STDC_VERSION__,__linux,__linux__" >>=
-    setValue "cpp" "max_consequent_empty_lines" "2" >>=
-    setValue "cpp" "clang_options" (intercalate ",\n  " $ clangOptions root useSystemHeaders compiler)
-  where
-#ifdef CLANG_INLINER
-    defaultLanguage = "cpp"
-#else
-    defaultLanguage = "simplecpp"
-#endif
-
--- Bundled headers
-clangOptions :: FilePath -> Bool -> SystemCompilerInfo -> [String]
-clangOptions root False _ =
-    [ "-target"
-    , "i386-pc-mingw32"
-    , "-nostdinc"
-    , "-isystem"
-    , encodeString $ root </> "include" </> "c++"
-    , "-isystem"
-    , encodeString $ root </> "include" </> "c++" </> "i686-w64-mingw32"
-    , "-isystem"
-    , encodeString $ root </> "include" </> "crt"
-    , "-I"
-    , encodeString $ root </> "cpplib"
-    , "-std=c++17"
-    , "-fparse-all-comments"
-    , "-DONLINE_JUDGE"
-    ]
-
--- Windows with VS headers
-clangOptions root True compiler | "mingw" `isPrefixOf` os =
-    [ "-target"
-    , "i386-pc-windows-msvc"
-    , "-fdiagnostics-format=msvc"
-    , "-fmsc-version=" ++ show (mscver compiler)
-    , "-fparse-all-comments"
-    , "-D_CRT_SECURE_NO_WARNINGS"
-    , "-DONLINE_JUDGE"
-    , "-I"
-    , encodeString $ root </> "cpplib"
-    ]
-
--- Linux with system headers
-clangOptions root True compiler =
-    [ "-target"
-    , arch ++ "-" ++ os
-    ] ++
-    gccHeadersOptions (gccIncludeDirectories compiler) ++
-    -- clang builtin headers are still required:
-    -- https://clang.llvm.org/docs/LibTooling.html#libtooling-builtin-includes
-    [ "-isystem"
-    , encodeString $ root </> "include" </> "clang-builtins"
-    , "-I"
-    , encodeString $ root </> "cpplib"
-    , "-fparse-all-comments"
-    , "-DONLINE_JUDGE"
-    ]
-
-gccHeadersOptions :: [String] -> [String]
-gccHeadersOptions [] = []
-gccHeadersOptions includeDirectories = ["-nostdinc"] ++
-    concat [["-isystem", dir] | dir <- includeDirectories]
-
-forceEither :: Either a c -> c
-forceEither = either (error "Left in forceEither") id
-
-defaultCaideState :: ConfigParser
-defaultCaideState = forceEither $
-    addSection "core" emptyCP >>=
-    setValue "core" "problem" ""
-
-defaultProblemConfig :: ConfigParser
-defaultProblemConfig = forceEither $
-    addSection "problem" emptyCP >>=
-    setValue "problem" "double_precision" "0.000001"
-
-defaultProblemState :: ConfigParser
-defaultProblemState = forceEither $
-    addSection "problem" emptyCP >>=
-    setValue "problem" "language" "c++"
 

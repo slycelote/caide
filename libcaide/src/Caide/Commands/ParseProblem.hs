@@ -25,9 +25,11 @@ import qualified Filesystem.Path.CurrentOS as FS
 import Filesystem.Path.CurrentOS (decodeString, (</>))
 import Filesystem.Util (pathToText)
 
+import qualified Data.ConfigFile as CF
+
 import Caide.Types
 import Caide.Types.Option (optionFromText)
-import Caide.Configuration (putProp, writeConfigFile, defaultProblemConfig, defaultProblemState)
+import Caide.Configuration (putProp, writeConfigFile)
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
 import Caide.GlobalState (activeProblem, modifyGlobalState)
@@ -66,13 +68,15 @@ initializeProblem problem = withLock $ do
 
     liftIO $ createTree testDir
 
-    problemCP <- rightOrThrow $ flip execStateT defaultProblemConfig $ do
+    problemCP <- rightOrThrow $ flip execStateT CF.emptyCP $ do
+            putProp "problem" "double_precision" ("0.000001" :: T.Text)
             putProp "problem" "name" $ problemName problem
             putProp "problem" "type" $ problemType problem
     liftIO $ writeConfigFile problemCP $ probDir </> Paths.problemConfFile
 
-    problemStateCP <- rightOrThrow $ flip execStateT defaultProblemState $ do
-            let snippets = problemCodeSnippets problem & Aeson.encode & LBS.toStrict & safeDecodeUtf8
+    let snippets = problemCodeSnippets problem & Aeson.encode & LBS.toStrict & safeDecodeUtf8
+    problemStateCP <- rightOrThrow $ flip execStateT CF.emptyCP $ do
+            putProp "problem" "language" ("c++" :: T.Text)
             unless (Map.null (problemCodeSnippets problem)) $
                 putProp "problem" "snippets" snippets
     liftIO $ writeConfigFile problemStateCP $ probDir </> Paths.problemStateFile
