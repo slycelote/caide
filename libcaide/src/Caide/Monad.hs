@@ -24,15 +24,13 @@ module Caide.Monad(
 import Control.Exception.Base (displayException)
 import Control.Monad.Extended (ExceptT, MonadError, runExceptT, throwError, MonadIO, when)
 import Control.Monad.Reader (MonadReader, reader, ReaderT, runReaderT)
+import Data.Either.Util (mapLeft)
 import Data.IORef (IORef, newIORef)
 import qualified Data.Text as T
 import qualified Filesystem.Path.CurrentOS as FS
 import System.IO.Error (tryIOError)
 
-import qualified Data.ConfigFile as CF
-
 import qualified Caide.HttpClient as Http
-import qualified Caide.Configuration as Conf
 import Caide.Settings (Settings(useFileLock), readSettings)
 import Caide.Types
 
@@ -54,36 +52,40 @@ makeCaideEnv :: FS.FilePath -> Verbosity -> Http.Client -> CaideEnv
 makeCaideEnv root verbosity httpClient = CaideEnv
     { root, verbosity, settings=undefined, httpClient, holdingFileLock=Nothing }
 
-newtype CaideM m a = CaideM { unCaideM :: ReaderT CaideEnv (ExceptT CF.CPError m) a }
-    deriving (Functor, Applicative, Monad, MonadIO, MonadError CF.CPError, MonadReader CaideEnv)
+newtype Error = Error T.Text
+    deriving Show
+
+newtype CaideM m a = CaideM { unCaideM :: ReaderT CaideEnv (ExceptT Error m) a }
+    deriving (Functor, Applicative, Monad, MonadIO, MonadError Error, MonadReader CaideEnv)
 
 type CaideIO a = CaideM IO a
 
-runCaideM :: Monad m => CaideM m a -> CaideEnv -> m (Either CF.CPError a)
+runCaideM :: Monad m => CaideM m a -> CaideEnv -> m (Either Error a)
 runCaideM caideAction env = runExceptT $ runReaderT (unCaideM caideAction) env
 
-describeError :: CF.CPError -> T.Text
-describeError = Conf.describeError
+describeError :: Error -> T.Text
+describeError (Error text) = text
 
-runInDirectory :: CaideEnv -> CaideIO a -> IO (Either CF.CPError a)
+runInDirectory :: CaideEnv -> CaideIO a -> IO (Either Error a)
 runInDirectory env caideAction = do
     let logEx e = do
-            when (verbosity env >= Debug) $ print e
-            return (Left e)
+            when (verbosity env >= Debug) $
+                putStrLn $ T.unpack $ describeError e
+            pure (Left e)
     ret <- tryIOError $ do
-        iniSettings <- readSettings (root env)
+        iniSettings <- mapLeft Error <$> readSettings (root env)
         case iniSettings of
-            Left e  -> pure $ Left (CF.OtherProblem (T.unpack e), "")
+            Left e  -> pure $ Left e
             Right s -> do
                 ioref <- if useFileLock s then Just <$> newIORef False else pure Nothing
                 runCaideM caideAction env{settings=s, holdingFileLock=ioref}
     case ret of
-        Left e -> logEx (CF.OtherProblem $ displayException e, "")
+        Left e -> logEx $ Error $ T.pack $ displayException e
         Right (Left e) -> logEx e
         Right (Right a) -> pure $ Right a
 
 throw :: Monad m => T.Text -> CaideM m a
-throw desc = throwError (CF.OtherProblem $ T.unpack desc, "")
+throw desc = throwError $ Error desc
 
 orThrow :: Monad m => Either e a -> (e -> T.Text) -> CaideM m a
 ea `orThrow` f = either (throw . f) pure ea

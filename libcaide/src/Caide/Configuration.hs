@@ -6,7 +6,6 @@ module Caide.Configuration(
     , putProp
     , readConfigFile
     , writeConfigFile
-    , describeError
 
     , SystemCompilerInfo(..)
     , defaultCaideConf
