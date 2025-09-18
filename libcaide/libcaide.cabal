@@ -127,6 +127,13 @@ library
                     OverloadedStrings, RecordWildCards, ScopedTypeVariables
 
   ghc-options:     -Wall -static -rtsopts=all
+                   -Wcpp-undef
+                   -Wpartial-fields
+                   -Wincomplete-record-updates
+                   -Wredundant-constraints
+                   -Wmissing-export-lists
+                   -Winvalid-haddock
+
   if flag(debug) {
     ghc-options:   -fprof-auto
   }

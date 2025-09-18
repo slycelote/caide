@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Caide.CustomBuilder(
       createBuilderFromDirectory
 ) where
@@ -15,6 +15,7 @@ import System.IO (Handle, IOMode(ReadMode, WriteMode))
 import System.Process (CreateProcess(create_group, cwd, std_in, std_out), ProcessHandle,
     StdStream(UseHandle), interruptProcessGroupOf, proc, waitForProcess, withCreateProcess)
 import System.Exit (ExitCode(..))
+import System.Info (os)
 import System.Timeout (timeout)
 
 import Filesystem.Path.CurrentOS (FilePath, (</>))
@@ -46,11 +47,9 @@ withCreateProcess' cp action = withCreateProcess cp{create_group=True} $ \stdin 
 
 findExecutable :: MonadIO m => FilePath -> FilePath -> m (Maybe FilePath)
 findExecutable dirPath name = do
-#if mingw32_HOST_OS
-    let candidates = [FS.addExtension name "bat", FS.addExtension name "exe"]
-#else
-    let candidates = [FS.addExtension name "sh", name]
-#endif
+    let candidates = if os == "mingw32"
+        then [FS.addExtension name "bat", FS.addExtension name "exe"]
+        else [FS.addExtension name "sh", name]
     candidateFiles <- filterM isExecutableFile [dirPath </> c | c <- candidates]
     when (length candidateFiles > 1) $
         logWarn $ "More than one executable file with name `" <> FS.pathToText name <> "'found"
