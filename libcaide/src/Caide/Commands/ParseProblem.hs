@@ -5,9 +5,8 @@ module Caide.Commands.ParseProblem(
     , parseProblems
 ) where
 
-import Control.Monad.Extended (forM_, unless, when, whenJust)
-import Control.Monad.Except (catchError)
-import Control.Monad.State (liftIO)
+import Control.Monad.Extended (catchError, forM_, liftIO, unless, when, whenJust)
+import Control.Monad.State (execStateT)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Char (isAlphaNum, isAscii)
 import Data.Either (lefts)
@@ -27,13 +26,13 @@ import Filesystem.Path.CurrentOS (decodeString, (</>))
 import Filesystem.Util (pathToText)
 
 import Caide.Types
-import Caide.Configuration (getProblemConfigFile,
-                            getProblemStateFile, defaultProblemConfig, defaultProblemState,
-                            describeError)
+import Caide.Types.Option (optionFromText)
+import Caide.Configuration (putProp, writeConfigFile, defaultProblemConfig, defaultProblemState)
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
 import Caide.GlobalState (activeProblem, modifyGlobalState)
 import qualified Caide.HttpClient as Http
+import Caide.Monad (CaideIO, caideRoot, caideSettings, caideHttpClient, describeError, throw, rightOrThrow)
 import Caide.Parsers.Common (URL, ProblemParser(parseProblem), CHelperProblemParser(chelperParse))
 import qualified Caide.Paths as Paths
 import Caide.Registry (findCHelperProblemParserByURL, findProblemParser)
@@ -62,25 +61,23 @@ initializeProblem :: Problem -> CaideIO ()
 initializeProblem problem = withLock $ do
     root <- caideRoot
     let probId = problemId problem
-        testDir = Paths.problemDir root probId </> Paths.testsDir
-
-    modifyGlobalState $ \s -> s{activeProblem = Just probId}
-    problemConfPath  <- getProblemConfigFile probId
-    problemStatePath <- getProblemStateFile probId
+        probDir = Paths.problemDir root probId
+        testDir = probDir </> Paths.testsDir
 
     liftIO $ createTree testDir
 
-    hProblemConf <- createConf problemConfPath defaultProblemConfig
-    setProp hProblemConf "problem" "name" $ problemName problem
-    setProp hProblemConf "problem" "type" $ problemType problem
+    problemCP <- rightOrThrow $ flip execStateT defaultProblemConfig $ do
+            putProp "problem" "name" $ problemName problem
+            putProp "problem" "type" $ problemType problem
+    liftIO $ writeConfigFile problemCP $ probDir </> Paths.problemConfFile
 
-    hProblemState <- createConf problemStatePath defaultProblemState
-    let snippets = problemCodeSnippets problem & Aeson.encode & LBS.toStrict & safeDecodeUtf8
-    unless (Map.null (problemCodeSnippets problem)) $
-        setProp hProblemState "problem" "snippets" snippets
+    problemStateCP <- rightOrThrow $ flip execStateT defaultProblemState $ do
+            let snippets = problemCodeSnippets problem & Aeson.encode & LBS.toStrict & safeDecodeUtf8
+            unless (Map.null (problemCodeSnippets problem)) $
+                putProp "problem" "snippets" snippets
+    liftIO $ writeConfigFile problemStateCP $ probDir </> Paths.problemStateFile
 
-    flushConf hProblemConf
-    flushConf hProblemState
+    modifyGlobalState $ \s -> s{activeProblem = Just probId}
 
     updateTests (Just probId)
 
@@ -169,7 +166,7 @@ trySaveProblemWithScaffold :: ParseResult -> CaideIO (Either Text ())
 trySaveProblemWithScaffold pr@(_, Left _) = return $ Left $ fromJust $ errorMessage pr
 trySaveProblemWithScaffold (url, Right (problem, tests)) =
     (saveProblemWithScaffold problem tests >> return (Right ())) `catchError` \err ->
-        return $ Left $ url <> ": " <> (T.pack $ describeError err)
+        return $ Left $ url <> ": " <> describeError err
 
 
 parseProblems :: Int -> [URL] -> CaideIO ()

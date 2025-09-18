@@ -21,6 +21,7 @@ import System.IO.Error (catchIOError, ioeGetErrorString, isPermissionError)
 import Caide.Commands.Checkout (checkoutProblem)
 import Caide.GlobalState (readGlobalState, writeGlobalState, activeProblem)
 import qualified Caide.GlobalTemplate as GlobalTemplate
+import Caide.Monad (CaideIO, caideRoot, caideSettings, throw, Feature(onProblemRemoved))
 import qualified Caide.Paths as Paths
 import Caide.Registry (findFeature)
 import Caide.Settings (enabledFeatureNames)

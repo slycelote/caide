@@ -23,7 +23,7 @@ import Caide.GlobalState (GlobalState(latestVersion, lastUpdateCheck), readGloba
 import Caide.Logger (logInfo, logWarn)
 import Caide.Parsers.Common (downloadDocument)
 import Caide.Settings (autoCheckUpdates)
-import Caide.Types (CaideIO, caideHttpClient, caideSettings, throw)
+import Caide.Monad (CaideIO, caideHttpClient, caideSettings, throw)
 import Caide.Util (withLock)
 
 

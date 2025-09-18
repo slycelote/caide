@@ -15,7 +15,9 @@ import Data.List (find)
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Caide.Types
+import Caide.Monad (Feature)
+import Caide.Types.ProgrammingLanguage (ProgrammingLanguage)
+
 import qualified Caide.CPP.CPPSimple as CPPSimple
 #ifdef CLANG_INLINER
 import qualified Caide.CPP.CPP as CPP

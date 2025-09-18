@@ -15,6 +15,7 @@ import Filesystem.Path.CurrentOS ((</>))
 import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.GlobalState (readGlobalState, writeGlobalState, activeProblem)
 import qualified Caide.GlobalTemplate as GlobalTemplate
+import Caide.Monad (CaideIO, caideRoot, caideSettings, Feature(onProblemCheckedOut), throw)
 import qualified Caide.Paths as Paths
 import Caide.Registry (findFeature)
 import Caide.Settings (enabledFeatureNames)

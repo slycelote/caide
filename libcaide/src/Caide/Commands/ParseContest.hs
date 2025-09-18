@@ -6,7 +6,7 @@ module Caide.Commands.ParseContest(
 import Control.Monad.Extended (liftIO)
 import Data.List (find)
 
-import Caide.Types (CaideIO, throw, caideHttpClient)
+import Caide.Monad (CaideIO, throw, caideHttpClient)
 
 import Caide.Commands.ParseProblem (parseProblems)
 import Caide.Parsers.Common (URL, ContestParser(..), ContestParserResult(Urls, Problems))

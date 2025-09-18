@@ -2,9 +2,9 @@ module Caide.Builders.None (
       builder
 ) where
 
-import Control.Monad.State (liftIO)
+import Control.Monad.IO.Class (liftIO)
 
-import Caide.Types
+import Caide.Types.Builder (Builder, BuilderResult(NoEvalTests))
 
 builder :: Builder
 builder _ = do

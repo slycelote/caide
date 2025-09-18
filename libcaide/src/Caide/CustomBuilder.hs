@@ -25,7 +25,8 @@ import Filesystem.Util (isExecutableFile)
 import qualified Filesystem.Util as FS
 
 import Caide.Logger (logInfo, logWarn, logError)
-import Caide.Types (BuilderResult(BuildFailed, NoEvalTests), Problem)
+import Caide.Types.Builder (BuilderResult(BuildFailed, NoEvalTests))
+import Caide.Problem (Problem)
 import Caide.TestCases.Types (ComparisonResult(Error, Failed, Ran), TestRunResult, makeTestRunResult,
     serializeTestReport)
 import qualified Caide.TestCases as TestCases

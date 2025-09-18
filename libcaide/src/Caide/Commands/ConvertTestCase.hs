@@ -8,8 +8,7 @@ module Caide.Commands.ConvertTestCase(
 ) where
 
 import qualified Control.Exception.Extended as Exc
-import Control.Monad.Except (ExceptT, runExceptT, throwError)
-import Control.Monad.Extended (MonadIO, liftIO, void, when)
+import Control.Monad.Extended (MonadIO, liftIO, void, when, ExceptT, runExceptT, throwError)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import qualified Data.List as List
@@ -33,6 +32,7 @@ import qualified Filesystem as FS
 import Filesystem.Util (readTextFile, writeTextFile)
 
 import Caide.GlobalState (readGlobalState, activeProblem, noActiveProblemError)
+import Caide.Monad (CaideIO, throw)
 import Caide.Problem (readProblemInfo)
 import qualified Caide.TestCases.TopcoderDeserializer as TC
 import Caide.Types

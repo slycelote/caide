@@ -10,8 +10,10 @@ import qualified Filesystem.Path.CurrentOS as FS
 
 import Caide.MustacheUtil (renderTemplates, RenderTemplatesOption(AllowOverwrite))
 import qualified Caide.Paths as Paths
-import Caide.Types (CaideIO, ProblemID, ProgrammingLanguage(..), caideRoot, throw)
+import Caide.Monad (CaideIO, caideRoot, throw)
 import Caide.Problem (jsonEncodeProblem, readProblemInfo, readProblemState)
+import Caide.Types (ProblemID)
+import Caide.Types.ProgrammingLanguage (ProgrammingLanguage(..))
 
 language :: Text -> ProgrammingLanguage
 language languageName = ProgrammingLanguage

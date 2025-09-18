@@ -1,0 +1,132 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving, NamedFieldPuns, OverloadedStrings #-}
+module Caide.Monad(
+      CaideIO
+    , CaideM
+    , CaideEnv(verbosity)
+    , Verbosity(..)
+    , makeCaideEnv
+    , runInDirectory
+    , caideRoot
+    , caideVerbosity
+    , caideSettings
+    , caideHttpClient
+    , caideHoldingLock
+    , describeError
+
+    , throw
+    , orThrow
+    , rightOrThrow
+
+    , Feature (..)
+    , noOpFeature
+) where
+
+import Control.Exception.Base (displayException)
+import Control.Monad.Extended (ExceptT, MonadError, runExceptT, throwError, MonadIO, when)
+import Control.Monad.Reader (MonadReader, reader)
+import Control.Monad.RWS.Strict (RWST, runRWST)
+import Control.Monad.State (MonadState)
+import Data.IORef (IORef, newIORef)
+import qualified Data.Text as T
+import qualified Filesystem.Path.CurrentOS as FS
+import System.IO.Error (tryIOError)
+
+import qualified Data.ConfigFile as CF
+
+import qualified Caide.HttpClient as Http
+import qualified Caide.Configuration as Conf
+import Caide.Settings (Settings(useFileLock), readSettings)
+import Caide.Types
+
+
+data Verbosity = Info | Debug
+    deriving (Show, Enum, Ord, Eq, Bounded)
+
+data CaideEnv = CaideEnv
+    { root       :: !FS.FilePath
+    , verbosity  :: !Verbosity
+    , settings   :: Settings
+    , httpClient :: !Http.Client
+    -- Used to avoid taking the file lock twice, which doesn't work on Windows
+    , holdingFileLock :: !(Maybe (IORef Bool))
+    }
+
+makeCaideEnv :: FS.FilePath -> Verbosity -> Http.Client -> CaideEnv
+-- Being hacky here; undefined is overwritten in runInDirectory
+makeCaideEnv root verbosity httpClient = CaideEnv
+    { root, verbosity, settings=undefined, httpClient, holdingFileLock=Nothing }
+
+newtype CaideM m a = CaideM { unCaideM :: RWST CaideEnv () () (ExceptT CF.CPError m) a }
+    deriving (Functor, Applicative, Monad, MonadIO, MonadError CF.CPError, MonadReader CaideEnv, MonadState ())
+
+type CaideIO a = CaideM IO a
+
+runCaideM :: Monad m => CaideM m a -> CaideEnv -> () -> m (Either CF.CPError (a, (), ()))
+runCaideM caideAction env state = runExceptT $ runRWST (unCaideM caideAction) env state
+
+describeError :: CF.CPError -> T.Text
+describeError = Conf.describeError
+
+runInDirectory :: CaideEnv -> CaideIO a -> IO (Either CF.CPError a)
+runInDirectory env caideAction = do
+    let initialState = ()
+        logEx e = do
+            when (verbosity env >= Debug) $ print e
+            return (Left e)
+    ret <- tryIOError $ do
+        iniSettings <- readSettings (root env)
+        case iniSettings of
+            Left e  -> pure $ Left (CF.OtherProblem (T.unpack e), "")
+            Right s -> do
+                ioref <- if useFileLock s then Just <$> newIORef False else pure Nothing
+                runCaideM caideAction env{settings=s, holdingFileLock=ioref} initialState
+    case ret of
+        Left e -> logEx (CF.OtherProblem $ displayException e, "")
+        Right (Left e) -> logEx e
+        Right (Right (a, _, _)) -> pure $ Right a
+
+throw :: Monad m => T.Text -> CaideM m a
+throw desc = throwError (CF.OtherProblem $ T.unpack desc, "")
+
+orThrow :: Monad m => Either e a -> (e -> T.Text) -> CaideM m a
+ea `orThrow` f = either (throw . f) pure ea
+
+rightOrThrow :: Monad m => Either T.Text a -> CaideM m a
+rightOrThrow ea = ea `orThrow` id
+
+-- | Return root caide directory
+caideRoot :: Monad m => CaideM m FS.FilePath
+caideRoot = reader root
+
+caideVerbosity :: Monad m => CaideM m Verbosity
+caideVerbosity = reader verbosity
+
+caideSettings :: Monad m => CaideM m Settings
+caideSettings = reader settings
+
+caideHttpClient :: CaideIO Http.Client
+caideHttpClient = reader httpClient
+
+caideHoldingLock :: CaideIO (Maybe (IORef Bool))
+caideHoldingLock = reader holdingFileLock
+
+
+-- | A (legacy) feature is a piece of optional functionality that may be run
+--   at certain points, depending on the configuration. A feature doesn't
+--   run by itself, but only in response to certain events.
+--   The first parameter in all functions is ID of the problem that triggered the event.
+data Feature = Feature
+    { onProblemCreated     :: ProblemID -> CaideIO ()   -- ^ Run after `caide problem`
+    , onProblemCodeCreated :: ProblemID -> CaideIO ()   -- ^ Run after `caide lang`
+    , onProblemCheckedOut  :: ProblemID -> CaideIO ()   -- ^ Run after `caide checkout`
+    , onProblemRemoved     :: ProblemID -> CaideIO ()   -- ^ Run after `caide archive`
+    }
+
+noOpFeature :: Feature
+noOpFeature =  Feature
+    { onProblemCreated     = const $ return ()
+    , onProblemCodeCreated = const $ return ()
+    , onProblemCheckedOut  = const $ return ()
+    , onProblemRemoved     = const $ return ()
+    }
+

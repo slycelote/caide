@@ -16,10 +16,12 @@ import Filesystem.Util (listDir, pathToText)
 import qualified Caide.CPP.CPPSimple as CPPSimple
 
 import Caide.CPP.CBinding (inlineLibraryCode)
+import Caide.Monad (CaideIO, caideRoot, caideSettings, throw)
 import Caide.Paths (problemDir)
 import qualified Caide.Settings as Settings
 import qualified Caide.Problem as Problem
 import Caide.Types
+import Caide.Types.ProgrammingLanguage
 import Caide.Util (tshow)
 
 

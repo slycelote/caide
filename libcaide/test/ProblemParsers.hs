@@ -19,7 +19,9 @@ import qualified Caide.Parsers.Timus as Timus
 import qualified Caide.Parsers.LeetCode as LeetCode
 
 import Caide.Types (Problem(problemName, problemId, problemType), ProblemType(Stream),
-    InputSource(StdIn), OutputTarget(StdOut), optionFromString, optionToString)
+    InputSource(StdIn), OutputTarget(StdOut))
+import Caide.Types.Option (optionFromString, optionToString)
+
 import qualified Caide.Types as Caide
 
 

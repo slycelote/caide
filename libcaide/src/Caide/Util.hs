@@ -10,8 +10,8 @@ module Caide.Util(
 ) where
 
 import Control.Concurrent.Async (mapConcurrently)
-import Control.Monad.Except (catchError, throwError)
-import Control.Monad.State (liftIO)
+import Control.Monad.Extended (catchError, throwError, liftIO)
+import Data.IORef (readIORef, writeIORef)
 import qualified Data.Text as T
 import qualified Filesystem.Path as F
 import Filesystem.Path ((</>))
@@ -23,10 +23,8 @@ import Network.HTTP.Types.Header (hAccept, hAcceptEncoding, hUserAgent)
 
 import Filesystem.Util (pathToText, readTextFile)
 import qualified Caide.CodeforcesCookie as CodeforcesCookie
-import Caide.Configuration (orDefault)
 import qualified Caide.HttpClient as Http
-import Caide.Settings (useFileLock)
-import Caide.Types
+import Caide.Monad (CaideIO, CaideM, throw, caideHoldingLock, caideRoot)
 
 
 -- TODO a more efficient algorithm
@@ -66,6 +64,7 @@ readTextFile' filePath = do
         Left err   -> throw err
         Right cont -> return cont
 
+-- FIXME: This doesn't handle IO exceptions
 finally :: (Monad m) => CaideM m a -> CaideM m () -> CaideM m a
 finally action finalizer = do
     ret <- catchError action $ \e -> do
@@ -76,21 +75,20 @@ finally action finalizer = do
 
 withLock :: CaideIO () -> CaideIO ()
 withLock action = do
-    hTemp <- getTemporaryConf
-    useLock <- useFileLock <$> caideSettings
-    haveLock <- getProp hTemp "DEFAULT" "have_lock" `orDefault` False
-    if not useLock || haveLock
-    then action
-    else do
-        root <- caideRoot
-        let lockPath = root </> ".caide" </> "lock"
-        mbLock <- liftIO $ tryLockFile (encodeString lockPath) Exclusive
-        case mbLock of
-            Nothing -> throw $ T.concat ["Couldn't lock file ", pathToText lockPath,
-                        ". Make sure that another instance of caide is not running."]
-            Just lock -> do
-                setProp hTemp "DEFAULT" "have_lock" True
-                finally action $ do
-                    liftIO $ unlockFile lock
-                    setProp hTemp "DEFAULT" "have_lock" False
-
+    mbHoldingLock <- caideHoldingLock
+    holdingLock <- maybe (pure False) (liftIO . readIORef) mbHoldingLock
+    case mbHoldingLock of
+        Just holdingLockRef | holdingLock -> do
+            root <- caideRoot
+            let lockPath = root </> ".caide" </> "lock"
+            mbLock <- liftIO $ tryLockFile (encodeString lockPath) Exclusive
+            case mbLock of
+                -- TODO: Retry
+                Nothing -> throw $ T.concat ["Couldn't lock file ", pathToText lockPath,
+                            ". Make sure that another instance of caide is not running."]
+                Just lock -> do
+                    liftIO $ writeIORef holdingLockRef True
+                    finally action $ liftIO $ do
+                        unlockFile lock
+                        writeIORef holdingLockRef False
+        _ -> action

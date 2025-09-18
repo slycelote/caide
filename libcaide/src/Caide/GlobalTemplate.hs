@@ -20,6 +20,7 @@ import qualified Filesystem.Util as FS
 import Caide.MustacheUtil (compileTemplates, renderCompiledTemplates, renderTemplates,
     RenderTemplatesOption(AllowOverwrite))
 import qualified Caide.Paths as Paths
+import Caide.Monad (CaideIO, caideRoot, Feature(..), noOpFeature, caideSettings)
 import Caide.Problem (readProblemInfo, readProblemState, jsonEncodeProblem)
 import Caide.Settings (enabledTemplateNames)
 import Caide.Types

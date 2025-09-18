@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Caide.Paths(
       problemDir
+    , problemConfFile
+    , problemStateFile
     , testsDir
     , testInput
     , etalonTestOutput
@@ -23,14 +25,24 @@ import Filesystem.Path.CurrentOS (FilePath, (</>))
 import Caide.Types (ProblemID)
 
 
-caideConfFile :: FilePath -> FilePath
-caideConfFile root = root </> "caide.ini"
+-- | Relative to root directory.
+caideConfFile :: FilePath
+caideConfFile = "caide.ini"
 
-caideStateFile :: FilePath -> FilePath
-caideStateFile root = root </> ".caide" </> "config"
+-- | Relative to root directory.
+caideStateFile :: FilePath
+caideStateFile = ".caide" </> "config"
 
 problemDir :: FilePath -> ProblemID -> FilePath
 problemDir root probId = root </> FS.fromText probId
+
+-- | Relative to 'problemDir'
+problemConfFile :: FilePath
+problemConfFile = "problem.ini"
+
+-- | Relative to 'problemDir'
+problemStateFile :: FilePath
+problemStateFile = ".caideproblem" </> "config"
 
 -- | Relative to 'problemDir'
 testsDir :: FilePath

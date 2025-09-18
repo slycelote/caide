@@ -5,8 +5,7 @@ module Caide.Templates(
     , templates
 ) where
 
-import Control.Monad (unless, when)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Extended (liftIO, unless, when)
 import Data.ByteString (ByteString)
 import Data.Maybe (isNothing)
 import Data.Text (Text)
@@ -20,7 +19,7 @@ import Data.FileEmbed (embedDir)
 import Filesystem.Util (pathToText, readTextFile, writeTextFile)
 
 import Caide.Logger (logWarn)
-import Caide.Types
+import Caide.Monad (CaideIO, caideRoot, throw)
 
 templates' :: [(String, ByteString)]
 templates' = $(embedDir "res/templates")

@@ -4,9 +4,9 @@ module Caide.Commands(
 ) where
 
 import Control.Exception.Base (catch, SomeException)
-import Control.Monad (void)
-import Control.Monad.Except (catchError)
+import Control.Monad.Extended (catchError, void)
 import qualified Data.Text as T
+import qualified Data.Text.IO.Util as T
 import Data.Version (showVersion)
 import System.Exit (exitWith, ExitCode(ExitFailure))
 import System.Environment (getExecutablePath)
@@ -19,9 +19,8 @@ import Options.Applicative.Types (Backtracking(..))
 import System.IO.Util (writeFileAtomic)
 
 import Caide.CheckUpdates (checkUpdates, checkUpdatesCommand, logIfUpdateAvailable)
-import Caide.Types (CaideIO, Verbosity(..), makeCaideEnv, runInDirectory)
+import Caide.Monad (CaideIO, Verbosity(Info, Debug), makeCaideEnv, runInDirectory, describeError)
 import qualified Caide.Commands.Init as Init
-import Caide.Configuration (describeError)
 import Caide.Commands.Archive
 import Caide.Commands.BuildScaffold
 import Caide.Commands.Checkout
@@ -76,7 +75,7 @@ caideIoToIo extensions cmd globalOptions root = do
 
     case ret of
         Left err -> do
-            putStrLn $ describeError err
+            T.putStrLn $ describeError err
             exitWith $ ExitFailure 0xCA1DE
         _        -> return ()
 

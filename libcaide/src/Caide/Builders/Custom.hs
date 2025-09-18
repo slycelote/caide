@@ -4,9 +4,8 @@ module Caide.Builders.Custom(
     , getLegacyCustomBuilderName
 ) where
 
-import Control.Monad.Extended (throwError, liftIO)
+import Control.Monad.Extended (liftIO)
 import Data.Maybe (listToMaybe)
-import Data.Either (fromRight)
 import qualified Data.Text as T
 import qualified Data.Text.IO.Util as T
 
@@ -17,25 +16,24 @@ import System.Process (shell, createProcess, waitForProcess, cwd)
 
 import qualified Data.ConfigFile as CF
 
+import Caide.Configuration (readConfigFile, getProp, getPropOrDefault)
 import qualified Caide.Paths as Paths
-import Caide.Types
+import Caide.Monad (CaideIO, caideRoot, orThrow, rightOrThrow)
+import Caide.Types (ProblemID)
+import Caide.Types.Builder (BuilderResult(..))
 import Caide.Util (tshow)
 
 
-readConfigFile :: CaideIO CF.ConfigParser
-readConfigFile = do
+readConfigFile' :: CaideIO CF.ConfigParser
+readConfigFile' = do
     root <- caideRoot
-    cp <- do
-        mbcp <- liftIO $ CF.readfile CF.emptyCP $ FS.encodeString $ Paths.caideConfFile root
-        either throwError pure mbcp
-
-    pure $ case CF.set cp "DEFAULT" "caideRoot" $ FS.encodeString root of
-        Right conf' -> conf'{ CF.accessfunc = CF.interpolatingAccess 10, CF.usedefault = True }
-        _ -> error "Impossible happened: DEFAULT section doesn't exist"
+    mbcp <- liftIO $ readConfigFile root "caide.ini"
+    mbcp `orThrow` \e ->
+        "Failed to read caide.ini: " <> e
 
 getLegacyCustomBuilderName :: [T.Text] -> CaideIO (Maybe T.Text)
 getLegacyCustomBuilderName languageNames = do
-    cp <- readConfigFile
+    cp <- readConfigFile'
     let legacyBuilderExists langName = CF.has_option cp langName "build_and_run_tests"
         buildersExist = map (legacyBuilderExists . T.unpack) languageNames
         legacyBuilderNames = [name | (name, True) <- zip languageNames buildersExist]
@@ -45,16 +43,14 @@ getLegacyCustomBuilderName languageNames = do
 builder :: T.Text -> ProblemID -> CaideIO BuilderResult
 builder name probId = do
     root <- caideRoot
-    cp <- readConfigFile
-    let mbcmd = CF.get cp (T.unpack name) "build_and_run_tests"
-        evaluatesTests = fromRight True $ CF.get cp (T.unpack name) "evaluates_tests"
-    cmd <- either throwError pure mbcmd
-
+    cp <- readConfigFile'
+    cmd <- rightOrThrow $ getProp cp (T.unpack name) "build_and_run_tests"
+    evaluatesTests <- rightOrThrow $ getPropOrDefault cp (T.unpack name) "evaluates_tests" True
     let probDir = Paths.problemDir root probId
-        process = shell cmd
+        process = shell $ T.unpack cmd
 
     liftIO $ do
-        T.putStrLn $ T.unlines [T.append "Executing custom test runner: " name, T.pack cmd]
+        T.putStrLn $ T.unlines [T.append "Executing custom test runner: " name, cmd]
         (_, _, _, ph) <- createProcess process { cwd = Just (FS.encodeString probDir) }
         exitCode <- waitForProcess ph
         case exitCode of

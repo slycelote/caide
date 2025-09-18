@@ -7,8 +7,12 @@ module Caide.Problem(
     , readProblemState
     , writeProblemState
     , modifyProblemState
+
+    , readProblemCP
+    , readProblemStateCP
 ) where
 
+import Control.Monad.Extended (liftIO)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Char (isUpper, toLower, toUpper)
 import Data.Function ((&))
@@ -24,26 +28,49 @@ import Data.Aeson.Key (fromText)
 import qualified Data.Map.Strict as Map
 import qualified Data.Vector as Vector
 
+import qualified Data.ConfigFile as CF
+import qualified Filesystem.Path.CurrentOS as FS
+import Filesystem.Path.CurrentOS((</>))
+
 import Filesystem.Util (pathToText)
 
-import qualified Caide.Configuration as Conf
+import Caide.Configuration (getProp, getPropOrDefault, setProp, readConfigFile, writeConfigFile)
+import Caide.Monad (CaideIO, caideRoot, orThrow)
+import qualified Caide.Paths as Paths
 import Caide.Types
+
+readProblemCP :: ProblemID -> CaideIO CF.ConfigParser
+readProblemCP probId = do
+    let mapError = \ea -> ea `orThrow` (\e -> "Problem " <> probId <> ": " <> e)
+    root <- caideRoot
+    mbProblemInfoCP <- liftIO $ readConfigFile root $
+        FS.fromText probId </> Paths.problemConfFile
+    mapError mbProblemInfoCP
+
+readProblemStateCP :: ProblemID -> CaideIO CF.ConfigParser
+readProblemStateCP probId = do
+    let mapError = \ea -> ea `orThrow` (\e -> "Problem " <> probId <> ": " <> e)
+    root <- caideRoot
+    mbProblemStateCP <- liftIO $ readConfigFile root $
+        FS.fromText probId </> Paths.problemStateFile
+    mapError mbProblemStateCP
 
 readProblemInfo :: ProblemID -> CaideIO Problem
 readProblemInfo probId = do
-    hProblemInfo <- Conf.readProblemConfig probId
-    pname <- getProp hProblemInfo "problem" "name"
-    ptype <- getProp hProblemInfo "problem" "type"
-    fpTolerance <- getProp hProblemInfo "problem" "double_precision"
+    let mapError = \ea -> ea `orThrow` (\e -> "Problem " <> probId <> ": " <> e)
+    problemInfoCP <- readProblemCP probId
+    pname <- mapError $ getProp problemInfoCP "problem" "name"
+    ptype <- mapError $ getProp problemInfoCP "problem" "type"
+    fpTolerance <- mapError $ getProp problemInfoCP "problem" "double_precision"
 
     -- We keep snippets in the state file to avoid huge chunk of text in problem.ini.
     -- Users won't need to modify per-problem snippets anyway (if they do they'll modify
     -- generated code).
     -- TODO: move snippets to a separate file?
-    hProblemState <- Conf.readProblemState probId
-    snippets <- (LBS.fromStrict . T.encodeUtf8) <$>
-        getProp hProblemState "problem" "snippets" `Conf.orDefault` "{}"
-    return $ Problem
+    problemStateCP <- readProblemStateCP probId
+    snippetsStr <- mapError $ getPropOrDefault problemStateCP "problem" "snippets" "{}"
+    let snippets = LBS.fromStrict $ T.encodeUtf8 snippetsStr
+    pure $ Problem
         { problemName = pname
         , problemId = probId
         , problemFloatTolerance = fpTolerance
@@ -57,15 +84,18 @@ data ProblemState = ProblemState
 
 readProblemState :: ProblemID -> CaideIO ProblemState
 readProblemState probId = do
-    hProblemState <- Conf.readProblemState probId
-    currentLanguage <- getProp hProblemState "problem" "language"
+    let mapError = \ea -> ea `orThrow` (\e -> "Problem " <> probId <> ": " <> e)
+    problemStateCP <- readProblemStateCP probId
+    currentLanguage <- mapError $ getProp problemStateCP "problem" "language"
     return $ ProblemState{..}
 
 writeProblemState :: ProblemID -> ProblemState -> CaideIO ()
 writeProblemState probId ProblemState{..} = do
-    hProblemState <- Conf.readProblemState probId
-    setProp hProblemState "problem" "language" currentLanguage
-    flushConf hProblemState
+    let mapError = \ea -> ea `orThrow` (\e -> "Problem " <> probId <> ": " <> e)
+    root <- caideRoot
+    problemStateCP <- readProblemStateCP probId
+    cp' <- mapError $ setProp "problem" "language" currentLanguage problemStateCP
+    liftIO $ writeConfigFile cp' $ root </> FS.fromText probId </> Paths.problemStateFile
 
 modifyProblemState :: ProblemID -> (ProblemState -> ProblemState) -> CaideIO ()
 modifyProblemState probId modify = do

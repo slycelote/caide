@@ -11,8 +11,7 @@ module Caide.MustacheUtil(
 
 
 import qualified Control.Exception.Extended as Exc
-import Control.Monad (forM, forM_, unless)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Extended (forM, forM_, liftIO, unless)
 import qualified Data.Char as Char
 import Data.Either.Util (mapLeft)
 import Data.Function ((&))
@@ -42,7 +41,7 @@ import Text.Microstache (MustacheException, Template(templateActual), PName(PNam
     compileMustacheFile, compileMustacheText, displayMustacheWarning, renderMustacheW)
 
 import Caide.Logger (logWarn)
-import Caide.Types
+import Caide.Monad (CaideIO, throw)
 import Caide.Util (tshow)
 
 

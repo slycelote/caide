@@ -11,10 +11,12 @@ import Filesystem (isDirectory, )
 import Filesystem.Path.CurrentOS (FilePath, )
 
 import Caide.GlobalState (readGlobalState, activeProblem, noActiveProblemError)
+import Caide.Monad (CaideIO, caideRoot, throw)
 import qualified Caide.Problem as Problem
 import qualified Caide.Paths as Paths
 import Caide.Registry (findLanguage)
 import Caide.Types
+import Caide.Types.ProgrammingLanguage (inlineCode)
 import qualified Caide.TestCases as TestCases
 
 

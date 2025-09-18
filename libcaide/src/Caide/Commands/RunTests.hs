@@ -29,11 +29,13 @@ import qualified Caide.Builders.Custom as Custom
 import Caide.CustomBuilder (createBuilderFromDirectory)
 import Caide.GlobalState (readGlobalState, activeProblem, noActiveProblemError)
 import Caide.Logger (logError)
+import Caide.Monad (CaideIO, caideRoot, caideSettings, throw)
 import qualified Caide.Paths as Paths
 import Caide.Problem (currentLanguage, readProblemInfo, readProblemState)
 import Caide.Registry (findLanguage)
 import Caide.Settings (verboseTestReport)
 import Caide.Types
+import Caide.Types.Builder
 import Caide.TestCases.Types (ComparisonResult(..), isError, isFailure, isSuccessful,
     TestRunResult(..), makeTestRunResult,
     TestReport, humanReadableReport, humanReadableSummary, readTestReport, serializeTestReport)

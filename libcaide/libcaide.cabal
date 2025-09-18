@@ -171,6 +171,7 @@ library
         Caide.GlobalTemplate
         Caide.HttpClient
         Caide.Logger
+        Caide.Monad
         Caide.MustacheUtil
         Caide.Parsers.CodeChef
         Caide.Parsers.CodeChefContest
@@ -193,7 +194,9 @@ library
         Caide.TestCases.TopcoderDeserializer
         Caide.TestCases.Types
         Caide.Types
+        Caide.Types.Builder
         Caide.Types.Option
+        Caide.Types.ProgrammingLanguage
         Caide.Util
         Caide.Xml
         Control.Exception.Extended

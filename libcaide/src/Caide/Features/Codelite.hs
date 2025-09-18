@@ -3,11 +3,8 @@ module Caide.Features.Codelite(
       feature
 ) where
 
-
-import Control.Monad (forM_, when)
-import Control.Monad.Except (catchError)
+import Control.Monad.Extended (liftIO, forM_, when, catchError)
 import Control.Monad.State.Strict (modify, gets)
-import Control.Monad.State (liftIO)
 import Data.List ((\\), sort)
 import Data.Maybe (catMaybes)
 import qualified Data.Text as T
@@ -27,6 +24,7 @@ import Text.XML.Light (parseXML, Content(..))
 import Text.XML.Light.Cursor
 
 import Caide.GlobalState (activeProblem, readGlobalState)
+import Caide.Monad (Feature(..), noOpFeature, CaideIO, caideRoot, throw)
 import qualified Caide.Problem as Problem
 import Caide.Templates (getTemplate)
 import Caide.Types

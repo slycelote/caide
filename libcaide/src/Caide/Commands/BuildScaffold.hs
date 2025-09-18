@@ -7,7 +7,8 @@ import Control.Monad (forM_)
 import Data.Maybe (mapMaybe)
 import qualified Data.Text as T
 
-import Caide.Types
+import Caide.Monad (CaideIO, throw, caideSettings, onProblemCodeCreated)
+import Caide.Types.ProgrammingLanguage (generateScaffold)
 import Caide.Registry (findLanguage, findFeature)
 import Caide.GlobalState (readGlobalState, activeProblem, noActiveProblemError)
 import qualified Caide.GlobalTemplate as GlobalTemplate

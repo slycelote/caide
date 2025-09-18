@@ -5,13 +5,12 @@ module Caide.Logger(
     , logDebug
 ) where
 
-import Control.Monad (when)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Extended (when, MonadIO, liftIO)
 
 import Data.Text (Text)
 import qualified Data.Text.IO.Util as T
 
-import Caide.Types (CaideIO, Verbosity(Debug), caideVerbosity)
+import Caide.Monad (CaideIO, caideVerbosity, Verbosity(Debug))
 
 
 logInfo :: MonadIO m => Text -> m ()

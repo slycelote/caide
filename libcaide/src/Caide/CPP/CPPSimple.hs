@@ -22,11 +22,13 @@ import Filesystem.Util (appendTextFile, writeTextFile)
 import Caide.Util (readTextFile')
 
 import Caide.Logger (logDebug)
+import Caide.Monad (CaideIO, caideRoot, throw)
 import Caide.MustacheUtil (compileAndRender)
 import Caide.Paths (problemDir)
 import Caide.Problem (ProblemState, jsonEncodeProblem, readProblemInfo, readProblemState)
 import Caide.Templates (copyTemplateUnlessExists, getTemplate)
 import Caide.Types
+import Caide.Types.ProgrammingLanguage
 
 
 language :: ProgrammingLanguage
