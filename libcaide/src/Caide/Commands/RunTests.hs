@@ -43,7 +43,7 @@ import qualified Caide.TestCases.TopcoderDeserializer as TC
 import Caide.Util (tshow)
 
 
-{-# ANN getBuilder ("HLint: ignore Use const" :: String) #-}
+{- HLINT ignore getBuilder "Use const" -}
 getBuilder :: Text -> ProblemID -> CaideIO Builder
 getBuilder language probId = do
     let languageNames = maybe [] fst $ findLanguage language

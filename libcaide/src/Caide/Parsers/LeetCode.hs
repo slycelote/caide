@@ -215,12 +215,11 @@ parseConstructor (Just ConstructorMetaData{ctorParams}) = mapM parseValue ctorPa
 parseMethod :: MethodMetaData -> Either Text TopcoderMethod
 parseMethod MethodMetaData{params, desc} = TopcoderMethod <$> parseValue desc <*> mapM parseValue params
 
-{-# ANN parseClass ("HLint: ignore Redundant <$>" :: String) #-}
 parseClass :: ClassMetaData -> Either Text ProblemType
 parseClass ClassMetaData{classname, constructor, methods} =
-    LeetCodeClass <$> pure classname <*> parseConstructor constructor <*> mapM parseMethod methods
+    LeetCodeClass classname <$> parseConstructor constructor <*> mapM parseMethod methods
 
-{-# ANN parseFromGraphQL ("HLint: ignore Use maybe" :: String) #-}
+{- HLINT ignore parseFromGraphQL "Use maybe" -}
 parseFromGraphQL :: ProblemID -> LBS8.ByteString -> Either Text (Problem, [TestCase])
 parseFromGraphQL probId responseBody = do
     question <- mapLeft T.pack $ Aeson.eitherDecode responseBody
@@ -285,7 +284,7 @@ parseInput t = let
 
     in bimap T.pack valuesToText result
 
-{-# ANN fromContent ("HLint: ignore Use bimap" :: String) #-}
+{- HLINT ignore fromContent "Use bimap" -}
 fromContent :: Maybe Text -> Either Text [TestCase]
 fromContent Nothing = Left "content not provided"
 fromContent (Just html) = let

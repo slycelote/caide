@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, NamedFieldPuns, OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, NamedFieldPuns #-}
 module Caide.Monad(
       CaideIO
     , CaideM
@@ -60,7 +60,7 @@ newtype CaideM m a = CaideM { unCaideM :: ReaderT CaideEnv (ExceptT Error m) a }
 
 type CaideIO a = CaideM IO a
 
-runCaideM :: Monad m => CaideM m a -> CaideEnv -> m (Either Error a)
+runCaideM :: CaideM m a -> CaideEnv -> m (Either Error a)
 runCaideM caideAction env = runExceptT $ runReaderT (unCaideM caideAction) env
 
 describeError :: Error -> T.Text

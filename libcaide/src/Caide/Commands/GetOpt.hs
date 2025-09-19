@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Caide.Commands.GetOpt(
       getOpt
     , getState
@@ -29,7 +28,7 @@ getOpt section key = do
 getState :: T.Text -> T.Text -> CaideIO ()
 getState section key = do
     root <- caideRoot
-    mbcp <- liftIO $ readConfigFile root $ Paths.caideStateFile
+    mbcp <- liftIO $ readConfigFile root Paths.caideStateFile
     cp <- rightOrThrow mbcp
     val <- rightOrThrow $ getProp cp (T.unpack section) (T.unpack key)
     liftIO $ T.putStrLn val

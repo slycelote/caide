@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveTraversable #-} -- for VecN definition
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances, TypeOperators #-} -- for Convertible
+{-# LANGUAGE FunctionalDependencies, FlexibleInstances, TypeOperators #-} -- for Convertible
 {-# LANGUAGE ScopedTypeVariables, TypeApplications #-} -- for fromList
 
 module Data.VecN(
@@ -33,7 +33,7 @@ class Convertible vec container | container -> vec where
   pack :: container -> vec
   unpack :: vec -> container
 
-instance IsNat n => Convertible (VecN n a) (VecN n a) where
+instance Convertible (VecN n a) (VecN n a) where
   pack = id
   unpack = id
 

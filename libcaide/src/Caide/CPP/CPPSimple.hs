@@ -180,7 +180,7 @@ inlineCPPCode probID = do
             liftIO $ appendTextFile inlinedCodePath mainCode
         Topcoder _ -> return ()
         LeetCodeMethod _ -> return ()
-        LeetCodeClass _ _ _ -> return ()
+        LeetCodeClass{} -> return ()
 
     liftIO $ FS.copyFile inlinedCodePath $ root </> "submission.cpp"
 

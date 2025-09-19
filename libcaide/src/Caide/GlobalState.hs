@@ -63,7 +63,7 @@ writeGlobalState GlobalState{..} = do
                 Just v -> putProp "core" "latest_version" $ versionBranch v
                 _ -> pure ()
             case lastUpdateCheck of
-                Just t -> putProp "core" "last_update" $ T.pack $ AsciiLBS.unpack $ Aeson.encode $ t
+                Just t -> putProp "core" "last_update" $ T.pack $ AsciiLBS.unpack $ Aeson.encode t
                 _ -> pure ()
 
     liftIO $ writeConfigFile cp $ root </> Paths.caideStateFile

@@ -39,7 +39,7 @@ mapWithLimitedThreads numThreads f tasks = do
 tshow :: Show a => a -> T.Text
 tshow = T.pack . show
 
-{-# ANN newDefaultHttpClient ("HLint: ignore Redundant $" :: String) #-}
+{- HLINT ignore newDefaultHttpClient "Redundant $" -}
 newDefaultHttpClient :: IO Http.Client
 newDefaultHttpClient = do
     client <- Http.newClient

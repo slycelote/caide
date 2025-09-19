@@ -41,7 +41,7 @@ import Caide.Types
 
 readProblemCP :: ProblemID -> CaideIO CF.ConfigParser
 readProblemCP probId = do
-    let mapError = \ea -> ea `orThrow` (\e -> "Problem " <> probId <> ": " <> e)
+    let mapError ea = ea `orThrow` (\e -> "Problem " <> probId <> ": " <> e)
     root <- caideRoot
     mbProblemInfoCP <- liftIO $ readConfigFile root $
         FS.fromText probId </> Paths.problemConfFile
@@ -49,7 +49,7 @@ readProblemCP probId = do
 
 readProblemStateCP :: ProblemID -> CaideIO CF.ConfigParser
 readProblemStateCP probId = do
-    let mapError = \ea -> ea `orThrow` (\e -> "Problem " <> probId <> ": " <> e)
+    let mapError ea = ea `orThrow` (\e -> "Problem " <> probId <> ": " <> e)
     root <- caideRoot
     mbProblemStateCP <- liftIO $ readConfigFile root $
         FS.fromText probId </> Paths.problemStateFile
@@ -57,7 +57,7 @@ readProblemStateCP probId = do
 
 readProblemInfo :: ProblemID -> CaideIO Problem
 readProblemInfo probId = do
-    let mapError = \ea -> ea `orThrow` (\e -> "Problem " <> probId <> ": " <> e)
+    let mapError ea = ea `orThrow` (\e -> "Problem " <> probId <> ": " <> e)
     problemInfoCP <- readProblemCP probId
     pname <- mapError $ getProp problemInfoCP "problem" "name"
     ptype <- mapError $ getProp problemInfoCP "problem" "type"
@@ -84,14 +84,14 @@ data ProblemState = ProblemState
 
 readProblemState :: ProblemID -> CaideIO ProblemState
 readProblemState probId = do
-    let mapError = \ea -> ea `orThrow` (\e -> "Problem " <> probId <> ": " <> e)
+    let mapError ea = ea `orThrow` (\e -> "Problem " <> probId <> ": " <> e)
     problemStateCP <- readProblemStateCP probId
     currentLanguage <- mapError $ getProp problemStateCP "problem" "language"
     return $ ProblemState{..}
 
 writeProblemState :: ProblemID -> ProblemState -> CaideIO ()
 writeProblemState probId ProblemState{..} = do
-    let mapError = \ea -> ea `orThrow` (\e -> "Problem " <> probId <> ": " <> e)
+    let mapError ea = ea `orThrow` (\e -> "Problem " <> probId <> ": " <> e)
     root <- caideRoot
     problemStateCP <- readProblemStateCP probId
     cp' <- mapError $ setProp "problem" "language" currentLanguage problemStateCP

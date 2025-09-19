@@ -24,7 +24,7 @@ foreign import ccall unsafe "cwrapper.h inlineCppCode"
                    -> CString
                    -> IO CInt
 
-{-# ANN inlineLibraryCode "HLint: ignore Use fmap" #-}
+{- HLINT ignore inlineLibraryCode "Use fmap" -}
 inlineLibraryCode :: FilePath -> [T.Text] -> [T.Text] -> [T.Text] -> Int -> [FilePath] -> FilePath -> IO Int
 inlineLibraryCode tempDir clangOptions macrosToKeep identifiersToKeep maxConsequentEmptyLines cppFiles outputFile =
     withCString (encodeString tempDir)                     $ \tempDir' ->

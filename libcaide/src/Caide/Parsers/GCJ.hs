@@ -27,7 +27,7 @@ isSupportedUrl url = case parseURI (T.unpack url) of
                  "/codejam/contest" `isPrefixOf` uriPath uri
 
 
-{-# ANN htmlParser ("HLint: ignore Use head" :: String) #-}
+{- HLINT ignore htmlParser "Use head" -}
 htmlParser :: T.Text -> IO (Either T.Text (Problem, [TestCase]))
 htmlParser cont = pure $
     if null testCases

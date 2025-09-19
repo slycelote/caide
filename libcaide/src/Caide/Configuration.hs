@@ -13,6 +13,7 @@ import Prelude hiding (readFile, FilePath)
 import Control.Monad.Extended (MonadError, liftEither, throwError)
 import qualified Control.Monad.State as State
 import Data.Char (toLower)
+import Data.Either (fromRight)
 import Data.Either.Util (mapLeft, maybeToEither)
 import qualified Data.Text as T
 import Filesystem.Util (readTextFile, writeTextFile)
@@ -32,7 +33,7 @@ extend caideRoot conf = case CF.set conf "DEFAULT" "caideRoot" $ FS.encodeString
     _ -> error "Impossible happened: DEFAULT section doesn't exist"
 
 undoExtend :: CF.ConfigParser -> CF.ConfigParser
-undoExtend cp = either (const cp) id $ CF.remove_option cp "DEFAULT" "caideRoot"
+undoExtend cp = fromRight cp $ CF.remove_option cp "DEFAULT" "caideRoot"
 
 describeError :: CF.CPError -> T.Text
 describeError (ParseError s, _) = T.pack s
