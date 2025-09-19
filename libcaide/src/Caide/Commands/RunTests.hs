@@ -26,7 +26,7 @@ import qualified Data.Vector as Vec
 
 import qualified Caide.Builders.None as None
 import qualified Caide.Builders.Custom as Custom
-import Caide.CustomBuilder (createBuilderFromDirectory)
+import Caide.ConventionalBuilder (createBuilderFromDirectory)
 import Caide.GlobalState (readGlobalState, activeProblem, noActiveProblemError)
 import Caide.Logger (logError)
 import Caide.Monad (CaideIO, caideRoot, caideSettings, throw)

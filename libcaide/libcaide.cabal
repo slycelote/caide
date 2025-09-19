@@ -171,7 +171,7 @@ library
         Caide.Commands.ParseProblem
         Caide.Commands.RunTests
         Caide.Configuration
-        Caide.CustomBuilder
+        Caide.ConventionalBuilder
         Caide.Features.Codelite
         Caide.GenericLanguage
         Caide.GlobalState

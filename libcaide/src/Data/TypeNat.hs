@@ -18,6 +18,13 @@ module Data.TypeNat(
 class IsNat n where
   natVal :: Word
 
+natVal' :: forall n. IsNat n => n -> Word
+natVal' _ = natVal @n
+
+
+-- For our purposes, it's sufficient to hardcode a few numbers, rather than
+-- implement the full Peano naturals.
+
 data N0 = N0{}
 instance IsNat N0 where natVal = 0
 n0 :: N0
@@ -43,5 +50,3 @@ instance IsNat N4 where natVal = 4
 n4 :: N4
 n4 = N4{}
 
-natVal' :: forall n. IsNat n => n -> Word
-natVal' _ = natVal @n

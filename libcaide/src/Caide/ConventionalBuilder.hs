@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Caide.CustomBuilder(
+module Caide.ConventionalBuilder(
       createBuilderFromDirectory
+    , CreateBuilderOption(..)
 ) where
 
 import Prelude hiding (FilePath)
@@ -75,6 +76,7 @@ combine :: [CreateBuilderOption] -> CreateBuilderOptions
 combine = foldr applyModifier $
     CreateBuilderOptions{buildTimeout=10*seconds, runTimeout=5*seconds}
 
+-- | Standard builder that uses "build" and "run" executables in the directory.
 createBuilderFromDirectory :: (MonadIO m1, MonadIO m2) =>
     FilePath -> Problem -> [CreateBuilderOption] -> m1 (Either Text (m2 BuilderResult))
 createBuilderFromDirectory dirPath problem optionModifiers = do
