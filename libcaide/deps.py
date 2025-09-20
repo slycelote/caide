@@ -1,5 +1,5 @@
 """
-Parses plan.json and draws dependency graph
+Parses dist-newstyle/cache/plan.json and draws dependency graph
 """
 
 import json, sys
@@ -9,9 +9,12 @@ def main():
         j = json.load(f)
     names = {}
     edges = {}
+    preinstalled = set() # shipped with ghc
     for p in j['install-plan']:
         pid = p['id']
         names[pid] = p['pkg-name']
+        if p['type'] == 'pre-existing':
+            preinstalled.add(names[pid])
         to_process = [p]
         if 'components' in p:
             to_process.extend(p['components'].values())
@@ -20,14 +23,8 @@ def main():
             if 'depends' in component:
                 edges[pid].extend(component['depends'])
 
+    # print(preinstalled, file=sys.stderr)
     print('digraph {')
-    ignored = set([
-        # shipped with ghc
-        'array', 'directory', 'ghc-prim', 'template-haskell', 'exceptions', 'mtl', 'stm', 'ghc-heap', 'pretty', 'base', 'haskeline',
-        'integer-gmp', 'ghc-boot-th', 'ghci', 'libiserv', 'hpc', 'parsec', 'text', 'xhtml', 'ghc', 'unix', 'time', 'deepseq',
-        'bytestring', 'Cabal', 'containers', 'binary', 'ghc-compact', 'ghc-boot', 'transformers', 'filepath', 'process', 'terminfo',
-        'Win32', 'rts'
-    ])
 
     red = set(['aeson']) # In addition, color red transitive dependencies of these
     red_queue = list(k for k in edges if names[k] in red)
@@ -39,12 +36,12 @@ def main():
                 red_queue.append(v)
 
     for k in edges:
-        if names[k] in ignored:
+        if names[k] in preinstalled:
             continue
         if names[k] in red:
             print('"' + names[k] + '" [color=red]')
         for v in edges[k]:
-            if names[v] in ignored:
+            if names[v] in preinstalled:
                 continue
             print('"' + names[k] + '" -> "' + names[v] + '"')
     print('}')
