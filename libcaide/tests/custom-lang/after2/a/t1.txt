@@ -2,6 +2,9 @@ t1.txt
 
 
 input: stdin
+// BEGIN TESTING CODE
+ABCABCABC
+// END TESTING CODE
 
 output: output.txt
 

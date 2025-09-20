@@ -5,6 +5,7 @@ module Caide.Commands.RunTests(
 ) where
 
 import Control.Monad.Extended (liftIO, forM, unless)
+import Data.Foldable (toList)
 import Data.Int (Int64)
 import Data.List (sortBy)
 import Data.Ord (comparing)
@@ -46,8 +47,9 @@ import Caide.Util (tshow)
 {- HLINT ignore getBuilder "Use const" -}
 getBuilder :: Text -> ProblemID -> CaideIO Builder
 getBuilder language probId = do
-    let languageNames = maybe [] fst $ findLanguage language
-    mbBuilderName <- Custom.getLegacyCustomBuilderName languageNames
+    settings <- caideSettings
+    let languageNames = fst $ findLanguage settings language
+    mbBuilderName <- Custom.getLegacyCustomBuilderName $ toList languageNames
     case mbBuilderName of
         Just name -> pure $ Custom.builder name
         Nothing -> do

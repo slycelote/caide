@@ -8,6 +8,10 @@ input: {{& .}}
 input: stdin
 {{/input.file}}
 
+// BEGIN TESTING CODE
+ABCABCABC
+// END TESTING CODE
+
 {{#output.file}}
 output: {{& .}}
 {{/output.file}}

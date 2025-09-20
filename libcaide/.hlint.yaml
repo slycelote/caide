@@ -6,3 +6,4 @@
 - ignore: {name: 'Avoid lambda using `infix`'}
 - ignore: {name: Use map once}
 - ignore: {lhs: x <&> g <&> f, rhs: x <&> f . g, name: Functor law}
+- ignore: {lhs: x <&> f >>= g, rhs: x >>= g . f, name: Redundant <&>}

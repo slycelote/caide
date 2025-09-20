@@ -1,15 +1,24 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings, NamedFieldPuns, RecordWildCards #-}
 module Caide.Settings (
       Settings(..)
+    , Language(langName)
+    , getLanguage
+    , getExtension
     , CppSettings(..)
     , readSettings
 ) where
 
+import Data.List (isPrefixOf)
+import qualified Data.Map.Strict as Map
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
+import qualified Data.Text as T
 
 import qualified Filesystem.Path.CurrentOS as FS
 
-import Caide.Configuration (readConfigFile, getPropOrDefault)
+import qualified Data.ConfigFile as CF
+
+import Caide.Configuration (readConfigFile, getPropOptional, getPropOrDefault)
 import qualified Caide.Paths as Paths
 
 data Settings = Settings
@@ -18,7 +27,10 @@ data Settings = Settings
               , companionPort :: !(Maybe Int)
               , defaultLanguage :: !Text
               , verboseTestReport :: !Bool
+              -- | Global templates
               , enabledTemplateNames :: ![Text]
+              -- | Configuration for programming languages
+              , languages :: Map.Map Text Language
               , cppSettings :: !CppSettings
               , useFileLock :: !Bool
               , enabledFeatureNames :: ![Text] -- legacy 'features'
@@ -29,6 +41,24 @@ data CppSettings = CppSettings
     , keepMacros :: ![Text]
     , maxConsecutiveEmptyLines :: !Int
     } deriving (Show)
+
+-- | Configuration for a programming language.
+-- Zero-configuration is possible, so all field except for name are
+-- optional.
+data Language = Language
+    { langName :: !Text
+    -- | File extension of source files of the language.
+    -- By default, language name is used.
+    , langExtension :: !(Maybe T.Text)
+    } deriving (Show)
+
+getLanguage :: Settings -> T.Text -> Language
+getLanguage Settings{languages} name =
+    fromMaybe Language{langName=name, langExtension=Nothing} $
+        Map.lookup name languages
+
+getExtension :: Language -> Text
+getExtension Language{langName, langExtension} = fromMaybe langName langExtension
 
 readSettings :: FS.FilePath -> IO (Either Text Settings)
 readSettings caideRoot = do
@@ -46,6 +76,15 @@ readSettings caideRoot = do
         enabledTemplateNames <- getOpt "core" "templates" []
         useFileLock <- getOpt "core" "use_lock" True
         enabledFeatureNames <- getOpt "core" "features" []
+
+        let sectionNames = [s | s <- CF.sections cp, "language." `isPrefixOf` s]
+            parseLanguage section = do
+                let langName = T.pack $ drop (T.length "language.") section
+                langExtension <- getPropOptional cp section "extension"
+                pure $ Language{langName, langExtension}
+
+        languageList <- mapM parseLanguage sectionNames
+        let languages = Map.fromList [(langName l, l) | l <- languageList]
 
         clangOptions <- getOpt "cpp" "clang_options" []
         keepMacros <- getOpt "cpp" "keep_macros" ["ONLINE_JUDGE"]

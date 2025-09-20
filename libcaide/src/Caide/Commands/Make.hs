@@ -11,7 +11,7 @@ import Filesystem (isDirectory, )
 import Filesystem.Path.CurrentOS (FilePath, )
 
 import Caide.GlobalState (readGlobalState, activeProblem, noActiveProblemError)
-import Caide.Monad (CaideIO, caideRoot, throw)
+import Caide.Monad (CaideIO, caideRoot, caideSettings, throw)
 import qualified Caide.Problem as Problem
 import qualified Caide.Paths as Paths
 import Caide.Registry (findLanguage)
@@ -35,13 +35,13 @@ withProblem mbProbId processProblem = do
 
 make :: Maybe ProblemID -> CaideIO ()
 make p = withProblem p $ \problem probDir -> do
+    settings <- caideSettings
     -- TODO: don't update tests here
     _ <- TestCases.updateTests probDir problem
     problemState <- Problem.readProblemState (problemId problem)
-    let lang = Problem.currentLanguage problemState
-    case findLanguage lang of
-        Nothing            -> throw $ "Unsupported programming language " <> lang
-        Just (_, language) -> inlineCode language (problemId problem)
+    let langName = Problem.currentLanguage problemState
+        (_, language) = findLanguage settings langName
+    inlineCode language (problemId problem)
 
 updateTests :: Maybe ProblemID -> CaideIO ()
 updateTests mbProbId = withProblem mbProbId $ \problem problemDir ->

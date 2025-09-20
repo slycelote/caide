@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP, FlexibleContexts, OrPatterns, OverloadedStrings #-}
 module Caide.Configuration(
       getProp
+    , getPropOptional
     , getPropOrDefault
     , setProp
     , putProp
@@ -15,6 +16,7 @@ import qualified Control.Monad.State as State
 import Data.Char (toLower)
 import Data.Either (fromRight)
 import Data.Either.Util (mapLeft, maybeToEither)
+import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import Filesystem.Util (readTextFile, writeTextFile)
 
@@ -50,15 +52,20 @@ getProp cp section key = do
     let errorMessage = T.concat ["Couldn't parse option ", T.pack section, "/", T.pack key, ": ", T.pack opt]
     maybeToEither errorMessage $ optionFromString opt
 
-getPropOrDefault :: Option a => CF.ConfigParser -> String -> String -> a -> Either T.Text a
-getPropOrDefault cp section key def = do
+getPropOptional :: Option a => CF.ConfigParser -> String -> String -> Either T.Text (Maybe a)
+getPropOptional cp section key = do
     let opt = CF.get cp (map toLower section) key
     case opt of
-        (Left (CF.NoSection _, _) ; Left (CF.NoOption _, _)) -> pure def
+        (Left (CF.NoSection _, _) ; Left (CF.NoOption _, _)) -> Right Nothing
         Right str ->
             let errorMessage = T.concat ["Couldn't parse option ", T.pack section, "/", T.pack key, ": ", T.pack str]
-            in maybeToEither errorMessage $ optionFromString str
+            in maybe (Left errorMessage) (Right . Just) $ optionFromString str
         Left otherErr -> Left $ describeError otherErr
+
+getPropOrDefault :: Option a => CF.ConfigParser -> String -> String -> a -> Either T.Text a
+getPropOrDefault cp section key def = do
+    mbRes <- getPropOptional cp section key
+    pure $ fromMaybe def mbRes
 
 setProp :: Option a => String -> String -> a -> CF.ConfigParser -> Either T.Text CF.ConfigParser
 setProp section key value cp = do

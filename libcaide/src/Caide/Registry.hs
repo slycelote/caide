@@ -9,13 +9,16 @@ module Caide.Registry(
     , findProblemParser
 ) where
 
-import Control.Applicative ((<|>))
 import Data.Char (toLower)
+import Data.Function ((&))
 import Data.List (find)
+import qualified Data.List.NonEmpty as NE
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 
 import Caide.Monad (Feature)
+import Caide.Settings (Settings)
 import Caide.Types.ProgrammingLanguage (ProgrammingLanguage)
 
 import qualified Caide.CPP.CPPSimple as CPPSimple
@@ -75,11 +78,12 @@ features = [ ("codelite", Codelite.feature)
 findFeature :: Text -> Maybe Feature
 findFeature name = snd <$> find ((== T.map toLower name). fst) features
 
-languages :: [([Text], ProgrammingLanguage)]
-languages = [ (["simplec++", "simplecpp"], CPPSimple.language)
-            , (["c++", "cpp"], cppLanguage)
-            , (["c#", "csharp", "cs"], CSharpSimple.language)
-            ]
+languages :: NE.NonEmpty (NE.NonEmpty Text, ProgrammingLanguage)
+languages = NE.fromList
+          [ (NE.fromList ["simplec++", "simplecpp"], CPPSimple.language)
+          , (NE.fromList ["c++", "cpp"], cppLanguage)
+          , (NE.fromList ["c#", "csharp", "cs"], CSharpSimple.language)
+          ]
   where
 #ifdef CLANG_INLINER
     cppLanguage = CPP.language
@@ -87,7 +91,8 @@ languages = [ (["simplec++", "simplecpp"], CPPSimple.language)
     cppLanguage = CPPSimple.language
 #endif
 
-findLanguage :: Text -> Maybe ([Text], ProgrammingLanguage)
-findLanguage name = find (\(names, _) -> T.map toLower name `elem` names) languages
-    <|> Just ([name], GenericLanguage.language name)
+findLanguage :: Settings -> Text -> (NE.NonEmpty Text, ProgrammingLanguage)
+findLanguage _settings name =
+    find (\(names, _) -> T.map toLower name `elem` names) languages
+    & fromMaybe (NE.fromList [name], GenericLanguage.makeLanguage name)
 

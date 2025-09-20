@@ -32,3 +32,5 @@ export CAIDE_TEST_BUILD_TIME=1 CAIDE_TEST_RUN_TIME=1 CAIDE_TEST_BUILD_EXIT_CODE=
 "$CAIDE" test && echo "5" && exit 5
 compare_with run_ok a/.caideproblem/test/report.txt
 
+"$CAIDE" make
+compare_with make submission.txt
