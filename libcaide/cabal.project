@@ -1,4 +1,4 @@
-packages: ./*.cabal
+optional-packages: ./*.cabal
 
 source-repository-package
     type: git
