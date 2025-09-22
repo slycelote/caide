@@ -44,7 +44,9 @@ common exe-flags
   ghc-options:     -Wall -static -rtsopts=all
 
   if flag(cppinliner) {
-    ghc-options:   -pgml g++ -optl-no-pie
+    -- Pseudo-package to link with C++ standard library, see:
+    --   https://downloads.haskell.org/~ghc/9.12.2/docs/users_guide/packages.html#linking-against-c-libraries
+    build-depends: system-cxx-std-lib
   }
 
   if os(windows) {
