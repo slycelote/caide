@@ -60,11 +60,11 @@ doParse client url _ = case (mbUri, mbPathSegments) of
     (Just uri, Just seg) | length seg >= 2 && seg !! (length seg - 2) == "problems" -> do
         let probId = last seg
             apiUri = uri{uriPath = "/graphql", uriQuery="", uriFragment=""}
-            apiQuery = "{\"operationName\":\"questionData\",\"variables\":{\"titleSlug\":\"" <> LBS8.pack probId <> "\"}, " <>
-                       "\"query\":\"query questionData($titleSlug: String!) {  question(titleSlug: $titleSlug) { " <>
-                       "title    titleSlug    content    exampleTestcases " <>
+            apiQuery = "{\"operationName\":\"questionDetail\",\"variables\":{\"titleSlug\":\"" <> LBS8.pack probId <> "\"}, " <>
+                       "\"query\":\"query questionDetail($titleSlug: String!) {  question(titleSlug: $titleSlug) { " <>
+                       "title    titleSlug    content    exampleTestcaseList " <>
                        "codeSnippets {      lang      langSlug      code      } " <>
-                       "sampleTestCase    metaData    } " <>
+                       "sampleTestCase metaData    } " <>
                        "}\"}"
         mbJson <- Http.post client apiUri apiQuery [
             (hContentType, "application/json"),
@@ -146,7 +146,7 @@ data Question = Question
                 , titleSlug :: !(Maybe Text)
                 , content :: !(Maybe Text)
                 -- note the spelling
-                , exampleTestcases :: !(Maybe Text)
+                , exampleTestcaseList :: !(Maybe [Aeson.Value])
                 , codeSnippets :: !(Maybe [CodeSnippet])
                 , sampleTestCase :: !(Maybe Text)
                 , metaData :: !MetaData
@@ -232,14 +232,8 @@ parseFromGraphQL probId responseBody = do
         problem = (makeProblem probName (fromMaybe probId (titleSlug question)) probType)
             { problemCodeSnippets = snippets}
 
-        paramsPerTest = case probType of
-            LeetCodeMethod singleMethod -> length $ tcParameters singleMethod
-            LeetCodeClass {} -> 2 -- list of method names, and list of lists of arguments
-            Topcoder _ -> error "Impossible happened"
-            Stream {} -> error "Impossible happened"
-
         testParsings = [ fromContent (content question)
-                       , fromExamples (exampleTestcases question) paramsPerTest
+                       , fromExamples (exampleTestcaseList question)
                        , fromSample (sampleTestCase question)
                        ]
         validTestParsings = rights testParsings
@@ -254,21 +248,14 @@ fromSample Nothing = Left "sampleTestCase not provided"
 fromSample (Just t) | isWhiteSpace t = Left "sampleTestCase not provided"
 fromSample (Just t) = Right [TestCase t Nothing]
 
-fromExamples :: Maybe Text -> Int -> Either Text [TestCase]
-fromExamples Nothing _ = Left "exampleTestcases not provided"
--- Split by lines, each line is a value of a single parameter in a single test case
-fromExamples (Just t) numLinesPerTestCase = let
-    lines = t & T.lines & filter (not . isWhiteSpace)
-    tests = lines & chunksOf numLinesPerTestCase & map T.unlines &
-            map (\input -> TestCase input Nothing)
-
-    in case () of
-      _ | numLinesPerTestCase <= 0  -> Left $
-            "Can't parse exampleTestcases: invalid number of method params " <> tshow numLinesPerTestCase
-        | length lines `mod` numLinesPerTestCase /= 0 -> Left $
-            "Can't parse exampleTestcases: number of method params is " <> tshow numLinesPerTestCase <>
-            ", number of input lines is " <> tshow (length lines)
-        | otherwise -> Right tests
+fromExamples :: Maybe [Aeson.Value] -> Either Text [TestCase]
+fromExamples Nothing = Left "exampleTestcaseList not provided"
+fromExamples (Just arr) = Right $ map testCaseFromInput arr
+  where
+    testCaseFromInput input = TestCase{
+        testCaseInput = T.decodeUtf8Lenient (BS8.toStrict $ Aeson.encode input),
+        testCaseOutput = Nothing
+    }
 
 parseInput :: Text -> Either Text Text
 parseInput t = let
