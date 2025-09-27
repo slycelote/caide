@@ -17,8 +17,11 @@ Obtaining source code
 General build requirements
 --------------------------
 
-CMake, make, g++, Python and Haskell Stack (or cabal+ghc) are required to
-build.
+CMake, make, g++, Python and cabal+ghc (installed with ghcup:
+https://www.haskell.org/ghcup/install/) are required to build.
+Tested with cabal version 3.16 and ghc version 9.12; use "ghcup tui" to
+install latest versions and set them to default.
+
 In addition, curl, diff, PhantomJS, and a C# compiler are required to run tests.
 
 
@@ -28,16 +31,15 @@ Linux build
 All dependencies are likely to be present in your distribution's repositories.
 For example, in Debian:
 
-    > sudo apt-get install cmake g++ python haskell-stack
+    > sudo apt-get install cmake g++ python
 
 Once the dependencies are installed, run the following commands from libcaide
 directory:
 
-    > stack init
-    > stack setup
-    > stack build
+    > cabal update
+    > cabal build
 
-The resulting executable is in $(stack path --local-install-root)/bin.
+The resulting executable is in $(cabal --list-bin caide).
 
 Install test dependencies and run tests:
 
@@ -48,32 +50,28 @@ Install test dependencies and run tests:
 Windows build
 -------------
 
-First, install Haskell Stack tool (https://www.haskellstack.org/). Make sure
-it's in your PATH.
-
-From libcaide directory run:
-
-    > stack init
-    > stack setup
+Make sure GHCUP_MSYS2 environment variable points to msys directory (by default,
+C:\ghcup\msys64).
 
 Setup build environment. You need to do this every time you open a new console
 window.
 
     > setup-env.bat
 
-Next, install make, cmake and Python. It can be done in two ways:
+When building with support for C++ inliner (the default), install make, cmake
+and Python. It can be done in two ways:
   1. Install each utility individually and make sure they are in your PATH
   (either by changing the system environment variable or by modifying
   setup-env.bat accordingly.)
-  2. Install the utilities only inside MSYS environment bundled with Stack:
+  2. Install the utilities only inside MSYS environment:
 
-    > stack exec pacman -- -S make cmake python
+    > %GHCUP_MSYS2%\msys2_shell.cmd -here -mingw64 -no-start -use-full-path -defterm -c "pacman -S mingw-w64-x86_64-make mingw-w64-x86_64-cmake python"
 
 Once all dependencies are installed, you are ready to build with:
 
-    > stack build
+    > cabal update
+    > cabal build
 
 To run tests:
 
     > run-tests.bat
-

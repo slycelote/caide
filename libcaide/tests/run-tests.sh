@@ -32,7 +32,7 @@ export cur_dir
 export CAIDE
 # On Windows use something like CSC=/c/Windows/Microsoft.NET/Framework/v4.0.30319/csc.exe ./run-tests.sh
 export CSC=${CSC:-gmcs}
-export CXX=${CXX:-g++}
+export CXX=${CXX:-c++}
 export CXXFLAGS
 export MONO=${MONO:-}
 export PHANTOMJS=${PHANTOMJS:-phantomjs}

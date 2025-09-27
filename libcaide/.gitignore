@@ -4,7 +4,7 @@
 /res/*.zip
 
 ### Local settings
-linux-cabal.project.local
+*.project.local
 
 ### IntelliJ ###
 *.iml
