@@ -1,6 +1,6 @@
 // Allocators -*- C++ -*-
 
-// Copyright (C) 2001-2020 Free Software Foundation, Inc.
+// Copyright (C) 2001-2024 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -41,6 +41,8 @@
 
 #ifndef _DEBUG_ALLOCATOR_H
 #define _DEBUG_ALLOCATOR_H 1
+
+#include <bits/requires_hosted.h> // GNU extensions are currently omitted
 
 #include <stdexcept>
 #include <bits/functexcept.h>
@@ -112,10 +114,10 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       template<typename _Alloc2>
 	debug_allocator(const debug_allocator<_Alloc2>& __a2,
 			typename __convertible<_Alloc2>::__type = 0)
-	: _M_allocator(__a2._M_allocator), _M_extra(_S_extra()) { }
+	: _M_extra(_S_extra()), _M_allocator(__a2._M_allocator)  { }
 
       debug_allocator(const _Alloc& __a)
-      : _M_allocator(__a), _M_extra(_S_extra()) { }
+      : _M_extra(_S_extra()), _M_allocator(__a)  { }
 
       _GLIBCXX_NODISCARD pointer
       allocate(size_type __n)

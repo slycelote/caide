@@ -1,6 +1,6 @@
 // ABI Support -*- C++ -*-
 
-// Copyright (C) 2000-2020 Free Software Foundation, Inc.
+// Copyright (C) 2000-2024 Free Software Foundation, Inc.
 //
 // This file is part of GCC.
 //
@@ -125,14 +125,22 @@ namespace __cxxabiv1
 
   // DSO destruction.
   int
+#ifdef _GLIBCXX_CDTOR_CALLABI
+  __cxa_atexit(void (_GLIBCXX_CDTOR_CALLABI *)(void*), void*, void*) _GLIBCXX_NOTHROW;
+#else
   __cxa_atexit(void (*)(void*), void*, void*) _GLIBCXX_NOTHROW;
+#endif
 
-  int
+  void
   __cxa_finalize(void*);
 
   // TLS destruction.
   int
+#ifdef _GLIBCXX_CDTOR_CALLABI
+  __cxa_thread_atexit(void (_GLIBCXX_CDTOR_CALLABI *)(void*), void*, void *) _GLIBCXX_NOTHROW;
+#else
   __cxa_thread_atexit(void (*)(void*), void*, void *) _GLIBCXX_NOTHROW;
+#endif
 
   // Pure virtual functions.
   void
@@ -161,7 +169,7 @@ namespace __cxxabiv1
    *  @param __output_buffer A region of memory, allocated with
    *  malloc, of @a *__length bytes, into which the demangled name is
    *  stored.  If @a __output_buffer is not long enough, it is
-   *  expanded using realloc.  @a __output_buffer may instead be NULL;
+   *  expanded using realloc.  @a __output_buffer may instead be null;
    *  in that case, the demangled name is placed in a region of memory
    *  allocated with malloc.
    *
@@ -176,7 +184,7 @@ namespace __cxxabiv1
    *  -3: One of the arguments is invalid.
    *
    *  @return A pointer to the start of the NUL-terminated demangled
-   *  name, or NULL if the demangling fails.  The caller is
+   *  name, or a null pointer if the demangling fails.  The caller is
    *  responsible for deallocating this memory using @c free.
    *
    *  The demangling is performed using the C++ ABI mangling rules,

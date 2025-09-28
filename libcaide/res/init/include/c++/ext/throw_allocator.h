@@ -1,6 +1,6 @@
 // -*- C++ -*-
 
-// Copyright (C) 2005-2020 Free Software Foundation, Inc.
+// Copyright (C) 2005-2024 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the terms
@@ -46,6 +46,8 @@
 #ifndef _THROW_ALLOCATOR_H
 #define _THROW_ALLOCATOR_H 1
 
+#include <bits/requires_hosted.h> // GNU extensions are currently omitted
+
 #include <cmath>
 #include <ctime>
 #include <map>
@@ -73,7 +75,7 @@ namespace __gnu_cxx _GLIBCXX_VISIBILITY(default)
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   /**
-   *  @brief Thown by exception safety machinery.
+   *  @brief Thrown by utilities for testing exception safety.
    *  @ingroup exceptions
    */
   struct forced_error : public std::exception
@@ -493,7 +495,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     }
   };
 
-#ifdef _GLIBCXX_USE_C99_STDINT_TR1
   /**
    *  @brief Base class for random probability control and throw.
    */
@@ -611,7 +612,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       return _S_e;
     }
   };
-#endif // _GLIBCXX_USE_C99_STDINT_TR1
 
   /**
    *  @brief Class with exception generation control. Intended to be
@@ -767,7 +767,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 #endif
   };
 
-#ifdef _GLIBCXX_USE_C99_STDINT_TR1
   /// Type throwing via random condition.
   struct throw_value_random : public throw_value_base<random_condition>
   {
@@ -798,7 +797,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     operator=(throw_value_random&&) = default;
 #endif
   };
-#endif // _GLIBCXX_USE_C99_STDINT_TR1
 
   /**
    *  @brief Allocator class with logging and exception generation control.
@@ -849,13 +847,13 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       { return std::__addressof(__x); }
 
       _GLIBCXX_NODISCARD pointer
-      allocate(size_type __n, const void* hint = 0)
+      allocate(size_type __n, const void* __hint = 0)
       {
 	if (__n > this->max_size())
 	  std::__throw_bad_alloc();
 
 	throw_conditionally();
-	pointer const a = traits::allocate(_M_allocator, __n, hint);
+	pointer const a = traits::allocate(_M_allocator, __n, __hint);
 	insert(a, sizeof(value_type) * __n);
 	return a;
       }
@@ -878,8 +876,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	}
 #else
       void
-      construct(pointer __p, const value_type& val)
-      { return _M_allocator.construct(__p, val); }
+      construct(pointer __p, const value_type& __val)
+      { return _M_allocator.construct(__p, __val); }
 
       void
       destroy(pointer __p)
@@ -938,9 +936,13 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	_GLIBCXX_USE_NOEXCEPT { }
 
       ~throw_allocator_limit() _GLIBCXX_USE_NOEXCEPT { }
+
+#if __cplusplus >= 201103L
+      throw_allocator_limit&
+      operator=(const throw_allocator_limit&) = default;
+#endif
     };
 
-#ifdef _GLIBCXX_USE_C99_STDINT_TR1
   /// Allocator throwing via random condition.
   template<typename _Tp>
     struct throw_allocator_random
@@ -960,8 +962,12 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	_GLIBCXX_USE_NOEXCEPT { }
 
       ~throw_allocator_random() _GLIBCXX_USE_NOEXCEPT { }
+
+#if __cplusplus >= 201103L
+      throw_allocator_random&
+      operator=(const throw_allocator_random&) = default;
+#endif
     };
-#endif // _GLIBCXX_USE_C99_STDINT_TR1
 
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace
@@ -972,6 +978,9 @@ _GLIBCXX_END_NAMESPACE_VERSION
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
   /// Explicit specialization of std::hash for __gnu_cxx::throw_value_limit.
   template<>
     struct hash<__gnu_cxx::throw_value_limit>
@@ -987,7 +996,6 @@ namespace std _GLIBCXX_VISIBILITY(default)
       }
     };
 
-#ifdef _GLIBCXX_USE_C99_STDINT_TR1
   /// Explicit specialization of std::hash for __gnu_cxx::throw_value_random.
   template<>
     struct hash<__gnu_cxx::throw_value_random>
@@ -1002,7 +1010,8 @@ namespace std _GLIBCXX_VISIBILITY(default)
 	return __result;
       }
     };
-#endif
+
+#pragma GCC diagnostic pop
 } // end namespace std
 #endif
 

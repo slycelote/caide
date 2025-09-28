@@ -1,6 +1,6 @@
 // <experimental/timer> -*- C++ -*-
 
-// Copyright (C) 2015-2020 Free Software Foundation, Inc.
+// Copyright (C) 2015-2024 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -32,9 +32,11 @@
 
 #pragma GCC system_header
 
+#include <bits/requires_hosted.h> // experimental is currently omitted
+
 #if __cplusplus >= 201402L
 
-#include <chrono>
+#include <bits/chrono.h>
 #include <system_error>
 #include <thread>
 #include <experimental/netfwd>
@@ -81,11 +83,11 @@ inline namespace v1
     public:
       // types:
 
-      typedef io_context::executor_type executor_type;
-      typedef _Clock clock_type;
-      typedef typename clock_type::duration duration;
-      typedef typename clock_type::time_point time_point;
-      typedef _WaitTraits traits_type;
+      using executor_type = io_context::executor_type;
+      using clock_type = _Clock;
+      using duration = typename clock_type::duration;
+      using time_point = typename clock_type::time_point;
+      using traits_type = _WaitTraits;
 
       // construct / copy / destroy:
 
@@ -170,10 +172,10 @@ inline namespace v1
       friend class io_context;
     };
 
-  typedef basic_waitable_timer<chrono::system_clock> system_timer;
-  typedef basic_waitable_timer<chrono::steady_clock> steady_timer;
-  typedef basic_waitable_timer<chrono::high_resolution_clock>
-    high_resolution_timer;
+  using system_timer = basic_waitable_timer<chrono::system_clock>;
+  using steady_timer = basic_waitable_timer<chrono::steady_clock>;
+  using high_resolution_timer
+    = basic_waitable_timer<chrono::high_resolution_clock>;
 
   template<typename _Clock, typename _WaitTraits>
     void

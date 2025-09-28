@@ -1,6 +1,6 @@
 // <numeric> -*- C++ -*-
 
-// Copyright (C) 2001-2020 Free Software Foundation, Inc.
+// Copyright (C) 2001-2024 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -60,10 +60,37 @@
 #include <bits/c++config.h>
 #include <bits/stl_iterator_base_types.h>
 #include <bits/stl_numeric.h>
-#include <ext/numeric_traits.h>
 
 #ifdef _GLIBCXX_PARALLEL
 # include <parallel/numeric>
+#endif
+
+#if __cplusplus >= 201402L
+# include <type_traits>
+# include <bit>
+# include <ext/numeric_traits.h>
+#endif
+
+#if __cplusplus >= 201703L
+# include <bits/stl_function.h>
+#endif
+
+#if __cplusplus > 201703L
+# include <limits>
+#endif
+
+#define __glibcxx_want_constexpr_numeric
+#define __glibcxx_want_gcd
+#define __glibcxx_want_gcd_lcm
+#define __glibcxx_want_interpolate
+#define __glibcxx_want_lcm
+#define __glibcxx_want_parallel_algorithm
+#define __glibcxx_want_ranges_iota
+#define __glibcxx_want_saturation_arithmetic
+#include <bits/version.h>
+
+#ifdef __glibcxx_saturation_arithmetic // C++ >= 26
+# include <bits/sat_arith.h>
 #endif
 
 /**
@@ -74,70 +101,85 @@
  * arrays, generalized numeric algorithms, and mathematical special functions.
  */
 
-#if __cplusplus >= 201402L
-#include <type_traits>
-
 namespace std _GLIBCXX_VISIBILITY(default)
 {
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
+#if __cplusplus >= 201402L
 namespace __detail
 {
-  // std::abs is not constexpr, doesn't support unsigned integers,
-  // and std::abs(std::numeric_limits<T>::min()) is undefined.
-  template<typename _Up, typename _Tp>
-    constexpr _Up
-    __absu(_Tp __val)
+  // Like std::abs, but supports unsigned types and returns the specified type,
+  // so |std::numeric_limits<_Tp>::min()| is OK if representable in _Res.
+  template<typename _Res, typename _Tp>
+    constexpr _Res
+    __abs_r(_Tp __val)
     {
-      static_assert(is_unsigned<_Up>::value, "result type must be unsigned");
-      static_assert(sizeof(_Up) >= sizeof(_Tp),
+      static_assert(sizeof(_Res) >= sizeof(_Tp),
 	  "result type must be at least as wide as the input type");
-      return __val < 0 ? -(_Up)__val : (_Up)__val;
+
+      if (__val >= 0)
+	return __val;
+#ifdef _GLIBCXX_ASSERTIONS
+      if (!__is_constant_evaluated()) // overflow already detected in constexpr
+	__glibcxx_assert(__val != __gnu_cxx::__int_traits<_Res>::__min);
+#endif
+      return -static_cast<_Res>(__val);
     }
 
-  template<typename _Up> void __absu(bool) = delete;
+  template<typename> void __abs_r(bool) = delete;
 
-  // GCD implementation
+  // GCD implementation, using Stein's algorithm
   template<typename _Tp>
     constexpr _Tp
     __gcd(_Tp __m, _Tp __n)
     {
       static_assert(is_unsigned<_Tp>::value, "type must be unsigned");
-      return __m == 0 ? __n
-	: __n == 0 ? __m
-	: __detail::__gcd(__n, _Tp(__m % __n));
-    }
 
-  // LCM implementation
-  template<typename _Tp>
-    constexpr _Tp
-    __lcm(_Tp __m, _Tp __n)
-    {
-      return (__m != 0 && __n != 0)
-	? (__m / __detail::__gcd(__m, __n)) * __n
-	: 0;
+      if (__m == 0)
+	return __n;
+      if (__n == 0)
+	return __m;
+
+      const int __i = std::__countr_zero(__m);
+      __m >>= __i;
+      const int __j = std::__countr_zero(__n);
+      __n >>= __j;
+      const int __k = __i < __j ? __i : __j; // min(i, j)
+
+      while (true)
+	{
+	  if (__m > __n)
+	    {
+	      _Tp __tmp = __m;
+	      __m = __n;
+	      __n = __tmp;
+	    }
+
+	  __n -= __m;
+
+	  if (__n == 0)
+	    return __m << __k;
+
+	  __n >>= std::__countr_zero(__n);
+	}
     }
 } // namespace __detail
+#endif // C++14
 
-#if __cplusplus >= 201703L
-
-#define __cpp_lib_gcd_lcm 201606
-// These were used in drafts of SD-6:
-#define __cpp_lib_gcd 201606
-#define __cpp_lib_lcm 201606
-
+#ifdef __cpp_lib_gcd_lcm // C++ >= 17
   /// Greatest common divisor
   template<typename _Mn, typename _Nn>
     constexpr common_type_t<_Mn, _Nn>
     gcd(_Mn __m, _Nn __n) noexcept
     {
-      static_assert(is_integral_v<_Mn>, "std::gcd arguments must be integers");
-      static_assert(is_integral_v<_Nn>, "std::gcd arguments must be integers");
-      static_assert(_Mn(2) != _Mn(1), "std::gcd arguments must not be bool");
-      static_assert(_Nn(2) != _Nn(1), "std::gcd arguments must not be bool");
-      using _Up = make_unsigned_t<common_type_t<_Mn, _Nn>>;
-      return __detail::__gcd(__detail::__absu<_Up>(__m),
-			     __detail::__absu<_Up>(__n));
+      static_assert(is_integral_v<_Mn> && is_integral_v<_Nn>,
+		    "std::gcd arguments must be integers");
+      static_assert(_Mn(2) == 2 && _Nn(2) == 2,
+		    "std::gcd arguments must not be bool");
+      using _Ct = common_type_t<_Mn, _Nn>;
+      const _Ct __m2 = __detail::__abs_r<_Ct>(__m);
+      const _Ct __n2 = __detail::__abs_r<_Ct>(__n);
+      return __detail::__gcd<make_unsigned_t<_Ct>>(__m2, __n2);
     }
 
   /// Least common multiple
@@ -145,31 +187,30 @@ namespace __detail
     constexpr common_type_t<_Mn, _Nn>
     lcm(_Mn __m, _Nn __n) noexcept
     {
-      static_assert(is_integral_v<_Mn>, "std::lcm arguments must be integers");
-      static_assert(is_integral_v<_Nn>, "std::lcm arguments must be integers");
-      static_assert(_Mn(2) == 2, "std::lcm arguments must not be bool");
-      static_assert(_Nn(2) == 2, "std::lcm arguments must not be bool");
-      using _Up = make_unsigned_t<common_type_t<_Mn, _Nn>>;
-      return __detail::__lcm(__detail::__absu<_Up>(__m),
-			     __detail::__absu<_Up>(__n));
+      static_assert(is_integral_v<_Mn> && is_integral_v<_Nn>,
+		    "std::lcm arguments must be integers");
+      static_assert(_Mn(2) == 2 && _Nn(2) == 2,
+		    "std::lcm arguments must not be bool");
+      using _Ct = common_type_t<_Mn, _Nn>;
+      const _Ct __m2 = __detail::__abs_r<_Ct>(__m);
+      const _Ct __n2 = __detail::__abs_r<_Ct>(__n);
+      if (__m2 == 0 || __n2 == 0)
+	return 0;
+      _Ct __r = __m2 / __detail::__gcd<make_unsigned_t<_Ct>>(__m2, __n2);
+
+      if constexpr (is_signed_v<_Ct>)
+	if (__is_constant_evaluated())
+	  return __r * __n2; // constant evaluation can detect overflow here.
+
+      bool __overflow = __builtin_mul_overflow(__r, __n2, &__r);
+      __glibcxx_assert(!__overflow);
+      return __r;
     }
 
-#endif // C++17
+#endif // __cpp_lib_gcd_lcm
 
-_GLIBCXX_END_NAMESPACE_VERSION
-} // namespace std
-
-#endif // C++14
-
-#if __cplusplus > 201703L
-#include <limits>
-
-namespace std _GLIBCXX_VISIBILITY(default)
-{
-_GLIBCXX_BEGIN_NAMESPACE_VERSION
   // midpoint
-# define __cpp_lib_interpolate 201902L
-
+#ifdef __cpp_lib_interpolate // C++ >= 20
   template<typename _Tp>
     constexpr
     enable_if_t<__and_v<is_arithmetic<_Tp>, is_same<remove_cv_t<_Tp>, _Tp>,
@@ -215,22 +256,9 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       static_assert( sizeof(_Tp) != 0, "type must be complete" );
       return __a  + (__b - __a) / 2;
     }
-_GLIBCXX_END_NAMESPACE_VERSION
-} // namespace std
+#endif // __cpp_lib_interpolate
 
-#endif // C++20
-
-#if __cplusplus > 201402L
-#include <bits/stl_function.h>
-
-namespace std _GLIBCXX_VISIBILITY(default)
-{
-_GLIBCXX_BEGIN_NAMESPACE_VERSION
-
-#if __cplusplus > 201703L
-#define __cpp_lib_constexpr_numeric 201911L
-#endif
-
+#if __cplusplus >= 201703L
   /// @addtogroup numeric_ops
   /// @{
 
@@ -457,8 +485,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     {
       while (__first != __last)
 	{
-	  auto __v = __init;
-	  __init = __binary_op(__init, *__first);
+	  _Tp __v = std::move(__init);
+	  __init = __binary_op(__v, *__first);
 	  ++__first;
 	  *__result++ = std::move(__v);
 	}
@@ -696,10 +724,12 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     }
 
   /// @} group numeric_ops
+#endif // C++17
 
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace std
 
+#if __cplusplus >= 201703L && _GLIBCXX_HOSTED
 // Parallel STL algorithms
 # if _PSTL_EXECUTION_POLICIES_DEFINED
 // If <execution> has already been included, pull in implementations
@@ -709,9 +739,6 @@ _GLIBCXX_END_NAMESPACE_VERSION
 #  include <pstl/glue_numeric_defs.h>
 #  define _PSTL_NUMERIC_FORWARD_DECLARED 1
 # endif
-
-// Feature test macro for parallel algorithms
-# define __cpp_lib_parallel_algorithm 201603L
 #endif // C++17
 
 #endif /* _GLIBCXX_NUMERIC */

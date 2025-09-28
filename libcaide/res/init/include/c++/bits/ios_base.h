@@ -1,6 +1,6 @@
 // Iostreams base classes -*- C++ -*-
 
-// Copyright (C) 1997-2020 Free Software Foundation, Inc.
+// Copyright (C) 1997-2024 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -79,32 +79,39 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       _S_ios_fmtflags_min = ~__INT_MAX__
     };
 
-  inline _GLIBCXX_CONSTEXPR _Ios_Fmtflags
-  operator&(_Ios_Fmtflags __a, _Ios_Fmtflags __b)
+  _GLIBCXX_NODISCARD _GLIBCXX_CONSTEXPR
+  inline _Ios_Fmtflags
+  operator&(_Ios_Fmtflags __a, _Ios_Fmtflags __b) _GLIBCXX_NOTHROW
   { return _Ios_Fmtflags(static_cast<int>(__a) & static_cast<int>(__b)); }
 
-  inline _GLIBCXX_CONSTEXPR _Ios_Fmtflags
-  operator|(_Ios_Fmtflags __a, _Ios_Fmtflags __b)
+  _GLIBCXX_NODISCARD _GLIBCXX_CONSTEXPR
+  inline _Ios_Fmtflags
+  operator|(_Ios_Fmtflags __a, _Ios_Fmtflags __b) _GLIBCXX_NOTHROW
   { return _Ios_Fmtflags(static_cast<int>(__a) | static_cast<int>(__b)); }
 
-  inline _GLIBCXX_CONSTEXPR _Ios_Fmtflags
-  operator^(_Ios_Fmtflags __a, _Ios_Fmtflags __b)
+  _GLIBCXX_NODISCARD _GLIBCXX_CONSTEXPR
+  inline _Ios_Fmtflags
+  operator^(_Ios_Fmtflags __a, _Ios_Fmtflags __b) _GLIBCXX_NOTHROW
   { return _Ios_Fmtflags(static_cast<int>(__a) ^ static_cast<int>(__b)); }
 
-  inline _GLIBCXX_CONSTEXPR _Ios_Fmtflags
-  operator~(_Ios_Fmtflags __a)
+  _GLIBCXX_NODISCARD _GLIBCXX_CONSTEXPR
+  inline _Ios_Fmtflags
+  operator~(_Ios_Fmtflags __a) _GLIBCXX_NOTHROW
   { return _Ios_Fmtflags(~static_cast<int>(__a)); }
 
+  _GLIBCXX14_CONSTEXPR
   inline const _Ios_Fmtflags&
-  operator|=(_Ios_Fmtflags& __a, _Ios_Fmtflags __b)
+  operator|=(_Ios_Fmtflags& __a, _Ios_Fmtflags __b) _GLIBCXX_NOTHROW
   { return __a = __a | __b; }
 
+  _GLIBCXX14_CONSTEXPR
   inline const _Ios_Fmtflags&
-  operator&=(_Ios_Fmtflags& __a, _Ios_Fmtflags __b)
+  operator&=(_Ios_Fmtflags& __a, _Ios_Fmtflags __b) _GLIBCXX_NOTHROW
   { return __a = __a & __b; }
 
+  _GLIBCXX14_CONSTEXPR
   inline const _Ios_Fmtflags&
-  operator^=(_Ios_Fmtflags& __a, _Ios_Fmtflags __b)
+  operator^=(_Ios_Fmtflags& __a, _Ios_Fmtflags __b) _GLIBCXX_NOTHROW
   { return __a = __a ^ __b; }
 
 
@@ -116,37 +123,45 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       _S_in 		= 1L << 3,
       _S_out 		= 1L << 4,
       _S_trunc 		= 1L << 5,
+      _S_noreplace 	= 1L << 6,
       _S_ios_openmode_end = 1L << 16,
       _S_ios_openmode_max = __INT_MAX__,
       _S_ios_openmode_min = ~__INT_MAX__
     };
 
-  inline _GLIBCXX_CONSTEXPR _Ios_Openmode
-  operator&(_Ios_Openmode __a, _Ios_Openmode __b)
+  _GLIBCXX_NODISCARD _GLIBCXX_CONSTEXPR
+  inline _Ios_Openmode
+  operator&(_Ios_Openmode __a, _Ios_Openmode __b) _GLIBCXX_NOTHROW
   { return _Ios_Openmode(static_cast<int>(__a) & static_cast<int>(__b)); }
 
-  inline _GLIBCXX_CONSTEXPR _Ios_Openmode
-  operator|(_Ios_Openmode __a, _Ios_Openmode __b)
+  _GLIBCXX_NODISCARD _GLIBCXX_CONSTEXPR
+  inline _Ios_Openmode
+  operator|(_Ios_Openmode __a, _Ios_Openmode __b) _GLIBCXX_NOTHROW
   { return _Ios_Openmode(static_cast<int>(__a) | static_cast<int>(__b)); }
 
-  inline _GLIBCXX_CONSTEXPR _Ios_Openmode
-  operator^(_Ios_Openmode __a, _Ios_Openmode __b)
+  _GLIBCXX_NODISCARD _GLIBCXX_CONSTEXPR
+  inline _Ios_Openmode
+  operator^(_Ios_Openmode __a, _Ios_Openmode __b) _GLIBCXX_NOTHROW
   { return _Ios_Openmode(static_cast<int>(__a) ^ static_cast<int>(__b)); }
 
-  inline _GLIBCXX_CONSTEXPR _Ios_Openmode
-  operator~(_Ios_Openmode __a)
+  _GLIBCXX_NODISCARD _GLIBCXX_CONSTEXPR
+  inline _Ios_Openmode
+  operator~(_Ios_Openmode __a) _GLIBCXX_NOTHROW
   { return _Ios_Openmode(~static_cast<int>(__a)); }
 
+  _GLIBCXX14_CONSTEXPR
   inline const _Ios_Openmode&
-  operator|=(_Ios_Openmode& __a, _Ios_Openmode __b)
+  operator|=(_Ios_Openmode& __a, _Ios_Openmode __b) _GLIBCXX_NOTHROW
   { return __a = __a | __b; }
 
+  _GLIBCXX14_CONSTEXPR
   inline const _Ios_Openmode&
-  operator&=(_Ios_Openmode& __a, _Ios_Openmode __b)
+  operator&=(_Ios_Openmode& __a, _Ios_Openmode __b) _GLIBCXX_NOTHROW
   { return __a = __a & __b; }
 
+  _GLIBCXX14_CONSTEXPR
   inline const _Ios_Openmode&
-  operator^=(_Ios_Openmode& __a, _Ios_Openmode __b)
+  operator^=(_Ios_Openmode& __a, _Ios_Openmode __b) _GLIBCXX_NOTHROW
   { return __a = __a ^ __b; }
 
 
@@ -161,32 +176,39 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       _S_ios_iostate_min = ~__INT_MAX__
     };
 
-  inline _GLIBCXX_CONSTEXPR _Ios_Iostate
-  operator&(_Ios_Iostate __a, _Ios_Iostate __b)
+  _GLIBCXX_NODISCARD _GLIBCXX_CONSTEXPR
+  inline _Ios_Iostate
+  operator&(_Ios_Iostate __a, _Ios_Iostate __b) _GLIBCXX_NOTHROW
   { return _Ios_Iostate(static_cast<int>(__a) & static_cast<int>(__b)); }
 
-  inline _GLIBCXX_CONSTEXPR _Ios_Iostate
-  operator|(_Ios_Iostate __a, _Ios_Iostate __b)
+  _GLIBCXX_NODISCARD _GLIBCXX_CONSTEXPR
+  inline _Ios_Iostate
+  operator|(_Ios_Iostate __a, _Ios_Iostate __b) _GLIBCXX_NOTHROW
   { return _Ios_Iostate(static_cast<int>(__a) | static_cast<int>(__b)); }
 
-  inline _GLIBCXX_CONSTEXPR _Ios_Iostate
-  operator^(_Ios_Iostate __a, _Ios_Iostate __b)
+  _GLIBCXX_NODISCARD _GLIBCXX_CONSTEXPR
+  inline _Ios_Iostate
+  operator^(_Ios_Iostate __a, _Ios_Iostate __b) _GLIBCXX_NOTHROW
   { return _Ios_Iostate(static_cast<int>(__a) ^ static_cast<int>(__b)); }
 
-  inline _GLIBCXX_CONSTEXPR _Ios_Iostate
-  operator~(_Ios_Iostate __a)
+  _GLIBCXX_NODISCARD _GLIBCXX_CONSTEXPR
+  inline _Ios_Iostate
+  operator~(_Ios_Iostate __a) _GLIBCXX_NOTHROW
   { return _Ios_Iostate(~static_cast<int>(__a)); }
 
+  _GLIBCXX14_CONSTEXPR
   inline const _Ios_Iostate&
-  operator|=(_Ios_Iostate& __a, _Ios_Iostate __b)
+  operator|=(_Ios_Iostate& __a, _Ios_Iostate __b) _GLIBCXX_NOTHROW
   { return __a = __a | __b; }
 
+  _GLIBCXX14_CONSTEXPR
   inline const _Ios_Iostate&
-  operator&=(_Ios_Iostate& __a, _Ios_Iostate __b)
+  operator&=(_Ios_Iostate& __a, _Ios_Iostate __b) _GLIBCXX_NOTHROW
   { return __a = __a & __b; }
 
-  inline const  _Ios_Iostate&
-  operator^=(_Ios_Iostate& __a, _Ios_Iostate __b)
+  _GLIBCXX14_CONSTEXPR
+  inline const _Ios_Iostate&
+  operator^=(_Ios_Iostate& __a, _Ios_Iostate __b) _GLIBCXX_NOTHROW
   { return __a = __a ^ __b; }
 
 
@@ -204,12 +226,16 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   template <> struct is_error_code_enum<io_errc> : public true_type { };
 
-  const error_category& iostream_category() noexcept;
+  [[__nodiscard__, __gnu__::__const__]]
+  const error_category&
+  iostream_category() noexcept;
 
+  [[__nodiscard__]]
   inline error_code
   make_error_code(io_errc __e) noexcept
   { return error_code(static_cast<int>(__e), iostream_category()); }
 
+  [[__nodiscard__]]
   inline error_condition
   make_error_condition(io_errc __e) noexcept
   { return error_condition(static_cast<int>(__e), iostream_category()); }
@@ -465,6 +491,13 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
     /// Truncate an existing stream when opening.  Default for @c ofstream.
     static const openmode trunc =	_S_trunc;
+
+    static const openmode __noreplace =	_S_noreplace;
+
+#ifdef __glibcxx_ios_noreplace // C++ >= 23 && HOSTED
+    /// Open a file in exclusive mode.
+    static const openmode noreplace =	_S_noreplace;
+#endif
 
     // 27.4.2.1.5  Type ios_base::seekdir
     /**

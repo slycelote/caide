@@ -1,6 +1,6 @@
 // std::unique_lock implementation -*- C++ -*-
 
-// Copyright (C) 2008-2020 Free Software Foundation, Inc.
+// Copyright (C) 2008-2024 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -36,8 +36,10 @@
 # include <bits/c++0x_warning.h>
 #else
 
-#include <chrono>
+#include <bits/chrono.h>
+#include <bits/error_constants.h> // for std::errc
 #include <bits/move.h> // for std::swap
+#include <bits/std_mutex.h> // for std::defer_lock_t
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
@@ -50,7 +52,9 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    * to another unique_lock by move construction or move assignment. If a
    * mutex lock is owned when the destructor runs ownership will be released.
    *
+   * @headerfile mutex
    * @ingroup mutexes
+   * @since C++11
    */
   template<typename _Mutex>
     class unique_lock
@@ -62,6 +66,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       : _M_device(0), _M_owns(false)
       { }
 
+      [[__nodiscard__]]
       explicit unique_lock(mutex_type& __m)
       : _M_device(std::__addressof(__m)), _M_owns(false)
       {
@@ -73,10 +78,12 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       : _M_device(std::__addressof(__m)), _M_owns(false)
       { }
 
+      [[__nodiscard__]]
       unique_lock(mutex_type& __m, try_to_lock_t)
       : _M_device(std::__addressof(__m)), _M_owns(_M_device->try_lock())
       { }
 
+      [[__nodiscard__]]
       unique_lock(mutex_type& __m, adopt_lock_t) noexcept
       : _M_device(std::__addressof(__m)), _M_owns(true)
       {
@@ -84,6 +91,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       }
 
       template<typename _Clock, typename _Duration>
+	[[__nodiscard__]]
 	unique_lock(mutex_type& __m,
 		    const chrono::time_point<_Clock, _Duration>& __atime)
 	: _M_device(std::__addressof(__m)),
@@ -91,6 +99,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	{ }
 
       template<typename _Rep, typename _Period>
+	[[__nodiscard__]]
 	unique_lock(mutex_type& __m,
 		    const chrono::duration<_Rep, _Period>& __rtime)
 	: _M_device(std::__addressof(__m)),
@@ -140,6 +149,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	  }
       }
 
+      _GLIBCXX_NODISCARD
       bool
       try_lock()
       {
@@ -155,6 +165,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       }
 
       template<typename _Clock, typename _Duration>
+	_GLIBCXX_NODISCARD
 	bool
 	try_lock_until(const chrono::time_point<_Clock, _Duration>& __atime)
 	{
@@ -170,6 +181,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	}
 
       template<typename _Rep, typename _Period>
+	_GLIBCXX_NODISCARD
 	bool
 	try_lock_for(const chrono::duration<_Rep, _Period>& __rtime)
 	{
@@ -212,6 +224,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	return __ret;
       }
 
+      _GLIBCXX_NODISCARD
       bool
       owns_lock() const noexcept
       { return _M_owns; }
@@ -219,6 +232,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       explicit operator bool() const noexcept
       { return owns_lock(); }
 
+      _GLIBCXX_NODISCARD
       mutex_type*
       mutex() const noexcept
       { return _M_device; }

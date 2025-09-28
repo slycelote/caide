@@ -1,6 +1,6 @@
 // basic_ios member functions -*- C++ -*-
 
-// Copyright (C) 1999-2020 Free Software Foundation, Inc.
+// Copyright (C) 1999-2024 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -43,7 +43,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       if (this->rdbuf())
 	_M_streambuf_state = __state;
       else
-	  _M_streambuf_state = __state | badbit;
+	_M_streambuf_state = __state | badbit;
       if (this->exceptions() & this->rdstate())
 	__throw_ios_failure(__N("basic_ios::clear"));
     }
@@ -64,7 +64,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     {
       // _GLIBCXX_RESOLVE_LIB_DEFECTS
       // 292. effects of a.copyfmt (a)
-      if (this != &__rhs)
+      if (this != std::__addressof(__rhs))
 	{
 	  // Per 27.1.1, do not call imbue, yet must trash all caches
 	  // associated with imbue()
@@ -156,20 +156,9 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     void
     basic_ios<_CharT, _Traits>::_M_cache_locale(const locale& __loc)
     {
-      if (__builtin_expect(has_facet<__ctype_type>(__loc), true))
-	_M_ctype = std::__addressof(use_facet<__ctype_type>(__loc));
-      else
-	_M_ctype = 0;
-
-      if (__builtin_expect(has_facet<__num_put_type>(__loc), true))
-	_M_num_put = std::__addressof(use_facet<__num_put_type>(__loc));
-      else
-	_M_num_put = 0;
-
-      if (__builtin_expect(has_facet<__num_get_type>(__loc), true))
-	_M_num_get = std::__addressof(use_facet<__num_get_type>(__loc));
-      else
-	_M_num_get = 0;
+      _M_ctype = std::__try_use_facet<__ctype_type>(__loc);
+      _M_num_put = std::__try_use_facet<__num_put_type>(__loc);
+      _M_num_get = std::__try_use_facet<__num_get_type>(__loc);
     }
 
   // Inhibit implicit instantiations for required instantiations,

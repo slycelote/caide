@@ -1,6 +1,6 @@
 // Implementation of std::reference_wrapper -*- C++ -*-
 
-// Copyright (C) 2004-2020 Free Software Foundation, Inc.
+// Copyright (C) 2004-2024 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -32,13 +32,15 @@
 
 #pragma GCC system_header
 
-#if __cplusplus < 201103L
-# include <bits/c++0x_warning.h>
-#else
+#if __cplusplus >= 201103L
 
 #include <bits/move.h>
 #include <bits/invoke.h>
 #include <bits/stl_function.h> // for unary_function and binary_function
+
+#if __glibcxx_reference_wrapper >= 202403L // >= C++26
+# include <compare>
+#endif
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
@@ -54,6 +56,10 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   template<typename _Res, typename... _ArgTypes>
     struct _Maybe_unary_or_binary_function { };
 
+// Ignore warnings about unary_function and binary_function.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
   /// Derives from @c unary_function, as appropriate.
   template<typename _Res, typename _T1>
     struct _Maybe_unary_or_binary_function<_Res, _T1>
@@ -63,6 +69,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   template<typename _Res, typename _T1, typename _T2>
     struct _Maybe_unary_or_binary_function<_Res, _T1, _T2>
     : std::binary_function<_T1, _T2, _Res> { };
+
+#pragma GCC diagnostic pop
 
   template<typename _Signature>
     struct _Mem_fn_traits;
@@ -217,6 +225,10 @@ _GLIBCXX_MEM_FN_TRAITS(&& noexcept, false_type, true_type)
     : _Weak_result_type<_Tp>, _Refwrap_base_arg1<_Tp>, _Refwrap_base_arg2<_Tp>
     { };
 
+// Ignore warnings about unary_function and binary_function.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
   // - a function type (unary)
   template<typename _Res, typename _T1 _GLIBCXX_NOEXCEPT_PARM>
     struct _Reference_wrapper_base<_Res(_T1) _GLIBCXX_NOEXCEPT_QUAL>
@@ -282,6 +294,7 @@ _GLIBCXX_MEM_FN_TRAITS(&& noexcept, false_type, true_type)
     {
       using result_type = typename _Mem_fn_traits<_MemFunPtr>::__result_type;
     };
+#pragma GCC diagnostic pop
 #endif // ! C++20
 
   /// @endcond
@@ -339,8 +352,9 @@ _GLIBCXX_MEM_FN_TRAITS(&& noexcept, false_type, true_type)
 
       template<typename... _Args>
 	_GLIBCXX20_CONSTEXPR
-	typename result_of<_Tp&(_Args&&...)>::type
+	typename __invoke_result<_Tp&, _Args...>::type
 	operator()(_Args&&... __args) const
+	noexcept(__is_nothrow_invocable<_Tp&, _Args...>::value)
 	{
 #if __cplusplus > 201703L
 	  if constexpr (is_object_v<type>)
@@ -348,6 +362,53 @@ _GLIBCXX_MEM_FN_TRAITS(&& noexcept, false_type, true_type)
 #endif
 	  return std::__invoke(get(), std::forward<_Args>(__args)...);
 	}
+
+#if __glibcxx_reference_wrapper >= 202403L // >= C++26
+      // [refwrap.comparisons], comparisons
+      [[nodiscard]]
+      friend constexpr bool
+      operator==(reference_wrapper __x, reference_wrapper __y)
+      requires requires { { __x.get() == __y.get() } -> convertible_to<bool>; }
+      { return __x.get() == __y.get(); }
+
+      [[nodiscard]]
+      friend constexpr bool
+      operator==(reference_wrapper __x, const _Tp& __y)
+      requires requires { { __x.get() == __y } -> convertible_to<bool>; }
+      { return __x.get() == __y; }
+
+      [[nodiscard]]
+      friend constexpr bool
+      operator==(reference_wrapper __x, reference_wrapper<const _Tp> __y)
+      requires (!is_const_v<_Tp>)
+	&& requires { { __x.get() == __y.get() } -> convertible_to<bool>; }
+      { return __x.get() == __y.get(); }
+
+      // _GLIBCXX_RESOLVE_LIB_DEFECTS
+      // 4071. reference_wrapper comparisons are not SFINAE-friendly
+
+      [[nodiscard]]
+      friend constexpr auto
+      operator<=>(reference_wrapper __x, reference_wrapper __y)
+      requires requires (const _Tp __t) {
+	{ __t < __t } -> __detail::__boolean_testable;
+      }
+      { return __detail::__synth3way(__x.get(), __y.get()); }
+
+      [[nodiscard]]
+      friend constexpr auto
+      operator<=>(reference_wrapper __x, const _Tp& __y)
+      requires requires { { __y < __y } -> __detail::__boolean_testable; }
+      { return __detail::__synth3way(__x.get(), __y); }
+
+      [[nodiscard]]
+      friend constexpr auto
+      operator<=>(reference_wrapper __x, reference_wrapper<const _Tp> __y)
+      requires (!is_const_v<_Tp>) && requires (const _Tp __t) {
+	{ __t < __t } -> __detail::__boolean_testable;
+      }
+      { return __detail::__synth3way(__x.get(), __y.get()); }
+#endif
     };
 
 #if __cpp_deduction_guides

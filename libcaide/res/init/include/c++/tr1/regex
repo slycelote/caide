@@ -1,6 +1,6 @@
 // class template regex -*- C++ -*-
 
-// Copyright (C) 2007-2020 Free Software Foundation, Inc.
+// Copyright (C) 2007-2024 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -32,6 +32,8 @@
 #define _GLIBCXX_TR1_REGEX 1
 
 #pragma GCC system_header
+
+#include <bits/requires_hosted.h> // TR1
 
 #include <algorithm>
 #include <bitset>
@@ -2022,7 +2024,7 @@ namespace regex_constants
       /**
        * @name 10.5 Allocator
        */
-      ///@{
+      ///@{ 
 
       /**
        * @brief Gets a copy of the allocator.
@@ -2036,7 +2038,7 @@ namespace regex_constants
       /**
        * @name 10.6 Swap
        */
-       ///@{
+       ///@{ 
 
       /**
        * @brief Swaps the contents of two match_results.

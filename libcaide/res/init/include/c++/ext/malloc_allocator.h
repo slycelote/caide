@@ -1,6 +1,6 @@
 // Allocator that wraps "C" malloc -*- C++ -*-
 
-// Copyright (C) 2001-2020 Free Software Foundation, Inc.
+// Copyright (C) 2001-2024 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -28,6 +28,8 @@
 
 #ifndef _MALLOC_ALLOCATOR_H
 #define _MALLOC_ALLOCATOR_H 1
+
+#include <bits/requires_hosted.h> // malloc
 
 #include <cstdlib>
 #include <cstddef>
@@ -103,16 +105,22 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       allocate(size_type __n, const void* = 0)
       {
 #if __cplusplus >= 201103L
-	 // _GLIBCXX_RESOLVE_LIB_DEFECTS
-	 // 3308. std::allocator<void>().allocate(n)
-	 static_assert(sizeof(_Tp) != 0, "cannot allocate incomplete types");
+	// _GLIBCXX_RESOLVE_LIB_DEFECTS
+	// 3308. std::allocator<void>().allocate(n)
+	static_assert(sizeof(_Tp) != 0, "cannot allocate incomplete types");
 #endif
 
-	if (__n > this->_M_max_size())
-	  std::__throw_bad_alloc();
+	if (__builtin_expect(__n > this->_M_max_size(), false))
+	  {
+	    // _GLIBCXX_RESOLVE_LIB_DEFECTS
+	    // 3190. allocator::allocate sometimes returns too little storage
+	    if (__n > (std::size_t(-1) / sizeof(_Tp)))
+	      std::__throw_bad_array_new_length();
+	    std::__throw_bad_alloc();
+	  }
 
 	_Tp* __ret = 0;
-#if __cpp_aligned_new
+#if __cpp_aligned_new && __cplusplus >= 201103L
 #if __cplusplus > 201402L && _GLIBCXX_HAVE_ALIGNED_ALLOC
 	if (alignof(_Tp) > alignof(std::max_align_t))
 	  {
@@ -153,7 +161,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       template<typename _Up, typename... _Args>
         void
         construct(_Up* __p, _Args&&... __args)
-	noexcept(std::is_nothrow_constructible<_Up, _Args...>::value)
+	noexcept(std::__is_nothrow_new_constructible<_Up, _Args...>)
 	{ ::new((void *)__p) _Up(std::forward<_Args>(__args)...); }
 
       template<typename _Up>

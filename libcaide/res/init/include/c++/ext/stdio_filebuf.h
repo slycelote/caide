@@ -1,6 +1,6 @@
 // File descriptor layer for filebuf -*- C++ -*-
 
-// Copyright (C) 2002-2020 Free Software Foundation, Inc.
+// Copyright (C) 2002-2024 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -30,6 +30,8 @@
 #define _STDIO_FILEBUF_H 1
 
 #pragma GCC system_header
+
+#include <bits/requires_hosted.h> // GNU extensions are currently omitted
 
 #include <fstream>
 
@@ -75,7 +77,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
        *  closed when the stdio_filebuf is closed/destroyed.
       */
       stdio_filebuf(int __fd, std::ios_base::openmode __mode,
-		    size_t __size = static_cast<size_t>(BUFSIZ));
+		    size_t __size = static_cast<size_t>(_GLIBCXX_BUFSIZ));
 
       /**
        *  @param  __f  An open @c FILE*.
@@ -88,7 +90,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
        *  stdio_filebuf is closed/destroyed.
       */
       stdio_filebuf(std::__c_file* __f, std::ios_base::openmode __mode,
-		    size_t __size = static_cast<size_t>(BUFSIZ));
+		    size_t __size = static_cast<size_t>(_GLIBCXX_BUFSIZ));
 
       /**
        *  Closes the external data stream if the file descriptor constructor

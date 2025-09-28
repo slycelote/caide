@@ -1,6 +1,6 @@
 // TR1 functional_hash.h header -*- C++ -*-
 
-// Copyright (C) 2007-2020 Free Software Foundation, Inc.
+// Copyright (C) 2007-2024 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -38,6 +38,10 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
 namespace tr1
 {
+// Ignore warnings about std::unary_function and std::binary_function.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
   /// Class template hash.
   // Declaration of default hash functor std::tr1::hash.  The types for
   // which std::tr1::hash<T> is well-defined is in clause 6.3.3. of the PDTR.
@@ -56,6 +60,7 @@ namespace tr1
       operator()(_Tp* __p) const
       { return reinterpret_cast<size_t>(__p); }
     };
+#pragma GCC diagnostic pop
 
   /// Explicit specializations for integer types.
 #define _TR1_hashtable_define_trivial_hash(_Tp) 	\
@@ -64,19 +69,22 @@ namespace tr1
     hash<_Tp>::operator()(_Tp __val) const		\
     { return static_cast<size_t>(__val); }
 
-  _TR1_hashtable_define_trivial_hash(bool);
-  _TR1_hashtable_define_trivial_hash(char);
-  _TR1_hashtable_define_trivial_hash(signed char);
-  _TR1_hashtable_define_trivial_hash(unsigned char);
-  _TR1_hashtable_define_trivial_hash(wchar_t);
-  _TR1_hashtable_define_trivial_hash(short);
-  _TR1_hashtable_define_trivial_hash(int);
-  _TR1_hashtable_define_trivial_hash(long);
-  _TR1_hashtable_define_trivial_hash(long long);
-  _TR1_hashtable_define_trivial_hash(unsigned short);
-  _TR1_hashtable_define_trivial_hash(unsigned int);
-  _TR1_hashtable_define_trivial_hash(unsigned long);
-  _TR1_hashtable_define_trivial_hash(unsigned long long);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wlong-long"
+  _TR1_hashtable_define_trivial_hash(bool)
+  _TR1_hashtable_define_trivial_hash(char)
+  _TR1_hashtable_define_trivial_hash(signed char)
+  _TR1_hashtable_define_trivial_hash(unsigned char)
+  _TR1_hashtable_define_trivial_hash(wchar_t)
+  _TR1_hashtable_define_trivial_hash(short)
+  _TR1_hashtable_define_trivial_hash(int)
+  _TR1_hashtable_define_trivial_hash(long)
+  _TR1_hashtable_define_trivial_hash(long long)
+  _TR1_hashtable_define_trivial_hash(unsigned short)
+  _TR1_hashtable_define_trivial_hash(unsigned int)
+  _TR1_hashtable_define_trivial_hash(unsigned long)
+  _TR1_hashtable_define_trivial_hash(unsigned long long)
+#pragma GCC diagnostic pop
 
 #undef _TR1_hashtable_define_trivial_hash
 
@@ -128,6 +136,8 @@ namespace tr1
         static size_t
         hash(const _Tp* __ptr, size_t __clength)
         {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wlong-long"
 	  size_t __result
 	    = static_cast<size_t>(14695981039346656037ULL);
 	  const char* __cptr = reinterpret_cast<const char*>(__ptr);
@@ -137,6 +147,7 @@ namespace tr1
 	      __result *= static_cast<size_t>(1099511628211ULL);
 	    }
 	  return __result;
+#pragma GCC diagnostic pop
 	}
     };
 

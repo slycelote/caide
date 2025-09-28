@@ -1,6 +1,6 @@
 // unordered_set implementation -*- C++ -*-
 
-// Copyright (C) 2010-2020 Free Software Foundation, Inc.
+// Copyright (C) 2010-2024 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -29,6 +29,11 @@
 
 #ifndef _UNORDERED_SET_H
 #define _UNORDERED_SET_H
+
+#include <bits/hashtable.h>
+#include <bits/allocator.h>
+#include <bits/functional_hash.h> // hash
+#include <bits/stl_function.h>    // equal_to
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
@@ -75,6 +80,8 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
    *  the elements themselves.
    *
    *  @ingroup unordered_associative_containers
+   *  @headerfile unordered_set
+   *  @since C++11
    *
    *  @tparam  _Value  Type of key objects.
    *  @tparam  _Hash  Hashing function object type, defaults to hash<_Value>.
@@ -124,7 +131,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       typedef typename _Hashtable::difference_type	difference_type;
       ///@}
 
-#if __cplusplus > 201402L
+#ifdef __glibcxx_node_extract // >= C++17 && HOSTED
       using node_type = typename _Hashtable::node_type;
       using insert_return_type = typename _Hashtable::insert_return_type;
 #endif
@@ -480,7 +487,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       insert(initializer_list<value_type> __l)
       { _M_h.insert(__l); }
 
-#if __cplusplus > 201402L
+#ifdef __glibcxx_node_extract // >= C++17 && HOSTED
       /// Extract a node.
       node_type
       extract(const_iterator __pos)
@@ -503,7 +510,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       iterator
       insert(const_iterator, node_type&& __nh)
       { return _M_h._M_reinsert_node(std::move(__nh)).position; }
-#endif // C++17
+#endif // node_extract
 
       ///@{
       /**
@@ -587,7 +594,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       noexcept( noexcept(_M_h.swap(__x._M_h)) )
       { _M_h.swap(__x._M_h); }
 
-#if __cplusplus > 201402L
+#ifdef __glibcxx_node_extract // >= C++17 && HOSTED
       template<typename, typename, typename>
 	friend class std::_Hash_merge_helper;
 
@@ -616,7 +623,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 	void
 	merge(unordered_multiset<_Value, _H2, _P2, _Alloc>&& __source)
 	{ merge(__source); }
-#endif // C++17
+#endif // node_extract
 
       // observers.
 
@@ -650,11 +657,28 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       find(const key_type& __x)
       { return _M_h.find(__x); }
 
+#if __cplusplus > 201703L
+      template<typename _Kt>
+	auto
+	find(const _Kt& __k)
+	-> decltype(_M_h._M_find_tr(__k))
+	{ return _M_h._M_find_tr(__k); }
+#endif
+
       const_iterator
       find(const key_type& __x) const
       { return _M_h.find(__x); }
+
+#if __cplusplus > 201703L
+      template<typename _Kt>
+	auto
+	find(const _Kt& __k) const
+	-> decltype(_M_h._M_find_tr(__k))
+	{ return _M_h._M_find_tr(__k); }
+#endif
       ///@}
 
+      ///@{
       /**
        *  @brief  Finds the number of elements.
        *  @param  __x  Element to located.
@@ -669,6 +693,16 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       { return _M_h.count(__x); }
 
 #if __cplusplus > 201703L
+      template<typename _Kt>
+	auto
+	count(const _Kt& __k) const
+	-> decltype(_M_h._M_count_tr(__k))
+	{ return _M_h._M_count_tr(__k); }
+#endif
+      ///@}
+
+#if __cplusplus > 201703L
+      ///@{
       /**
        *  @brief  Finds whether an element with the given key exists.
        *  @param  __x  Key of elements to be located.
@@ -677,6 +711,13 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       bool
       contains(const key_type& __x) const
       { return _M_h.find(__x) != _M_h.end(); }
+
+      template<typename _Kt>
+	auto
+	contains(const _Kt& __k) const
+	-> decltype(_M_h._M_find_tr(__k), void(), true)
+	{ return _M_h._M_find_tr(__k) != _M_h.end(); }
+      ///@}
 #endif
 
       ///@{
@@ -692,9 +733,25 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       equal_range(const key_type& __x)
       { return _M_h.equal_range(__x); }
 
+#if __cplusplus > 201703L
+      template<typename _Kt>
+	auto
+	equal_range(const _Kt& __k)
+	-> decltype(_M_h._M_equal_range_tr(__k))
+	{ return _M_h._M_equal_range_tr(__k); }
+#endif
+
       std::pair<const_iterator, const_iterator>
       equal_range(const key_type& __x) const
       { return _M_h.equal_range(__x); }
+
+#if __cplusplus > 201703L
+      template<typename _Kt>
+	auto
+	equal_range(const _Kt& __k) const
+	-> decltype(_M_h._M_equal_range_tr(__k))
+	{ return _M_h._M_equal_range_tr(__k); }
+#endif
       ///@}
 
       // bucket interface.
@@ -893,6 +950,8 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
    *  elements' keys are the elements themselves.
    *
    *  @ingroup unordered_associative_containers
+   *  @headerfile unordered_set
+   *  @since C++11
    *
    *  @tparam  _Value  Type of key objects.
    *  @tparam  _Hash  Hashing function object type, defaults to hash<_Value>.
@@ -940,7 +999,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       typedef typename _Hashtable::difference_type	difference_type;
       ///@}
 
-#if __cplusplus > 201402L
+#ifdef __glibcxx_node_extract // >= C++17 && HOSTED
       using node_type = typename _Hashtable::node_type;
 #endif
 
@@ -1273,7 +1332,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       insert(initializer_list<value_type> __l)
       { _M_h.insert(__l); }
 
-#if __cplusplus > 201402L
+#ifdef __glibcxx_node_extract // >= C++17 && HOSTED
       /// Extract a node.
       node_type
       extract(const_iterator __pos)
@@ -1296,7 +1355,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       iterator
       insert(const_iterator __hint, node_type&& __nh)
       { return _M_h._M_reinsert_node_multi(__hint, std::move(__nh)); }
-#endif // C++17
+#endif // node_extract
 
       ///@{
       /**
@@ -1385,7 +1444,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       noexcept( noexcept(_M_h.swap(__x._M_h)) )
       { _M_h.swap(__x._M_h); }
 
-#if __cplusplus > 201402L
+#ifdef __glibcxx_node_extract // >= C++17 && HOSTED
       template<typename, typename, typename>
 	friend class std::_Hash_merge_helper;
 
@@ -1416,7 +1475,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 	void
 	merge(unordered_set<_Value, _H2, _P2, _Alloc>&& __source)
 	{ merge(__source); }
-#endif // C++17
+#endif // node_extract
 
       // observers.
 
@@ -1450,11 +1509,28 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       find(const key_type& __x)
       { return _M_h.find(__x); }
 
+#if __cplusplus > 201703L
+      template<typename _Kt>
+	auto
+	find(const _Kt& __x)
+	-> decltype(_M_h._M_find_tr(__x))
+	{ return _M_h._M_find_tr(__x); }
+#endif
+
       const_iterator
       find(const key_type& __x) const
       { return _M_h.find(__x); }
+
+#if __cplusplus > 201703L
+      template<typename _Kt>
+	auto
+	find(const _Kt& __x) const
+	-> decltype(_M_h._M_find_tr(__x))
+	{ return _M_h._M_find_tr(__x); }
+#endif
       ///@}
 
+      ///@{
       /**
        *  @brief  Finds the number of elements.
        *  @param  __x  Element to located.
@@ -1465,6 +1541,15 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       { return _M_h.count(__x); }
 
 #if __cplusplus > 201703L
+      template<typename _Kt>
+	auto
+	count(const _Kt& __x) const -> decltype(_M_h._M_count_tr(__x))
+	{ return _M_h._M_count_tr(__x); }
+#endif
+      ///@}
+
+#if __cplusplus > 201703L
+      ///@{
       /**
        *  @brief  Finds whether an element with the given key exists.
        *  @param  __x  Key of elements to be located.
@@ -1473,6 +1558,13 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       bool
       contains(const key_type& __x) const
       { return _M_h.find(__x) != _M_h.end(); }
+
+      template<typename _Kt>
+	auto
+	contains(const _Kt& __x) const
+	-> decltype(_M_h._M_find_tr(__x), void(), true)
+	{ return _M_h._M_find_tr(__x) != _M_h.end(); }
+      ///@}
 #endif
 
       ///@{
@@ -1486,9 +1578,25 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
       equal_range(const key_type& __x)
       { return _M_h.equal_range(__x); }
 
+#if __cplusplus > 201703L
+      template<typename _Kt>
+	auto
+	equal_range(const _Kt& __x)
+	-> decltype(_M_h._M_equal_range_tr(__x))
+	{ return _M_h._M_equal_range_tr(__x); }
+#endif
+
       std::pair<const_iterator, const_iterator>
       equal_range(const key_type& __x) const
       { return _M_h.equal_range(__x); }
+
+#if __cplusplus > 201703L
+      template<typename _Kt>
+	auto
+	equal_range(const _Kt& __x) const
+	-> decltype(_M_h._M_equal_range_tr(__x))
+	{ return _M_h._M_equal_range_tr(__x); }
+#endif
       ///@}
 
       // bucket interface.
@@ -1730,7 +1838,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 
 _GLIBCXX_END_NAMESPACE_CONTAINER
 
-#if __cplusplus > 201402L
+#ifdef __glibcxx_node_extract // >= C++17 && HOSTED
   // Allow std::unordered_set access to internals of compatible sets.
   template<typename _Val, typename _Hash1, typename _Eq1, typename _Alloc,
 	   typename _Hash2, typename _Eq2>
@@ -1777,7 +1885,7 @@ _GLIBCXX_END_NAMESPACE_CONTAINER
       _S_get_table(unordered_multiset<_Val, _Hash2, _Eq2, _Alloc>& __set)
       { return __set._M_h; }
     };
-#endif // C++17
+#endif // node_extract
 
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace std

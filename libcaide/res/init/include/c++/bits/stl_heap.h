@@ -1,6 +1,6 @@
 // Heap implementation -*- C++ -*-
 
-// Copyright (C) 2001-2020 Free Software Foundation, Inc.
+// Copyright (C) 2001-2024 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -58,6 +58,7 @@
 #include <debug/debug.h>
 #include <bits/move.h>
 #include <bits/predefined_ops.h>
+#include <bits/stl_iterator_base_funcs.h>
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
@@ -491,7 +492,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  the range [__first, i) is a heap.
   */
   template<typename _RandomAccessIterator>
-    _GLIBCXX20_CONSTEXPR
+    _GLIBCXX_NODISCARD _GLIBCXX20_CONSTEXPR
     inline _RandomAccessIterator
     is_heap_until(_RandomAccessIterator __first, _RandomAccessIterator __last)
     {
@@ -520,7 +521,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  the range [__first, i) is a heap.  Comparisons are made using __comp.
   */
   template<typename _RandomAccessIterator, typename _Compare>
-    _GLIBCXX20_CONSTEXPR
+    _GLIBCXX_NODISCARD _GLIBCXX20_CONSTEXPR
     inline _RandomAccessIterator
     is_heap_until(_RandomAccessIterator __first, _RandomAccessIterator __last,
 		  _Compare __comp)
@@ -545,7 +546,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  @ingroup heap_algorithms
   */
   template<typename _RandomAccessIterator>
-    _GLIBCXX20_CONSTEXPR
+    _GLIBCXX_NODISCARD _GLIBCXX20_CONSTEXPR
     inline bool
     is_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
     { return std::is_heap_until(__first, __last) == __last; }
@@ -559,7 +560,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
    *  @ingroup heap_algorithms
   */
   template<typename _RandomAccessIterator, typename _Compare>
-    _GLIBCXX20_CONSTEXPR
+    _GLIBCXX_NODISCARD _GLIBCXX20_CONSTEXPR
     inline bool
     is_heap(_RandomAccessIterator __first, _RandomAccessIterator __last,
 	    _Compare __comp)

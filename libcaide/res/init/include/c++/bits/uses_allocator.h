@@ -1,6 +1,6 @@
 // Uses-allocator Construction -*- C++ -*-
 
-// Copyright (C) 2010-2020 Free Software Foundation, Inc.
+// Copyright (C) 2010-2024 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -22,6 +22,11 @@
 // see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 // <http://www.gnu.org/licenses/>.
 
+/** @file include/bits/uses_allocator_args.h
+ *  This is an internal header file, included by other library headers.
+ *  Do not attempt to use it directly. @headername{memory}
+ */
+
 #ifndef _USES_ALLOCATOR_H
 #define _USES_ALLOCATOR_H 1
 
@@ -35,6 +40,7 @@
 namespace std _GLIBCXX_VISIBILITY(default)
 {
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
+/// @cond undocumented
 
   // This is used for std::experimental::erased_type from Library Fundamentals.
   struct __erased_type { };
@@ -86,10 +92,10 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   template<typename _Tp, typename _Alloc, typename... _Args>
     struct __uses_alloc<true, _Tp, _Alloc, _Args...>
-    : conditional<
+    : __conditional_t<
         is_constructible<_Tp, allocator_arg_t, const _Alloc&, _Args...>::value,
         __uses_alloc1<_Alloc>,
-       	__uses_alloc2<_Alloc>>::type
+       	__uses_alloc2<_Alloc>>
     {
       // _GLIBCXX_RESOLVE_LIB_DEFECTS
       // 2586. Wrong value category used in scoped_allocator_adaptor::construct
@@ -131,10 +137,10 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   template<template<typename...> class _Predicate,
 	   typename _Tp, typename _Alloc, typename... _Args>
     struct __is_uses_allocator_predicate
-    : conditional<uses_allocator<_Tp, _Alloc>::value,
+    : __conditional_t<uses_allocator<_Tp, _Alloc>::value,
       __or_<_Predicate<_Tp, allocator_arg_t, _Alloc, _Args...>,
 	    _Predicate<_Tp, _Args..., _Alloc>>,
-      _Predicate<_Tp, _Args...>>::type { };
+      _Predicate<_Tp, _Args...>> { };
 
   template<typename _Tp, typename _Alloc, typename... _Args>
     struct __is_uses_allocator_constructible
@@ -162,7 +168,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 #endif // C++14
 
   template<typename _Tp, typename... _Args>
-    void __uses_allocator_construct_impl(__uses_alloc0 __a, _Tp* __ptr,
+    void __uses_allocator_construct_impl(__uses_alloc0, _Tp* __ptr,
 					 _Args&&... __args)
     { ::new ((void*)__ptr) _Tp(std::forward<_Args>(__args)...); }
 
@@ -188,6 +194,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	  std::forward<_Args>(__args)...);
     }
 
+/// @endcond
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace std
 

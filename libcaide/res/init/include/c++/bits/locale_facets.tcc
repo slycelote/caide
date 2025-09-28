@@ -1,6 +1,6 @@
 // Locale support -*- C++ -*-
 
-// Copyright (C) 1997-2020 Free Software Foundation, Inc.
+// Copyright (C) 1997-2024 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -758,9 +758,12 @@ _GLIBCXX_BEGIN_NAMESPACE_LDBL
       const fmtflags __fmt = __io.flags();
       __io.flags((__fmt & ~ios_base::basefield) | ios_base::hex);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wlong-long"
       typedef __gnu_cxx::__conditional_type<(sizeof(void*)
 					     <= sizeof(unsigned long)),
 	unsigned long, unsigned long long>::__type _UIntPtrType;       
+#pragma GCC diagnostic pop
 
       _UIntPtrType __ul;
       __beg = _M_extract_int(__beg, __end, __io, __err, __ul);
@@ -771,6 +774,24 @@ _GLIBCXX_BEGIN_NAMESPACE_LDBL
       __v = reinterpret_cast<void*>(__ul);
       return __beg;
     }
+
+#if defined _GLIBCXX_LONG_DOUBLE_ALT128_COMPAT \
+      && defined __LONG_DOUBLE_IEEE128__
+  template<typename _CharT, typename _InIter>
+    _InIter
+    num_get<_CharT, _InIter>::
+    __do_get(iter_type __beg, iter_type __end, ios_base& __io,
+	     ios_base::iostate& __err, __ibm128& __v) const
+    {
+      string __xtrc;
+      __xtrc.reserve(32);
+      __beg = _M_extract_float(__beg, __end, __io, __err, __xtrc);
+      std::__convert_to_v(__xtrc.c_str(), __v, __err, _S_get_c_locale());
+      if (__beg == __end)
+	__err |= ios_base::eofbit;
+      return __beg;
+    }
+#endif
 
   // For use by integer and floating-point types after they have been
   // converted into a char_type string.
@@ -1184,9 +1205,12 @@ _GLIBCXX_BEGIN_NAMESPACE_LDBL
 					 | ios_base::uppercase);
       __io.flags((__flags & __fmt) | (ios_base::hex | ios_base::showbase));
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wlong-long"
       typedef __gnu_cxx::__conditional_type<(sizeof(const void*)
 					     <= sizeof(unsigned long)),
 	unsigned long, unsigned long long>::__type _UIntPtrType;       
+#pragma GCC diagnostic pop
 
       __s = _M_insert_int(__s, __io, __fill,
 			  reinterpret_cast<_UIntPtrType>(__v));
@@ -1194,6 +1218,15 @@ _GLIBCXX_BEGIN_NAMESPACE_LDBL
       return __s;
     }
 
+#if defined _GLIBCXX_LONG_DOUBLE_ALT128_COMPAT \
+      && defined __LONG_DOUBLE_IEEE128__
+  template<typename _CharT, typename _OutIter>
+    _OutIter
+    num_put<_CharT, _OutIter>::
+    __do_put(iter_type __s, ios_base& __io, char_type __fill,
+	     __ibm128 __v) const
+    { return _M_insert_float(__s, __io, __fill, 'L', __v); }
+#endif
 _GLIBCXX_END_NAMESPACE_LDBL
 
   // Construct correctly padded string, as per 22.2.2.2.2
@@ -1299,6 +1332,22 @@ _GLIBCXX_END_NAMESPACE_LDBL
   extern template class ctype_byname<char>;
 
   extern template
+    const ctype<char>*
+    __try_use_facet<ctype<char> >(const locale&) _GLIBCXX_NOTHROW;
+
+  extern template
+    const numpunct<char>*
+    __try_use_facet<numpunct<char> >(const locale&) _GLIBCXX_NOTHROW;
+
+  extern template
+    const num_put<char>*
+    __try_use_facet<num_put<char> >(const locale&) _GLIBCXX_NOTHROW;
+
+  extern template
+    const num_get<char>*
+    __try_use_facet<num_get<char> >(const locale&) _GLIBCXX_NOTHROW;
+
+  extern template
     const ctype<char>&
     use_facet<ctype<char> >(const locale&);
 
@@ -1338,6 +1387,22 @@ _GLIBCXX_END_NAMESPACE_LDBL
   extern template class ctype_byname<wchar_t>;
 
   extern template
+    const ctype<wchar_t>*
+    __try_use_facet<ctype<wchar_t> >(const locale&) _GLIBCXX_NOTHROW;
+
+  extern template
+    const numpunct<wchar_t>*
+    __try_use_facet<numpunct<wchar_t> >(const locale&) _GLIBCXX_NOTHROW;
+
+  extern template
+    const num_put<wchar_t>*
+    __try_use_facet<num_put<wchar_t> >(const locale&) _GLIBCXX_NOTHROW;
+
+  extern template
+    const num_get<wchar_t>*
+    __try_use_facet<num_get<wchar_t> >(const locale&) _GLIBCXX_NOTHROW;
+
+  extern template
     const ctype<wchar_t>&
     use_facet<ctype<wchar_t> >(const locale&);
 
@@ -1353,7 +1418,7 @@ _GLIBCXX_END_NAMESPACE_LDBL
     const num_get<wchar_t>&
     use_facet<num_get<wchar_t> >(const locale&);
 
- extern template
+  extern template
     bool
     has_facet<ctype<wchar_t> >(const locale&);
 
