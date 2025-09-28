@@ -16,7 +16,7 @@ import Data.ByteString.Lazy (fromStrict)
 import Data.Char (isSpace, toLower)
 import Data.List (dropWhileEnd, isInfixOf, isPrefixOf)
 import Data.Function ((&))
-import Data.Maybe (catMaybes, fromMaybe, isNothing, listToMaybe)
+import Data.Maybe (fromMaybe, isNothing, listToMaybe, mapMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.IO.Util as T
 import System.Environment (lookupEnv)
@@ -52,7 +52,7 @@ getSystemCompilerInfo = do
                 Right (_exitCode, _stdOut, stdErr) -> do
                     let res = parseClOutput stdErr
                     when (isNothing res) $
-                        logWarn $ "Failed to parse output of cl.exe"
+                        logWarn "Failed to find compiler version in `cl.exe /?'"
                     pure res
         else pure Nothing
 
@@ -70,7 +70,7 @@ getSystemCompilerInfo = do
     return $ SystemCompilerInfo { vsCompilerVersion, gccIncludeDirectories }
 
 parseClOutput :: String -> Maybe String
-parseClOutput stderr = stderr & lines & map tryParse & catMaybes & listToMaybe
+parseClOutput stderr = stderr & lines & mapMaybe tryParse & listToMaybe
   where
     -- Example output: "Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35217 for x64"
     tryParse line = go $ words $ map toLower line
