@@ -15,7 +15,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>slycelote.VsCaide</RootNamespace>
     <AssemblyName>VsCaide</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
     <GeneratePkgDefFile>true</GeneratePkgDefFile>
     <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
     <IncludeDebugSymbolsInVSIXContainer>false</IncludeDebugSymbolsInVSIXContainer>
@@ -100,11 +100,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\VersionSpecific\Vs2017\Vs2017.csproj">
-      <Project>{8f37650d-5dc4-4558-b615-cf510b5a1d3f}</Project>
-      <Name>Vs2017</Name>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="..\VersionSpecific\Vs2019\Vs2019.csproj">
       <Project>{29a54bb9-5e03-4b41-b0f2-2e5f10480922}</Project>
       <Name>Vs2019</Name>
