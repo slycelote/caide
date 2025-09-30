@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/bin/env python3
 import os, shutil, subprocess, sys, tempfile
 
 # This script, based on the idea from [1], should be used as a linker with GHC
@@ -7,13 +7,23 @@ import os, shutil, subprocess, sys, tempfile
 # [1]: https://tesser.org/doc/posts/2015-08-21-statically-linking-libgmp-in-haskell-programs.html
 
 
-LIBS_FOR_STATIC_LINK = ['gmp', 'z', 'ssl', 'crypto']
+# Static versions of these libraries need to be installed in the system.
+LIBS_FOR_STATIC_LINK = ['gmp', 'z', 'ssl', 'crypto', 'stdc++']
+
+# ghc uses gcc as linker
+REAL_LINKER = 'gcc'
+
+# When setting a custom linker via -pgml, ghc doesn't pass these arguments.
+# So we restore them manually.
+# NOTE: -Wl,--no-as-needed must be the first argument
+DEFAULT_LINKER_ARGS = ["-Wl,--no-as-needed", "-no-pie"]
+
+DEBUG = False
 
 def all_args(command):
-    """Quoting 'man ld' (or 'man g++'):
+    """Quoting 'man gcc':
 
        @file
-
            Read command-line options from file.  The options read are inserted
            in place of the original @file option.  If file does not exist, or
            cannot be read, then the option will be treated literally, and not
@@ -25,9 +35,8 @@ def all_args(command):
            backslash) may be included by prefixing the character to be included
            with a backslash.  The file may itself contain additional @file
            options; any such options will be processed recursively.
-
-    Note that some quoted arguments may be processed incorrectly (e.g. if a quoted argument contains the substring ' @')
     """
+    # XXX: some quoted arguments may be processed incorrectly (e.g. if a quoted argument contains the substring ' @')
     for arg in command:
         s = None
         if arg[0] == '@':
@@ -42,44 +51,46 @@ def all_args(command):
         else:
             yield arg
 
-def find_library(lib):
-    if ('CFLAGS' in os.environ and '-m32' in os.environ['CFLAGS']) or ('GHC_LINKER_32' in os.environ):
-        lib_dirs = ['/lib', '/usr/lib', '/usr/local/lib'] # for 32-bit
-    else:
-        lib_dirs = ['/lib64', '/usr/lib64', '/usr/local/lib64', '/usr/lib64/openssl11'] # for 64-bit
-    for dir_path in lib_dirs:
-        path = dir_path + '/lib' + lib + '.a'
-        if os.path.isfile(path):
-            return path
-    raise IOError("Could not find static library " + lib)
-
-
 def main():
     args = list(all_args(sys.argv[1:]))
-    # cabal-install insists on compiling shared libraries even when we ask it not to.
-    # Don't try to statically link in that case.
-    if '-shared' not in args and '"-shared"' not in args:
-        static_link_args = sum([['-l'+lib, '"-l'+lib+'"', "'-l"+lib+"'"] for lib in LIBS_FOR_STATIC_LINK], [])
-        args = [arg for arg in args if arg not in static_link_args]
-        args += ['-static-libstdc++', '-static-libgcc']
-        args += [find_library(lib) for lib in LIBS_FOR_STATIC_LINK]
+    if DEBUG:
+        with open('/tmp/linker-log.txt', 'a') as f:
+            print(sys.argv, file=f)
+            print(args, file=f)
+            print('', file=f)
+
+    if not (set(args) & {'-o', '"-o"', "'-o'"}) or (set(args) & {'-shared', '"-shared"', "'-shared'"}):
+        # ghc calls linker many times, not just for the final executable.
+        # In particular, some autogen'ed files are linked into shared libraries.
+        # Don't try to statically link in that case, simply pass through the arguments.
+        subprocess.check_call([REAL_LINKER] + DEFAULT_LINKER_ARGS + sys.argv[1:])
+        return
+
+    new_args = DEFAULT_LINKER_ARGS + ['-static-libgcc', '-static-libstdc++']
+    for arg in args:
+        for lib in LIBS_FOR_STATIC_LINK:
+            if arg in ['-l'+lib, '"-l'+lib+'"', "'-l"+lib+"'"]:
+                new_args.append("-l:lib" + lib + ".a") # NOTE: GNU ld extension
+                break
+        else:
+            new_args.append(arg)
+    args = new_args
 
     args_file_name = None
     try:
-        with tempfile.NamedTemporaryFile(prefix='linker.args.', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode='w', prefix='linker.args.', delete=False) as f:
             args_file_name = f.name
             for arg in args:
                 f.write(arg)
                 f.write(' ')
-        subprocess.call(['g++', '@' + args_file_name])
+        subprocess.check_call([REAL_LINKER, '@' + args_file_name])
     finally:
         if args_file_name:
             try:
-                if False:
-                    # For debugging
+                if DEBUG:
                     with open(args_file_name) as f:
                         args = f.read()
-                    with open('linker-log.txt', 'a') as f:
+                    with open('/tmp/linker-log.txt', 'a') as f:
                         f.write(args)
                         f.write('\n')
                 os.unlink(args_file_name)
