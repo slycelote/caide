@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE NamedFieldPuns, OverloadedStrings, ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Caide.Commands.CHelperHttpServer(
@@ -27,7 +27,7 @@ import Caide.Commands.ParseProblem (saveProblemWithScaffold)
 import Caide.GlobalState (activeProblem, modifyGlobalState)
 import Caide.Logger (logInfo, logError)
 import Caide.Monad (CaideIO, caideSettings, Verbosity(Debug),
-    CaideEnv(verbosity), makeCaideEnv, runInDirectory, describeError)
+    RunSettings(..), run, describeError)
 import Caide.Parsers.Common (CHelperProblemParser(chelperParse))
 import Caide.Registry (findCHelperProblemParser)
 import Caide.Settings (chelperPort, companionPort)
@@ -36,17 +36,17 @@ import Caide.Util (newDefaultHttpClient)
 
 
 runHttpServer :: Verbosity -> F.FilePath -> IO ()
-runHttpServer v root = do
+runHttpServer verbosity root = do
     httpClient <- newDefaultHttpClient
-    let env = makeCaideEnv root v httpClient
-    mbPorts <- runInDirectory env getPorts
+    let runSettings = RunSettings{root, verbosity, httpClient}
+    mbPorts <- run runSettings getPorts
     case mbPorts of
         Left err -> logError $ describeError err
-        Right (companionPort', chelperPort') -> runServers env companionPort' chelperPort'
+        Right (companionPort', chelperPort') -> runServers runSettings companionPort' chelperPort'
 
 
-runServers :: CaideEnv -> Maybe Int -> Maybe Int -> IO ()
-runServers env companionPort' chelperPort' = withSocketsDo $ do
+runServers :: RunSettings -> Maybe Int -> Maybe Int -> IO ()
+runServers runSettings companionPort' chelperPort' = withSocketsDo $ do
     hSetBuffering stdout NoBuffering
     hSetBuffering stderr NoBuffering
 
@@ -56,10 +56,10 @@ runServers env companionPort' chelperPort' = withSocketsDo $ do
             (Just _, Nothing)  -> "Competitive Companion extension"
             (Nothing, Nothing) -> ""
         runServer port handler = forM_ port $ \p ->
-            initServerBind p (tupleToHostAddress (127,0,0,1)) (handler env)
+            initServerBind p (tupleToHostAddress (127,0,0,1)) (handler runSettings)
     if T.null servers
     then logError "Both CHelper and Competitive Companion servers are disabled. Exiting now."
-    else withAsync (void $ runInDirectory env $ checkUpdates `catchError` const (pure ())) $ \a1 ->
+    else withAsync (void $ run runSettings $ checkUpdates `catchError` const (pure ())) $ \a1 ->
          withAsync (void $ runServer companionPort' processCompanionRequest) $ \a2 ->
          withAsync (void $ runServer chelperPort' processCHelperRequest) $ \a3 -> do
              logInfo $ "Running HTTP server for " <> servers <> ". Press Return to terminate."
@@ -72,9 +72,9 @@ getPorts = (companionPort &&& chelperPort) <$> caideSettings
 
 data ParsedProblem = Parsed Problem [TestCase]
 
-createProblems :: CaideEnv -> NE.NonEmpty ParsedProblem -> IO ()
-createProblems env parsedProblems = do
-    ret <- runInDirectory env $ do
+createProblems :: RunSettings -> NE.NonEmpty ParsedProblem -> IO ()
+createProblems runSettings parsedProblems = do
+    ret <- run runSettings $ do
         forM_ parsedProblems $ \(Parsed problem testCases) ->
             saveProblemWithScaffold problem testCases
         let Parsed problem _ = NE.head parsedProblems
@@ -124,23 +124,23 @@ instance FromJSON ParsedProblem where
 
     pure $ Parsed (makeProblem probName probId (Stream input output)) tests
 
-processCompanionRequest :: CaideEnv -> Request -> IO Response
-processCompanionRequest env request = do
+processCompanionRequest :: RunSettings -> Request -> IO Response
+processCompanionRequest runSettings request = do
     let body = LBS.fromStrict . encodeUtf8 . T.pack $ reqBody request
         mbParsed = eitherDecode' body :: Either String ParsedProblem
-    when (verbosity env >= Debug) $
+    when (verbosity runSettings >= Debug) $
         putStrLn $ reqBody request
     case mbParsed of
         Left err -> do
             logError $ "Could not parse input JSON: " <> T.pack err
             return $ makeResponse badRequest err
         Right p -> do
-            createProblems env $ NE.fromList [p]
+            createProblems runSettings $ NE.fromList [p]
             return $ makeResponse ok "OK"
 
 
-processCHelperRequest :: CaideEnv -> Request -> IO Response
-processCHelperRequest env request = do
+processCHelperRequest :: RunSettings -> Request -> IO Response
+processCHelperRequest runSettings request = do
     let body = T.pack $ reqBody request
         bodyLines = T.lines body
     case bodyLines of
@@ -151,7 +151,7 @@ processCHelperRequest env request = do
         (first:rest) -> do
             let chid = T.strip first
                 page = T.unlines rest
-            err <- process chid page env
+            err <- process chid page runSettings
             case err of
                 Nothing -> return $ makeResponse ok "OK"
                 Just e  -> do
@@ -159,14 +159,14 @@ processCHelperRequest env request = do
                     return $ makeResponse internalServerError $ T.unpack e
 
 
-process :: T.Text -> T.Text -> CaideEnv -> IO (Maybe T.Text)
-process chid page env = case findCHelperProblemParser chid of
+process :: T.Text -> T.Text -> RunSettings -> IO (Maybe T.Text)
+process chid page runSettings = case findCHelperProblemParser chid of
     Nothing -> return . Just $ "'" <> chid <> "' not supported"
     Just parser -> do
         res <- chelperParse parser page
         case res of
             Left err -> return . Just $ "Error while parsing the problem: " <> err
             Right (problem, testCases) -> do
-                createProblems env $ NE.fromList [Parsed problem testCases]
+                createProblems runSettings $ NE.fromList [Parsed problem testCases]
                 return Nothing
 

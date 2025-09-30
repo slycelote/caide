@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings, NamedFieldPuns, RecordWildCards #-}
 module Caide.Commands(
       runMain
 ) where
@@ -19,7 +19,7 @@ import Options.Applicative.Types (Backtracking(..))
 import System.IO.Util (writeFileAtomic)
 
 import Caide.CheckUpdates (checkUpdates, checkUpdatesCommand, logIfUpdateAvailable)
-import Caide.Monad (CaideIO, Verbosity(Info, Debug), makeCaideEnv, runInDirectory, describeError)
+import Caide.Monad (CaideIO, Verbosity(Info, Debug), RunSettings(..), run, describeError)
 import qualified Caide.Commands.Init as Init
 import Caide.Commands.Archive
 import Caide.Commands.BuildScaffold
@@ -36,7 +36,7 @@ import Paths_libcaide (version)
 
 
 data GlobalOptions = GlobalOptions
-                 { verbosity :: Verbosity
+                 { optVerbosity :: Verbosity
                  }
 
 toVerbosity :: Int -> Verbosity
@@ -63,9 +63,9 @@ extendCommand cmd ReportNewVersion = cmd >> (logIfUpdateAvailable `catchError` c
 
 caideIoToIo :: [CommandExtension] -> CaideIO () -> CaideAction
 caideIoToIo extensions cmd globalOptions root = do
-    client <- newDefaultHttpClient
-    let env = makeCaideEnv root (verbosity globalOptions) client
-    ret <- runInDirectory env $ foldl' extendCommand cmd extensions
+    httpClient <- newDefaultHttpClient
+    let settings = RunSettings{root, httpClient, verbosity=optVerbosity globalOptions}
+    ret <- run settings $ foldl' extendCommand cmd extensions
 
     -- Save path to caide executable
     let fileNameStr = FS.encodeString (root </> ".caide" </> "caideExe.txt")
@@ -123,7 +123,7 @@ publicSubCommands = [
     [ createIoSubCommand (
         "httpServer",
         "Run HTTP server for CHelper browser extension",
-        pure $ \globalOpts -> runHttpServer (verbosity globalOpts))
+        pure $ \globalOpts -> runHttpServer (optVerbosity globalOpts))
     ]
 
 internalSubCommands :: [Mod CommandFields CaideAction]

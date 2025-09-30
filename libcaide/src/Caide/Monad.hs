@@ -2,10 +2,9 @@
 module Caide.Monad(
       CaideIO
     , CaideM
-    , CaideEnv(verbosity)
+    , RunSettings(..)
     , Verbosity(..)
-    , makeCaideEnv
-    , runInDirectory
+    , run
     , caideRoot
     , caideVerbosity
     , caideSettings
@@ -38,19 +37,19 @@ import Caide.Types
 data Verbosity = Info | Debug
     deriving (Show, Enum, Ord, Eq, Bounded)
 
-data CaideEnv = CaideEnv
+data RunSettings = RunSettings
     { root       :: !FS.FilePath
     , verbosity  :: !Verbosity
-    , settings   :: Settings
     , httpClient :: !Http.Client
+    }
+
+data CaideEnv = CaideEnv
+    { runSettings :: !RunSettings
+    -- Config file read from root directory
+    , settings :: !Settings
     -- Used to avoid taking the file lock twice, which doesn't work on Windows
     , holdingFileLock :: !(Maybe (IORef Bool))
     }
-
-makeCaideEnv :: FS.FilePath -> Verbosity -> Http.Client -> CaideEnv
--- Being hacky here; undefined is overwritten in runInDirectory
-makeCaideEnv root verbosity httpClient = CaideEnv
-    { root, verbosity, settings=undefined, httpClient, holdingFileLock=Nothing }
 
 newtype Error = Error T.Text
     deriving Show
@@ -66,19 +65,21 @@ runCaideM caideAction env = runExceptT $ runReaderT (unCaideM caideAction) env
 describeError :: Error -> T.Text
 describeError (Error text) = text
 
-runInDirectory :: CaideEnv -> CaideIO a -> IO (Either Error a)
-runInDirectory env caideAction = do
+run :: RunSettings -> CaideIO a -> IO (Either Error a)
+run runSettings caideAction = do
     let logEx e = do
-            when (verbosity env >= Debug) $
+            when (verbosity runSettings >= Debug) $
                 putStrLn $ T.unpack $ describeError e
             pure (Left e)
     ret <- tryIOError $ do
-        iniSettings <- mapLeft Error <$> readSettings (root env)
+        iniSettings <- mapLeft Error <$> readSettings (root runSettings)
         case iniSettings of
             Left e  -> pure $ Left e
-            Right s -> do
-                ioref <- if useFileLock s then Just <$> newIORef False else pure Nothing
-                runCaideM caideAction env{settings=s, holdingFileLock=ioref}
+            Right settings -> do
+                holdingFileLock <- if useFileLock settings
+                    then Just <$> newIORef False
+                    else pure Nothing
+                runCaideM caideAction CaideEnv{runSettings, settings, holdingFileLock}
     case ret of
         Left e -> logEx $ Error $ T.pack $ displayException e
         Right (Left e) -> logEx e
@@ -95,16 +96,16 @@ rightOrThrow ea = ea `orThrow` id
 
 -- | Return root caide directory
 caideRoot :: Monad m => CaideM m FS.FilePath
-caideRoot = reader root
+caideRoot = root <$> reader runSettings
 
 caideVerbosity :: Monad m => CaideM m Verbosity
-caideVerbosity = reader verbosity
+caideVerbosity = verbosity <$> reader runSettings
 
 caideSettings :: Monad m => CaideM m Settings
 caideSettings = reader settings
 
 caideHttpClient :: CaideIO Http.Client
-caideHttpClient = reader httpClient
+caideHttpClient = httpClient <$> reader runSettings
 
 caideHoldingLock :: CaideIO (Maybe (IORef Bool))
 caideHoldingLock = reader holdingFileLock
