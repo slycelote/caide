@@ -111,7 +111,7 @@ library
                    system-fileio >= 0.3.16,
                    system-filepath,
                    tagsoup >= 0.13,
-                   text >= 1.1.0,
+                   text >= 2.1,
                    time >= 1.5.0.1,
                    unordered-containers,
                    vector,
@@ -213,7 +213,6 @@ library
         Data.Either.Util
         Data.List.Util
         Data.Text.Encoding.Util
-        Data.Text.IO.Util
         Data.TypeNat
         Data.VecN
         Filesystem.Util

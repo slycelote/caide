@@ -7,7 +7,7 @@ module Caide.Builders.Custom(
 import Control.Monad.Extended (liftIO)
 import Data.Maybe (listToMaybe)
 import qualified Data.Text as T
-import qualified Data.Text.IO.Util as T
+import qualified Data.Text.IO.Utf8 as T
 
 import qualified Filesystem.Path.CurrentOS as FS
 

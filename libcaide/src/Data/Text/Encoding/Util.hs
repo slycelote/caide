@@ -1,29 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Data.Text.Encoding.Util(
-      describeUnicodeException
-    , tryDecodeUtf8
-    , safeDecodeUtf8
+      tryDecodeUtf8
     , universalNewlineConversionOnInput
     , universalNewlineConversionOnOutput
+    , module Data.Text.Encoding
 ) where
 
+import Control.Exception (displayException)
 import Data.ByteString (ByteString)
-import Data.Text.Encoding (decodeUtf8', decodeUtf8With)
-import Data.Text.Encoding.Error (UnicodeException, lenientDecode)
+import Data.Text.Encoding
 import qualified Data.Text as T
 
 import System.IO (nativeNewline, Newline(CRLF))
 
-describeUnicodeException :: UnicodeException -> T.Text
-describeUnicodeException = T.pack . show
 
 tryDecodeUtf8 :: ByteString -> Either T.Text T.Text
-tryDecodeUtf8 = either (Left . describeUnicodeException) Right . decodeUtf8'
-
--- | Replaces invalid input bytes with the Unicode replacement character U+FFFD (question mark in a rhombus)
-safeDecodeUtf8 :: ByteString -> T.Text
-safeDecodeUtf8 = decodeUtf8With lenientDecode
-
+tryDecodeUtf8 = either (Left . T.pack . displayException) Right . decodeUtf8'
 
 nativeCallsForConversion :: Bool
 nativeCallsForConversion = nativeNewline == CRLF

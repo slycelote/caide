@@ -13,11 +13,9 @@ import Data.Either.Util (maybeToEither, mapLeft)
 import Data.Function ((&), on)
 import Data.Functor (($>))
 import qualified Data.List as List
-import Data.List.Util (chunksOf)
 import Data.Maybe (fromMaybe, listToMaybe)
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
-import Data.Text.Encoding.Util (safeDecodeUtf8)
+import qualified Data.Text.Encoding.Util as T
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
@@ -267,7 +265,7 @@ parseInput t = let
     result = parseOnly parser (T.encodeUtf8 t)
 
     valuesToText :: [Aeson.Value] -> Text
-    valuesToText vals = vals & map Aeson.encode & map LBS8.toStrict & map safeDecodeUtf8 & T.unlines
+    valuesToText vals = vals & map Aeson.encode & map LBS8.toStrict & map T.decodeUtf8Lenient & T.unlines
 
     in bimap T.pack valuesToText result
 

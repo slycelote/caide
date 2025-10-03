@@ -20,7 +20,6 @@ import Data.Int (Int64)
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
 import qualified Data.Text.Encoding.Util as T
 
 import qualified Data.Aeson as Aeson
@@ -56,14 +55,14 @@ isTokenSeparator :: Char -> Bool
 isTokenSeparator c = isSpace c || isJust (T.find (==c) "{}[]\",")
 
 readToken :: Parser Text
-readToken = skipSpace >> takeWhile1 (not . isTokenSeparator) <&> T.safeDecodeUtf8
+readToken = skipSpace >> takeWhile1 (not . isTokenSeparator) <&> T.decodeUtf8Lenient
 
 readQuotedString :: Parser Text
 readQuotedString = do
     _ <- char '"' <?> "opening double quote"
     ret <- takeTill (== '"')
     _ <- char '"' <?> "closing double quote"
-    return $ T.safeDecodeUtf8 ret
+    return $ T.decodeUtf8Lenient ret
 
 readDouble :: Parser Double
 readDouble = double

@@ -8,7 +8,7 @@ import Control.Monad.State.Strict (modify, gets)
 import Data.List ((\\), sort)
 import Data.Maybe (catMaybes)
 import qualified Data.Text as T
-import qualified Data.Text.IO.Util as T
+import qualified Data.Text.IO.Utf8 as T
 
 import Filesystem (isFile, readTextFile, writeTextFile, listDirectory, createDirectory, createTree)
 import Filesystem.Path.CurrentOS (fromText, decodeString, encodeString)

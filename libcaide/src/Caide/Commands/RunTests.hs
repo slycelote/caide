@@ -12,7 +12,7 @@ import Data.Ord (comparing)
 import Data.Text (Text)
 import Data.Text.Read as TextRead
 import qualified Data.Text as T
-import qualified Data.Text.IO.Util as T
+import qualified Data.Text.IO.Utf8 as T
 import Data.Word (Word64)
 
 import Prelude hiding (FilePath)

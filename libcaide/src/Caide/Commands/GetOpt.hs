@@ -8,7 +8,7 @@ module Caide.Commands.GetOpt(
 
 import Control.Monad.Extended (liftIO)
 import qualified Data.Text as T
-import qualified Data.Text.IO.Util as T
+import qualified Data.Text.IO.Utf8 as T
 
 import Filesystem.Util (pathToText)
 

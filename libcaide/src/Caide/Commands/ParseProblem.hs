@@ -13,9 +13,8 @@ import Data.Either (lefts)
 import Data.Function ((&))
 import Data.Maybe (fromJust)
 import qualified Data.Text as T
-import qualified Data.Text.IO.Util as T
 import Data.Text (Text)
-import Data.Text.Encoding.Util (safeDecodeUtf8)
+import Data.Text.Encoding.Util (decodeUtf8Lenient)
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Map.Strict as Map
@@ -34,6 +33,7 @@ import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
 import Caide.GlobalState (activeProblem, modifyGlobalState)
 import qualified Caide.HttpClient as Http
+import Caide.Logger (logInfo)
 import Caide.Monad (CaideIO, caideRoot, caideSettings, caideHttpClient, describeError, throw, rightOrThrow)
 import Caide.Parsers.Common (URL, ProblemParser(parseProblem), CHelperProblemParser(chelperParse))
 import qualified Caide.Paths as Paths
@@ -74,7 +74,7 @@ initializeProblem problem = withLock $ do
             putProp "problem" "type" $ problemType problem
     liftIO $ writeConfigFile problemCP $ probDir </> Paths.problemConfFile
 
-    let snippets = problemCodeSnippets problem & Aeson.encode & LBS.toStrict & safeDecodeUtf8
+    let snippets = problemCodeSnippets problem & Aeson.encode & LBS.toStrict & decodeUtf8Lenient
     problemStateCP <- rightOrThrow $ flip execStateT CF.emptyCP $ do
             putProp "problem" "language" ("c++" :: T.Text)
             unless (Map.null (problemCodeSnippets problem)) $
@@ -102,7 +102,7 @@ createNewProblem probId probType = do
     liftIO $ createDirectory False probDir
 
     initializeProblem problem
-    liftIO $ T.putStrLn . T.concat $ ["Problem successfully created in folder ", probId]
+    liftIO $ logInfo $ T.concat $ ["Problem successfully created in folder ", probId]
 
 
 saveProblem :: Problem -> [TestCase] -> CaideIO ()
@@ -128,7 +128,7 @@ saveProblem problem samples = do
             whenJust (testCaseOutput sample) (writeTextFile outFile)
 
     initializeProblem problem
-    liftIO $ T.putStrLn $ "Problem successfully parsed into folder " <> probId
+    liftIO $ logInfo $ "Problem successfully parsed into folder " <> probId
 
 saveProblemWithScaffold :: Problem -> [TestCase] -> CaideIO ()
 saveProblemWithScaffold problem samples = do

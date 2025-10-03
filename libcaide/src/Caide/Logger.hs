@@ -8,7 +8,7 @@ module Caide.Logger(
 import Control.Monad.Extended (when, MonadIO, liftIO)
 
 import Data.Text (Text)
-import qualified Data.Text.IO.Util as T
+import qualified Data.Text.IO.Utf8 as T
 
 import Caide.Monad (CaideIO, caideVerbosity, Verbosity(Debug))
 

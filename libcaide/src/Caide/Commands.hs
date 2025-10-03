@@ -6,7 +6,6 @@ module Caide.Commands(
 import Control.Exception.Base (catch, SomeException)
 import Control.Monad.Extended (catchError, void)
 import qualified Data.Text as T
-import qualified Data.Text.IO.Util as T
 import Data.Version (showVersion)
 import System.Exit (exitWith, ExitCode(ExitFailure))
 import System.Environment (getExecutablePath)
@@ -31,6 +30,7 @@ import Caide.Commands.Make
 import Caide.Commands.ParseProblem (createProblem)
 import Caide.Commands.ParseContest
 import Caide.Commands.RunTests
+import Caide.Logger (logError)
 import Caide.Util (newDefaultHttpClient)
 import Paths_libcaide (version)
 
@@ -75,7 +75,7 @@ caideIoToIo extensions cmd globalOptions root = do
 
     case ret of
         Left err -> do
-            T.putStrLn $ describeError err
+            logError $ describeError err
             exitWith $ ExitFailure 0xCA1DE
         _        -> return ()
 
