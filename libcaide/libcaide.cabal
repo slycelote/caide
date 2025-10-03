@@ -22,15 +22,17 @@ source-repository head
 Flag openssl
   description: Use openssl library installed in the system instead of Haskell tls package
   default: False
+  manual: True
 
 Flag cppinliner
   description: Include support for inlining C++ code via libclang
   default: True
+  manual: True
 
 Flag debug
   description: Debug build
   default: False
-
+  manual: True
 
 custom-setup
   setup-depends: base >= 4.7,
