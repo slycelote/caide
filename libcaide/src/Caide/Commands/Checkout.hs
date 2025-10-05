@@ -37,7 +37,7 @@ checkoutProblem probId' maybeLangStr = unless (T.null probId') $ do
         then liftIO $ logWarn $ probId <> ": already checked out"
         else withLock $ do
             writeGlobalState globalState{activeProblem = Just probId}
-            liftIO $ logInfo $ "Checked out problem " <> probId
+            logInfo $ "Checked out problem " <> probId
             features <- mapMaybe findFeature . enabledFeatureNames <$> caideSettings
             forM_ (GlobalTemplate.hook : features) (`onProblemCheckedOut` probId)
 

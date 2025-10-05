@@ -33,7 +33,7 @@ import Caide.Commands.BuildScaffold (generateScaffoldSolution)
 import Caide.Commands.Make (updateTests)
 import Caide.GlobalState (activeProblem, modifyGlobalState)
 import qualified Caide.HttpClient as Http
-import Caide.Logger (logInfo)
+import Caide.Logger (logSuccess)
 import Caide.Monad (CaideIO, caideRoot, caideSettings, caideHttpClient, describeError, throw, rightOrThrow)
 import Caide.Parsers.Common (URL, ProblemParser(parseProblem), CHelperProblemParser(chelperParse))
 import qualified Caide.Paths as Paths
@@ -92,7 +92,7 @@ createNewProblem :: ProblemID -> ProblemType -> CaideIO ()
 createNewProblem probId probType = do
     when (T.any (not . isAcceptableCharacter) probId) $
         throw . T.concat $ [probId, " is not recognized as a supported URL. ",
-            "To create an empty problem, input a valid problem ID (a string of alphanumeric characters)"]
+            "To create an empty problem, provide a valid problem ID (a string of alphanumeric characters)"]
 
     root <- caideRoot
     let probDir = Paths.problemDir root probId
@@ -102,7 +102,7 @@ createNewProblem probId probType = do
     liftIO $ createDirectory False probDir
 
     initializeProblem problem
-    liftIO $ logInfo $ T.concat $ ["Problem successfully created in folder ", probId]
+    logSuccess $ T.concat $ ["Problem created in folder ", probId]
 
 
 saveProblem :: Problem -> [TestCase] -> CaideIO ()
@@ -124,11 +124,11 @@ saveProblem problem samples = do
         forM_ (zip samples [1::Int ..]) $ \(sample, i) -> do
             let inFile  = probDir </> Paths.testInput ("case" <> tshow i)
                 outFile = probDir </> Paths.etalonTestOutput ("case" <> tshow i)
-            writeTextFile inFile  $ testCaseInput sample
+            writeTextFile inFile $ testCaseInput sample
             whenJust (testCaseOutput sample) (writeTextFile outFile)
 
     initializeProblem problem
-    liftIO $ logInfo $ "Problem successfully parsed into folder " <> probId
+    logSuccess $ "Problem parsed into folder " <> probId
 
 saveProblemWithScaffold :: Problem -> [TestCase] -> CaideIO ()
 saveProblemWithScaffold problem samples = do

@@ -64,6 +64,9 @@ Most settings are stored in `caide.ini` file in the project root.
 * `chelper_port` (default 4243) and `companion_port` (default 10043) control
   ports that [`caide httpServer` command](#http-server) uses for communicating
   with browser extensions. Set a port to -1 to disable the corresponding server.
+* `color` can be set to `true` or `false` to enable or disable colorized
+  output. The default is automatically detected. `NO_COLOR` environment
+  variable is respected too.
 * `verbose_test_report` (default `false`) - set to `true` to display status of
   all tests rather than only failed tests.
 * `check_updates` - can be set to `false` to disable automatic check for new

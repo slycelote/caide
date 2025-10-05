@@ -20,7 +20,7 @@ import qualified Data.Aeson as Aeson
 
 import Paths_libcaide (version)
 import Caide.GlobalState (GlobalState(latestVersion, lastUpdateCheck), readGlobalState, modifyGlobalState)
-import Caide.Logger (logInfo, logWarn)
+import Caide.Logger (logSuccess, logWarn)
 import Caide.Parsers.Common (downloadDocument)
 import Caide.Settings (autoCheckUpdates)
 import Caide.Monad (CaideIO, caideHttpClient, caideSettings, throw)
@@ -76,9 +76,9 @@ checkUpdatesCommand :: CaideIO ()
 checkUpdatesCommand = do
     checkUpdatesImpl
     haveUpdates <- isUpdateAvailable
-    logInfo $ if haveUpdates
-              then "New version is available on GitHub: https://github.com/slycelote/caide/releases."
-              else "Caide is up to date."
+    if haveUpdates
+        then logWarn "New version is available on GitHub: https://github.com/slycelote/caide/releases."
+        else logSuccess "Caide is up to date."
 
 isUpdateAvailable :: CaideIO Bool
 isUpdateAvailable = do

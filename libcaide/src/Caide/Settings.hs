@@ -32,6 +32,7 @@ data Settings = Settings
               -- | Configuration for programming languages
               , languages :: Map.Map Text Language
               , cppSettings :: !CppSettings
+              , color :: !(Maybe Bool)
               , useFileLock :: !Bool
               , enabledFeatureNames :: ![Text] -- legacy 'features'
               } deriving (Show)
@@ -74,6 +75,7 @@ readSettings caideRoot = do
         defaultLanguage <- getOpt "core" "language" "cpp"
         verboseTestReport <- getOpt "core" "verbose_test_report" False
         enabledTemplateNames <- getOpt "core" "templates" []
+        color <- getPropOptional cp "core" "color"
         useFileLock <- getOpt "core" "use_lock" True
         enabledFeatureNames <- getOpt "core" "features" []
 

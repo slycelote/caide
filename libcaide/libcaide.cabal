@@ -86,6 +86,7 @@ library
   build-depends:
                    base >= 4.8,
                    aeson >= 2,
+                   ansi-terminal,
                    array,
                    async >= 2.0.1,
                    attoparsec,
@@ -106,6 +107,7 @@ library
                    network >= 2.6,
                    network-uri >= 2.6,
                    optparse-applicative >= 0.15,
+                   os-string,
                    parsec,
                    process,
                    scientific,
@@ -221,5 +223,6 @@ library
         Paths_CaideExt
         Paths_libcaide
         System.IO.Util
+        System.OsString.Extended
         Text.HTML.TagSoup.Utils
 

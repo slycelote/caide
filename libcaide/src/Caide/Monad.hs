@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, NamedFieldPuns #-}
+{-# LANGUAGE CPP, GeneralizedNewtypeDeriving, NamedFieldPuns, DisambiguateRecordFields, OverloadedStrings #-}
 module Caide.Monad(
       CaideIO
     , CaideM
@@ -6,7 +6,6 @@ module Caide.Monad(
     , Verbosity(..)
     , run
     , caideRoot
-    , caideVerbosity
     , caideSettings
     , caideHttpClient
     , caideHoldingLock
@@ -21,21 +20,32 @@ module Caide.Monad(
 ) where
 
 import Control.Exception.Base (displayException)
-import Control.Monad.Extended (ExceptT, MonadError, runExceptT, throwError, MonadIO, when)
+import Control.Monad.Extended (ExceptT, MonadError, runExceptT, throwError, MonadIO)
 import Control.Monad.Reader (MonadReader, reader, ReaderT, runReaderT)
 import Data.Either.Util (mapLeft)
 import Data.IORef (IORef, newIORef)
 import qualified Data.Text as T
 import qualified Filesystem.Path.CurrentOS as FS
 import System.IO.Error (tryIOError)
+import qualified System.Info as System
 
 import qualified Caide.HttpClient as Http
-import Caide.Settings (Settings(useFileLock), readSettings)
+import Caide.Logger (Verbosity(..), LogSettings(..), logDebug)
+import qualified Caide.Logger as Logger
+import Caide.Settings (Settings(Settings, color, useFileLock), readSettings)
 import Caide.Types
 
 
-data Verbosity = Info | Debug
-    deriving (Show, Enum, Ord, Eq, Bounded)
+#if MIN_VERSION_process(1,6,26)
+import System.OsString.Extended()
+import System.Process.Environment.OsString (getEnv)
+#else
+import System.Environment (lookupEnv)
+
+getEnv :: String -> IO (Maybe String)
+getEnv = lookupEnv
+#endif
+
 
 data RunSettings = RunSettings
     { root       :: !FS.FilePath
@@ -65,17 +75,29 @@ runCaideM caideAction env = runExceptT $ runReaderT (unCaideM caideAction) env
 describeError :: Error -> T.Text
 describeError (Error text) = text
 
+setupLogger :: Settings -> RunSettings -> IO ()
+setupLogger Settings{color} RunSettings{verbosity} = do
+    actualColor <- case color of
+        Just c -> pure c
+        Nothing -> do
+            -- https://no-color.org/
+            noColor <- getEnv "NO_COLOR"
+            case noColor of
+                Just s | s /= mempty -> pure False
+                _ -> pure $ System.os /= "mingw32"
+    Logger.configure $ Logger.LogSettings{color=actualColor, verbosity}
+
 run :: RunSettings -> CaideIO a -> IO (Either Error a)
 run runSettings caideAction = do
     let logEx e = do
-            when (verbosity runSettings >= Debug) $
-                putStrLn $ T.unpack $ describeError e
+            logDebug $ describeError e
             pure (Left e)
     ret <- tryIOError $ do
         iniSettings <- mapLeft Error <$> readSettings (root runSettings)
         case iniSettings of
             Left e  -> pure $ Left e
             Right settings -> do
+                setupLogger settings runSettings
                 holdingFileLock <- if useFileLock settings
                     then Just <$> newIORef False
                     else pure Nothing
@@ -97,9 +119,6 @@ rightOrThrow ea = ea `orThrow` id
 -- | Return root caide directory
 caideRoot :: Monad m => CaideM m FS.FilePath
 caideRoot = root <$> reader runSettings
-
-caideVerbosity :: Monad m => CaideM m Verbosity
-caideVerbosity = verbosity <$> reader runSettings
 
 caideSettings :: Monad m => CaideM m Settings
 caideSettings = reader settings

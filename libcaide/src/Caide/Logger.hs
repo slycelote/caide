@@ -1,30 +1,77 @@
+{-# LANGUAGE NamedFieldPuns, OverloadedStrings #-}
 module Caide.Logger(
-      logInfo
+      configure
+    , Verbosity(..)
+    , LogSettings(..)
+    , logInfo
+    , logSuccess
     , logWarn
     , logError
     , logDebug
 ) where
 
 import Control.Monad.Extended (when, MonadIO, liftIO)
-
+import Data.IORef (IORef, newIORef, atomicWriteIORef, atomicModifyIORef')
 import Data.Text (Text)
 import qualified Data.Text.IO.Utf8 as T
+import qualified System.Info as System
+import System.IO.Unsafe (unsafePerformIO)
 
-import Caide.Monad (CaideIO, caideVerbosity, Verbosity(Debug))
+import System.Console.ANSI
 
+data Verbosity = Info | Debug
+    deriving (Show, Enum, Ord, Eq, Bounded)
+
+data LogSettings = LogSettings
+    { color     :: !Bool
+    , verbosity :: !Verbosity
+    } deriving (Show)
+
+logSettings :: IORef LogSettings
+{-# NOINLINE logSettings #-}
+logSettings = unsafePerformIO $ newIORef $
+    -- TODO: improve support for color and Unicode symbols in Windows
+    LogSettings{color=System.os /= "mingw32", verbosity=Info}
+
+configure :: LogSettings -> IO ()
+configure settings = atomicWriteIORef logSettings settings
+
+getSettings :: IO LogSettings
+getSettings = atomicModifyIORef' logSettings $ \s -> (s, s)
 
 logInfo :: MonadIO m => Text -> m ()
 logInfo message = liftIO $ T.putStrLn message
 
+logSuccess :: MonadIO m => Text -> m ()
+logSuccess message = liftIO $ do
+    LogSettings{color} <- getSettings
+    when color $ do
+        setSGR [SetColor Foreground Vivid Green]
+        T.putStr "✔ "
+        setSGR [Reset]
+    T.putStrLn message
+
 logWarn :: MonadIO m => Text -> m ()
-logWarn = logInfo
+logWarn message = liftIO $ do
+    LogSettings{color} <- getSettings
+    when color $ do
+        setSGR [SetColor Foreground Vivid Yellow]
+        T.putStr "‼ "
+        setSGR [Reset]
+    T.putStrLn message
 
 logError :: MonadIO m => Text -> m ()
-logError = logInfo
+logError message = liftIO $ do
+    LogSettings{color} <- getSettings
+    when color $ do
+        setSGR [SetColor Foreground Vivid Red]
+        T.putStr "✗ "
+        setSGR [Reset, SetConsoleIntensity BoldIntensity]
+    T.putStrLn message
+    when color $ setSGR [Reset]
 
-logDebug :: Text -> CaideIO ()
-logDebug message = do
-    v <- caideVerbosity
-    when (v >= Debug) $
-        logInfo message
+logDebug :: MonadIO m => Text -> m ()
+logDebug message = liftIO $ do
+    LogSettings{verbosity} <- getSettings
+    when (verbosity >= Debug) $ T.putStrLn message
 
