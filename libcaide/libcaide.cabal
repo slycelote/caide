@@ -34,6 +34,11 @@ Flag debug
   default: False
   manual: True
 
+Flag distrib
+  description: Build redistributable executable on Linux
+  default: False
+  manual: True
+
 custom-setup
   setup-depends: base >= 4.7,
                  bytestring,
@@ -71,6 +76,10 @@ executable caide
   default-language: Haskell2010
   hs-source-dirs: app
   main-is: Main.hs
+  if flag(distrib) {
+    build-tool-depends: ecstatic:ecstatic >= 0.1.0
+    ghc-options: -pgml ecstatic
+  }
 
 test-suite caide-tests
   import: exe-flags
