@@ -1,6 +1,0 @@
-package *
-  split-sections: True
-
-package libcaide
-  ghc-options: -pgml ghc-linker.py -ferror-spans -freverse-errors -fprint-expanded-synonyms -fhide-source-paths
-
