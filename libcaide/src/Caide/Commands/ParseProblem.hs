@@ -102,7 +102,7 @@ createNewProblem probId probType = do
     liftIO $ createDirectory False probDir
 
     initializeProblem problem
-    logSuccess $ T.concat $ ["Problem created in folder ", probId]
+    logSuccess $ "Problem created in folder " <> probId
 
 
 saveProblem :: Problem -> [TestCase] -> CaideIO ()

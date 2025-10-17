@@ -100,7 +100,7 @@ initialize curDir useSystemCppHeaders = do
     forM_ templates $ \(fileName, cont) -> do
         writeTextFile (curDir </> "templates" </> fileName) cont
         writeTextFile (curDir </> ".caide" </> "templates" </> fileName) cont
-    logInfo $ T.concat $ ["Initialized caide directory at ", pathToText curDir]
+    logInfo $ "Initialized caide directory at " <> pathToText curDir
 
 data SystemCompilerInfo = SystemCompilerInfo
     { vsCompilerVersion :: Maybe String -- ^ https://learn.microsoft.com/en-us/cpp/overview/compiler-versions#version-macros
