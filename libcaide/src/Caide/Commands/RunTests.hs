@@ -220,11 +220,16 @@ compareLines eps expectedLine actualLine = case errors of
     tokenComparison = zipWith (compareTokens eps) expected actual
     errors = [(nToken, e) | (nToken, Failed e) <- zip [1::Int ..] tokenComparison]
 
+truncateLongWord :: Text -> Text
+truncateLongWord s | T.length s > 50  = T.take 50 s <> "[...]"
+truncateLongWord s = s
+
 compareTokens :: Double -> Text -> Text -> ComparisonResult
 compareTokens eps expected actual = case () of
     _ | expected == actual -> Success
       | areEqualDoubles eps expected actual -> Success
-      | otherwise -> Failed $ "Expected " <> expected <> ", found " <> actual
+      | otherwise -> Failed $
+          "Expected " <> truncateLongWord expected <> ", found " <> truncateLongWord actual
 
 areEqualDoubles :: Double -> Text -> Text -> Bool
 areEqualDoubles eps expected actual = case (expectedParsed, actualParsed) of
