@@ -19,6 +19,7 @@ module Caide.Monad(
     , noOpFeature
 ) where
 
+import Control.Applicative ((<|>))
 import Control.Exception.Base (displayException)
 import Control.Monad.Extended (ExceptT, MonadError, runExceptT, throwError, MonadIO)
 import Control.Monad.Reader (MonadReader, reader, ReaderT, runReaderT)
@@ -27,10 +28,9 @@ import Data.IORef (IORef, newIORef)
 import qualified Data.Text as T
 import qualified Filesystem.Path.CurrentOS as FS
 import System.IO.Error (tryIOError)
-import qualified System.Info as System
 
 import qualified Caide.HttpClient as Http
-import Caide.Logger (Verbosity(..), LogSettings(..), logDebug)
+import Caide.Logger (ColorOutput(..), Verbosity(..), LogSettings(..), logDebug, autoDeterminedColorCapability)
 import qualified Caide.Logger as Logger
 import Caide.Settings (Settings(Settings, color, useFileLock), readSettings)
 import Caide.Types
@@ -50,6 +50,7 @@ getEnv = lookupEnv
 data RunSettings = RunSettings
     { root       :: !FS.FilePath
     , verbosity  :: !Verbosity
+    , color      :: !ColorOutput
     , httpClient :: !Http.Client
     }
 
@@ -76,15 +77,19 @@ describeError :: Error -> T.Text
 describeError (Error text) = text
 
 setupLogger :: Settings -> RunSettings -> IO ()
-setupLogger Settings{color} RunSettings{verbosity} = do
-    actualColor <- case color of
+setupLogger Settings{color=confColor} RunSettings{verbosity, color=runColor} = do
+    let cliColor = case runColor of
+            ColorAuto -> Nothing
+            ColorYes  -> Just True
+            ColorNo   -> Just False
+    actualColor <- case cliColor <|> confColor of
         Just c -> pure c
         Nothing -> do
             -- https://no-color.org/
             noColor <- getEnv "NO_COLOR"
             case noColor of
                 Just s | s /= mempty -> pure False
-                _ -> pure $ System.os /= "mingw32"
+                _ -> autoDeterminedColorCapability
     Logger.configure $ Logger.LogSettings{color=actualColor, verbosity}
 
 run :: RunSettings -> CaideIO a -> IO (Either Error a)

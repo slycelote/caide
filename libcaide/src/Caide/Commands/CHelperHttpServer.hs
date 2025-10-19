@@ -25,8 +25,8 @@ import Network.Shed.Httpd (initServerBind, Request(reqBody), Response(Response))
 import Caide.CheckUpdates (checkUpdates)
 import Caide.Commands.ParseProblem (saveProblemWithScaffold)
 import Caide.GlobalState (activeProblem, modifyGlobalState)
-import Caide.Logger (logInfo, logError)
-import Caide.Monad (CaideIO, caideSettings, Verbosity(Debug),
+import Caide.Logger (logInfo, logError, Verbosity(Debug), ColorOutput)
+import Caide.Monad (CaideIO, caideSettings,
     RunSettings(..), run, describeError)
 import Caide.Parsers.Common (CHelperProblemParser(chelperParse))
 import Caide.Registry (findCHelperProblemParser)
@@ -35,10 +35,10 @@ import Caide.Types
 import Caide.Util (newDefaultHttpClient)
 
 
-runHttpServer :: Verbosity -> F.FilePath -> IO ()
-runHttpServer verbosity root = do
+runHttpServer :: Verbosity -> ColorOutput -> F.FilePath -> IO ()
+runHttpServer verbosity color root = do
     httpClient <- newDefaultHttpClient
-    let runSettings = RunSettings{root, verbosity, httpClient}
+    let runSettings = RunSettings{root, verbosity, color, httpClient}
     mbPorts <- run runSettings getPorts
     case mbPorts of
         Left err -> logError $ describeError err

@@ -1,6 +1,7 @@
 {-# LANGUAGE NamedFieldPuns, OverloadedStrings #-}
 module Caide.Logger(
       configure
+    , ColorOutput(..)
     , Verbosity(..)
     , LogSettings(..)
     , logInfo
@@ -8,6 +9,7 @@ module Caide.Logger(
     , logWarn
     , logError
     , logDebug
+    , autoDeterminedColorCapability
 ) where
 
 import Control.Monad.Extended (when, MonadIO, liftIO)
@@ -15,6 +17,7 @@ import Data.IORef (IORef, newIORef, atomicWriteIORef, atomicModifyIORef')
 import Data.Text (Text)
 import qualified Data.Text.IO.Utf8 as T
 import qualified System.Info as System
+import qualified System.IO as System
 import System.IO.Unsafe (unsafePerformIO)
 
 import System.Console.ANSI
@@ -22,16 +25,24 @@ import System.Console.ANSI
 data Verbosity = Info | Debug
     deriving (Show, Enum, Ord, Eq, Bounded)
 
+data ColorOutput = ColorAuto | ColorYes | ColorNo
+    deriving (Show)
+
 data LogSettings = LogSettings
     { color     :: !Bool
     , verbosity :: !Verbosity
     } deriving (Show)
 
+-- TODO: improve support for color and Unicode symbols in Windows
+autoDeterminedColorCapability :: IO Bool
+autoDeterminedColorCapability = if System.os == "mingw32"
+    then pure False
+    else hNowSupportsANSI System.stdout
+
 logSettings :: IORef LogSettings
 {-# NOINLINE logSettings #-}
 logSettings = unsafePerformIO $ newIORef $
-    -- TODO: improve support for color and Unicode symbols in Windows
-    LogSettings{color=System.os /= "mingw32", verbosity=Info}
+    LogSettings{color=False, verbosity=Info}
 
 configure :: LogSettings -> IO ()
 configure settings = atomicWriteIORef logSettings settings

@@ -18,7 +18,7 @@ import Options.Applicative.Types (Backtracking(..))
 import System.IO.Util (writeFileAtomic)
 
 import Caide.CheckUpdates (checkUpdates, checkUpdatesCommand, logIfUpdateAvailable)
-import Caide.Monad (CaideIO, Verbosity(Info, Debug), RunSettings(..), run, describeError)
+import Caide.Monad (CaideIO, RunSettings(..), run, describeError)
 import qualified Caide.Commands.Init as Init
 import Caide.Commands.Archive
 import Caide.Commands.BuildScaffold
@@ -30,13 +30,14 @@ import Caide.Commands.Make
 import Caide.Commands.ParseProblem (createProblem)
 import Caide.Commands.ParseContest
 import Caide.Commands.RunTests
-import Caide.Logger (logError)
+import Caide.Logger (ColorOutput(..), Verbosity(Info, Debug), logError)
 import Caide.Util (newDefaultHttpClient)
 import Paths_libcaide (version)
 
 
 data GlobalOptions = GlobalOptions
                  { optVerbosity :: Verbosity
+                 , optColor :: ColorOutput
                  }
 
 toVerbosity :: Int -> Verbosity
@@ -44,9 +45,19 @@ toVerbosity level = case level of
     0 -> Info
     _ -> Debug
 
+parseColor :: ReadM ColorOutput
+parseColor = do
+    s <- str :: ReadM String
+    case s of
+        "auto"  -> pure ColorAuto
+        "true"  -> pure ColorYes
+        "false" -> pure ColorNo
+        _       -> readerError "--color option requires the value of auto, true or false"
+
 globalOptionsParser :: Parser GlobalOptions
 globalOptionsParser = GlobalOptions . toVerbosity . length
     <$> many (flag' () (short 'v' <> help "Verbose output"))
+    <*> option parseColor (long "color" <> short 'c' <> value ColorAuto <> metavar "true,false" <> help "Colorized output")
 
 type CaideAction = GlobalOptions -> FS.FilePath -> IO ()
 
@@ -64,7 +75,11 @@ extendCommand cmd ReportNewVersion = cmd >> (logIfUpdateAvailable `catchError` c
 caideIoToIo :: [CommandExtension] -> CaideIO () -> CaideAction
 caideIoToIo extensions cmd globalOptions root = do
     httpClient <- newDefaultHttpClient
-    let settings = RunSettings{root, httpClient, verbosity=optVerbosity globalOptions}
+    let settings = RunSettings{
+        root, httpClient
+        , verbosity=optVerbosity globalOptions
+        , color=optColor globalOptions
+    }
     ret <- run settings $ foldl' extendCommand cmd extensions
 
     -- Save path to caide executable
@@ -123,7 +138,7 @@ publicSubCommands = [
     [ createIoSubCommand (
         "httpServer",
         "Run HTTP server for CHelper browser extension",
-        pure $ \globalOpts -> runHttpServer (optVerbosity globalOpts))
+        pure $ \globalOpts -> runHttpServer (optVerbosity globalOpts) (optColor globalOpts))
     ]
 
 internalSubCommands :: [Mod CommandFields CaideAction]
