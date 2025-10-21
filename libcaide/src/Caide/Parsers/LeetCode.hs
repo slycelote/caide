@@ -62,7 +62,7 @@ doParse client url _ = case (mbUri, mbPathSegments) of
                        "\"query\":\"query questionDetail($titleSlug: String!) {  question(titleSlug: $titleSlug) { " <>
                        "title    titleSlug    content    exampleTestcaseList " <>
                        "codeSnippets {      lang      langSlug      code      } " <>
-                       "sampleTestCase metaData    } " <>
+                       "metaData    } " <>
                        "}\"}"
         mbJson <- Http.post client apiUri apiQuery [
             (hContentType, "application/json"),
@@ -146,7 +146,6 @@ data Question = Question
                 -- note the spelling
                 , exampleTestcaseList :: !(Maybe [Aeson.Value])
                 , codeSnippets :: !(Maybe [CodeSnippet])
-                , sampleTestCase :: !(Maybe Text)
                 , metaData :: !MetaData
                 } deriving (Show, Generic)
 
@@ -157,9 +156,6 @@ instance FromJSON Question where
             question <- d .: "question"
             Aeson.genericParseJSON Aeson.defaultOptions question
 
-
-isWhiteSpace :: Text -> Bool
-isWhiteSpace t = T.null (T.strip t)
 
 -- Compare by number of tests with known outputs first, then by total number.
 numTests :: [TestCase] -> (Int, Int)
@@ -232,7 +228,6 @@ parseFromGraphQL probId responseBody = do
 
         testParsings = [ fromContent (content question)
                        , fromExamples (exampleTestcaseList question)
-                       , fromSample (sampleTestCase question)
                        ]
         validTestParsings = rights testParsings
         bestParsing = if null validTestParsings
@@ -240,11 +235,6 @@ parseFromGraphQL probId responseBody = do
             else List.maximumBy (compare `on` numTests) validTestParsings
 
     return (problem, bestParsing)
-
-fromSample :: Maybe Text -> Either Text [TestCase]
-fromSample Nothing = Left "sampleTestCase not provided"
-fromSample (Just t) | isWhiteSpace t = Left "sampleTestCase not provided"
-fromSample (Just t) = Right [TestCase t Nothing]
 
 fromExamples :: Maybe [Aeson.Value] -> Either Text [TestCase]
 fromExamples Nothing = Left "exampleTestcaseList not provided"
