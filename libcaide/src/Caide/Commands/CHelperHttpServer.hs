@@ -1,4 +1,4 @@
-{-# LANGUAGE NamedFieldPuns, OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE DeriveGeneric, DuplicateRecordFields, NamedFieldPuns, OverloadedStrings, ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Caide.Commands.CHelperHttpServer(
@@ -12,14 +12,17 @@ import Control.Monad (forM_, void, when)
 import Control.Monad.Except (catchError)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.List.NonEmpty as NE
+import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import qualified Filesystem.Path as F
 import qualified Filesystem.Path.CurrentOS as F
 import Network.Socket (tupleToHostAddress, withSocketsDo)
 import System.IO (hSetBuffering, stdout, stderr, BufferMode(NoBuffering))
+import GHC.Generics (Generic)
 
-import Data.Aeson (FromJSON(parseJSON), eitherDecode', withObject, (.:))
+import qualified Data.Aeson as Aeson
+import Data.Aeson (FromJSON(parseJSON), withObject, (.:), (.:?))
 import Network.Shed.Httpd (initServerBind, Request(reqBody), Response(Response))
 
 import Caide.CheckUpdates (checkUpdates)
@@ -94,6 +97,11 @@ makeResponse :: Int -> String -> Response
 makeResponse code message = Response code [] message
 
 
+withRenames :: Aeson.Options
+withRenames = Aeson.defaultOptions{Aeson.fieldLabelModifier = modField}
+    where modField "type_" = "type"
+          modField s = s
+
 instance FromJSON InputSource where
   parseJSON = withObject "input description" $ \o -> do
     inputType :: String <- o .: "type"
@@ -105,11 +113,71 @@ instance FromJSON InputSource where
 instance FromJSON OutputTarget where
   parseJSON = withObject "output description" $ \o -> do
     outputType <- o .: "type"
-    if outputType == ("file" :: String) then FileOutput . F.fromText <$> o .: "fileName" else pure StdOut
+    if outputType == ("file" :: String)
+        then FileOutput . F.fromText <$> o .: "fileName"
+        else pure StdOut
 
 instance FromJSON TestCase where
   parseJSON = withObject "test case" $ \o ->
     TestCase <$> o .: "input" <*> o .: "output"
+
+data CompanionCodeSnippet = CompanionCodeSnippet
+    { lang :: !T.Text
+    , code :: !T.Text
+    } deriving (Show, Generic)
+instance Aeson.FromJSON CompanionCodeSnippet
+
+data CompanionType = CompanionType
+    { baseType  :: !T.Text
+    , arrayRank :: !Int
+    } deriving (Show, Generic)
+instance FromJSON CompanionType
+
+convertBaseType :: T.Text -> TopcoderType
+convertBaseType "integer" = TCInt
+convertBaseType "string" = TCString
+convertBaseType "double" = TCDouble
+convertBaseType "boolean" = TCBool
+convertBaseType "void" = TCVoid
+convertBaseType other = TypeName other
+
+data CompanionValue = CompanionValue
+    { name  :: !T.Text
+    , type_ :: CompanionType
+    } deriving (Show, Generic)
+
+instance FromJSON CompanionValue where
+    parseJSON = Aeson.genericParseJSON withRenames
+
+convertValue :: CompanionValue -> TopcoderValue
+convertValue CompanionValue{name, type_=CompanionType{baseType, arrayRank}} =
+    TopcoderValue name (convertBaseType baseType) arrayRank
+
+data CompanionMethod = CompanionMethod
+    { name       :: !T.Text
+    , params     :: ![CompanionValue]
+    , returnType :: !CompanionType
+    } deriving (Show, Generic)
+instance FromJSON CompanionMethod
+
+convertMethod :: CompanionMethod -> TopcoderMethod
+convertMethod CompanionMethod{name, params, returnType} =
+    TopcoderMethod (convertValue $ CompanionValue name returnType) (map convertValue params)
+
+data CompanionClass = CompanionClass
+    { name              :: !T.Text
+    , constructorParams :: !(Maybe [CompanionValue])
+    , methods           :: ![CompanionMethod]
+    } deriving (Show, Generic)
+instance FromJSON CompanionClass
+
+convertProblemType :: CompanionClass -> ProblemType
+convertProblemType CompanionClass{name="Solution", constructorParams=Nothing, methods=[method]} =
+    LeetCodeMethod $ convertMethod method
+convertProblemType CompanionClass{name, constructorParams, methods} =
+    LeetCodeClass name
+        (maybe [] (map convertValue) constructorParams)
+        (map convertMethod methods)
 
 instance FromJSON ParsedProblem where
   parseJSON = withObject "problem description" $ \o -> do
@@ -122,12 +190,19 @@ instance FromJSON ParsedProblem where
     java <- languages .: "java"
     probId <- java .: "taskClass"
 
-    pure $ Parsed (makeProblem probName probId (Stream input output)) tests
+    snippets <- o .: "codeSnippets"
+    clazz <- o .:? "solutionInterface"
+
+    let codeSnippets = Map.map code snippets
+        problem = makeProblem probName probId $
+            maybe (Stream input output) convertProblemType clazz
+
+    pure $ Parsed (problem{problemCodeSnippets=codeSnippets}) tests
 
 processCompanionRequest :: RunSettings -> Request -> IO Response
 processCompanionRequest runSettings request = do
     let body = LBS.fromStrict . encodeUtf8 . T.pack $ reqBody request
-        mbParsed = eitherDecode' body :: Either String ParsedProblem
+        mbParsed = Aeson.eitherDecode' body :: Either String ParsedProblem
     when (verbosity runSettings >= Debug) $
         putStrLn $ reqBody request
     case mbParsed of
