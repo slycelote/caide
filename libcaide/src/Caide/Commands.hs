@@ -137,7 +137,7 @@ publicSubCommands = [
     map createSubCommand commands ++
     [ createIoSubCommand (
         "httpServer",
-        "Run HTTP server for CHelper browser extension",
+        "Run HTTP server for Competitive Companion and CHelper browser extensions",
         pure $ \globalOpts -> runHttpServer (optVerbosity globalOpts) (optColor globalOpts))
     ]
 
