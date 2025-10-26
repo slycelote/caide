@@ -41,6 +41,9 @@ extern "C" {
 #define _CRT_TERMINATE_DEFINED
   void __cdecl __MINGW_NOTHROW exit(int _Code) __MINGW_ATTRIB_NORETURN;
   void __cdecl __MINGW_NOTHROW _exit(int _Code) __MINGW_ATTRIB_NORETURN;
+#ifdef _UCRT
+  void __cdecl __MINGW_NOTHROW quick_exit(int _Code) __MINGW_ATTRIB_NORETURN;
+#endif
 
 #if !defined __NO_ISOCEXT /* extern stub in static libmingwex.a */
   /* C99 function name */
@@ -135,10 +138,10 @@ extern "C" {
   WINBOOL WINAPI _wCRT_INIT(HANDLE _HDllHandle,DWORD _Reason,LPVOID _Reserved);
   extern WINBOOL (WINAPI *const _pRawDllMain)(HANDLE,DWORD,LPVOID);
 #else
-  int __stdcall DllMain(void *_HDllHandle,unsigned _Reason,void *_Reserved);
-  int __stdcall _CRT_INIT(void *_HDllHandle,unsigned _Reason,void *_Reserved);
-  int __stdcall _wCRT_INIT(void *_HDllHandle,unsigned _Reason,void *_Reserved);
-  extern int (__stdcall *const _pRawDllMain)(void *,unsigned,void *);
+  int __stdcall DllMain(void *_HDllHandle,unsigned long _Reason,void *_Reserved);
+  int __stdcall _CRT_INIT(void *_HDllHandle,unsigned long _Reason,void *_Reserved);
+  int __stdcall _wCRT_INIT(void *_HDllHandle,unsigned long _Reason,void *_Reserved);
+  extern int (__stdcall *const _pRawDllMain)(void *,unsigned long,void *);
 #endif
 #endif
 

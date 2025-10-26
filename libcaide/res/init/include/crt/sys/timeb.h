@@ -86,6 +86,16 @@ extern "C" {
 #define _ftime _ftime32
 #endif
 
+struct _timespec32 {
+  __time32_t tv_sec;
+  long tv_nsec;
+};
+
+struct _timespec64 {
+  __time64_t tv_sec;
+  long tv_nsec;
+};
+
 #ifndef _TIMESPEC_DEFINED
 #define _TIMESPEC_DEFINED
 struct timespec {
@@ -100,20 +110,11 @@ struct itimerspec {
 #endif
 
 #if !defined (RC_INVOKED) && !defined (NO_OLDNAMES)
-  void __cdecl ftime (struct timeb *);
-
-#ifndef __CRT__NO_INLINE
-  /* TODO: Avoid structure cast here !!!! */
 #ifndef _USE_32BIT_TIME_T
-  __CRT_INLINE void __cdecl ftime(struct timeb *_Tmb) {
-    _ftime64((struct __timeb64 *)_Tmb);
-  }
+  void __cdecl ftime (struct timeb *) __MINGW_ASM_CALL(_ftime64);
 #else
-  __CRT_INLINE void __cdecl ftime(struct timeb *_Tmb) {
-    _ftime32((struct __timeb32 *)_Tmb);
-  }
+  void __cdecl ftime (struct timeb *) __MINGW_ASM_CALL(_ftime32);
 #endif /* _USE_32BIT_TIME_T */
-#endif /* !__CRT__NO_INLINE */
 #endif
 
 #ifdef __cplusplus

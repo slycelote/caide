@@ -128,12 +128,16 @@ defaultCaideConf root useSystemHeaders compiler = forceEither $ flip execStateT 
 clangOptions :: FS.FilePath -> Bool -> SystemCompilerInfo -> [String]
 clangOptions root False _ =
     [ "-target"
-    , "i386-pc-mingw32"
+    , "x86_64-w64-mingw32"
     , "-nostdinc"
+    -- clang builtin headers are still required:
+    -- https://clang.llvm.org/docs/LibTooling.html#libtooling-builtin-includes
+    , "-isystem"
+    , encodeString $ root </> "include" </> "clang-builtins"
     , "-isystem"
     , encodeString $ root </> "include" </> "c++"
     , "-isystem"
-    , encodeString $ root </> "include" </> "c++" </> "i686-w64-mingw32"
+    , encodeString $ root </> "include" </> "c++" </> "x86_64-w64-mingw32"
     , "-isystem"
     , encodeString $ root </> "include" </> "crt"
     , "-I"

@@ -16,7 +16,7 @@
 #ifndef _SECIMP
 #define _SECIMP __declspec(dllimport)
 #endif /* _SECIMP */
-#endif /* defined(_CRTBLD) || defined(__LIBMSVCRT__) */
+#endif /* defined(__LIBMSVCRT__) */
 
 #pragma pack(push,_CRT_PACKING)
 
@@ -24,7 +24,15 @@
 extern "C" {
 #endif
 
+#if defined(_DEBUG) && defined(_CRTDBG_MAP_ALLOC)
+#pragma push_macro("_getcwd")
+#undef _getcwd
+#endif
 _CRTIMP char* __cdecl _getcwd (char*, int);
+#if defined(_DEBUG) && defined(_CRTDBG_MAP_ALLOC)
+#pragma pop_macro("_getcwd")
+#endif
+
 #ifndef _FSIZE_T_DEFINED
   typedef unsigned long _fsize_t;
 #define _FSIZE_T_DEFINED
@@ -278,7 +286,14 @@ _CRTIMP char* __cdecl _getcwd (char*, int);
 #ifndef NO_OLDNAMES
 #ifndef _UWIN
   int __cdecl chdir (const char *) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
+#if defined(_DEBUG) && defined(_CRTDBG_MAP_ALLOC)
+#pragma push_macro("getcwd")
+#undef getcwd
+#endif
   char *__cdecl getcwd (char *, int) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
+#if defined(_DEBUG) && defined(_CRTDBG_MAP_ALLOC)
+#pragma pop_macro("getcwd")
+#endif
   int __cdecl mkdir (const char *) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
   char *__cdecl mktemp(char *) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
   int __cdecl rmdir (const char*) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
@@ -406,7 +421,7 @@ int _open(const char * __filename, int __flags, ...)
 {
   if (__builtin_va_arg_pack_len() > 1)
     return __mingw_call__open_warn_toomany(__filename, __flags, __builtin_va_arg_pack());
-  if (__builtin_va_arg_pack_len() < 1 && __builtin_constant_p(__flags) && (__flags & _O_CREAT))
+  if (__builtin_va_arg_pack_len() < 1 && __builtin_constant_p(__flags & _O_CREAT) && (__flags & _O_CREAT))
     return __mingw_call__open_warn_missing(__filename, __flags, 0);
   if (__builtin_va_arg_pack_len() < 1)
     return __mingw_call__open(__filename, __flags, 0);
@@ -424,7 +439,7 @@ int _sopen(const char * __filename, int __flags, int __share, ...)
 {
   if (__builtin_va_arg_pack_len() > 1)
     return __mingw_call__sopen_warn_toomany(__filename, __flags, __share, __builtin_va_arg_pack());
-  if (__builtin_va_arg_pack_len() < 1 && __builtin_constant_p(__flags) && (__flags & _O_CREAT))
+  if (__builtin_va_arg_pack_len() < 1 && __builtin_constant_p(__flags & _O_CREAT) && (__flags & _O_CREAT))
     return __mingw_call__sopen_warn_missing(__filename, __flags, __share, 0);
   if (__builtin_va_arg_pack_len() < 1)
     return __mingw_call__sopen(__filename, __flags, __share, 0);
@@ -442,7 +457,7 @@ int _wopen(const wchar_t * __filename, int __flags, ...)
 {
   if (__builtin_va_arg_pack_len() > 1)
     return __mingw_call__wopen_warn_toomany(__filename, __flags, __builtin_va_arg_pack());
-  if (__builtin_va_arg_pack_len() < 1 && __builtin_constant_p(__flags) && (__flags & _O_CREAT))
+  if (__builtin_va_arg_pack_len() < 1 && __builtin_constant_p(__flags & _O_CREAT) && (__flags & _O_CREAT))
     return __mingw_call__wopen_warn_missing(__filename, __flags, 0);
   if (__builtin_va_arg_pack_len() < 1)
     return __mingw_call__wopen(__filename, __flags, 0);
@@ -460,7 +475,7 @@ int _wsopen(const wchar_t * __filename, int __flags, int __share, ...)
 {
   if (__builtin_va_arg_pack_len() > 1)
     return __mingw_call__wsopen_warn_toomany(__filename, __flags, __share, __builtin_va_arg_pack());
-  if (__builtin_va_arg_pack_len() < 1 && __builtin_constant_p(__flags) && (__flags & _O_CREAT))
+  if (__builtin_va_arg_pack_len() < 1 && __builtin_constant_p(__flags & _O_CREAT) && (__flags & _O_CREAT))
     return __mingw_call__wsopen_warn_missing(__filename, __flags, __share, 0);
   if (__builtin_va_arg_pack_len() < 1)
     return __mingw_call__wsopen(__filename, __flags, __share, 0);

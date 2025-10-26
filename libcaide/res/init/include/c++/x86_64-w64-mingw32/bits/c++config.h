@@ -1563,7 +1563,7 @@ namespace __gnu_cxx
 /* Define if compatibility should be provided for -mlong-double-64. */
 
 /* Define to the letter to which size_t is mangled. */
-#define _GLIBCXX_MANGLE_SIZE_T j
+#define _GLIBCXX_MANGLE_SIZE_T y
 
 /* Define if C99 llrint and llround functions are missing from <math.h>. */
 /* #undef _GLIBCXX_NO_C99_ROUNDING_FUNCS */
@@ -1572,13 +1572,13 @@ namespace __gnu_cxx
 /* #undef _GLIBCXX_NO_SLEEP */
 
 /* Define if ptrdiff_t is int. */
-#define _GLIBCXX_PTRDIFF_T_IS_INT 1
+/* #undef _GLIBCXX_PTRDIFF_T_IS_INT */
 
 /* Define if using setrlimit to set resource limits during "make check" */
 /* #undef _GLIBCXX_RES_LIMITS */
 
 /* Define if size_t is unsigned int. */
-#define _GLIBCXX_SIZE_T_IS_UINT 1
+/* #undef _GLIBCXX_SIZE_T_IS_UINT */
 
 /* Define if static tzdata should be compiled into the library. */
 #define _GLIBCXX_STATIC_TZDATA 1

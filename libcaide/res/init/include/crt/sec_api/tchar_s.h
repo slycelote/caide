@@ -45,6 +45,9 @@ extern "C" {
 #define _stscanf_s_l _swscanf_s_l
 #define _sntscanf_s _snwscanf_s
 #define _sntscanf_s_l _snwscanf_s_l
+#define _vtscanf_s vwscanf_s
+#define _vftscanf_s vfwscanf_s
+#define _vstscanf_s vswscanf_s
 
 #define _cgetts_s _cgetws_s
 #define _getts_s _getws_s
@@ -80,6 +83,7 @@ extern "C" {
 
 #define _tgetenv_s _wgetenv_s
 #define _tdupenv_s _wdupenv_s
+#define _tdupenv_s_dbg _wdupenv_s_dbg
 #define _tmakepath_s _wmakepath_s
 #define _tputenv_s _wputenv_s
 #define _tsearchenv_s _wsearchenv_s
@@ -90,11 +94,14 @@ extern "C" {
 #define _ttmpnam_s _wtmpnam_s
 #define _taccess_s _waccess_s
 #define _tmktemp_s _wmktemp_s
+#define _tsopen_s _wsopen_s
 
 #define _tcsnccat_s wcsncat_s
 #define _tcsnccat_s_l _wcsncat_s_l
 #define _tcsnccpy_s wcsncpy_s
 #define _tcsnccpy_s_l _wcsncpy_s_l
+#define _tcsncset_s _wcsnset_s
+#define _tcsncset_s_l _wcsnset_s_l
 
 #define _tcslwr_s _wcslwr_s
 #define _tcslwr_s_l _wcslwr_s_l
@@ -137,6 +144,9 @@ extern "C" {
 #define _stscanf_s_l _sscanf_s_l
 #define _sntscanf_s _snscanf_s
 #define _sntscanf_s_l _snscanf_s_l
+#define _vtscanf_s vscanf_s
+#define _vftscanf_s vfscanf_s
+#define _vstscanf_s vsscanf_s
 
 #define _getts_s gets_s
 #define _cgetts_s _cgets_s
@@ -160,6 +170,7 @@ extern "C" {
 
 #define _tgetenv_s getenv_s
 #define _tdupenv_s _dupenv_s
+#define _tdupenv_s_dbg _dupenv_s_dbg
 #define _tmakepath_s _makepath_s
 #define _tputenv_s _putenv_s
 #define _tsearchenv_s _searchenv_s
@@ -220,11 +231,12 @@ extern "C" {
   _CRTIMP char *__cdecl _tcsnccat_s_l(char *_Dst,size_t _DstSizeInChars,const char *_Src,size_t _MaxCount,_locale_t _Locale);
   _CRTIMP char *__cdecl _tcsnccpy_s(char *_Dst,size_t _DstSizeInChars,const char *_Src,size_t _MaxCount);
   _CRTIMP char *__cdecl _tcsnccpy_s_l(char *_Dst,size_t _DstSizeInChars,const char *_Src,size_t _MaxCount,_locale_t _Locale);
+  _CRTIMP char *__cdecl _tcsncset_s(char *_Str,size_t _SizeInChars,unsigned int _Val,size_t _MaxCount);
+  _CRTIMP char *__cdecl _tcsncset_s_l(char *_Str,size_t _SizeInChars,unsigned int _Val,size_t _MaxCount,_locale_t _Locale);
   _CRTIMP char *__cdecl _tcslwr_s(char *_Str,size_t _SizeInChars);
   _CRTIMP char *__cdecl _tcslwr_s_l(char *_Str,size_t _SizeInChars,_locale_t _Locale);
   _CRTIMP char *__cdecl _tcsupr_s(char *_Str,size_t _SizeInChars);
   _CRTIMP char *__cdecl _tcsupr_s_l(char *_Str,size_t _SizeInChars,_locale_t _Locale);
-
 #endif
 
 #else
@@ -246,6 +258,8 @@ extern "C" {
 #define _tcsnccat_s_l _strncat_s_l
 #define _tcsnccpy_s strncpy_s
 #define _tcsnccpy_s_l _strncpy_s_l
+#define _tcsncset_s _strnset_s
+#define _tcsncset_s_l _strnset_s_l
 
 #define _tcslwr_s _strlwr_s
 #define _tcslwr_s_l _strlwr_s_l

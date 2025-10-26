@@ -61,6 +61,16 @@ extern "C" {
     char n_sep_by_space;
     char p_sign_posn;
     char n_sign_posn;
+#if __MSVCRT_VERSION__ >= 0xA00 || _WIN32_WINNT >= 0x601
+    wchar_t* _W_decimal_point;
+    wchar_t* _W_thousands_sep;
+    wchar_t* _W_int_curr_symbol;
+    wchar_t* _W_currency_symbol;
+    wchar_t* _W_mon_decimal_point;
+    wchar_t* _W_mon_thousands_sep;
+    wchar_t* _W_positive_sign;
+    wchar_t* _W_negative_sign;
+#endif
   };
 #endif
 
@@ -86,9 +96,21 @@ extern "C" {
   _locale_t __cdecl __create_locale(int _Category,const char *_Locale);
   void __cdecl __free_locale(_locale_t _Locale);
 
+  _CRTIMP unsigned int __cdecl ___lc_codepage_func(void);
+
 #ifndef _WLOCALE_DEFINED
 #define _WLOCALE_DEFINED
   _CRTIMP wchar_t *__cdecl _wsetlocale(int _Category,const wchar_t *_Locale);
+#endif
+
+#if __MSVCRT_VERSION__ >= 0xB00
+  _CRTIMP _locale_t __cdecl _wcreate_locale(int _Category, const wchar_t *_Locale);
+#endif
+
+#ifdef __CHAR_UNSIGNED__
+/* Pull in the constructor from 'charmax.c'.  */
+extern int __mingw_initcharmax;
+__MINGW_SELECTANY int* __mingw_reference_charmax = &__mingw_initcharmax;
 #endif
 
 #ifdef __cplusplus

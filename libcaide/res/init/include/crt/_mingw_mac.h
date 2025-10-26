@@ -7,11 +7,14 @@
 #ifndef _INC_CRTDEFS_MACRO
 #define _INC_CRTDEFS_MACRO
 
+#define __MINGW64_PASTE2(x, y) x ## y
+#define __MINGW64_PASTE(x, y) __MINGW64_PASTE2(x, y)
+
 #define __STRINGIFY(x) #x
 #define __MINGW64_STRINGIFY(x) \
   __STRINGIFY(x)
 
-#define __MINGW64_VERSION_MAJOR 8
+#define __MINGW64_VERSION_MAJOR 13
 #define __MINGW64_VERSION_MINOR 0
 #define __MINGW64_VERSION_BUGFIX 0
 
@@ -88,6 +91,13 @@
 #  endif
 #endif
 
+#if defined(__arm64ec__) && !defined(_M_ARM64EC)
+#  define _M_ARM64EC 1
+#  ifndef _ARM64EC_
+#    define _ARM64EC_ 1
+#  endif
+#endif
+
 #ifndef _X86_
    /* MS does not prefix symbols by underscores for 64-bit.  */
 #  ifndef __MINGW_USE_UNDERSCORE_PREFIX
@@ -116,14 +126,14 @@
 #endif /* ifndef _X86_ */
 
 #if __MINGW_USE_UNDERSCORE_PREFIX == 0
-#  define __MINGW_IMP_SYMBOL(sym) __imp_##sym
-#  define __MINGW_IMP_LSYMBOL(sym) __imp_##sym
+#  define __MINGW_IMP_SYMBOL(sym) __MINGW64_PASTE(__imp_,sym)
+#  define __MINGW_IMP_LSYMBOL(sym) __MINGW64_PASTE(__imp_,sym)
 #  define __MINGW_USYMBOL(sym) sym
-#  define __MINGW_LSYMBOL(sym) _##sym
+#  define __MINGW_LSYMBOL(sym) __MINGW64_PASTE(_,sym)
 #else /* ! if __MINGW_USE_UNDERSCORE_PREFIX == 0 */
-#  define __MINGW_IMP_SYMBOL(sym) _imp__##sym
-#  define __MINGW_IMP_LSYMBOL(sym) __imp__##sym
-#  define __MINGW_USYMBOL(sym) _##sym
+#  define __MINGW_IMP_SYMBOL(sym) __MINGW64_PASTE(_imp__,sym)
+#  define __MINGW_IMP_LSYMBOL(sym) __MINGW64_PASTE(__imp__,sym)
+#  define __MINGW_USYMBOL(sym) __MINGW64_PASTE(_,sym)
 #  define __MINGW_LSYMBOL(sym) sym
 #endif /* if __MINGW_USE_UNDERSCORE_PREFIX == 0 */
 
@@ -260,49 +270,77 @@
 #  define __MINGW_ATTRIB_DEPRECATED_MSVC2005
 #endif
 
-#if !defined (_CRT_SECURE_NO_WARNINGS) || (_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES == 0)
+#if !defined (_CRT_SECURE_NO_WARNINGS)
 #  define __MINGW_ATTRIB_DEPRECATED_SEC_WARN \
       __MINGW_ATTRIB_DEPRECATED_STR(__MINGW_SEC_WARN_STR)
 #else
 #  define __MINGW_ATTRIB_DEPRECATED_SEC_WARN
 #endif
 
+#ifdef __clang__
 #define __MINGW_MS_PRINTF(__format,__args) \
-  __attribute__((__format__(ms_printf, __format,__args)))
+  __attribute__((__format__(__printf__, __format,__args)))
 
 #define __MINGW_MS_SCANF(__format,__args) \
-  __attribute__((__format__(ms_scanf,  __format,__args)))
+  __attribute__((__format__(__scanf__,  __format,__args)))
 
 #define __MINGW_GNU_PRINTF(__format,__args) \
-  __attribute__((__format__(gnu_printf,__format,__args)))
+  __attribute__((__format__(__printf__,__format,__args)))
 
 #define __MINGW_GNU_SCANF(__format,__args) \
-  __attribute__((__format__(gnu_scanf, __format,__args)))
+  __attribute__((__format__(__scanf__, __format,__args)))
+#else
+#define __MINGW_MS_PRINTF(__format,__args) \
+  __attribute__((__format__(__ms_printf__, __format,__args)))
+
+#define __MINGW_MS_SCANF(__format,__args) \
+  __attribute__((__format__(__ms_scanf__,  __format,__args)))
+
+#define __MINGW_GNU_PRINTF(__format,__args) \
+  __attribute__((__format__(__gnu_printf__,__format,__args)))
+
+#define __MINGW_GNU_SCANF(__format,__args) \
+  __attribute__((__format__(__gnu_scanf__, __format,__args)))
+#endif /* !__clang__ */
 
 #undef __mingw_ovr
-#undef __mingw_static_ovr
 
 #ifdef __cplusplus
 #  define __mingw_ovr  inline __cdecl
-#  define __mingw_static_ovr static __mingw_ovr
 #elif defined (__GNUC__)
 #  define __mingw_ovr static \
       __attribute__ ((__unused__)) __inline__ __cdecl
-#  define __mingw_static_ovr __mingw_ovr
 #else
 #  define __mingw_ovr static __cdecl
-#  define __mingw_static_ovr __mingw_ovr
 #endif /* __cplusplus */
 
-#if __MINGW_GNUC_PREREQ(4, 3) && !defined(__clang__)
+#if __MINGW_GNUC_PREREQ(4, 3) || defined(__clang__)
 #  define __mingw_attribute_artificial \
      __attribute__((__artificial__))
 #else
 #  define __mingw_attribute_artificial
 #endif
 
-#if _FORTIFY_SOURCE > 0 && __OPTIMIZE__ > 0 && __MINGW_GNUC_PREREQ(4, 1)
-#  if _FORTIFY_SOURCE > 1
+#define __MINGW_SELECTANY  __attribute__((__selectany__))
+
+#pragma push_macro("__has_builtin")
+#ifndef __has_builtin
+#  define __has_builtin(x) 0
+#endif
+
+#if defined(__MINGW32__) && _FORTIFY_SOURCE > 0 && __OPTIMIZE__ > 0 \
+    && __MINGW_GNUC_PREREQ(4, 1)
+#  if _FORTIFY_SOURCE > 3
+#    warning Using _FORTIFY_SOURCE=3 (levels > 3 are not supported)
+#  endif
+#  if _FORTIFY_SOURCE > 2
+#    if __has_builtin(__builtin_dynamic_object_size)
+#      define __MINGW_FORTIFY_LEVEL 3
+#    else
+#      warning Using _FORTIFY_SOURCE=2 (level 3 requires __builtin_dynamic_object_size support)
+#      define __MINGW_FORTIFY_LEVEL 2
+#    endif
+#  elif _FORTIFY_SOURCE > 1
 #    define __MINGW_FORTIFY_LEVEL 2
 #  else
 #    define __MINGW_FORTIFY_LEVEL 1
@@ -320,16 +358,26 @@
      void __cdecl __mingw_chk_fail_warn(void) __MINGW_ASM_CALL(__chk_fail) \
      __attribute__((__noreturn__)) \
      __attribute__((__warning__("Buffer overflow detected")))
-#  define __mingw_bos(p, maxtype) \
-     __builtin_object_size((p), ((maxtype) > 0) && (__MINGW_FORTIFY_LEVEL > 1))
-#  define __mingw_bos_known(p) \
-     (__mingw_bos(p, 0) != (size_t)-1)
+#  if __MINGW_FORTIFY_LEVEL > 2
+#    define __mingw_bos(p, maxtype) \
+       __builtin_dynamic_object_size((p), (maxtype) > 0)
+#    define __mingw_bos_known(p) \
+       (__builtin_object_size(p, 0) != (size_t)-1 \
+       || !__builtin_constant_p(__mingw_bos(p, 0)))
+#  else
+#    define __mingw_bos(p, maxtype) \
+       __builtin_object_size((p), ((maxtype) > 0) && (__MINGW_FORTIFY_LEVEL > 1))
+#    define __mingw_bos_known(p) \
+       (__mingw_bos(p, 0) != (size_t)-1)
+#  endif
 #  define __mingw_bos_cond_chk(c) \
      (__builtin_expect((c), 1) ? (void)0 : __chk_fail())
 #  define __mingw_bos_ptr_chk(p, n, maxtype) \
      __mingw_bos_cond_chk(!__mingw_bos_known(p) || __mingw_bos(p, maxtype) >= (size_t)(n))
 #  define __mingw_bos_ptr_chk_warn(p, n, maxtype) \
-     (__mingw_bos_known(p) && __builtin_constant_p((n)) && __mingw_bos(p, maxtype) < (size_t)(n) \
+     ((__mingw_bos_known(p) \
+     && __builtin_constant_p(__mingw_bos(p, maxtype) < (size_t)(n)) \
+     && __mingw_bos(p, maxtype) < (size_t)(n)) \
      ? __mingw_chk_fail_warn() : __mingw_bos_ptr_chk(p, n, maxtype))
 #  define __mingw_bos_ovr __mingw_ovr \
      __attribute__((__always_inline__)) \
@@ -343,17 +391,22 @@
 
 /* If _FORTIFY_SOURCE is enabled, some inline functions may use
    __builtin_va_arg_pack().  GCC may report an error if the address
-   of such a function is used.  Set _FORTIFY_VA_ARG=0 in this case.  */
-#if __MINGW_FORTIFY_LEVEL > 0 && __MINGW_GNUC_PREREQ(4, 3) && !defined(__clang__) \
+   of such a function is used.  Set _FORTIFY_VA_ARG=0 in this case.
+   Clang doesn't, as of version 15, yet implement __builtin_va_arg_pack().  */
+#if __MINGW_FORTIFY_LEVEL > 0 \
+    && ((__MINGW_GNUC_PREREQ(4, 3) && !defined(__clang__)) \
+    || __has_builtin(__builtin_va_arg_pack)) \
     && (!defined(_FORTIFY_VA_ARG) || _FORTIFY_VA_ARG > 0)
 #  define __MINGW_FORTIFY_VA_ARG 1
 #else
 #  define __MINGW_FORTIFY_VA_ARG 0
 #endif
 
+#pragma pop_macro("__has_builtin")
+
 /* Enable workaround for ABI incompatibility on affected platforms */
 #ifndef WIDL_EXPLICIT_AGGREGATE_RETURNS
-#if defined(__GNUC__) && defined(__cplusplus) && (defined(__x86_64__) || defined(__i386__))
+#if defined(__GNUC__) && defined(__cplusplus)
 #define  WIDL_EXPLICIT_AGGREGATE_RETURNS
 #endif
 #endif
