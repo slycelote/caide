@@ -1,7 +1,7 @@
 #include "cwrapper.h"
 #include "cpp-inliner/src/caideInliner.h"
 
-void inlineCppCode(
+int inlineCppCode(
     const char* temporaryDirectory,
 
     const char** clangCompilationOptions,
@@ -30,6 +30,6 @@ void inlineCppCode(
     opts.numIdentifiersToKeep = numIdentifiersToKeep;
     opts.maxConsequentEmptyLines = maxConsequentEmptyLines;
 
-    caideInlineCppCode(&opts, cppFilePaths, numCppFiles, outputFilePath);
+    return caideInlineCppCode(&opts, cppFilePaths, numCppFiles, outputFilePath);
 }
 

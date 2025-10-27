@@ -1,6 +1,6 @@
 #pragma once
 
-void inlineCppCode(
+int inlineCppCode(
     const char* temporaryDirectory,
 
     const char** clangCompilationOptions,
