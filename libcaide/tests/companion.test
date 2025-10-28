@@ -5,8 +5,12 @@ curl --max-time 10 -d @request.json -H "Content-Type: application/json" http://l
 sleep 1
 curl --max-time 10 -d @request3.json -H "Content-Type: application/json" http://localhost:10143
 sleep 1
+curl --max-time 10 -d @request4.json -H "Content-Type: application/json" http://localhost:10143
+sleep 1
 
-compare_with after-parse {ALeapfrogCh1,GCastleDefense}/problem.ini
+compare_with after-parse {ALeapfrogCh1,GCastleDefense,Test4}/problem.ini
 compare_with after-parse GCastleDefense/case{1,2,3}.{in,out}
 compare_with after-parse ALeapfrogCh1/case1.{in,out}
+compare_with after-parse Test4/case1.{in,out}
+compare_with after-parse Test4/case{2,3}.in
 

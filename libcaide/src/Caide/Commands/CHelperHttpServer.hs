@@ -119,7 +119,7 @@ instance FromJSON OutputTarget where
 
 instance FromJSON TestCase where
   parseJSON = withObject "test case" $ \o ->
-    TestCase <$> o .: "input" <*> o .: "output"
+    TestCase <$> o .: "input" <*> o .:? "output"
 
 data CompanionCodeSnippet = CompanionCodeSnippet
     { lang :: !T.Text

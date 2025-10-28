@@ -1,0 +1,34 @@
+{
+    "name": "Test4",
+    "group": "Group4",
+    "url": "http://example.com/test4",
+    "memoryLimit": 256,
+    "timeLimit": 1500,
+    "testType": "single",
+    "input": {
+        "type": "stdin"
+    },
+    "output": {
+        "type": "stdout"
+    },
+    "languages": {
+        "java": {
+            "mainClass": "Main",
+            "taskClass": "Test4"
+        }
+    },
+    "tests": [
+        {
+            "input": "input1",
+            "output": "output1\n"
+        },
+        {
+            "input": "input2",
+            "output": null
+        },
+        {
+            "input": "input3"
+        }
+    ]
+}
+
