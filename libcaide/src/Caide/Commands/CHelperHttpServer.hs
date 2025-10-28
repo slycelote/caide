@@ -190,10 +190,10 @@ instance FromJSON ParsedProblem where
     java <- languages .: "java"
     probId <- java .: "taskClass"
 
-    snippets <- o .: "codeSnippets"
+    snippets <- o .:? "codeSnippets"
     clazz <- o .:? "solutionInterface"
 
-    let codeSnippets = Map.map code snippets
+    let codeSnippets = maybe mempty (Map.map code) snippets
         problem = makeProblem probName probId $
             maybe (Stream input output) convertProblemType clazz
 
