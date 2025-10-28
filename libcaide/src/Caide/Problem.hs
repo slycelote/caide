@@ -29,6 +29,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Vector as Vector
 
 import qualified Data.ConfigFile as CF
+import qualified Filesystem as FS
 import qualified Filesystem.Path.CurrentOS as FS
 import Filesystem.Path.CurrentOS((</>))
 
@@ -57,18 +58,24 @@ readProblemStateCP probId = do
 
 readProblemInfo :: ProblemID -> CaideIO Problem
 readProblemInfo probId = do
+    root <- caideRoot
     let mapError ea = ea `orThrow` (\e -> "Problem " <> probId <> ": " <> e)
     problemInfoCP <- readProblemCP probId
     pname <- mapError $ getProp problemInfoCP "problem" "name"
     ptype <- mapError $ getProp problemInfoCP "problem" "type"
     fpTolerance <- mapError $ getProp problemInfoCP "problem" "double_precision"
 
-    -- We keep snippets in the state file to avoid huge chunk of text in problem.ini.
+    -- We keep snippets in the state directory to avoid huge chunk of text in problem.ini.
     -- Users won't need to modify per-problem snippets anyway (if they do they'll modify
     -- generated code).
-    -- TODO: move snippets to a separate file?
-    problemStateCP <- readProblemStateCP probId
-    snippetsStr <- mapError $ getPropOrDefault problemStateCP "problem" "snippets" "{}"
+    let snippetsFilePath = Paths.problemDir root probId </> Paths.problemSnippetsFile
+    snippetsFileExists <- liftIO $ FS.isFile snippetsFilePath
+    snippetsStr <- if snippetsFileExists
+        then liftIO $ FS.readTextFile snippetsFilePath
+        else do
+            -- For backward compatibility, check problem state file.
+            problemStateCP <- readProblemStateCP probId
+            mapError $ getPropOrDefault problemStateCP "problem" "snippets" "{}"
     let snippets = LBS.fromStrict $ T.encodeUtf8 snippetsStr
     pure $ Problem
         { problemName = pname

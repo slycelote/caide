@@ -77,8 +77,8 @@ initializeProblem problem = withLock $ do
     let snippets = problemCodeSnippets problem & Aeson.encode & LBS.toStrict & decodeUtf8Lenient
     problemStateCP <- rightOrThrow $ flip execStateT CF.emptyCP $ do
             putProp "problem" "language" ("c++" :: T.Text)
-            unless (Map.null (problemCodeSnippets problem)) $
-                putProp "problem" "snippets" snippets
+    unless (Map.null (problemCodeSnippets problem)) $ liftIO $
+        writeTextFile (probDir </> Paths.problemSnippetsFile) snippets
     liftIO $ writeConfigFile problemStateCP $ probDir </> Paths.problemStateFile
 
     modifyGlobalState $ \s -> s{activeProblem = Just probId}

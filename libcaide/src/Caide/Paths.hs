@@ -3,6 +3,7 @@ module Caide.Paths(
       problemDir
     , problemConfFile
     , problemStateFile
+    , problemSnippetsFile
     , testsDir
     , testInput
     , etalonTestOutput
@@ -43,6 +44,10 @@ problemConfFile = "problem.ini"
 -- | Relative to 'problemDir'
 problemStateFile :: FilePath
 problemStateFile = ".caideproblem" </> "config"
+
+-- | Relative to 'problemDir'
+problemSnippetsFile :: FilePath
+problemSnippetsFile = ".caideproblem" </> "snippets.json"
 
 -- | Relative to 'problemDir'
 testsDir :: FilePath
