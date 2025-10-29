@@ -153,10 +153,10 @@ int main() {
 
             {
                 // print program output to stderr
-                vector<char> buf(200);
+                string buf(200, '\0');
                 ifstream is(origOutputFile.c_str());
-                is.read(buf.data(), buf.size());
-                cerr << string(buf.begin(), buf.end());
+                is.read(&buf[0], buf.size());
+                cerr << buf.c_str();
                 if ((size_t)is.gcount() == buf.size())
                     cerr << "[...] (output truncated)\n";
                 cerr << endl;
