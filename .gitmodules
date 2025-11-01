@@ -1,4 +1,4 @@
 
 [submodule "libcaide/cbits/cpp-inliner"]
 	path = libcaide/cbits/cpp-inliner
-	url = https://github.com/slycelote/caide-cpp-inliner
+	url = https://codeberg.org/slycelote/caide-cpp-inliner.git
