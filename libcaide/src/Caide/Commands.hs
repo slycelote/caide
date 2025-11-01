@@ -231,7 +231,7 @@ opts :: ParserInfo Options
 opts = info (helper <*> optionsParser) $
     fullDesc <> header ("Caide " <> showVersion version <> " -- programming competitions tool") <>
     progDesc "Additional help is available with 'caide -h' or 'caide COMMAND -h'" <>
-    footer "http://github.com/slycelote/caide"
+    footer "https://codeberg.org/slycelote/caide"
 
 runMain :: [String] -> Either (IO ()) (FS.FilePath -> IO ())
 runMain args = case parseResult of
