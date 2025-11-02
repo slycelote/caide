@@ -3,7 +3,7 @@
 ## Supported online judges
 
 Note that a more extensive list of online judges is supported via [Competitive
-Companion](https://github.com/slycelote/caide/tree/release/libcaide#chelper-and-competitive-companion-browser-extension) browser add-on.
+Companion](https://codeberg.org/slycelote/caide/src/branch/master/libcaide#chelper-and-competitive-companion-browser-extension) browser add-on.
 
 
 | Online judge            | Sample Problem URL | Sample Contest URL | CHelper Chrome plugin |

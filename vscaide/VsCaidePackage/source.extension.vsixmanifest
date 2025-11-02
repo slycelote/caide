@@ -4,7 +4,7 @@
         <Identity Id="8e97a36f-88cc-49ee-8e47-df660b4c7d83" Version="2.10.1" Language="en-US" Publisher="slycelote" />
         <DisplayName>VsCaide</DisplayName>
         <Description xml:space="preserve">Automates certain common tasks that you do during programming competitions: parsing, running and debugging problem tests, inlining library code.</Description>
-        <MoreInfo>https://github.com/slycelote/caide</MoreInfo>
+        <MoreInfo>https://codeberg.org/slycelote/caide</MoreInfo>
         <License>LICENSE.txt</License>
         <GettingStartedGuide>https://github.com/slycelote/caide/releases/latest</GettingStartedGuide>
         <ReleaseNotes>https://github.com/slycelote/caide/releases/latest</ReleaseNotes>

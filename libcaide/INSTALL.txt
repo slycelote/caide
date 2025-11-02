@@ -9,7 +9,7 @@ If you're looking for a user manual, see README.md instead.
 Obtaining source code
 ---------------------
 
-    > git clone https://github.com/slycelote/caide
+    > git clone https://codeberg.org/slycelote/caide
     > cd caide/libcaide
     > git submodule update --init --recursive
 

@@ -8,8 +8,8 @@ author:         slycelote
 maintainer:     slycelot@yandex.ru
 synopsis:       Automate certain common tasks that you do during programming competitions.
 category:       Application
-homepage:       https://github.com/slycelote/caide
-bug-reports:    https://github.com/slycelote/caide/issues
+homepage:       https://codeberg.org/slycelote/caide
+bug-reports:    https://codeberg.org/slycelote/caide/issues
 description:
     Automates certain common tasks that you do during programming competitions:
     parsing, running and debugging problem tests, inlining library code.
@@ -17,7 +17,7 @@ tested-with:    GHC == 9.12.2
 
 source-repository head
   type:         git
-  location:     https://github.com/slycelote/caide
+  location:     https://codeberg.org/slycelote/caide.git
 
 Flag openssl
   description: Use openssl library installed in the system instead of Haskell tls package

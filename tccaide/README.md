@@ -6,9 +6,9 @@ in caide tools.
 Note: JRE 1.7+ is required.
 
 1. Create a caide project in one of caide tools. See
-   [caide](https://github.com/slycelote/caide/tree/release/libcaide/README.md)
+   [caide](https://codeberg.org/slycelote/caide/src/branch/master/libcaide/README.md)
    for a command line tool or
-   [VsCaide](https://github.com/slycelote/caide/tree/release/vscaide/README.md)
+   [VsCaide](https://codeberg.org/slycelote/caide/src/branch/master/vscaide/README.md)
    for a Visual Studio extension.
 
 2. Download tccaide.jar file from
@@ -38,8 +38,8 @@ before submitting!
 # Configuration
 
 The topcoder plugin doesn't have any options. Refer to [caide
-documentation](https://github.com/slycelote/caide/tree/release/libcaide/README.md)
+documentation](https://codeberg.org/slycelote/caide/src/branch/master/libcaide/README.md)
 for general caide configuration or to
-[VsCaide documentation](https://github.com/slycelote/caide/tree/release/vscaide/README.md)
+[VsCaide documentation](https://codeberg.org/slycelote/caide/src/branch/master/vscaide/README.md)
 for the Visual Studio extension configuration.
 

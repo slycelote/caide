@@ -4,8 +4,8 @@ Visual Studio GUI.
 
 # Installation
 
-[Visual Studio 2017 Community
-Edition](http://www.visualstudio.com/en-us/news/vs2013-community-vs.aspx)
+[Visual Studio 2019 Community
+Edition](https://learn.microsoft.com/en-us/visualstudio)
 (free) or higher is required. To install, locate VsCaide in extensions
 manager. Alternatively, double click downloaded \*.vsix file.
 
@@ -30,7 +30,7 @@ by pressing `Ctrl+F5`/`F5`.
 Your library of prewritten code goes into `cpplib` project.
 
 For Topcoder support you will also need the [Arena
-plugin](https://github.com/slycelote/caide/tree/release/tccaide/README.md).
+plugin](https://codeberg.org/slycelote/caide/src/branch/master/tccaide/README.md).
 
 # YouTube Tutorial
 
@@ -46,7 +46,7 @@ problem' or 'Parse contest' dialogs.
 
 VsCaide is compatible with [chelper chrome
 extension](https://chrome.google.com/webstore/detail/chelper-extension/eicjndbmlajfjdhephbcjdeegmmoadip)
-and [Competitive Companion browser extension](https://github.com/jmerle/competitive-companion/).
+and [Competitive Companion FireFox extension](https://addons.mozilla.org/en-US/firefox/addon/caide-competitive-companion/).
 (To parse a problem, click the plus sign that appears in tab bar for supported
 sites.) Because of how the extensions work, VsCaide has to run a local HTTP
 server that will accept requests from Chrome. (You may need to click Allow in
@@ -55,7 +55,7 @@ Windows firewall prompt.) You can disable this feature by adding a setting
 file.
 
 Default port for Competitive Companion is 10043. (It can be changed in
-[config](https://github.com/slycelote/caide/tree/release/libcaide/README.md#configuration)).
+[config](https://codeberg.org/slycelote/caide/src/branch/master/libcaide/README.md#configuration)).
 If you change it, you need to add it as an additional port in the settings of
 the browser extension.
 
@@ -63,9 +63,9 @@ the browser extension.
 
 VsCaide should work out of the box. However, you can tweak most configuration
 options described in [caide
-README](https://github.com/slycelote/caide/tree/release/libcaide/README.md#configuration).
+README](https://codeberg.org/slycelote/caide/src/branch/master/libcaide/README.md#configuration).
 Make sure to read the section on [C++
-inliner](https://github.com/slycelote/caide/tree/release/libcaide/README.md#inliner)
+inliner](https://codeberg.org/slycelote/caide/src/branch/master/libcaide/README.md#inliner)
 too. In addition, the [property
 file](http://msdn.microsoft.com/en-us/library/669zx6zc.aspx) `vs_common.props`
 in solution root directory is included into all generated projects. You can
@@ -73,7 +73,7 @@ modify this file in Property Manager window.
 
 # Troubleshooting
 
-You can report issues on [github](https://github.com/slycelote/caide/issues)
+You can report issues on [Codeberg](https://codeberg.org/slycelote/caide/issues)
 or in [Codeforces thread](http://codeforces.com/blog/entry/18838). Try to
 include as much information as possible, such as:
 

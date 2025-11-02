@@ -40,7 +40,7 @@ problem` and `caide contest` commands).
 
 Caide is compatible with [chelper chrome
 extension](https://chrome.google.com/webstore/detail/chelper-extension/eicjndbmlajfjdhephbcjdeegmmoadip)
-and [Competitive Companion browser extension](https://github.com/jmerle/competitive-companion/).
+and [Competitive Companion FireFox extension](https://codeberg.org/slycelote/caide-competitive-companion/).
 (To parse a problem, click the plus sign that appears in tab bar for supported
 sites.) Because of how the extensions work, you have to be running a local
 server that will accept requests from the browser. This is done in command line
@@ -156,7 +156,7 @@ To configure a builder for a programming language, add a setting
 `build_and_run_tests`, in the section for that language (e.g., `[cpp]`). The
 value of the setting should be the actual command that runs your builder.
 
-[Samples](https://github.com/slycelote/caide/tree/release/libcaide/doc/samples)
+[Samples](https://codeberg.org/slycelote/caide/src/branch/master/libcaide/doc/samples)
 directory contains examples of builders for C++ and C# programming languages.
 
 <a name="ide"></a>
@@ -164,7 +164,7 @@ directory contains examples of builders for C++ and C# programming languages.
 ## Visual Studio
 
 See
-[readme](https://github.com/slycelote/caide/tree/release/vscaide/README.md)
+[readme](https://codeberg.org/slycelote/caide/src/branch/master/vscaide/README.md)
 for VsCaide extension in that project's directory.
 
 <a name="codelite"></a>
@@ -235,7 +235,7 @@ Run `caide -h` for the list of commands. Commands marked with (Internal) are
 <a name="bugs"></a>
 # Troubleshooting
 
-You can report issues on [github](https://github.com/slycelote/caide/issues)
+You can report issues on [Codeberg](https://codeberg.org/slycelote/caide/issues)
 or in [Codeforces thread](http://codeforces.com/blog/entry/18838). Try to
 include as much information as possible, such as:
 

@@ -12,8 +12,8 @@ caide is designed to support multiple programming languages and IDEs/editors.
 
 This project is available at the following mirrors:
 
-* [GitLab](https://gitlab.com/slycelote/caide)
-* [GitHub](https://github.com/slycelote/caide)
+* [Codeberg](https://codeberg.org/slycelote/caide)
+* [GitHub mirror](https://github.com/slycelote/caide)
 
 ## Screenshots
 Codelite and command line caide in Linux: ([full size](http://i.imgur.com/cZsP6Z0.png))
@@ -32,13 +32,13 @@ Visual Studio:
 
 caide is split into the following components (click the links to learn more):
 
-* [caide](https://github.com/slycelote/caide/blob/release/libcaide/README.md)
+* [caide](https://codeberg.org/slycelote/caide/src/branch/master/libcaide/README.md)
   is core command line application implementing all functionality. Windows and
 Linux are supported. Theoretically, it should also build on OS X.
-* [VsCaide](https://github.com/slycelote/caide/blob/release/vscaide/README.md)
+* [VsCaide](https://codeberg.org/slycelote/caide/src/branch/master/vscaide/README.md)
   is caide frontend (extension) for Visual Studio; currently supports C++ and
 C# programming languages.
-* [tccaide](https://github.com/slycelote/caide/blob/release/tccaide/README.md)
+* [tccaide](https://codeberg.org/slycelote/caide/src/branch/master/tccaide/README.md)
   is a plugin for Topcoder arena required if you want to work with Topcoder
 problems.
 
@@ -49,20 +49,17 @@ In addition, if you want Topcoder support, you will need the Arena plugin.
 
 ## Documentation
 
-* [Features](https://github.com/slycelote/caide/blob/release/doc/features.md)
+* [Features](https://codeberg.org/slycelote/caide/src/branch/master/doc/features.md)
 
 * [Known
-  issues](https://github.com/slycelote/caide/blob/release/doc/known-issues.md)
+  issues](https://codeberg.org/slycelote/caide/src/branch/master/doc/known-issues.md)
 
 * [Command line
-  application](https://github.com/slycelote/caide/blob/release/libcaide/README.md)
+  application](https://codeberg.org/slycelote/caide/src/branch/master/libcaide/README.md)
 
 * [Visual Studio extension
-  ](https://github.com/slycelote/caide/blob/release/vscaide/README.md)
+  ](https://codeberg.org/slycelote/caide/src/branch/master/vscaide/README.md)
 
 * [Plugin for Topcoder
-  Arena](https://github.com/slycelote/caide/blob/release/tccaide/README.md)
-
-* [Developer
-  documentation](https://github.com/slycelote/caide/tree/release/libcaide/doc/dev)
+  Arena](https://codeberg.org/slycelote/caide/src/branch/master/tccaide/README.md)
 
